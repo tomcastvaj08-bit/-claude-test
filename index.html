@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta name="theme-color" content="#f2f4f7" />
+<meta name="color-scheme" content="light" />
+<meta name="description" content="Jedno video, dva pohledy. Teecee ukazuje, jak video vzniklo s AI, Maty vysvětluje, proč funguje." />
+<meta property="og:title" content="EFEKTIVE" />
+<meta property="og:description" content="Jedno video, dva pohledy. Přidej se na Patreonu." />
+<title>EFEKTIVE</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&display=swap" />
+<style>
+/* Layout: hero split, kinetic band, pinned three-layer sequence, the two people, join.
+   One clean face (Geist); motion works through weight, letters and scroll.
+   Blue = Teecee (how it was made), green = Maty (why it works). Light paper page, dark artwork only as objects. */
+:root {
+  --paper: #f2f4f7;
+  --ink: #0a0d14;
+  --ink-2: #3a4250;
+  --muted: #6b7484;
+  --line: #d6dce4;
+  --blue: #1f4dff;
+  --green: #13b97a;
+  --green-ink: #0a7a4f;
+  --night: #070a11;
+
+  --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --gutter: 20px;
+  --r: 18px;
+  --step: 52px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; background: var(--paper); overflow-x: clip; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: var(--grain);
+  background-size: 180px;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+
+.display {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 0.95;
+}
+.note { display: grid; gap: 8px; justify-items: start; }
+.tip { margin: 0; max-width: 46ch; font: 500 0.72rem/1.35 var(--sans); letter-spacing: -0.005em; color: #d42a1e; text-wrap: pretty; }
+@media (prefers-reduced-motion: no-preference) { .note { animation: fade 800ms var(--ease-out) 600ms both; } }
+.btn-wrap { display: grid; gap: 14px; justify-items: start; }
+.url-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 5px 5px 5px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+}
+.url { font: 500 0.74rem/1.3 var(--mono); letter-spacing: -0.01em; color: var(--ink-2); user-select: all; -webkit-user-select: all; overflow-wrap: anywhere; min-width: 0; }
+.copy {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 0.82rem/1 var(--sans);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 100ms var(--ease-out), background 160ms var(--ease-out), color 160ms;
+}
+.copy svg { width: 16px; height: 16px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.copy:active { transform: scale(0.96); }
+.copy.done { background: var(--green); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .copy:hover { background: var(--line); } .copy.done:hover { background: var(--green); } }
+.lede { margin: 0; max-width: 34ch; font-size: 1.06rem; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
+.meta { font: 500 0.76rem/1.3 var(--mono); letter-spacing: 0.02em; color: var(--muted); }
+
+/* ---------- Header ---------- */
+.top { position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 20; }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.mark { font-weight: 800; font-size: 0.92rem; letter-spacing: 0.08em; text-decoration: none; }
+.duo { display: flex; gap: 6px; }
+.duo i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+.duo i:first-child { background: var(--blue); }
+.duo i:last-child { background: var(--green); }
+@media (prefers-reduced-motion: no-preference) {
+  .top .wrap { animation: fade 900ms var(--ease-out) 100ms both; }
+}
+
+/* ---------- Button ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 9px 0 24px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font: 600 1rem/1 var(--sans);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  justify-self: start;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transform: translate(var(--mx, 0px), var(--my, 0px));
+  transition: transform 260ms var(--ease-out), background 180ms var(--ease-out);
+}
+.btn .arr {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  overflow: hidden;
+  transition: transform 300ms var(--ease-out);
+}
+.btn svg { width: 17px; height: 17px; }
+.btn:active { transform: translate(var(--mx, 0px), var(--my, 0px)) scale(0.97); transition-duration: 100ms; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: #1b2130; }
+  .btn:hover .arr { transform: rotate(-45deg); }
+}
+
+/* ---------- Hero ---------- */
+.hero { padding-block: 92px 40px; overflow: clip; }
+.hero .wrap { display: grid; gap: 34px; }
+.hero-copy { display: grid; gap: 22px; align-content: start; }
+.hero .display { font-size: clamp(3.1rem, 15.4vw, 7rem); }
+.hero .line { display: block; white-space: nowrap; }
+.hero .ch { display: inline-block; }
+
+.reel { position: relative; width: min(100%, 290px); margin-inline: auto; display: grid; grid-template-columns: 1fr 1fr; }
+.half { position: relative; aspect-ratio: 9 / 32; transform: translateX(var(--x)) rotate(var(--rot)); }
+.half.l { --x: -10px; --rot: -2.4deg; }
+.half.r { --x: 10px; --rot: 2.4deg; }
+.frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--night);
+  box-shadow: 0 34px 60px -30px rgba(10, 20, 60, 0.5), 0 2px 6px rgba(10, 20, 60, 0.12);
+}
+.half.l .frame { border-radius: var(--r) 0 0 var(--r); }
+.half.r .frame { border-radius: 0 var(--r) var(--r) 0; }
+.frame canvas { position: absolute; top: 0; height: 100%; width: 200%; display: block; }
+.half.l canvas { left: 0; }
+.half.r canvas { left: -100%; }
+.cut {
+  position: absolute;
+  left: 50%;
+  top: -4%;
+  width: 2px;
+  height: 108%;
+  margin-left: -1px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.8);
+  transform-origin: top;
+  opacity: 0;
+  pointer-events: none;
+}
+.cap { position: absolute; top: calc(100% + 18px); left: 0; right: 0; display: grid; gap: 2px; }
+.half.r .cap { text-align: right; }
+.cap b { font-weight: 600; font-size: 1rem; letter-spacing: -0.02em; }
+.cap .who { font: 500 0.76rem/1.2 var(--mono); }
+.half.l .who { color: var(--blue); }
+.half.r .who { color: var(--green-ink); }
+.reel-space { height: 64px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Letters arrive one by one, thin and blurred, settling heavy and sharp. */
+  .hero .ch {
+    animation: letter 1000ms var(--ease-out) both;
+    animation-delay: calc(120ms + var(--c) * 32ms);
+  }
+  .hero .btn-wrap { animation: fade 900ms var(--ease-out) 760ms both; }
+  /* The reel arrives whole, gets cut, then the halves part and keep floating. */
+  .reel { animation: fade 900ms var(--ease-out) 300ms both; }
+  .cut { animation: cut 1500ms var(--ease-io) 900ms both; }
+  .half { animation: part 1100ms var(--ease-out) 1500ms both, float 6s var(--ease-io) 2600ms infinite alternate; }
+  .half.r { animation-delay: 1500ms, 2900ms; }
+  .cap { animation: fade 800ms var(--ease-out) 1900ms both; }
+
+  @supports (animation-timeline: scroll()) {
+    .hero .line { animation: drift linear both; animation-timeline: scroll(root); animation-range: 0 80vh; }
+    .hero .line + .line { animation-name: drift-r; }
+  }
+}
+@keyframes letter {
+  from { opacity: 0; transform: translateY(0.45em) rotate(4deg); filter: blur(8px); font-weight: 200; }
+  to { opacity: 1; transform: none; filter: blur(0); font-weight: 650; }
+}
+@keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes cut {
+  0% { opacity: 0; transform: scaleY(0); }
+  15% { opacity: 1; }
+  55% { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(1); }
+}
+@keyframes part { from { transform: none; } to { transform: translateX(var(--x)) rotate(var(--rot)); } }
+@keyframes float {
+  from { transform: translateX(var(--x)) rotate(var(--rot)) translateY(0); }
+  to { transform: translateX(var(--x)) rotate(calc(var(--rot) * 1.4)) translateY(-8px); }
+}
+@keyframes drift { to { transform: translateX(-14vw); opacity: 0.15; } }
+@keyframes drift-r { to { transform: translateX(14vw); opacity: 0.15; } }
+
+/* ---------- Kinetic band ---------- */
+.band { padding-block: 28px; overflow: clip; border-block: 1px solid var(--line); }
+.band-track { display: flex; gap: 0;  width: max-content; font-weight: 650; font-size: clamp(2.2rem, 10vw, 4.6rem); letter-spacing: -0.05em; line-height: 1; white-space: nowrap; }
+.band-track span { padding-right: 0.3em; }
+.band-track span:nth-child(4n+1) { color: var(--blue); }
+.band-track span:nth-child(4n+3) { color: var(--green); }
+.band-track .o { color: transparent !important; -webkit-text-stroke: 1.2px var(--ink); }
+@media (prefers-reduced-motion: no-preference) {
+  .band-track { animation: loop 22s linear infinite; }
+  .band:hover .band-track { animation-play-state: paused; }
+}
+@keyframes loop { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ---------- Layers (pinned sequence) ---------- */
+.layers { position: relative; overflow-x: clip; view-timeline-name: --layers; }
+.layers-pin { padding-block: 64px 48px; }
+.layers .wrap { display: grid; gap: 22px; }
+.layers h2 { font-size: clamp(2.4rem, 11vw, 4.4rem); max-width: 11ch; text-wrap: balance; }
+.stage { display: grid; }
+.stack { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 0.9; margin: 8px auto 0; perspective: 1200px; }
+.scene { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
+.plate { position: absolute; inset: 0; border-radius: var(--r); transform: translateZ(calc(var(--n) * var(--step))); }
+.plate canvas { width: 100%; height: 100%; display: block; border-radius: var(--r); }
+.plate.b canvas { box-shadow: inset 0 0 0 1.5px rgba(31, 77, 255, 0.6); }
+.plate.g canvas { box-shadow: inset 0 0 0 1.5px rgba(19, 185, 122, 0.65); }
+.plate.base canvas { box-shadow: 0 40px 60px -20px rgba(10, 20, 60, 0.45); }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; }
+.legend li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 14px; }
+.legend li + li { border-top: 1px solid var(--line); }
+.legend b { font-weight: 600; font-size: 1.16rem; letter-spacing: -0.025em; }
+.legend .who { font: 500 0.78rem/1 var(--mono); }
+.legend .who.b { color: var(--blue); }
+.legend .who.g { color: var(--green-ink); }
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .layers { height: 240vh; }
+    .layers-pin { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; padding-block: 24px; }
+    .plate { animation: spread linear both; animation-timeline: --layers; animation-range: contain 0% contain 50%; }
+    .scene { animation: turn linear both; animation-timeline: --layers; animation-range: contain 0% contain 100%; }
+    .legend li { animation: light linear both; animation-timeline: --layers; }
+    .legend li:nth-child(2) { animation-range: contain 12% contain 28%; }
+    .legend li:nth-child(1) { animation-range: contain 34% contain 50%; }
+  }
+}
+@keyframes spread { from { transform: translateZ(0); } to { transform: translateZ(calc(var(--n) * var(--step))); } }
+@keyframes turn {
+  from { transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
+  to { transform: rotateX(58deg) rotateZ(-16deg) scale(0.76); }
+}
+@keyframes light { from { opacity: 0.2; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- People ---------- */
+.people { padding-block: 72px 24px; overflow-x: clip; }
+.people .wrap { display: grid; }
+.person { display: grid; gap: 10px; padding-block: 22px; border-top: 1px solid var(--line); }
+.person .name { font-size: clamp(3.8rem, 20vw, 9rem); }
+.person.t .name { color: var(--blue); }
+.person.m .name { color: var(--green); }
+.person p { margin: 0; max-width: 36ch; color: var(--ink-2); }
+.person p b { color: var(--ink); font-weight: 600; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .person .name { animation: weigh linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
+    .person p { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
+  }
+}
+@keyframes weigh {
+  from { font-weight: 100; letter-spacing: 0.02em; transform: translateX(-4%); }
+  to { font-weight: 650; letter-spacing: -0.055em; transform: none; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Join ---------- */
+.join { padding-block: 56px 72px; }
+.join-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: calc(var(--r) + 8px);
+  background: var(--night);
+  color: #fff;
+  padding: 170px 24px 28px;
+  display: grid;
+  gap: 24px;
+}
+.join-card canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
+.join-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(7, 10, 17, 0.95) 36%, rgba(7, 10, 17, 0.05));
+}
+.join-card .display { font-size: clamp(2.6rem, 12vw, 5rem); max-width: 13ch; text-wrap: balance; }
+.join-card .btn { background: #fff; color: var(--ink); }
+@media (hover: hover) and (pointer: fine) { .join-card .btn:hover { background: #e8ecf2; } }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .join-card { animation: open linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
+  }
+}
+@keyframes open {
+  from { transform: scale(0.9); border-radius: 60px; }
+  to { transform: none; border-radius: calc(var(--r) + 8px); }
+}
+
+footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
+
+/* ---------- Floating CTA (mobile) ---------- */
+.dock {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  padding: 8px 8px 8px 20px;
+  border-radius: 999px;
+  background: rgba(10, 13, 20, 0.86);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 20px 40px -18px rgba(10, 20, 60, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transform: translateY(calc(100% + 40px));
+  transition: transform 560ms var(--ease-out);
+}
+.dock.show { transform: none; }
+.dock .btn { background: #fff; color: var(--ink); min-height: 44px; padding: 0 6px 0 18px; font-size: 0.95rem; }
+.dock .btn .arr { width: 32px; height: 32px; }
+@media (prefers-reduced-transparency: reduce) { .dock { background: var(--ink); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .dock { transition: opacity 200ms ease; transform: none; opacity: 0; pointer-events: none; }
+  .dock.show { opacity: 1; pointer-events: auto; }
+}
+
+/* ---------- Wider screens ---------- */
+@media (min-width: 860px) {
+  :root { --gutter: 40px; --step: 66px; }
+  .hero { padding-block: 120px 96px; }
+  .hero .wrap { grid-template-columns: 1.55fr 1fr; align-items: center; gap: 40px; }
+  .hero .display { font-size: clamp(4.6rem, 7.8vw, 7.6rem); }
+  .reel { width: min(100%, 330px); }
+  .layers .wrap { grid-template-columns: 1fr 1.1fr; column-gap: 56px; align-items: center; }
+  .stage { grid-column: 2; grid-row: 1 / span 2; }
+  .stack { width: 100%; max-width: 460px; }
+  .legend { grid-row: 2; }
+  .people .wrap { grid-template-columns: 1fr 1fr; column-gap: 40px; }
+  .join-card { padding: 140px 56px 52px; grid-template-columns: 1fr auto; align-items: end; }
+  .dock { display: none; }
+  footer { padding-block: 26px 40px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#top" aria-label="EFEKTIVE, na začátek">EFEKTIVE</a>
+    <span class="duo" aria-hidden="true"><i></i><i></i></span>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-copy">
+        </div>
+        <h1 class="display" id="hero-title" aria-label="Jedno video. Dva pohledy.">
+          <span class="line" aria-hidden="true">Jedno video.</span>
+          <span class="line" aria-hidden="true">Dva pohledy.</span>
+        </h1>
+        <div class="note">
+  <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Přidej se přes prohlížeč, vyjde tě to levněji.</p>
+        <div class="url-row">
+            <span class="url" id="patreon-url">https://www.patreon.com/c/EFEKTIVE</span>
+          <button type="button" class="copy" id="copy-url" aria-label="Kopírovat odkaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="sr" id="copy-status" aria-live="polite"></span>
+        </div>
+        <div class="btn-wrap">
+          <a class="btn magnetic" id="hero-cta" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">
+            Přidej se na Patreonu
+            <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
+        </div>
+      </div>
+      <figure class="reel" style="margin-block:0" aria-label="Jedno video rozdělené na dva pohledy">
+        <div class="half l">
+          <div class="frame"><canvas id="reel-l" aria-hidden="true"></canvas></div>
+          <div class="cap"><span class="who">Teecee</span><b>Jak to vzniklo</b></div>
+        </div>
+        <div class="half r">
+          <div class="frame"><canvas id="reel-r" aria-hidden="true"></canvas></div>
+          <div class="cap"><span class="who">Maty</span><b>Proč to funguje</b></div>
+        </div>
+        <span class="cut" aria-hidden="true"></span>
+      </figure>
+      <div class="reel-space" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <div class="band" aria-hidden="true">
+    <div class="band-track">
+      <span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span>
+    </div>
+  </div>
+
+  <section class="layers" aria-labelledby="layers-title">
+    <div class="layers-pin">
+      <div class="wrap">
+        <h2 class="display" id="layers-title">Co je pod každým videem</h2>
+        <div class="stage">
+          <figure class="stack" aria-hidden="true">
+            <div class="scene">
+              <div class="plate base" style="--n:0"><canvas data-layer="video"></canvas></div>
+              <div class="plate b" style="--n:1"><canvas data-layer="teecee"></canvas></div>
+              <div class="plate g" style="--n:2"><canvas data-layer="maty"></canvas></div>
+            </div>
+          </figure>
+        </div>
+        <ul class="legend">
+          <li><b>Marketing a konverze</b><span class="who g">Maty</span></li>
+          <li><b>AI workflow a střih</b><span class="who b">Teecee</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="people" aria-label="Kdo za tím stojí">
+    <div class="wrap">
+      <article class="person t">
+        <h2 class="display name">Teecee</h2>
+        <p><b>AI tvorba a střih.</b> Tvoří AI videa na Instagramu a ke každému ukáže, jak vzniklo.</p>
+      </article>
+      <article class="person m">
+        <h2 class="display name">Maty</h2>
+        <p><b>Marketing.</b> Ke každému videu vysvětlí, proč funguje a co převádí.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="join" aria-labelledby="join-title">
+    <div class="wrap">
+      <div class="join-card">
+        <canvas id="join-art" aria-hidden="true"></canvas>
+        <h2 class="display" id="join-title">Každé video rozebrané do detailu</h2>
+        <a class="btn magnetic" id="join-cta" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">
+          Přidej se na Patreonu
+          <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><span class="meta">Teecee a Maty</span></div>
+</footer>
+
+<div class="dock" id="dock" aria-hidden="true">
+  <span class="duo" aria-hidden="true"><i></i><i></i></span>
+  <a class="btn" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener" tabindex="-1">
+    Přidej se na Patreonu
+    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </a>
+</div>
+
+<script>
+(() => {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const BLUE = [80, 120, 255];
+  const GREEN = [40, 220, 150];
+
+  // Split the hero headline into letters for the staggered entrance.
+  let c = 0;
+  document.querySelectorAll(".hero .line").forEach((line) => {
+    const text = line.textContent;
+    line.textContent = "";
+    for (const chr of text) {
+      const s = document.createElement("span");
+      s.className = "ch";
+      s.style.setProperty("--c", c++);
+      s.textContent = chr === " " ? " " : chr;
+      line.appendChild(s);
+    }
+  });
+
+  // Copy the Patreon link; fall back to selecting it if the clipboard is refused.
+  const copyBtn = document.getElementById("copy-url");
+  const urlEl = document.getElementById("patreon-url");
+  copyBtn.addEventListener("click", () => {
+    const status = document.getElementById("copy-status");
+    const ICON = copyBtn.innerHTML;
+    const done = () => {
+      copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+      copyBtn.classList.add("done");
+      status.textContent = "Odkaz zkopírován";
+      setTimeout(() => { copyBtn.innerHTML = ICON; copyBtn.classList.remove("done"); status.textContent = ""; }, 1800);
+    };
+    const select = () => {
+      const r = document.createRange(); r.selectNodeContents(urlEl);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      status.textContent = "Odkaz označen, zkopíruj ho";
+    };
+    try { navigator.clipboard.writeText(urlEl.textContent).then(done, select); } catch (e) { select(); }
+  });
+
+  // Magnetic buttons: follow the pointer a little, spring back on leave.
+  if (fine && !reduce) {
+    document.querySelectorAll(".magnetic").forEach((el) => {
+      el.addEventListener("pointermove", (e) => {
+        const b = el.getBoundingClientRect();
+        el.style.setProperty("--mx", `${(e.clientX - b.left - b.width / 2) * 0.18}px`);
+        el.style.setProperty("--my", `${(e.clientY - b.top - b.height / 2) * 0.3}px`);
+      });
+      el.addEventListener("pointerleave", () => { el.style.setProperty("--mx", "0px"); el.style.setProperty("--my", "0px"); });
+    });
+  }
+
+  function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+  function fit(cv) {
+    const r = cv.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width * DPR)), h = Math.max(1, Math.round(r.height * DPR));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    return [w, h];
+  }
+  const rgba = (col, a) => `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+
+  const grain = document.createElement("canvas");
+  grain.width = grain.height = 160;
+  (() => {
+    const g = grain.getContext("2d"), img = g.createImageData(160, 160), r = rng(7);
+    for (let i = 0; i < img.data.length; i += 4) { const v = r() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 40; }
+    g.putImageData(img, 0, 0);
+    document.documentElement.style.setProperty("--grain", `url(${grain.toDataURL()})`);
+  })();
+
+  function base(ctx, w, h, glows) {
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, "#0d1322"); bg.addColorStop(1, "#05070c");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+    for (const [x, y, col, a] of glows) {
+      const R = Math.max(w, h) * 0.7, g = ctx.createRadialGradient(x * w, y * h, 0, x * w, y * h, R);
+      g.addColorStop(0, rgba(col, a)); g.addColorStop(0.4, rgba(col, a * 0.25)); g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
+  }
+  function city(ctx, w, h, r) {
+    const u = w / 360; let x = -6 * u;
+    while (x < w) {
+      const bw = (14 + r() * 40) * u, bh = h * (0.1 + r() * 0.28);
+      ctx.fillStyle = "rgba(3,5,9,0.95)"; ctx.fillRect(x, h - bh, bw, bh);
+      const step = 7 * u;
+      for (let k = 0; k < Math.floor(bw / step); k++)
+        for (let y = h - bh + 6 * u; y < h - 4 * u; y += 9 * u)
+          if (r() < 0.15) { ctx.fillStyle = r() < 0.55 ? rgba(BLUE, 0.35 + r() * 0.5) : rgba(GREEN, 0.3 + r() * 0.45); ctx.fillRect(x + 3 * u + k * step, y, 2 * u, 3 * u); }
+      x += bw + r() * 4 * u;
+    }
+  }
+  function cracks(ctx, w, h, r, cx, cy, alpha) {
+    ctx.lineCap = "round";
+    const arms = 10 + Math.floor(r() * 5);
+    for (let a = 0; a < arms; a++) {
+      let ang = (a / arms) * Math.PI * 2 + r() * 0.4, x = cx, y = cy;
+      const len = Math.max(w, h) * (0.25 + r() * 0.45);
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let s = 0; s < 12; s++) { ang += (r() - 0.5) * 0.5; x += Math.cos(ang) * (len / 12); y += Math.sin(ang) * (len / 12); ctx.lineTo(x, y); }
+      ctx.strokeStyle = `rgba(230,240,255,${(0.14 + r() * 0.22) * alpha})`; ctx.lineWidth = (0.6 + r() * 0.9) * DPR; ctx.stroke();
+    }
+  }
+  function makeParticles(r, n) {
+    return Array.from({ length: n }, () => ({ x: r(), y: r(), z: 0.3 + r() * 0.7, s: 0.5 + r() * 1.7, p: r() * Math.PI * 2, v: 0.004 + r() * 0.012, g: r() < 0.5 }));
+  }
+  function particles(ctx, w, h, list, t, alpha = 1) {
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (const q of list) {
+      const y = ((q.y - t * q.v * 0.02) % 1 + 1) % 1, x = q.x + Math.sin(t * 0.0006 + q.p) * 0.01 * q.z;
+      const px = x * w, py = y * h, rad = q.s * q.z * DPR * 2.2, tw = 0.55 + 0.45 * Math.sin(t * 0.002 + q.p * 3);
+      const g = ctx.createRadialGradient(px, py, 0, px, py, rad * 3);
+      g.addColorStop(0, rgba(q.g ? GREEN : BLUE, 0.6 * tw * q.z * alpha)); g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g; ctx.fillRect(px - rad * 3, py - rad * 3, rad * 6, rad * 6);
+    }
+    ctx.restore();
+  }
+  function grainOver(ctx, w, h, t, alpha = 0.7) {
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.translate(-Math.floor((t * 0.07) % 160), -Math.floor((t * 0.05) % 160));
+    ctx.fillStyle = ctx.createPattern(grain, "repeat"); ctx.fillRect(0, 0, w + 160, h + 160);
+    ctx.restore();
+  }
+  function roundRect(ctx, x, y, w, h, rad) {
+    ctx.beginPath(); ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath();
+  }
+  function timeline(ctx, w, h, r) {
+    const top = h * 0.5, rowH = h * 0.07, gap = h * 0.035;
+    for (let i = 0; i < 3; i++) {
+      let x = w * 0.06; const y = top + i * (rowH + gap);
+      while (x < w * 0.94) {
+        const cw = w * (0.06 + r() * 0.2);
+        ctx.fillStyle = rgba(i % 2 ? BLUE : [140, 170, 255], 0.28 + r() * 0.35);
+        roundRect(ctx, x, y, Math.min(cw, w * 0.94 - x), rowH, rowH * 0.25); ctx.fill();
+        x += cw + w * 0.012;
+      }
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fillRect(w * 0.58, top - h * 0.04, 2 * DPR, 3 * (rowH + gap) + h * 0.04);
+  }
+  function bars(ctx, w, h, r) {
+    const bw = w * 0.07;
+    for (let i = 0; i < 7; i++) {
+      const bh = h * (0.12 + i * 0.075 + r() * 0.05);
+      ctx.fillStyle = rgba(GREEN, 0.3 + i * 0.08);
+      roundRect(ctx, w * 0.14 + i * bw * 1.45, h * 0.86 - bh, bw, bh, bw * 0.25); ctx.fill();
+    }
+  }
+
+  function scene(canvas, seed, opts = {}) {
+    const ctx = canvas.getContext("2d"), pts = makeParticles(rng(seed + 1), opts.count || 60);
+    let raf = 0, visible = true;
+    function frame(t) {
+      const [w, h] = fit(canvas), r = rng(seed);
+      base(ctx, w, h, opts.glows || [[0.25, 0.3, BLUE, 0.45], [0.8, 0.55, GREEN, 0.35]]);
+      city(ctx, w, h, r);
+      cracks(ctx, w, h, r, w * (opts.cx || 0.5), h * (opts.cy || 0.32), 0.9);
+      particles(ctx, w, h, pts, t);
+      grainOver(ctx, w, h, reduce ? 0 : t);
+      if (!reduce && visible) raf = requestAnimationFrame(frame);
+    }
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; cancelAnimationFrame(raf); if (visible) raf = requestAnimationFrame(frame); }).observe(canvas);
+    frame(0);
+    window.addEventListener("resize", () => { if (reduce || !visible) frame(0); }, { passive: true });
+  }
+  scene(document.getElementById("reel-l"), 3, { count: 70 });
+  scene(document.getElementById("reel-r"), 3, { count: 70 });
+  scene(document.getElementById("join-art"), 19, { count: 40, cx: 0.78, cy: 0.25, glows: [[0.75, 0.2, BLUE, 0.5], [0.2, 0.1, GREEN, 0.3]] });
+
+  function plate(canvas) {
+    const ctx = canvas.getContext("2d"), [w, h] = fit(canvas), r = rng(91), kind = canvas.dataset.layer;
+    ctx.clearRect(0, 0, w, h);
+    if (kind === "video") { base(ctx, w, h, [[0.3, 0.3, BLUE, 0.45], [0.8, 0.6, GREEN, 0.35]]); city(ctx, w, h, r); grainOver(ctx, w, h, 0); }
+    if (kind === "teecee") {
+      ctx.fillStyle = "rgba(31,77,255,0.08)"; ctx.fillRect(0, 0, w, h);
+      cracks(ctx, w, h, r, w * 0.62, h * 0.28, 1.3);
+      particles(ctx, w, h, makeParticles(rng(5), 26), 0, 1.3);
+      timeline(ctx, w, h, rng(12));
+    }
+    if (kind === "maty") { ctx.fillStyle = "rgba(19,185,122,0.08)"; ctx.fillRect(0, 0, w, h); bars(ctx, w, h, rng(33)); }
+  }
+  const drawPlates = () => document.querySelectorAll("canvas[data-layer]").forEach(plate);
+  drawPlates();
+  let rt;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawPlates, 150); }, { passive: true });
+
+  const dock = document.getElementById("dock");
+  let heroGone = false, joinIn = false;
+  const sync = () => {
+    const show = heroGone && !joinIn;
+    dock.classList.toggle("show", show);
+    dock.setAttribute("aria-hidden", show ? "false" : "true");
+    dock.querySelector("a").tabIndex = show ? 0 : -1;
+  };
+  new IntersectionObserver(([e]) => { heroGone = !e.isIntersecting && e.boundingClientRect.top < 0; sync(); }).observe(document.getElementById("hero-cta"));
+  new IntersectionObserver(([e]) => { joinIn = e.isIntersecting; sync(); }).observe(document.getElementById("join-cta"));
+})();
+</script>
+</body>
+</html>
