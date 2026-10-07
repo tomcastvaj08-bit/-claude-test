@@ -281,24 +281,11 @@ a { color: inherit; }
 .legend .who.b { color: var(--blue); }
 .legend .who.g { color: var(--green-ink); }
 
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .layers { height: 240vh; }
-    .layers-pin { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; padding-block: 24px; }
-    .plate { animation: spread linear both; animation-timeline: --layers; animation-range: contain 0% contain 50%; }
-    .scene { animation: turn linear both; animation-timeline: --layers; animation-range: contain 0% contain 100%; animation-timing-function: ease-in-out; }
-    .legend li { animation: light linear both; animation-timeline: --layers; }
-    .legend li:nth-child(2) { animation-range: contain 12% contain 28%; }
-    .legend li:nth-child(1) { animation-range: contain 34% contain 50%; }
-  }
+@media (prefers-reduced-motion: no-preference) {
+  .layers.js-pin { height: 240vh; }
+  .layers.js-pin .layers-pin { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; padding-block: 24px; }
+  .layers.js-pin .plate, .layers.js-pin .scene, .layers.js-pin .legend li { will-change: transform; }
 }
-@keyframes spread { from { transform: translateZ(0); } to { transform: translateZ(calc(var(--n) * var(--step))); } }
-@keyframes turn {
-  0% { transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
-  50% { transform: rotateX(54deg) rotateZ(-36deg) scale(0.9); }
-  100% { transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
-}
-@keyframes light { from { opacity: 0.2; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
 
 /* ---------- People ---------- */
 .people { padding-block: 72px 24px; overflow-x: clip; }
@@ -703,6 +690,54 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
   drawPlates();
   let rt;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawPlates, 150); }, { passive: true });
+
+
+  // Layers: pinned section driven by a smoothed scroll value, so jerky touch scrolling never shakes the scene.
+  (() => {
+    const sec = document.querySelector(".layers");
+    if (!sec || reduce) return;
+    sec.classList.add("js-pin");
+    const scene = sec.querySelector(".scene");
+    const plates = [...sec.querySelectorAll(".plate")];
+    const items = [...sec.querySelectorAll(".legend li")];
+    const ranges = [[0.34, 0.5], [0.12, 0.28]];
+    const clamp = (v) => Math.min(1, Math.max(0, v));
+    const ease = (t) => t * t * (3 - 2 * t);
+    let p = 0, target = 0, raf = 0, active = false;
+    const read = () => {
+      const r = sec.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      target = total > 0 ? clamp(-r.top / total) : 0;
+    };
+    const apply = () => {
+      const step = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--step")) || 52;
+      const spread = ease(clamp(p / 0.5));
+      plates.forEach((pl) => {
+        const n = +getComputedStyle(pl).getPropertyValue("--n") || 0;
+        pl.style.transform = `translate3d(0,0,${(n * step * spread).toFixed(2)}px)`;
+      });
+      const zoom = 0.72 + 0.1 * Math.sin(Math.PI * p);
+      scene.style.transform = `rotateX(54deg) rotateZ(-36deg) scale(${zoom.toFixed(4)})`;
+      items.forEach((li, i) => {
+        const [a, b] = ranges[i] || [0, 0.1];
+        const k = ease(clamp((p - a) / (b - a)));
+        li.style.opacity = (0.2 + 0.8 * k).toFixed(3);
+        li.style.transform = `translate3d(${(-10 * (1 - k)).toFixed(2)}px,0,0)`;
+      });
+    };
+    const loop = () => {
+      read();
+      p += (target - p) * 0.12;
+      if (Math.abs(target - p) < 0.0005) p = target;
+      apply();
+      raf = active ? requestAnimationFrame(loop) : 0;
+    };
+    new IntersectionObserver(([e]) => {
+      active = e.isIntersecting;
+      if (active && !raf) raf = requestAnimationFrame(loop);
+    }).observe(sec);
+    read(); p = target; apply();
+  })();
 
   const dock = document.getElementById("dock");
   let heroGone = false, joinIn = false;
