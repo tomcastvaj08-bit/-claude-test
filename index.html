@@ -267,7 +267,7 @@ a { color: inherit; }
 .layers h2 { font-size: clamp(2.4rem, 11vw, 4.4rem); max-width: 11ch; text-wrap: balance; }
 .stage { display: grid; }
 .stack { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 0.9; margin: 8px auto 0; perspective: 1200px; }
-.scene { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
+.scene { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
 .plate { position: absolute; inset: 0; border-radius: var(--r); transform: translateZ(calc(var(--n) * var(--step))); }
 .plate canvas { width: 100%; height: 100%; display: block; border-radius: var(--r); }
 .plate.b canvas { box-shadow: inset 0 0 0 1.5px rgba(31, 77, 255, 0.6); }
@@ -286,7 +286,7 @@ a { color: inherit; }
     .layers { height: 240vh; }
     .layers-pin { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; padding-block: 24px; }
     .plate { animation: spread linear both; animation-timeline: --layers; animation-range: contain 0% contain 50%; }
-    .scene { animation: turn linear both; animation-timeline: --layers; animation-range: contain 0% contain 100%; }
+    .scene { animation: turn linear both; animation-timeline: --layers; animation-range: contain 0% contain 100%; animation-timing-function: ease-in-out; }
     .legend li { animation: light linear both; animation-timeline: --layers; }
     .legend li:nth-child(2) { animation-range: contain 12% contain 28%; }
     .legend li:nth-child(1) { animation-range: contain 34% contain 50%; }
@@ -294,8 +294,9 @@ a { color: inherit; }
 }
 @keyframes spread { from { transform: translateZ(0); } to { transform: translateZ(calc(var(--n) * var(--step))); } }
 @keyframes turn {
-  from { transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
-  to { transform: rotateX(58deg) rotateZ(-16deg) scale(0.76); }
+  0% { transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
+  50% { transform: rotateX(54deg) rotateZ(-36deg) scale(0.9); }
+  100% { transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
 }
 @keyframes light { from { opacity: 0.2; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
 
