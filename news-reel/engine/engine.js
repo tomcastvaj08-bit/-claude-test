@@ -1,12 +1,12 @@
-// Reel engine: hook (calendar) + explainer scenes + kinetic captions on one timeline.
-// The renderer calls window.__setTime(t) for every frame and screenshots the page.
-import { clamp, lerp, prog, ease, spring, appleEase, inOut, bezier } from "./ease.js";
-import { buildHook, MONTHS_GEN, parseDate } from "./hook.js";
-import { templates, icon } from "./scenes.js";
+// Reel engine: hook (calendar) + explainer scenes + captions + outro on one timeline.
+// The renderer calls window.__setTime(t) for every (sub)frame and screenshots the page.
+import { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier } from "./ease.js";
+import { buildHook, parseDate } from "./hook.js";
+import { templates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
 
-const W = 1080, H = 1920;
-const lib = { clamp, lerp, prog, ease, spring, appleEase, inOut, bezier, icon };
+const lib = { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, icon, letters, revealLetters };
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9%]/g, "");
+const OUTRO = 2.3; // seconds of brand end card after the voice
 
 async function loadJSON(url, fallback) {
   try {
@@ -21,21 +21,18 @@ async function loadJSON(url, fallback) {
 
 async function main() {
   const q = new URLSearchParams(location.search);
-  const epDir = q.get("ep"); // e.g. ../episodes/2026-10-13-01
+  const epDir = q.get("ep");
   const cfg = await loadJSON("../config.json");
   const ep = await loadJSON(`${epDir}/episode.json`);
-  // words.json is produced by scripts/tts.mjs; before TTS exists use a rough estimate so layout can be previewed
-  const voice = await loadJSON(`${epDir}/build/words.json`, null) ?? estimateVoice(ep);
-
-  document.documentElement.style.setProperty("--accent", cfg.series.accent);
+  const voice = (await loadJSON(`${epDir}/build/words.json`, null)) ?? estimateVoice(ep);
   const stage = document.getElementById("stage");
 
-  // ---------- background (continuous)
+  // ---------- background: paper, fine grid, grain
   const bg = document.createElement("div");
   bg.className = "bg";
-  bg.innerHTML = `<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="dots"></div><div class="vignette"></div>`;
+  bg.innerHTML = `<div class="grid"></div><div class="glow g1"></div><div class="glow g2"></div>`;
   stage.appendChild(bg);
-  const blobs = [...bg.querySelectorAll(".blob")];
+  const glows = [...bg.querySelectorAll(".glow")];
 
   // ---------- hook
   const hookRoot = document.createElement("div");
@@ -43,36 +40,49 @@ async function main() {
   const hook = buildHook(hookRoot, ep, cfg);
   const B = hook.duration;
   const voiceStart = B + (cfg.audio.voiceStartOffset ?? 0);
-  const total = voiceStart + voice.duration + (cfg.video.tailSeconds ?? 0.5);
+  const voiceEnd = voiceStart + voice.duration;
+  const outroStart = voiceEnd + 0.25;
+  const total = outroStart + OUTRO;
   const abs = (sec) => voiceStart + sec;
 
-  // ---------- persistent series badge (body)
+  // ---------- camera layer (everything in the body sits on it; slow drift = "virtual camera")
+  const cam = document.createElement("div");
+  cam.className = "cam";
+  stage.appendChild(cam);
+
+  // ---------- HUD: index label + date + progress rule
   const news = parseDate(ep.newsDate);
-  const badge = document.createElement("div");
-  badge.className = "series-badge";
-  badge.innerHTML = `<span class="sb-dot"></span><b>${cfg.series.brand} ${cfg.series.title}</b><span class="sb-sep"></span><span>${news.getUTCDate()}. ${MONTHS_GEN[news.getUTCMonth()]}</span>`;
-  stage.appendChild(badge);
+  const hud = document.createElement("div");
+  hud.className = "hud";
+  hud.innerHTML = `<div class="hud-l"><i></i><span>Aktualita ${String(ep.number ?? 1).padStart(2, "0")}</span></div>
+    <div class="hud-r">${news.getUTCDate()}. ${news.getUTCMonth() + 1}. ${news.getUTCFullYear()}</div>
+    <div class="hud-bar"><b></b></div>`;
+  stage.appendChild(hud);
+  const hudBar = hud.querySelector(".hud-bar b");
 
   // ---------- scenes
-  const words = voice.words.filter((w) => !/^\[.*\]$/.test(w.text));
+  const words = voice.words.filter((w) => !/^\[.*\]$/.test(w.text) && /[\p{L}\p{N}]/u.test(w.text));
   const cueTime = (name) => (voice.cues?.[name] != null ? abs(voice.cues[name]) : null);
-  const sceneDefs = ep.scenes ?? [];
-  const starts = sceneDefs.map((s, i) => {
+  const defs = ep.scenes ?? [];
+  const starts = defs.map((s, i) => {
     if (i === 0) return B;
     const c = typeof s.cue === "number" ? abs(s.cue) : cueTime(s.cue);
     if (c == null) console.warn(`missing cue ${s.cue}`);
-    return c ?? B + (i * (total - B)) / sceneDefs.length;
+    return c ?? B + (i * (voiceEnd - B)) / defs.length;
   });
-  const scenes = sceneDefs.map((def, i) => {
+  // SFX events (absolute seconds) – scenes register theirs through ctx.sfx(name, localTime, gainDb)
+  const sfx = [];
+  const addSfx = (name, at, gain = 0) => sfx.push({ name, at: +at.toFixed(3), gain });
+  const scenes = defs.map((def, i) => {
     const el = document.createElement("div");
     el.className = `scene scene-${def.template}`;
-    stage.appendChild(el);
+    cam.appendChild(el);
     const start = starts[i];
-    const end = i + 1 < sceneDefs.length ? starts[i + 1] : total;
+    const end = i + 1 < defs.length ? starts[i + 1] : outroStart;
     const local = words.filter((w) => abs(w.start) >= start - 0.05 && abs(w.start) < end).map((w) => ({ ...w, t: abs(w.start) - start }));
     const ctx = {
-      lib, accent: cfg.series.accent, handle: cfg.series.handle, words: local, cues: voice.cues,
-      // resolve a timing reference to local scene seconds
+      lib, words: local, cues: voice.cues, handle: cfg.series.handle,
+      sfx: (name, localT, gain = 0) => addSfx(name, start + localT, gain),
       at(ref, fallback = 0) {
         if (ref == null) return fallback;
         if (typeof ref === "number") return ref;
@@ -85,16 +95,27 @@ async function main() {
     };
     const tpl = templates[def.template];
     if (!tpl) throw new Error(`unknown template ${def.template}`);
-    const update = tpl(el, def.props ?? {}, ctx);
-    return { el, start, end, update, def };
+    return { el, start, end, update: tpl(el, def.props ?? {}, ctx), def };
   });
 
-  // body intro wipe (red -> dark)
-  const wipe = document.createElement("div");
-  wipe.className = "wipe";
-  stage.appendChild(wipe);
+  // series sound signature (hook) + cuts + outro
+  const hc = hook.cues;
+  addSfx("hook_swell", 0, -4);
+  addSfx("synth_riser", hc.impact - 2.4 + 0.04, -8);
+  addSfx("hook_riser", hc.impact - 1.04, -3);
+  addSfx("hook_rewind", hc.ticks[0] ?? hc.riser[0], -6);
+  hc.ticks.forEach((t) => addSfx("tick", t, -14));
+  addSfx("hook_impact", hc.impact, 0);
+  addSfx("hook_dive", hc.whoosh - 0.1, -3);
+  addSfx("reveal_shimmer", B - 0.25, -8);
+  scenes.slice(1).forEach((s) => addSfx("transition_swish", s.start - 0.14, -7));
+  addSfx("transition_swish", outroStart - 0.35, -4);
+  addSfx("logo_sting", outroStart + 0.35, -2);
 
-  // ---------- captions
+  const outroUpdate = buildOutro(stage, cfg);
+  const outroEl = stage.querySelector(".outro");
+
+  // ---------- captions (sentence case, word-by-word weight + colour)
   const capEl = document.createElement("div");
   capEl.className = "captions";
   stage.appendChild(capEl);
@@ -102,10 +123,10 @@ async function main() {
   let cur = [];
   words.forEach((w, i) => {
     cur.push(w);
-    const chars = cur.reduce((n, x) => n + x.text.length, 0);
+    const chars = cur.reduce((n, x) => n + x.text.length + 1, 0);
     const next = words[i + 1];
     const gap = next ? next.start - w.end : 1;
-    if (cur.length >= 3 || chars > 16 || /[.,!?;:–]$/.test(w.text) || gap > 0.35 || !next) {
+    if (cur.length >= 4 || chars > 22 || /[.,!?;:…—]$/.test(w.text) || gap > 0.3 || !next) {
       chunks.push(cur);
       cur = [];
     }
@@ -113,75 +134,89 @@ async function main() {
   const chunkEls = chunks.map((c) => {
     const d = document.createElement("div");
     d.className = "cap";
-    d.innerHTML = c.map((w) => `<span>${w.text.replace(/[.,;:]$/, "")}</span>`).join(" ");
+    d.innerHTML = c.map((w) => `<span>${w.text.replace(/[,;:…—]+$/, "")}</span>`).join(" ");
     capEl.appendChild(d);
     return { el: d, words: c, spans: [...d.children], start: abs(c[0].start), end: abs(c[c.length - 1].end) };
   });
-  chunkEls.forEach((c, i) => (c.until = i + 1 < chunkEls.length ? Math.min(chunkEls[i + 1].start - 0.05, c.end + 0.6) : c.end + 0.4));
+  chunkEls.forEach((c, i) => (c.until = i + 1 < chunkEls.length ? Math.min(chunkEls[i + 1].start - 0.04, c.end + 0.7) : c.end + 0.5));
   const showCaptions = ep.captions !== false;
 
   // ---------- frame update
   window.__setTime = (t) => {
-    // background drift
-    blobs.forEach((b, i) => {
-      const a = t * (0.25 + i * 0.07) + i * 2.1;
-      b.style.transform = `translate(${Math.cos(a) * 140}px, ${Math.sin(a * 1.3) * 180}px) scale(${1 + 0.15 * Math.sin(a * 0.7)})`;
+    const inBody = t > B - 0.6;
+    bg.style.display = inBody ? "block" : "none";
+    glows.forEach((g, i) => {
+      const a = t * (0.18 + i * 0.05) + i * 2.4;
+      g.style.transform = `translate(${Math.cos(a) * 120}px, ${Math.sin(a * 1.2) * 160}px)`;
     });
-    bg.style.opacity = t < B - 0.3 ? 0 : 1;
 
     hook.update(t);
 
-    const wp = bezier(0.7, 0, 0.2, 1)(prog(t, B - 0.02, 0.6));
-    wipe.style.display = t >= B - 0.02 && wp < 1 ? "block" : "none";
-    wipe.style.transform = `translateY(${-wp * 100}%)`;
+    // virtual camera: tiny continuous push-in + drift, with a settle after each cut
+    const bodyT = t - B;
+    cam.style.display = inBody ? "block" : "none";
+    const camIn = brandOut(prog(t, B - 0.1, 1.2));
+    cam.style.transform = `translateY(${(1 - camIn) * 140}px) scale(${lerp(1.08, 1, camIn) + bodyT * 0.0025})`;
 
-    const bIn = appleEase(prog(t, B + 0.3, 0.5));
-    badge.style.opacity = bIn;
-    badge.style.transform = `translate(-50%, ${lerp(-30, 0, bIn)}px)`;
+    const hudIn = brandOut(prog(t, B + 0.2, 0.9));
+    const hudOut = brandInOut(prog(t, outroStart - 0.2, 0.5));
+    hud.style.opacity = hudIn * (1 - hudOut);
+    hud.style.transform = `translateY(${(1 - hudIn) * -30}px)`;
+    hudBar.style.transform = `scaleX(${clamp((t - B) / (outroStart - B))})`;
 
     for (const s of scenes) {
       const local = t - s.start, dur = s.end - s.start;
-      const OUT = 0.28;
-      const vis = local >= 0 && local < dur + OUT;
+      const OUT = 0.32;
+      const vis = local >= -0.02 && local < dur + OUT;
       s.el.style.display = vis ? "block" : "none";
       if (!vis) continue;
-      const i = appleEase(prog(local, 0, 0.35));
-      const o = ease.inCubic(prog(local, dur, OUT));
-      s.el.style.opacity = Math.min(i, 1 - o);
-      s.el.style.transform = `scale(${lerp(0.94, 1, i) * lerp(1, 1.06, o)})`;
-      s.el.style.filter = o > 0 ? `blur(${o * 14}px)` : i < 1 ? `blur(${(1 - i) * 10}px)` : "none";
-      s.update(Math.min(local, dur), dur);
+      // push transition: outgoing scene lifts, thins and blurs out while the next one is already writing in
+      const o = brandInOut(prog(local, dur - 0.04, OUT));
+      s.el.style.opacity = 1 - o;
+      s.el.style.transform = `translateY(${-o * 180}px) scale(${1 - o * 0.04})`;
+      s.el.style.filter = o > 0.01 ? `blur(${o * 18}px)` : "none";
+      s.update(Math.min(local, dur + OUT), dur);
     }
 
-    // captions only once the red wipe has cleared
-    capEl.style.display = showCaptions && t > B + 0.2 ? "block" : "none";
-    capEl.style.opacity = appleEase(prog(t, B + 0.2, 0.25));
+    outroEl.style.display = t >= outroStart - 0.3 ? "flex" : "none";
+    if (t >= outroStart - 0.3) {
+      const oi = brandInOut(prog(t, outroStart - 0.3, 0.6));
+      outroEl.style.clipPath = `inset(${(1 - oi) * 100}% 0 0 0)`;
+      outroUpdate(t - outroStart);
+    }
+
+    capEl.style.display = showCaptions && t > B + 0.15 && t < outroStart ? "block" : "none";
     for (const c of chunkEls) {
-      const on = t >= c.start - 0.05 && t < c.until;
+      const on = t >= c.start - 0.06 && t < c.until;
       c.el.style.display = on ? "flex" : "none";
       if (!on) continue;
-      const pIn = spring(t - c.start + 0.05, { stiffness: 320, damping: 20 });
-      c.el.style.transform = `translate(-50%, 0) scale(${lerp(0.85, 1, clamp(pIn))})`;
+      const pIn = brandOut(prog(t, c.start - 0.06, 0.45));
+      c.el.style.opacity = clamp(pIn * 2);
+      c.el.style.transform = `translate(-50%, ${(1 - pIn) * 24}px)`;
       c.spans.forEach((sp, k) => {
         const w = c.words[k];
-        const said = t >= abs(w.start) - 0.02;
-        const active = said && t < abs(w.end) + 0.05;
-        sp.classList.toggle("said", said);
-        sp.classList.toggle("active", active);
+        const p = brandOut(prog(t, abs(w.start) - 0.04, 0.3));
+        sp.style.fontVariationSettings = `"wght" ${Math.round(lerp(380, 640, p))}`;
+        sp.style.color = p > 0.5 ? "var(--ink)" : "var(--cap-dim)";
+        sp.classList.toggle("active", t >= abs(w.start) - 0.04 && t < abs(w.end) + 0.08);
       });
     }
   };
 
-  // metadata for the renderer (SFX placement, duration)
   window.__meta = {
     duration: total,
     fps: cfg.video.fps,
     hook: hook.cues,
     hookDuration: B,
     voiceStart,
-    sceneStarts: scenes.map((s) => ({ template: s.def.template, cue: s.def.cue, start: s.start })),
+    voiceEnd,
+    outroStart,
+    sceneStarts: scenes.map((s) => ({ template: s.def.template, cue: s.def.cue, start: +s.start.toFixed(3), end: +s.end.toFixed(3) })),
     estimated: !!voice.estimated,
+    sfx: sfx.sort((a, b) => a.at - b.at),
   };
+  await document.fonts.load('650 100px "Geist"');
+  await document.fonts.load('500 100px "Geist Mono"');
   await document.fonts.ready;
   window.__setTime(0);
   document.body.dataset.ready = "1";
@@ -189,11 +224,9 @@ async function main() {
 
 // Rough timing guess (≈14 chars/s) used only before the real voiceover exists.
 function estimateVoice(ep) {
-  const raw = ep.script ?? "";
-  const words = [];
-  const cues = {};
+  const words = [], cues = {};
   let t = 0;
-  for (const tok of raw.split(/\s+/).filter(Boolean)) {
+  for (const tok of (ep.script ?? "").split(/\s+/).filter(Boolean)) {
     const m = tok.match(/^\[\[(.+?)\]\](.*)$/);
     if (m) cues[m[1]] = t;
     const text = m ? m[2] : tok;

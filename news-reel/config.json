@@ -10,26 +10,27 @@
     "width": 1080,
     "height": 1920,
     "fps": 30,
-    "tailSeconds": 0.6
+    "tailSeconds": 0.6,
+    "motionBlur": 4
   },
   "voice": {
     "provider": "elevenlabs",
-    "voiceId": "pNInz6obpgDQGcFmaJgB",
-    "voiceName": "Adam (dočasný – vyber a ulož finální hlas)",
-    "modelId": "eleven_v3",
+    "voiceId": "wNYzYiprejHCPi4voSeA",
+    "voiceName": "Karel - Czech Broadcast Reporter",
+    "modelId": "eleven_v4",
     "fallbackModelId": "eleven_multilingual_v2",
     "languageCode": "cs",
     "stability": 0.4,
     "similarityBoost": 0.8,
     "style": 0.45,
-    "tempo": 1.15,
+    "tempo": 1.1,
     "hookLine": "Efektive aktuality!"
   },
   "audio": {
     "voiceGainDb": 0,
     "musicGainDb": -21,
-    "sfxGainDb": -3,
+    "sfxGainDb": -2,
     "hookVoiceAt": 0.25,
-    "voiceStartOffset": -0.15
+    "voiceStartOffset": -0.1
   }
 }

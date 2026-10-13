@@ -5,10 +5,11 @@
 //   node scripts/render.mjs episodes/<id>                 full render -> episodes/<id>/build/reel.mp4
 //   node scripts/render.mjs episodes/<id> --stills 0.5,2.5,6   PNG stills for a quick visual check
 //   node scripts/render.mjs episodes/<id> --fps 15        faster draft
+//   node scripts/render.mjs episodes/<id> --mb 4          motion blur (4 sub-frames/frame; default config.video.motionBlur)
 //   node scripts/render.mjs episodes/<id> --contact       contact sheet (one frame every second)
 //   node scripts/render.mjs episodes/<id> --mux-only      only re-mix audio onto the last rendered video
 import { createServer } from "node:http";
-import { readFileSync, existsSync, mkdirSync, readdirSync, statSync, createReadStream } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, createReadStream } from "node:fs";
 import { join, dirname, resolve, relative, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn, execFileSync } from "node:child_process";
@@ -82,14 +83,21 @@ if (opt("--stills")) {
   mixAndMux(join(build, "video_silent.mp4"), meta);
 } else {
   const fps = Number(opt("--fps") ?? meta.fps);
+  // motion blur: N sub-frames per frame across a 180° shutter, averaged by ffmpeg (tmix)
+  const mb = Math.max(1, Number(opt("--mb") ?? cfg.video.motionBlur ?? 1));
+  const shutter = 0.5;
   const frames = Math.ceil(meta.duration * fps);
   const silent = join(build, "video_silent.mp4");
-  const ff = spawn("ffmpeg", ["-y", "-v", "error", "-f", "image2pipe", "-framerate", String(fps), "-c:v", "mjpeg", "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-pix_fmt", "yuv420p", "-r", String(fps), silent], { stdio: ["pipe", "inherit", "inherit"] });
+  const vf = mb > 1 ? ["-vf", `tmix=frames=${mb},select='eq(mod(n,${mb}),${mb - 1})',setpts=N/${fps}/TB`] : [];
+  const ff = spawn("ffmpeg", ["-y", "-v", "error", "-f", "image2pipe", "-framerate", String(fps * mb), "-c:v", "mjpeg", "-i", "-", ...vf, "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", "-r", String(fps), silent], { stdio: ["pipe", "inherit", "inherit"] });
   const t0 = Date.now();
   for (let f = 0; f < frames; f++) {
-    await setT(f / fps);
-    const buf = await page.screenshot({ type: "jpeg", quality: 95 });
-    if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once("drain", r));
+    for (let k = 0; k < mb; k++) {
+      const sub = mb > 1 ? (k / (mb - 1) - 1) * shutter : 0; // sub-frames trail the frame time
+      await setT(Math.max(0, (f + sub) / fps));
+      const buf = await page.screenshot({ type: "jpeg", quality: 95 });
+      if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once("drain", r));
+    }
     if (f % fps === 0) process.stdout.write(`\rframe ${f}/${frames}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   }
   ff.stdin.end();
@@ -101,51 +109,55 @@ await browser.close();
 server.close();
 
 // ---------- audio
+// 1) SFX stem: every event from window.__meta.sfx (hook signature, scene pops/swipes/ticks, cuts, outro)
+//    is layered into ONE track -> build/sfx_stem.wav
+// 2) final mix: voice + sfx stem (+ optional music bed ducked under the voice) -> reel.mp4
+function resolveSfx(name) {
+  const dir = join(ROOT, "assets", "sfx");
+  const alias = { synth_riser: "riser.wav", tick: "tick.wav" };
+  for (const f of [join(dir, "el", `${name}.mp3`), join(dir, "el", `${name}.wav`), join(dir, alias[name] ?? `${name}.wav`)]) if (existsSync(f)) return f;
+  return null;
+}
+function buildSfxStem(meta) {
+  if (!existsSync(join(ROOT, "assets", "sfx", "riser.wav"))) execFileSync("node", [join(ROOT, "scripts", "sfx.mjs")], { stdio: "inherit" });
+  const events = meta.sfx.map((e) => ({ ...e, file: resolveSfx(e.name) })).filter((e) => e.file);
+  const missing = meta.sfx.filter((e) => !resolveSfx(e.name)).map((e) => e.name);
+  if (missing.length) console.warn(`⚠ chybí SFX: ${[...new Set(missing)].join(", ")}`);
+  const inputs = [], filters = [];
+  events.forEach((e, i) => {
+    inputs.push("-i", e.file);
+    const ms = Math.max(0, Math.round(e.at * 1000));
+    // trim long generations, soften their tails
+    filters.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:2.6,afade=t=out:st=2.1:d=0.5,volume=${e.gain}dB,adelay=${ms}|${ms}[s${i}]`);
+  });
+  filters.push(`${events.map((_, i) => `[s${i}]`).join("")}amix=inputs=${events.length}:normalize=0:duration=longest,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
+  const stem = join(build, "sfx_stem.wav");
+  execFileSync("ffmpeg", ["-y", "-v", "error", ...inputs, "-filter_complex", filters.join(";"), "-map", "[out]", "-ar", "48000", stem], { stdio: "inherit" });
+  writeFileSync(join(build, "sfx_plan.json"), JSON.stringify(events.map(({ file, ...e }) => e), null, 1));
+  console.log(`SFX stem: ${events.length} vrstev -> ${stem}`);
+  return stem;
+}
 function mixAndMux(silent, meta) {
   const A = cfg.audio;
-  const sfx = (n) => join(ROOT, "assets", "sfx", n);
-  if (!existsSync(sfx("riser.wav"))) execFileSync("node", [join(ROOT, "scripts", "sfx.mjs")], { stdio: "inherit" });
-  const inputs = [], filters = [], labels = [];
-  let nIn = 1; // input 0 is the silent video
-  const add = (file, at, gainDb, extra = "") => {
-    const i = nIn++;
-    inputs.push("-i", file);
-    const ms = Math.max(0, Math.round(at * 1000));
-    filters.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo${extra},volume=${gainDb}dB,adelay=${ms}|${ms}[a${i}]`);
-    labels.push(`[a${i}]`);
-    return `[a${i}]`;
-  };
-  const h = meta.hook;
-  const riserDur = Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", sfx("riser.wav")]).toString());
-  add(sfx("riser.wav"), h.impact - riserDur + 0.04, A.sfxGainDb - 2);
-  h.ticks.forEach((t) => add(sfx("tick.wav"), t, A.sfxGainDb - 6));
-  add(sfx("impact.wav"), h.impact, A.sfxGainDb);
-  add(sfx("whoosh.wav"), h.whoosh, A.sfxGainDb - 3);
-  const hookVoice = join(ROOT, "assets", "voice", "hook.mp3");
-  if (existsSync(hookVoice)) add(hookVoice, A.hookVoiceAt, A.voiceGainDb);
+  const stem = buildSfxStem(meta);
   const voice = join(build, "voice.mp3");
-  const vLabel = add(voice, meta.voiceStart, A.voiceGainDb);
-
+  const vms = Math.round(meta.voiceStart * 1000);
+  const inputs = ["-i", silent, "-i", voice, "-i", stem];
+  const f = [
+    `[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${A.voiceGainDb}dB,adelay=${vms}|${vms}[v]`,
+    `[2:a]volume=${A.sfxGainDb}dB[s]`,
+  ];
+  let mix = "[v][s]";
   const musicDir = join(ROOT, "assets", "music");
-  const music = existsSync(musicDir) ? readdirSync(musicDir).find((f) => /^bed\.(mp3|wav|m4a)$/.test(f)) : null;
-  let musicLabel = null;
+  const music = existsSync(musicDir) ? readdirSync(musicDir).find((x) => /^bed\.(mp3|wav|m4a)$/.test(x)) : null;
   if (music) {
-    const i = nIn++;
     inputs.push("-stream_loop", "-1", "-i", join(musicDir, music));
-    const fadeAt = Math.max(0, meta.duration - 1.2);
-    filters.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo,volume=${A.musicGainDb}dB,afade=t=in:st=0:d=0.4,afade=t=out:st=${fadeAt}:d=1.2,atrim=0:${meta.duration}[m${i}]`);
-    musicLabel = `[m${i}]`;
+    f.push(`[v]asplit=2[v][vk]`);
+    f.push(`[3:a]aresample=48000,aformat=channel_layouts=stereo,volume=${A.musicGainDb}dB,afade=t=out:st=${Math.max(0, meta.duration - 1.2)}:d=1.2,atrim=0:${meta.duration}[m0]`, `[m0][vk]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=350[m]`);
+    mix = "[v][s][m]";
   }
-  // voice is split so it can also duck the music
-  const vIdx = labels.indexOf(vLabel);
-  let mixInputs = labels.slice();
-  if (musicLabel) {
-    filters.push(`${vLabel}asplit=2[vmix][vkey]`, `${musicLabel}[vkey]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=350[mduck]`);
-    mixInputs[vIdx] = "[vmix]";
-    mixInputs.push("[mduck]");
-  }
-  filters.push(`${mixInputs.join("")}amix=inputs=${mixInputs.length}:normalize=0:duration=longest,alimiter=limit=0.95,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
+  f.push(`${mix}amix=inputs=${music ? 3 : 2}:normalize=0:duration=longest,alimiter=limit=0.95,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
   const out = join(build, "reel.mp4");
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", silent, ...inputs, "-filter_complex", filters.join(";"), "-map", "0:v", "-map", "[out]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out], { stdio: "inherit" });
+  execFileSync("ffmpeg", ["-y", "-v", "error", ...inputs, "-filter_complex", f.join(";"), "-map", "0:v", "-map", "[out]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out], { stdio: "inherit" });
   console.log(`✔ ${out}`);
 }

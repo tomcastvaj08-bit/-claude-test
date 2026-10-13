@@ -5,12 +5,21 @@
   "newsDate": "2026-10-07",
   "title": "Instagram Edits nově podporuje carousely",
   "source": "🎬 Instagram Edits nově podporuje carousely — Novinka ze 7. října. Co se změnilo: Instagram Edits umožňuje vytvářet carousely kombinující fotografie, videa, texty a efekty. Lze využívat uložené fonty, styly i vlastní samolepky. Funkce je dostupná na iOS, Android následuje. Pro klienty: Rychlejší produkce carouselů a jednodušší kombinování statické grafiky s videem. Vyzkoušet: Vytvořit jeden carousel přímo v Edits a porovnat rychlost práce s dosavadním postupem.",
-  "script": "[[intro]]Instagram Edits umí nově carousely! [[mix]]Fotky, videa, texty i efekty. Všechno v jednom příspěvku. [[style]]A navíc tvoje uložené fonty, styly i vlastní samolepky. [[platform]]Zatím na iPhonu, Android je na cestě. [[clients]]Pro klienty to znamená rychlejší carousely a grafiku s videem bez přepínání appek. [[try]]Tak to zkus: jeden carousel přímo v Edits, a změř si, kolik času ušetříš.",
+  "script": "[[intro]][excited] Instagram Edits umí nově carousely! [[mix]]Fotky, videa, texty i efekty — všechno v jednom příspěvku. [[style]]A navíc tvoje uložené fonty, styly i vlastní samolepky. [[platform]]Zatím na iPhonu, Android je na cestě. [[clients]]Pro klienty to znamená rychlejší carousely a grafiku s videem bez přepínání appek. [[try]]Tak to zkus: jeden carousel přímo v Edits… a změř si, kolik času ušetříš.",
   "scenes": [
     {
       "cue": "intro",
       "template": "app",
-      "props": { "name": "Instagram Edits", "glyph": "E", "gradient": ["#833AB4", "#FD1D1D"], "tag": "Novinka", "caption": "teď umí **carousely**" }
+      "props": {
+        "name": "Instagram Edits",
+        "glyph": "E",
+        "gradient": [
+          "#833AB4",
+          "#FD1D1D"
+        ],
+        "tag": "Novinka",
+        "caption": "teď umí **carousely**"
+      }
     },
     {
       "cue": "mix",
@@ -19,10 +28,26 @@
         "app": "Edits · Carousel",
         "mode": "carousel",
         "items": [
-          { "label": "Fotka", "kind": "photo", "at": "Fotky" },
-          { "label": "Video", "kind": "video", "at": "videa" },
-          { "label": "Text", "kind": "text", "at": "texty" },
-          { "label": "Efekt", "kind": "sparkle", "at": "efekty" }
+          {
+            "label": "Fotka",
+            "kind": "photo",
+            "at": "Fotky"
+          },
+          {
+            "label": "Video",
+            "kind": "video",
+            "at": "videa"
+          },
+          {
+            "label": "Text",
+            "kind": "text",
+            "at": "texty"
+          },
+          {
+            "label": "Efekt",
+            "kind": "sparkle",
+            "at": "efekty"
+          }
         ]
       }
     },
@@ -32,9 +57,21 @@
       "props": {
         "title": "Tvoje **značka**",
         "items": [
-          { "text": "Uložené fonty", "icon": "font", "at": "fonty" },
-          { "text": "Styly", "icon": "sparkle", "at": "styly" },
-          { "text": "Vlastní samolepky", "icon": "sticker", "at": "samolepky" }
+          {
+            "text": "Uložené fonty",
+            "icon": "font",
+            "at": "fonty"
+          },
+          {
+            "text": "Styly",
+            "icon": "sparkle",
+            "at": "styly"
+          },
+          {
+            "text": "Vlastní samolepky",
+            "icon": "sticker",
+            "at": "samolepky"
+          }
         ]
       }
     },
@@ -44,8 +81,17 @@
       "props": {
         "title": "Kde to **jede?**",
         "items": [
-          { "text": "iPhone · iOS", "icon": "apple", "at": "iPhonu" },
-          { "text": "Android", "icon": "android", "state": "soon", "at": "Android" }
+          {
+            "text": "iPhone · iOS",
+            "icon": "apple",
+            "at": "iPhonu"
+          },
+          {
+            "text": "Android",
+            "icon": "android",
+            "state": "soon",
+            "at": "Android"
+          }
         ]
       }
     },
@@ -54,8 +100,17 @@
       "template": "versus",
       "props": {
         "title": "Pro **klienty**",
-        "left": { "label": "Dosud", "icon": "clock", "value": "3 appky" },
-        "right": { "label": "Edits", "icon": "check", "value": "1 appka", "at": "rychlejší" },
+        "left": {
+          "label": "Dosud",
+          "icon": "clock",
+          "value": "3 appky"
+        },
+        "right": {
+          "label": "Edits",
+          "icon": "check",
+          "value": "1 appka",
+          "at": "rychlejší"
+        },
         "winner": "right"
       }
     },
@@ -63,10 +118,25 @@
       "cue": "try",
       "template": "cta",
       "props": {
-        "kicker": "VYZKOUŠEJ",
-        "steps": ["Otevři **Edits**", "Poskládej **1 carousel**", "Změř čas vs. dosud"],
-        "stepsAt": ["carousel", "Edits", "změř"]
+        "kicker": "Vyzkoušej",
+        "steps": [
+          "Otevři **Edits**",
+          "Poskládej **1 carousel**",
+          "Změř čas vs. dosud"
+        ],
+        "stepsAt": [
+          "carousel",
+          "Edits",
+          "změř"
+        ]
       }
     }
-  ]
+  ],
+  "voice": {
+    "provider": "elevenlabs-mcp",
+    "model": "eleven_v4",
+    "voiceId": "wNYzYiprejHCPi4voSeA",
+    "flow": "h78qHDgsTdOuGYvSRn22",
+    "generation": "mJK6LstvlfFaz9ynDvc1"
+  }
 }

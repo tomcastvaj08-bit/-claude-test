@@ -1,8 +1,8 @@
 # EFEKTIVE AKTUALITY – generátor Reelsů
 
-Text aktuality (z ChatGPT) → český voiceover (ElevenLabs, s timestampy) → motion grafika v HTML synchronizovaná na slova → MP4 1080×1920.
+Text aktuality (z ChatGPT) → český voiceover (ElevenLabs eleven_v4, hlas Karel) → motion grafika v brandu EFEKTIVE synchronizovaná na slova → vrstvené SFX z ElevenLabs → MP4 1080×1920 s motion blurem.
 
-Každý Reel začíná stejným hookem: Apple kalendář (tmavý), pomalý push-in na dnešní datum v červeném kolečku, odjezd kamery, kolečko „odjede v čase“ zpět na datum novinky (ticky + riser), dopad, ponoření do data → červený přechod do vysvětlující grafiky.
+Každý Reel začíná stejným hookem: Apple kalendář (tmavý), pomalý push-in na dnešní datum v červeném kolečku, odjezd kamery, kolečko „odjede v čase“ zpět na datum novinky (ticky + riser), dopad, ponoření do data → clona do světlé grafiky ve stylu značky. Značka EFEKTIVE je jen v outru.
 
 Návod pro Clauda: [`.claude/skills/efektive-aktuality/SKILL.md`](../.claude/skills/efektive-aktuality/SKILL.md).
 

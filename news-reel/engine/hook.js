@@ -53,7 +53,7 @@ export function buildHook(root, ep, cfg) {
       <div class="cal-dot"></div>
       <div class="cal-dot-num"></div>
     </div>
-    <div class="hook-badge"><span class="hb-brand">${cfg.series.brand}</span><span class="hb-title">${cfg.series.title}</span><span class="hb-no">#${ep.number ?? 1}</span></div>
+    <div class="hook-badge"><span class="hb-dot"></span><span class="hb-title">Aktualita</span><span class="hb-no">${String(ep.number ?? 1).padStart(2, "0")}</span></div>
     <div class="hook-label"><span class="hl-small">NOVINKA ZE DNE</span><span class="hl-big">${news.getUTCDate()}. ${MONTHS_GEN[news.getUTCMonth()]}</span></div>
     <div class="hook-fill"></div>`;
   root.appendChild(layer);
@@ -165,8 +165,10 @@ export function buildHook(root, ep, cfg) {
     const lOut = ease.inCubic(prog(t, T.dive[0] + 0.05, 0.25));
     label.style.opacity = clamp(lIn) * (1 - lOut);
     label.style.transform = `translate(-50%, ${lerp(80, 0, lIn)}px) scale(${lerp(0.9, 1, lIn)})`;
-    // red takes over the frame at the end of the dive
-    fill.style.opacity = ease.inQuad(prog(t, T.dive[0] + T.dive[1] * 0.55, T.dive[1] * 0.45));
+    // iris: brand paper opens from the centre of the date we dive into
+    const iris = ease.inOutExpo(prog(t, T.dive[0] + T.dive[1] * 0.35, T.dive[1] * 0.65 + 0.05));
+    fill.style.clipPath = `circle(${iris * 1150}px at 50% 50%)`;
+    fill.style.opacity = iris > 0 ? 1 : 0;
   }
 
   return {

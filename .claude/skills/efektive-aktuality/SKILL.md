@@ -1,115 +1,94 @@
 ---
 name: efektive-aktuality
-description: Vyrobí vertikální Reel (1080x1920 MP4) série EFEKTIVE AKTUALITY z textu aktualit od ChatGPT – stálý hook s Apple kalendářem (dnešní datum → odjede zpět na datum novinky), český voiceover přes ElevenLabs s timestampy a motion grafiku synchronizovanou na slova. Použij, když uživatel vloží týdenní aktuality ve formátu „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“ nebo řekne „udělej reel / aktualitu / zapni skill aktuality“.
+description: Vyrobí vertikální Reel (1080x1920 MP4) série AKTUALITY ze vstupu od ChatGPT – stálý hook s Apple kalendářem (dnešní datum → odjede zpět na datum novinky), český voiceover přes ElevenLabs eleven_v4 (hlas Karel), motion grafika v brandu EFEKTIVE (Geist, papír/inkoust/modrá/zelená) synchronizovaná na slova, vrstvené zvukové efekty z ElevenLabs a motion blur. Použij, když uživatel vloží týdenní aktuality ve formátu „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“ nebo řekne „udělej reel / aktualitu / zapni skill aktuality“.
 ---
 
-# EFEKTIVE AKTUALITY – automatická výroba Reelsu
+# AKTUALITY – automatická výroba Reelsu
 
-Celý projekt je v `news-reel/` (v kořeni repa). Vše se renderuje lokálně: HTML/JS motion grafika → headless Chromium (každý snímek) → ffmpeg → `episodes/<id>/build/reel.mp4`.
+Projekt: `news-reel/`. Render je lokální: HTML/JS animace → headless Chromium (každý sub-snímek) → ffmpeg (motion blur + mix) → `episodes/<id>/build/reel.mp4`.
 
 ```
 news-reel/
-  config.json            # série: hlas (voiceId!), model, tempo, barvy, hlasitosti
-  engine/                # hook.js (kalendář – NEMĚNIT mezi epizodami), scenes.js (knihovna scén), engine.js, style.css
-  scripts/tts.mjs        # ElevenLabs /with-timestamps -> build/voice.mp3 + build/words.json
-  scripts/render.mjs     # render + mix (voice, riser, ticky, impact, whoosh, volitelně assets/music/bed.mp3)
-  scripts/build.mjs      # tts (pokud chybí) + render
-  scripts/sfx.mjs        # vygeneruje podpisové SFX série do assets/sfx (jednou)
+  config.json              hlas, tempo, fps, motionBlur, hlasitosti
+  engine/hook.js           kalendářový hook – NEMĚNIT (poznávací znamení série)
+  engine/scenes.js         knihovna scén + typografie (letters/revealLetters) + outro
+  engine/engine.js         časová osa, kamera, HUD, titulky, SFX události
+  engine/style.css         brand tokeny a vzhled
+  assets/sfx/el/*.mp3      zvuková knihovna z ElevenLabs (library.json = prompty)
+  assets/sfx/*.wav         syntetické vrstvy (riser, tick) – scripts/sfx.mjs
+  scripts/ingest-voice.mjs voiceover z ElevenLabs konektoru -> build/voice.mp3 + words.json
+  scripts/render.mjs       render (--contact, --stills, --mb, --mux-only)
   episodes/<id>/episode.json
 ```
 
 ## Vstup
-
-Uživatel vloží text z ChatGPT, typicky několik aktualit tohoto tvaru:
-
-```
-🎬 1. Instagram Edits nově podporuje carousely
-Novinka ze 7. října
-Co se změnilo: …
-Pro klienty: …
-Vyzkoušet: …
-```
-
-**Jedna aktualita = jeden Reel.** Když je jich víc, udělej Reel pro každou (nebo pro tu, kterou uživatel vybere). Pořadové číslo epizody (`number`, zobrazí se jako `#N` v hooku) = pořadí aktuality v týdenní sérii (1, 2, 3 …), pokud uživatel neřekne jinak.
+Text od ChatGPT, obvykle několik aktualit (`🎬 1. Titulek / Novinka ze 7. října / Co se změnilo / Pro klienty / Vyzkoušet`). **Jedna aktualita = jeden Reel.** `number` = pořadí aktuality v týdnu (zobrazí se jako „Aktualita 01“).
 
 ## Postup
 
-### 0. Příprava (jen jednou za session)
+### 0. Jednou za session
 ```bash
-cd news-reel && npm install --silent   # playwright (prohlížeč je předinstalovaný)
-node scripts/sfx.mjs                   # jen když assets/sfx/*.wav chybí
+cd news-reel && npm install --silent && node scripts/sfx.mjs
 ```
-ElevenLabs klíč: env `ELEVENLABS_API_KEY` nebo soubor `news-reel/.env` (`ELEVENLABS_API_KEY=...`, je v .gitignore). Když klíč chybí, NEPOUŽÍVEJ jiný hlas potichu – řekni to uživateli. Pro náhled bez klíče jde `--mock` (tichá stopa s odhadnutým časováním).
 
-### 1. Založ epizodu
-`episodes/<YYYY-MM-DD>-<slug>/episode.json` (vzor: `episodes/2026-10-13-instagram-edits/episode.json`):
+### 1. Epizoda – `episodes/<YYYY-MM-DD>-<slug>/episode.json`
+Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den publikace, YYYY-MM-DD), `newsDate` (z „Novinka ze …“), `number`, `title`, `source` (původní text), `script`, `scenes`, `voice` (id generace pro dohledání).
 
-| pole | význam |
-|---|---|
-| `today` | dnešní datum `YYYY-MM-DD` (den publikace – na něm začne kalendář, červeně) |
-| `newsDate` | datum novinky z „Novinka ze …“ (rok doplň podle `today`; když by vyšel v budoucnu, je to loňský rok) |
-| `number` | číslo aktuality v sérii (#1, #2 …) |
-| `title`, `source` | nadpis a původní text z ChatGPT (pro dohledání) |
-| `script` | text voiceoveru s cue značkami `[[jmeno]]` |
-| `scenes` | seznam scén, každá začíná na své `cue` |
-| `tempo` | volitelně přepíše `config.voice.tempo` (zrychlení audia, výchozí 1.15) |
+### 2. Voiceover text
+- Česky, tykání, rychle a úderně, 45–70 slov (≈ 18–24 s). Žádné pozdravy, žádné datum (to je v hooku), **nezmiňuj značku EFEKTIVE** – ta je jen v outru.
+- Struktura: co je nového (1 věta s názvem produktu) → co to umí → dostupnost → co z toho mají klienti → „Tak to zkus: …“ (konkrétní akce).
+- Před každý úsek se změnou obrazu dej cue `[[nazev]]`. 5–7 cue = 5–7 scén po 2,5–4,5 s.
+- eleven_v4 bere audio tagy: `[excited]` na začátek, `…` pro pauzu, — pro krátký beat, VERZÁLKY pro důraz (střídmě). Čísla piš normálně („3×“, „20 %“).
 
-### 2. Napiš voiceover (nejdůležitější krok)
-Pravidla – hlas je **mladý, rychlý, dynamický, česky, tykání**:
-- 45–75 slov → po zrychlení ~18–28 s. Krátké věty. Žádné „Dobrý den“, žádné uvádění data (to dělá hook).
-- Struktura: **co je nového** (1 úderná věta s názvem produktu) → **co to umí** (konkrétní výčet) → **dostupnost/omezení** (pokud v textu) → **co z toho mají klienti** → **vyzkoušej** (konkrétní akce, končí výzvou).
-- Piš foneticky tak, aby to český hlas přečetl dobře: „Meta“, „Advantage plus“ místo „Advantage+“, „iOS“ → „iPhonu“, čísla slovy když jsou krátká, žádné emoji, zkratky rozepiš (AI → „AI“ je OK, vyslovuje se [ej-aj]).
-- Nevymýšlej fakta, která v zadání nejsou. Neříkej „zítra/včera“.
-- Před každý úsek, kde se má změnit obraz, dej cue `[[nazev]]` (bez mezery za `]]` nevadí). První cue je na začátku. Typicky 5–7 cue = 5–7 scén, scéna 2.5–5 s.
-- Pro `eleven_v3` můžeš střídmě použít audio tagy v hranatých závorkách, např. `[excited]` na začátek – do titulků se nedostanou.
+### 3. Voiceover přes ElevenLabs konektor (MCP)
+1. `creative_create_flow` (název „Aktuality #N – téma“).
+2. `creative_generate_speech`: `model_id: "eleven_v4"`, `voice_id: "wNYzYiprejHCPi4voSeA"` (**Karel – Czech Broadcast Reporter, stálý hlas série**), `prompt` = skript BEZ `[[cue]]` značek, `flow_id`. Poll `creative_get_flow_run_status`.
+3. Vyber take (první, pokud uživatel neřekne jinak), stáhni `content_url` (curl) do `build/takes/takeN.mp3`.
+4. `creative_add_flow_asset_node` (generation_id vybraného take) → `creative_transcribe_audio` (`eleven_scribe_v1`, `connect_from` = ten node) → stáhni `words_download_url` do `build/takes/takeN.words.json`.
+5. `node scripts/ingest-voice.mjs episodes/<id> build/takes/takeN.mp3 build/takes/takeN.words.json` → zrychlí (config `tempo` 1.1), spočítá časy cue a slov.
+(Alternativa s API klíčem: `node scripts/tts.mjs episodes/<id>`.)
 
-### 3. Vygeneruj voiceover
-```bash
-node scripts/tts.mjs episodes/<id>
-```
-Výstup: `build/voice.mp3` (zrychlený o `tempo`, oříznutý začátek) a `build/words.json` (`words[]` s `start/end` v sekundách, `cues{}` časy cue značek). **Přečti si `words.json`** – podle délky slov a mezer ladíš scény. Když je výsledek moc dlouhý (> 30 s), zkrať skript a vygeneruj znovu.
-
-Fallback bez ElevenLabs API: Higgsfield MCP `generate_audio` s `model: "text2speech_v2"`, `variant: "elevenlabs"` (stáhni mp3 do `build/voice_raw.mp3`) → `node scripts/tts.mjs episodes/<id> --from-file episodes/<id>/build/voice_raw.mp3` (časování se odhadne). Před placenou generací se zeptej.
-
-### 4. Navrhni motion grafiku (scény)
-Každá scéna: `{ "cue": "<jmeno>", "template": "<sablona>", "props": {…} }`. Scéna trvá od své cue do další. Časování prvků uvnitř scény přes `at`: číslo (sekundy od začátku scény), název cue, nebo **slovo ze skriptu** (první slovo ve scéně, které tím začíná, bez diakritiky/velikosti) – tak se prvky trefují přesně do řeči. `**slovo**` v textech = zvýraznění akcentní červenou.
+### 4. Scény (motion design)
+Scéna: `{ "cue", "template", "props" }`, trvá do další cue. Časování prvků přes `at` = číslo (s od začátku scény) | název cue | **slovo ze skriptu** (první slovo ve scéně, které tak začíná). V textech: `**slovo**` = modrá, `__slovo__` = zelená, `~~slovo~~` = obrysové písmo.
 
 | šablona | kdy | props |
 |---|---|---|
-| `app` | představení produktu/appky | `name, glyph, gradient:[c1,c2], tag, caption` |
-| `title` | silné tvrzení, kinetická typografie | `kicker, lines:[…], sub, subAt` |
-| `phone` | ukázka v aplikaci, carousel, feed | `app, mode:"carousel"\|"editor", title, items:[{label, kind, color, at}]` |
-| `transform` | A → B (obrázek → video, brief → reklama) | `from:{label,kind}, to:{label,kind}, toAt, caption` |
-| `multiply` | 1 vstup → více variant | `title, source:{label,kind}, variants:[{label, icon, at}], caption` |
-| `checklist` | výčet funkcí / dostupnost | `title, items:[{text, icon, state:"yes"\|"soon", at}]` |
-| `versus` | srovnání dřív/teď, statická/video | `title, left:{label,icon,value}, right:{label,icon,value,at}, winner` |
+| `app` | představení produktu | `name, glyph, gradient:[c1,c2], tag, caption` |
+| `title` | silné tvrzení | `kicker, lines:[…], sub, subAt` |
+| `phone` | ukázka v aplikaci / karusel | `app, title, items:[{label, kind, color, at}]` |
+| `transform` | A → B (obrázek → video) | `from:{label,kind}, to:{label,kind}, toAt, caption` |
+| `multiply` | 1 vstup → varianty | `title, source:{label,kind}, variants:[{label, icon, at}], caption` |
+| `checklist` | funkce / dostupnost | `title, items:[{text, icon, state:"yes"\|"soon", at}]` |
+| `versus` | dřív vs. teď | `title, left:{label,icon,value,amount}, right:{…, at}, winner` |
 | `stat` | velké číslo | `value, from, suffix, label, decimals` |
-| `cta` | „Vyzkoušej“ – vždy poslední scéna | `kicker, text, steps:[…], stepsAt:[…], handle` |
-| `custom` | cokoliv, co knihovna neumí | `html, css, update` (tělo funkce `(t, dur, el, lib, ctx)`; `lib` má `ease, spring, lerp, prog, clamp, appleEase, icon`) |
+| `cta` | „Vyzkoušej“ – vždy poslední | `kicker, text, steps:[…], stepsAt:[…]` |
+| `custom` | cokoliv dalšího | `html, css, update` – tělo funkce `(t, dur, el, lib, ctx)`; `lib` má `brandOut, brandInOut, prog, lerp, clamp, letters, revealLetters, icon`; zvuk přes `ctx.sfx(name, t, gainDb)` |
 
-Ikony (`kind`/`icon`): `photo video play text sound clock flag hook sparkle check sticker font chart ai apple android`.
+Ikony: `photo video play text sound clock sparkle check sticker font chart ai apple android layers arrow hook flag`.
 
-Zásady designu: jedna myšlenka na scénu, max ~6 slov velkého textu, vizuál ukazuje to, co hlas právě říká (ne opakuje titulky doslova). Obsah drž v pásmu y 300–1260 px (nahoře je odznak série, dole od 1330 titulky, pod 1500 UI Instagramu). Střídej šablony – dvě stejné za sebou jen když jde o pokračování. Pro nové typy obsahu napiš `custom` scénu; když se osvědčí, přesuň ji jako novou šablonu do `engine/scenes.js`.
+**Brand (z webu EFEKTIVE):** papír `#f2f4f7`, inkoust `#0a0d14`, modrá `#1f4dff`, zelená `#13b97a`, linky `#d6dce4`; Geist 650 s prostrkáním −0.055em, Geist Mono pro popisky (VERZÁLKY, +0.04em). Na obrazovce max 2 akcentní barvy. Bílé karty s jemným stínem, tenké 3px linky.
 
-**Hook (`engine/hook.js`) a zvukový podpis neměň** – je to poznávací znamení série. Mění se jen data (`today`, `newsDate`) a `number`.
+**Pohybová pravidla (aby to vypadalo jako z After Effects, ne „AI slop“):**
+- Jen dvě křivky: `brandOut` (expo-out) na příchody, `brandInOut` na přesuny. Nic lineárního, žádné poskakování ani pružiny v těle videa.
+- Text vždy po písmenech: tenký + rozmazaný + pootočený → tučný + ostrý (`revealLetters`).
+- Linky se kreslí (trim path), karty vyjíždějí 60–140 px a dosedají z mírného 3D náklonu.
+- Všechno se překrývá (stagger 30–80 ms), další prvek startuje dřív, než předchozí doběhne.
+- Jedna myšlenka na scénu, max ~6 slov velkým písmem. Obraz ukazuje, ne opakuje titulky.
+- Obsah v pásmu y 300–1280 px (nahoře HUD, od 1340 titulky, pod 1550 UI Instagramu).
 
-### 5. Kontrola před renderem
+### 5. Kontrola
 ```bash
-node scripts/render.mjs episodes/<id> --contact      # build/contact.png – snímek každou sekundu
-node scripts/render.mjs episodes/<id> --stills 5.2,9.8   # konkrétní časy
+node scripts/render.mjs episodes/<id> --contact          # build/contact.png
+node scripts/render.mjs episodes/<id> --stills 6.2,9.8
 ```
-Prohlédni `contact.png` (Read). Hledej: přetékající/oříznutý text, překryv s titulky, prázdné scény, prvky, co se objeví až po odeznění slova. Oprav `episode.json` a zopakuj.
+Prohlédni (Read): přetečení textu, kolize s titulky, prázdná místa, prvky, co přijdou po slově. Oprav a opakuj.
 
-### 6. Finální render
+### 6. Zvuk
+SFX se skládají automaticky: hook (swell, rewind, ticky, riser, impact, dive, shimmer), každý střih (swish), prvky scén (pop, swipe, tick, bar_rise) a outro (logo sting) → **jedna stopa** `build/sfx_stem.wav` (plán v `build/sfx_plan.json`). Po prohlédnutí contact sheetu zvaž extra vrstvy specifické pro epizodu: vygeneruj je přes `creative_generate_in_flow` (`node_type: "sfx"`, `model_id: "eleven_text_to_sound_v2"`, `generations_count: 1`, prompt = jeden konkrétní zvuk), ulož do `assets/sfx/el/<jmeno>.mp3`, zapiš do `library.json` a zavolej je přes `ctx.sfx` (v `custom` scéně) – nebo je přidej do knihovny pro další epizody.
+
+### 7. Finální render
 ```bash
-node scripts/render.mjs episodes/<id>                # ~1 min na 25 s videa
-node scripts/render.mjs episodes/<id> --mux-only     # jen přemíchat zvuk (nový voiceover se stejnou délkou / jiné hlasitosti)
+node scripts/render.mjs episodes/<id>             # motion blur 4× (config.video.motionBlur), ~4–6 min
+node scripts/render.mjs episodes/<id> --mux-only  # jen přemíchat zvuk
 ```
-Výstup `episodes/<id>/build/reel.mp4` (H.264, AAC, 30 fps). Pošli ho uživateli přes `SendUserFile` a připiš: text voiceoveru, délku, seznam scén. `build/` se necommituje; commitni `episode.json` (+ případné nové šablony).
-
-## Jednorázové nastavení série (dělá se s uživatelem)
-- **Hlas:** `node scripts/tts.mjs --voices` vypíše hlasy z účtu. Uživatel vybere JEDEN hlas → zapiš `voiceId` + `voiceName` do `config.json`. Pak se už nemění.
-- **Hookový slogan:** `node scripts/tts.mjs --hook` vygeneruje `assets/voice/hook.mp3` („Efektive aktuality!“, text v `config.voice.hookLine`) – přimíchá se do každého intra. Commitni ho.
-- **Hudba:** vlastní podkres jako `assets/music/bed.mp3` (automaticky se ztlumí pod hlasem).
-- **Rychlost:** `config.voice.tempo` (1.15 = +15 %).
-- **Vlastní SFX:** nahraď `assets/sfx/{riser,tick,impact,whoosh}.wav`.
+Pošli `build/reel.mp4` přes `SendUserFile` + text voiceoveru, délku a seznam scén. Commitni `episode.json` (+ nové šablony/zvuky); `build/` se necommituje.
