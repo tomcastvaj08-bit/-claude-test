@@ -30,9 +30,14 @@ async function main() {
   // ---------- background: paper, fine grid, grain
   const bg = document.createElement("div");
   bg.className = "bg";
-  bg.innerHTML = `<div class="grid"></div><div class="glow g1"></div><div class="glow g2"></div>`;
+  bg.innerHTML = `<div class="hair hv"></div><div class="hair hh"></div><div class="hair hh2"></div>
+    <div class="blob bb"></div><div class="blob bg2"></div>
+    <div class="cross"><i></i><i></i></div>
+    <div class="sphere blue s1"></div><div class="sphere green s2"></div>`;
   stage.appendChild(bg);
-  const glows = [...bg.querySelectorAll(".glow")];
+  const glows = [...bg.querySelectorAll(".blob")];
+  const spheres = [...bg.querySelectorAll(".sphere")];
+  const cross = bg.querySelector(".cross");
 
   // ---------- hook
   const hookRoot = document.createElement("div");
@@ -54,11 +59,12 @@ async function main() {
   const news = parseDate(ep.newsDate);
   const hud = document.createElement("div");
   hud.className = "hud";
-  hud.innerHTML = `<div class="hud-l"><i></i><span>Aktualita ${String(ep.number ?? 1).padStart(2, "0")}</span></div>
-    <div class="hud-r">${news.getUTCDate()}. ${news.getUTCMonth() + 1}. ${news.getUTCFullYear()}</div>
+  const MG = ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"];
+  hud.innerHTML = `<div class="hud-l">Aktualita ${String(ep.number ?? 1).padStart(2, "0")} · ${news.getUTCDate()}. ${MG[news.getUTCMonth()]}</div>
+    <div class="hud-r"><span class="hud-n">01</span> · ${String((ep.scenes ?? []).length).padStart(2, "0")}</div>
     <div class="hud-bar"><b></b></div>`;
   stage.appendChild(hud);
-  const hudBar = hud.querySelector(".hud-bar b");
+  const hudBar = hud.querySelector(".hud-bar b"), hudN = hud.querySelector(".hud-n");
 
   // ---------- scenes
   const words = voice.words.filter((w) => !/^\[.*\]$/.test(w.text) && /[\p{L}\p{N}]/u.test(w.text));
@@ -149,6 +155,15 @@ async function main() {
       const a = t * (0.18 + i * 0.05) + i * 2.4;
       g.style.transform = `translate(${Math.cos(a) * 120}px, ${Math.sin(a * 1.2) * 160}px)`;
     });
+    // brand spheres: fly in after the iris, then float with parallax against the camera
+    spheres.forEach((sp, i) => {
+      const e = brandOut(prog(t, B + 0.1 + i * 0.15, 1.6));
+      const fx = Math.sin(t * (0.6 + i * 0.2) + i) * 18, fy = Math.cos(t * (0.5 + i * 0.25) + i * 2) * 22;
+      sp.style.transform = `translate(${(1 - e) * (i ? -420 : 420) + fx}px, ${(1 - e) * (i ? 300 : -300) + fy}px) scale(${lerp(0.3, 1, e)})`;
+    });
+    const ce = brandInOut(prog(t, B + 0.4, 1.2));
+    cross.style.opacity = ce;
+    cross.style.transform = `scale(${lerp(0.6, 1, ce)}) rotate(${(1 - ce) * -45}deg)`;
 
     hook.update(t);
 
@@ -163,6 +178,9 @@ async function main() {
     hud.style.opacity = hudIn * (1 - hudOut);
     hud.style.transform = `translateY(${(1 - hudIn) * -30}px)`;
     hudBar.style.transform = `scaleX(${clamp((t - B) / (outroStart - B))})`;
+    let cur = 0;
+    scenes.forEach((s, i) => (t >= s.start - 0.1 ? (cur = i) : 0));
+    hudN.textContent = String(cur + 1).padStart(2, "0");
 
     for (const s of scenes) {
       const local = t - s.start, dur = s.end - s.start;
@@ -215,8 +233,9 @@ async function main() {
     estimated: !!voice.estimated,
     sfx: sfx.sort((a, b) => a.at - b.at),
   };
-  await document.fonts.load('650 100px "Geist"');
-  await document.fonts.load('500 100px "Geist Mono"');
+  await document.fonts.load('800 100px "Inter"');
+  await document.fonts.load('400 40px "Inter"');
+  await document.fonts.load('800 40px "Inter"', "ěščřžýáíéůú");
   await document.fonts.ready;
   window.__setTime(0);
   document.body.dataset.ready = "1";

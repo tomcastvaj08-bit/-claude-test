@@ -1,6 +1,6 @@
 ---
 name: efektive-aktuality
-description: Vyrobí vertikální Reel (1080x1920 MP4) série AKTUALITY ze vstupu od ChatGPT – stálý hook s Apple kalendářem (dnešní datum → odjede zpět na datum novinky), český voiceover přes ElevenLabs eleven_v4 (hlas Karel), motion grafika v brandu EFEKTIVE (Geist, papír/inkoust/modrá/zelená) synchronizovaná na slova, vrstvené zvukové efekty z ElevenLabs a motion blur. Použij, když uživatel vloží týdenní aktuality ve formátu „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“ nebo řekne „udělej reel / aktualitu / zapni skill aktuality“.
+description: Vyrobí vertikální Reel (1080x1920 MP4) série AKTUALITY ze vstupu od ChatGPT – stálý hook s Apple kalendářem (dnešní datum → odjede zpět na datum novinky), český voiceover přes ElevenLabs eleven_v4 (hlas Karel), motion grafika v brandu EFEKTIVE podle firemní prezentace (Inter, chladně bílá, grafit, modrá + listová zelená, lesklé koule) synchronizovaná na slova, vrstvené zvukové efekty z ElevenLabs a motion blur. Použij, když uživatel vloží týdenní aktuality ve formátu „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“ nebo řekne „udělej reel / aktualitu / zapni skill aktuality“.
 ---
 
 # AKTUALITY – automatická výroba Reelsu
@@ -66,7 +66,13 @@ Scéna: `{ "cue", "template", "props" }`, trvá do další cue. Časování prvk
 
 Ikony: `photo video play text sound clock sparkle check sticker font chart ai apple android layers arrow hook flag`.
 
-**Brand (z webu EFEKTIVE):** papír `#f2f4f7`, inkoust `#0a0d14`, modrá `#1f4dff`, zelená `#13b97a`, linky `#d6dce4`; Geist 650 s prostrkáním −0.055em, Geist Mono pro popisky (VERZÁLKY, +0.04em). Na obrazovce max 2 akcentní barvy. Bílé karty s jemným stínem, tenké 3px linky.
+**Brand (podle firemní prezentace EFEKTIVE – zdroj pravdy):**
+- Písmo **Inter** (variabilní, opsz). Nadpisy 800, prostrkání −0.045em, těsné řádkování. Tělo textu 400–500 šedé `#5b6272`.
+- Nadpisky (kicker): zelená `#4ea51f`, VERZÁLKY, tučně, prostrkání +0.2em, formát „TÉMA · PODTÉMA“ (např. „KLING · EDIT MÓD“). Alternativně modrá.
+- Barvy: pozadí `#f6f7fb`, karty bílé s 2px linkou `#e4e7ee` a radiusem ~40px, grafit `#252a35` (ne černá), modrá `#2f6bed` (→ `#5b8cf5` gradient), limetková `#7fd858`, světle modrá výplň `#eef3fe`, světle zelená výplň `#f0f9e8`.
+- Zvýrazněná karta = modrý (nebo zelený) 3px rámeček + světlá výplň (`.card.hl-blue` / `.hl-green`). Šipky světle modré `#9bb8f8`.
+- Dekor: lesklé 3D koule (modrá, zelená) s měkkou září, rozmazané barevné skvrny, vlasové linky rastru, modrý zaměřovací kříž s gradientem. Max 2 akcenty na obrazovce.
+- **Značka „efektive.cz“** (modrá + zelená „.cz“ v pilulce) se ukazuje JEN v outru. Ve voiceoveru ani ve scénách ji nezmiňuj.
 
 **Pohybová pravidla (aby to vypadalo jako z After Effects, ne „AI slop“):**
 - Jen dvě křivky: `brandOut` (expo-out) na příchody, `brandInOut` na přesuny. Nic lineárního, žádné poskakování ani pružiny v těle videa.

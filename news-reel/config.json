@@ -3,8 +3,9 @@
     "brand": "EFEKTIVE",
     "title": "AKTUALITY",
     "handle": "@efektive",
-    "accent": "#FF3B30",
-    "locale": "cs-CZ"
+    "accent": "#2f6bed",
+    "locale": "cs-CZ",
+    "outroKicker": "Další aktuality každý týden"
   },
   "video": {
     "width": 1080,

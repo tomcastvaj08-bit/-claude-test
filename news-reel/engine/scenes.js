@@ -43,7 +43,7 @@ export function letters(text = "", cls = "") {
   }
   return `<div class="type ${cls}">${html}</div>`;
 }
-export function revealLetters(root, t, start = 0, { stagger = 0.028, dur = 0.9, from = 200, to = 650 } = {}) {
+export function revealLetters(root, t, start = 0, { stagger = 0.028, dur = 0.9, from = 250, to = 800 } = {}) {
   root.querySelectorAll(".ch").forEach((c, i) => {
     const p = brandOut(prog(t, start + i * stagger, dur));
     const q = 1 - p;
@@ -93,8 +93,8 @@ const ICONS = {
 };
 export const icon = (name, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 48 48">${ICONS[name] ?? ICONS.sparkle}</svg>`;
 
-// Small mono label with an index, e.g. "01 — Fotka"
-const tag = (txt, color = "blue") => `<div class="tag"><i class="${color}"></i><span>${esc(txt)}</span></div>`;
+// Kicker label (brand: green, uppercase, wide tracking) – e.g. "KLING · EDIT MÓD"
+const tag = (txt, color = "green") => `<div class="tag ${color}">${esc(txt)}</div>`;
 
 // ---------------------------------------------------------------------------
 export const templates = {
@@ -124,7 +124,7 @@ export const templates = {
         <div class="tile-shadow"></div>
         <div class="tile" style="background:linear-gradient(140deg, ${c1}, ${c2})"><span>${esc(p.glyph ?? p.name?.[0] ?? "A")}</span><b class="shine"></b></div>
       </div>
-      ${p.tag ? tag(p.tag, "green") : ""}
+      ${p.tag ? tag(p.tag) : ""}
       ${letters(p.name ?? "", "lg")}
       ${p.caption ? letters(p.caption, "md muted") : ""}
     </div>`));
@@ -149,7 +149,7 @@ export const templates = {
   // Phone with a carousel being built. props: { app, title, items: [{label, kind, color, at}] }
   phone(el, p, ctx) {
     const items = p.items ?? [];
-    const pal = ["#1f4dff", "#13b97a", "#0a0d14", "#e6eaf0"];
+    const pal = ["#2f6bed", "#7fd858", "#252a35", "#e6eaf0"];
     el.appendChild(h(`<div class="sc sc-phone">
       ${p.title ? letters(p.title, "md") : ""}
       <div class="ph3d"><div class="phone">
@@ -199,12 +199,12 @@ export const templates = {
   transform(el, p, ctx) {
     el.appendChild(h(`<div class="sc sc-transform">
       <div class="card tf a">${icon(p.from?.kind ?? "photo")}<div class="tf-meta"><span>Vstup</span><b>${esc(p.from?.label ?? "")}</b></div></div>
-      <svg class="tf-link" viewBox="0 0 20 220"><line pathLength="1" x1="10" y1="0" x2="10" y2="220"/></svg>
+      <svg class="tf-link" viewBox="0 0 60 200"><path pathLength="1" d="M30 0 V150"/><path class="head" d="M8 140 L30 196 L52 140 Z"/></svg>
       <div class="tf-chip">${icon("ai")}<span>AI</span></div>
-      <div class="card tf b blue">${icon(p.to?.kind ?? "video")}<div class="tf-meta"><span>Výstup</span><b>${esc(p.to?.label ?? "")}</b></div><div class="tf-bar"><i></i></div></div>
+      <div class="card tf b hl-blue">${icon(p.to?.kind ?? "video")}<div class="tf-meta"><span>Výstup</span><b>${esc(p.to?.label ?? "")}</b></div><div class="tf-bar"><i></i></div></div>
       ${p.caption ? letters(p.caption, "md muted") : ""}
     </div>`));
-    const a = el.querySelector(".tf.a"), b = el.querySelector(".tf.b"), link = el.querySelector(".tf-link line"), chip = el.querySelector(".tf-chip");
+    const a = el.querySelector(".tf.a"), b = el.querySelector(".tf.b"), link = el.querySelector(".tf-link path"), head = el.querySelector(".tf-link .head"), chip = el.querySelector(".tf-chip");
     const bar = el.querySelector(".tf-bar i"), cap = el.querySelector(".type");
     const tB = ctx.at(p.toAt, 1.1);
     ctx.sfx("ui_pop", 0.05, -4);
@@ -212,7 +212,8 @@ export const templates = {
     ctx.sfx("ui_pop", tB, -2);
     return (t, dur) => {
       rise(a, t, 0, { y: 120, tilt: 30 });
-      draw(link, brandInOut(prog(t, tB - 0.6, 0.6)));
+      draw(link, brandInOut(prog(t, tB - 0.6, 0.5)));
+      head.style.opacity = brandOut(prog(t, tB - 0.15, 0.3));
       rise(chip, t, tB - 0.4, { y: 20, scale: 0.6 });
       rise(b, t, tB, { y: 140, tilt: 30 });
       bar.style.transform = `scaleX(${brandInOut(prog(t, tB + 0.3, Math.max(0.6, dur - tB - 0.5)))})`;
@@ -372,22 +373,25 @@ export const templates = {
   },
 };
 
-// Outro end card (only place the brand name appears).
+// Outro end card – the only place the brand appears: efektive.cz pill + the two brand spheres.
 export function buildOutro(stage, cfg) {
   const el = h(`<div class="outro">
-    <div class="o-mark">${letters(cfg.series.brand, "mark")}<span class="duo"><i></i><i></i></span></div>
-    <div class="o-handle">${esc(cfg.series.handle)}</div>
+    <div class="sphere blue o-s1"></div><div class="sphere green o-s2"></div>
+    <div class="o-kicker">${esc(cfg.series.outroKicker ?? "Další aktuality každý týden")}</div>
+    <div class="o-pill"><span class="b">efektive</span><span class="g">.cz</span></div>
   </div>`);
   stage.appendChild(el);
-  const mark = el.querySelector(".type"), dots = el.querySelectorAll(".duo i"), handle = el.querySelector(".o-handle");
+  const pill = el.querySelector(".o-pill"), kick = el.querySelector(".o-kicker"), s1 = el.querySelector(".o-s1"), s2 = el.querySelector(".o-s2");
   return (t) => {
-    revealLetters(mark, t, 0.1, { stagger: 0.045, from: 200, to: 800 });
-    dots.forEach((d, i) => {
-      const s = brandOut(prog(t, 0.55 + i * 0.08, 0.6));
-      d.style.transform = `scale(${s})`;
-    });
-    const hp = brandOut(prog(t, 0.8, 0.8));
-    handle.style.opacity = hp;
-    handle.style.transform = `translateY(${(1 - hp) * 20}px)`;
+    const p = brandOut(prog(t, 0.05, 1.0));
+    pill.style.transform = `translateY(${(1 - p) * 80}px) scale(${lerp(0.9, 1, p)})`;
+    pill.style.opacity = clamp(p * 2);
+    pill.style.filter = p < 0.99 ? `blur(${(1 - p) * 10}px)` : "none";
+    const k = brandOut(prog(t, 0.35, 0.8));
+    kick.style.opacity = k;
+    kick.style.transform = `translateY(${(1 - k) * 24}px)`;
+    const a = brandOut(prog(t, 0, 1.4)), b = brandOut(prog(t, 0.15, 1.4));
+    s1.style.transform = `translate(${(1 - a) * 500}px, ${(1 - a) * -300 + Math.sin(t * 1.4) * 14}px) scale(${lerp(0.4, 1, a)})`;
+    s2.style.transform = `translate(${(1 - b) * -500}px, ${(1 - b) * 300 + Math.cos(t * 1.2) * 14}px) scale(${lerp(0.4, 1, b)})`;
   };
 }
