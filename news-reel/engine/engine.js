@@ -2,9 +2,11 @@
 // The renderer calls window.__setTime(t) for every (sub)frame and screenshots the page.
 import { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier } from "./ease.js";
 import { buildHook, parseDate } from "./hook.js";
-import { templates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
+import { templates as baseTemplates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
+import { proTemplates, kineticWords, animateWords, snapOut } from "./scenes-pro.js";
+const templates = { ...baseTemplates, ...proTemplates };
 
-const lib = { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, icon, letters, revealLetters };
+const lib = { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, icon, letters, revealLetters, kineticWords, animateWords, snapOut };
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9%]/g, "");
 const OUTRO = 2.3; // seconds of brand end card after the voice
 
@@ -182,19 +184,32 @@ async function main() {
     scenes.forEach((s, i) => (t >= s.start - 0.1 ? (cur = i) : 0));
     hudN.textContent = String(cur + 1).padStart(2, "0");
 
-    for (const s of scenes) {
+    scenes.forEach((s, si) => {
       const local = t - s.start, dur = s.end - s.start;
       const OUT = 0.32;
       const vis = local >= -0.02 && local < dur + OUT;
       s.el.style.display = vis ? "block" : "none";
-      if (!vis) continue;
-      // push transition: outgoing scene lifts, thins and blurs out while the next one is already writing in
-      const o = brandInOut(prog(local, dur - 0.04, OUT));
-      s.el.style.opacity = 1 - o;
-      s.el.style.transform = `translateY(${-o * 180}px) scale(${1 - o * 0.04})`;
-      s.el.style.filter = o > 0.01 ? `blur(${o * 18}px)` : "none";
+      if (!vis) return;
+      // transitions (see docs/motion-reference.md): the NEXT scene's type decides how this one leaves,
+      // this scene's own type decides how it arrives. push = lift+blur, whip = horizontal blur slide,
+      // zoom = dive through (scale up + blur), blur = soft focus crossfade.
+      const outType = scenes[si + 1]?.def.transition ?? "push";
+      const inType = si > 0 ? s.def.transition ?? "push" : "none";
+      const o = (outType === "whip" ? ease.inExpo : brandInOut)(prog(local, dur - 0.04, outType === "whip" ? 0.24 : OUT));
+      const i = snapOut(prog(local, -0.02, inType === "whip" ? 0.45 : 0.6));
+      let tx = 0, ty = 0, sc = 1, bl = 0, op = 1;
+      if (outType === "push") { ty -= o * 180; sc *= 1 - o * 0.04; bl += o * 18; op *= 1 - o; }
+      if (outType === "whip") { tx -= o * 700; bl += o * 34; op *= 1 - o * 0.9; }
+      if (outType === "zoom") { sc *= 1 + o * 1.4; bl += o * 26; op *= 1 - o; }
+      if (outType === "blur") { bl += o * 30; op *= 1 - o; }
+      if (inType === "whip") { tx += (1 - i) * 620; bl += (1 - i) * 30; op *= clamp(i * 3); }
+      if (inType === "zoom") { sc *= lerp(0.72, 1, i); bl += (1 - i) * 22; op *= clamp(i * 2); }
+      if (inType === "blur") { bl += (1 - i) * 26; op *= clamp(i * 1.5); }
+      s.el.style.opacity = op;
+      s.el.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`;
+      s.el.style.filter = bl > 0.2 ? `blur(${bl}px)` : "none";
       s.update(Math.min(local, dur + OUT), dur);
-    }
+    });
 
     outroEl.style.display = t >= outroStart - 0.3 ? "flex" : "none";
     if (t >= outroStart - 0.3) {

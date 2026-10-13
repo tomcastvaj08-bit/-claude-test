@@ -17,59 +17,66 @@
           "#833AB4",
           "#FD1D1D"
         ],
-        "tag": "Novinka",
+        "tag": "Instagram · Novinka",
         "caption": "teď umí **carousely**"
       }
     },
     {
       "cue": "mix",
-      "template": "phone",
+      "template": "fan",
+      "transition": "whip",
       "props": {
-        "app": "Edits · Carousel",
-        "mode": "carousel",
+        "title": "Vše v **jednom** příspěvku",
         "items": [
           {
-            "label": "Fotka",
-            "kind": "photo",
-            "at": "Fotky"
+            "title": "01",
+            "value": "Fotky",
+            "tone": "blue"
           },
           {
-            "label": "Video",
-            "kind": "video",
-            "at": "videa"
+            "title": "02",
+            "value": "Videa",
+            "tone": "green"
           },
           {
-            "label": "Text",
-            "kind": "text",
-            "at": "texty"
+            "title": "03",
+            "value": "Texty",
+            "tone": "ink"
           },
           {
-            "label": "Efekt",
-            "kind": "sparkle",
-            "at": "efekty"
+            "title": "04",
+            "value": "Efekty",
+            "tone": "paper"
           }
         ]
       }
     },
     {
       "cue": "style",
-      "template": "checklist",
+      "template": "stack",
+      "transition": "blur",
       "props": {
-        "title": "Tvoje **značka**",
+        "title": "Tvoje **značka** v Edits",
         "items": [
           {
-            "text": "Uložené fonty",
+            "title": "Uložené fonty",
+            "sub": "Tvoje typografie",
             "icon": "font",
+            "tone": "blue",
             "at": "fonty"
           },
           {
-            "text": "Styly",
+            "title": "Styly",
+            "sub": "Barvy a efekty",
             "icon": "sparkle",
+            "tone": "green",
             "at": "styly"
           },
           {
-            "text": "Vlastní samolepky",
+            "title": "Vlastní samolepky",
+            "sub": "Logo, prvky",
             "icon": "sticker",
+            "tone": "neutral",
             "at": "samolepky"
           }
         ]
@@ -78,6 +85,7 @@
     {
       "cue": "platform",
       "template": "checklist",
+      "transition": "whip",
       "props": {
         "title": "Kde to **jede?**",
         "items": [
@@ -97,26 +105,18 @@
     },
     {
       "cue": "clients",
-      "template": "versus",
+      "template": "words",
+      "transition": "zoom",
       "props": {
-        "title": "Pro **klienty**",
-        "left": {
-          "label": "Dosud",
-          "icon": "clock",
-          "value": "3 appky"
-        },
-        "right": {
-          "label": "Edits",
-          "icon": "check",
-          "value": "1 appka",
-          "at": "rychlejší"
-        },
-        "winner": "right"
+        "kicker": "Pro klienty",
+        "text": "Rychlejší **carousely**, grafika i video bez přepínání appek.",
+        "size": "lg"
       }
     },
     {
       "cue": "try",
       "template": "cta",
+      "transition": "whip",
       "props": {
         "kicker": "Vyzkoušej",
         "steps": [

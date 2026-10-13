@@ -1,0 +1,16 @@
+{
+  "id": "_showcase",
+  "number": 0,
+  "today": "2026-10-13",
+  "newsDate": "2026-10-06",
+  "title": "Ukázka pohybového slovníku",
+  "script": "[[a]]Tohle všechno teď zvládne jedna AI. [[b]]Stačí napsat jeden prompt a hotovo. [[c]]Úkoly, nápady i schůzky na jednom místě. [[d]]Propojíš Instagram, Facebook i Messenger. [[e]]Z jedné kreativy hned čtyři varianty. [[f]]Všechno se točí kolem tvého obsahu.",
+  "scenes": [
+    { "cue": "a", "template": "words", "props": { "kicker": "Meta · Advantage+", "text": "Tohle všechno teď zvládne **jedna AI**." } },
+    { "cue": "b", "template": "prompt", "transition": "whip", "props": { "before": "Stačí napsat", "typed": "udělej z banneru video…", "after": "a **hotovo**", "typeAt": "prompt" } },
+    { "cue": "c", "template": "stack", "transition": "blur", "props": { "title": "Na **jednom** místě", "items": [ { "title": "Schůzka s klientem", "sub": "Dnes v 8:00", "icon": "check", "tone": "red", "at": "Úkoly" }, { "title": "Nápady na kampaň", "sub": "Kompletní přehled", "icon": "layers", "tone": "blue", "at": "nápady" }, { "title": "Obsahový plán", "sub": "Rozpracováno", "icon": "sparkle", "tone": "green", "at": "schůzky" } ] } },
+    { "cue": "d", "template": "connect", "transition": "zoom", "props": { "items": [ { "icon": "photo", "label": "Instagram", "at": "Instagram" }, { "icon": "chart", "label": "Facebook", "at": "Facebook" }, { "icon": "text", "label": "Messenger", "at": "Messenger" } ] } },
+    { "cue": "e", "template": "fan", "transition": "whip", "props": { "title": "**4** varianty z jedné", "items": [ { "title": "Hook", "value": "A" }, { "title": "Délka", "value": "B" }, { "title": "Zvuk", "value": "C" }, { "title": "Závěr", "value": "D" } ] } },
+    { "cue": "f", "template": "orbit", "transition": "blur", "props": { "text": "Kolem **tvého** obsahu", "items": [ { "icon": "photo" }, { "icon": "video" }, { "icon": "text" }, { "icon": "sound" }, { "icon": "chart" }, { "icon": "sparkle" }, { "icon": "layers" }, { "icon": "font" } ] } }
+  ]
+}

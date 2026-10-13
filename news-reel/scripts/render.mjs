@@ -156,7 +156,7 @@ function mixAndMux(silent, meta) {
     f.push(`[3:a]aresample=48000,aformat=channel_layouts=stereo,volume=${A.musicGainDb}dB,afade=t=out:st=${Math.max(0, meta.duration - 1.2)}:d=1.2,atrim=0:${meta.duration}[m0]`, `[m0][vk]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=350[m]`);
     mix = "[v][s][m]";
   }
-  f.push(`${mix}amix=inputs=${music ? 3 : 2}:normalize=0:duration=longest,alimiter=limit=0.95,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
+  f.push(`${mix}amix=inputs=${music ? 3 : 2}:normalize=0:duration=longest,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
   const out = join(build, "reel.mp4");
   execFileSync("ffmpeg", ["-y", "-v", "error", ...inputs, "-filter_complex", f.join(";"), "-map", "0:v", "-map", "[out]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out], { stdio: "inherit" });
   console.log(`✔ ${out}`);

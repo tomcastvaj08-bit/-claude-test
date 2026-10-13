@@ -51,18 +51,29 @@ Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den pub
 ### 4. Scény (motion design)
 Scéna: `{ "cue", "template", "props" }`, trvá do další cue. Časování prvků přes `at` = číslo (s od začátku scény) | název cue | **slovo ze skriptu** (první slovo ve scéně, které tak začíná). V textech: `**slovo**` = modrá, `__slovo__` = zelená, `~~slovo~~` = obrysové písmo.
 
-| šablona | kdy | props |
+**Nejdřív si přečti `news-reel/docs/motion-reference.md`** – rozbor referenčních reelů (křivky, rytmus, techniky). Na to navazuje tato knihovna:
+
+| šablona | kdy (reference) | props |
 |---|---|---|
-| `app` | představení produktu | `name, glyph, gradient:[c1,c2], tag, caption` |
-| `title` | silné tvrzení | `kicker, lines:[…], sub, subAt` |
+| `words` | hlavní nosič sdělení – kinetická věta, slova dopadají na hlas (v1/v2) | `text, size:"md"\|"lg"\|"xl", kicker, sub` |
+| `prompt` | „napíšeš X a …“ – věta s inline polem, které se samo píše (v1) | `before, typed, after, typeAt, typeSpeed` |
+| `stack` | seznam úkolů / funkcí jako pastelové karty, co vjíždějí zleva (v3) | `title, items:[{title, sub, icon, tone:"blue"\|"green"\|"red"\|"neutral", at}]` |
+| `connect` | propojení / workflow / integrace – ikony spojené kreslenou modrou linkou, kamera jede za ní (v3) | `items:[{icon, label, tone, at}]` (2–4) |
+| `fan` | varianty / verze / formáty – rychlé problikání a pak vějíř (v1) | `title, items:[{title, value, tone}]` (3–5) |
+| `orbit` | „všechno kolem X“ – koláž ikon kolem textu v 3D kruhu (v2) | `text, items:[{icon, label, tone}], radius` |
+| `app` | představení produktu (3D dlaždice) | `name, glyph, gradient:[c1,c2], tag, caption` |
 | `phone` | ukázka v aplikaci / karusel | `app, title, items:[{label, kind, color, at}]` |
-| `transform` | A → B (obrázek → video) | `from:{label,kind}, to:{label,kind}, toAt, caption` |
-| `multiply` | 1 vstup → varianty | `title, source:{label,kind}, variants:[{label, icon, at}], caption` |
+| `transform` | A → B | `from:{label,kind}, to:{label,kind}, toAt, caption` |
+| `multiply` | 1 vstup → varianty (strom) | `title, source:{label,kind}, variants:[{label, icon, at}], caption` |
 | `checklist` | funkce / dostupnost | `title, items:[{text, icon, state:"yes"\|"soon", at}]` |
 | `versus` | dřív vs. teď | `title, left:{label,icon,value,amount}, right:{…, at}, winner` |
 | `stat` | velké číslo | `value, from, suffix, label, decimals` |
+| `title` | editoriální nadpis po písmenech | `kicker, lines:[…], sub, subAt` |
 | `cta` | „Vyzkoušej“ – vždy poslední | `kicker, text, steps:[…], stepsAt:[…]` |
-| `custom` | cokoliv dalšího | `html, css, update` – tělo funkce `(t, dur, el, lib, ctx)`; `lib` má `brandOut, brandInOut, prog, lerp, clamp, letters, revealLetters, icon`; zvuk přes `ctx.sfx(name, t, gainDb)` |
+| `custom` | cokoliv dalšího | `html, css, update` – tělo funkce `(t, dur, el, lib, ctx)`; `lib` má `snapOut, brandOut, brandInOut, prog, lerp, clamp, kineticWords, animateWords, letters, revealLetters, icon`; zvuk `ctx.sfx(name, t, gainDb)` |
+
+**Přechody** (`"transition"` na scéně = jak scéna přijde; předchozí podle toho odejde): `push` (výchozí – zvednutí + rozmazání), `whip` (prudký horizontální odjezd s rozmazáním – změna tématu), `zoom` (průlet dovnitř – max 1× za video), `blur` (měkké prolnutí).
+**Skladba:** střídej text (`words`) a vizuál, scéna 2–4 s, ke každému prvku slovo v řeči (`at`), 1–2× `whip`, 1× `zoom`.
 
 Ikony: `photo video play text sound clock sparkle check sticker font chart ai apple android layers arrow hook flag`.
 
@@ -75,7 +86,8 @@ Ikony: `photo video play text sound clock sparkle check sticker font chart ai ap
 - **Značka „efektive.cz“** (modrá + zelená „.cz“ v pilulce) se ukazuje JEN v outru. Ve voiceoveru ani ve scénách ji nezmiňuj.
 
 **Pohybová pravidla (aby to vypadalo jako z After Effects, ne „AI slop“):**
-- Jen dvě křivky: `brandOut` (expo-out) na příchody, `brandInOut` na přesuny. Nic lineárního, žádné poskakování ani pružiny v těle videa.
+- Křivky: `snapOut` = cubic-bezier(0.05, 0.7, 0.1, 1) pro příchody (rychlý útok, dlouhý dojezd – jako v referencích), `brandOut` pro klidnější, `brandInOut` pro přesuny, `inExpo` pro odchody (0,12–0,25 s). Nic lineárního. Překmit max ~3 % (jen ikony).
+- Nové slovo je chvíli tónované světle modře a do ~0,4 s ztmavne do inkoustu; řádek se průběžně centruje.
 - Text vždy po písmenech: tenký + rozmazaný + pootočený → tučný + ostrý (`revealLetters`).
 - Linky se kreslí (trim path), karty vyjíždějí 60–140 px a dosedají z mírného 3D náklonu.
 - Všechno se překrývá (stagger 30–80 ms), další prvek startuje dřív, než předchozí doběhne.
