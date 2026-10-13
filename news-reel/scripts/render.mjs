@@ -7,6 +7,7 @@
 //   node scripts/render.mjs episodes/<id> --fps 15        faster draft
 //   node scripts/render.mjs episodes/<id> --mb 4          motion blur (4 sub-frames/frame; default config.video.motionBlur)
 //   node scripts/render.mjs episodes/<id> --contact       contact sheet (one frame every second)
+//   node scripts/render.mjs episodes/<id> --cuts          frames around every cut (overlap QA)
 //   node scripts/render.mjs episodes/<id> --mux-only      only re-mix audio onto the last rendered video
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, createReadStream } from "node:fs";
@@ -68,7 +69,15 @@ async function stills(times, dir = join(build, "stills")) {
   return files;
 }
 
-if (opt("--stills")) {
+if (args.includes("--cuts")) {
+  // QA: frames just before/after every scene change – check that no two texts overlap
+  const times = [];
+  meta.sceneStarts.forEach((s) => [-0.1, 0.05, 0.2].forEach((d) => times.push(+(s.start + d).toFixed(2))));
+  const files = await stills(times, join(build, "cuts"));
+  const cols = 6;
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-pattern_type", "glob", "-i", join(build, "cuts", "*.png"), "-vf", `scale=270:480,tile=${cols}x${Math.ceil(files.length / cols)}:padding=6:color=white`, "-frames:v", "1", join(build, "cuts.png")]);
+  console.log(join(build, "cuts.png"));
+} else if (opt("--stills")) {
   const files = await stills(opt("--stills").split(",").map(Number));
   console.log(files.join("\n"));
 } else if (args.includes("--contact")) {

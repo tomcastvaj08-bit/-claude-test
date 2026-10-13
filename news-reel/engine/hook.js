@@ -1,7 +1,7 @@
 // The series hook: identical every episode, only the dates change.
 // Apple Calendar (dark) month view -> slow push-in on TODAY (red) -> zoom out ->
 // red circle travels back day by day to the NEWS date -> lands -> camera dives into it.
-import { clamp, lerp, prog, ease, spring, appleEase } from "./ease.js";
+import { clamp, lerp, prog, ease, spring, appleEase, brandInOut } from "./ease.js";
 
 export const HOOK = {
   pushIn: [0.0, 1.35],   // slow push-in on today
@@ -64,12 +64,13 @@ export function buildHook(root, ep, cfg) {
     const d = new Date(+start + i * dayMs);
     const col = i % 7, row = Math.floor(i / 7);
     const inMonth = d.getUTCMonth() === today.getUTCMonth();
+    const showOut = news.getUTCMonth() !== today.getUTCMonth(); // iOS month view shows only its own days
     const x = col * COL + COL / 2, y = GRID_TOP + row * ROW + 62;
     const el = document.createElement("div");
     el.className = `cal-cell${col > 4 ? " we" : ""}${inMonth ? "" : " out"}`;
     el.style.left = `${col * COL}px`;
     el.style.top = `${GRID_TOP + row * ROW}px`;
-    el.innerHTML = `<span>${d.getUTCDate()}</span>${col === 0 ? '<div class="cal-line"></div>' : ""}`;
+    el.innerHTML = `<span>${inMonth || (showOut && d >= news) ? d.getUTCDate() : ""}</span>${col === 0 ? '<div class="cal-line"></div>' : ""}`;
     grid.appendChild(el);
     cells.set(+d, { el, x, y, row, col, date: d });
   }
@@ -140,20 +141,17 @@ export function buildHook(root, ep, cfg) {
     let s, fx, fy;
     const pPush = ease.inOutSine(prog(t, ...T.pushIn));
     const pOut = ease.inOutCubic(prog(t, ...T.zoomOut));
-    const pDive = ease.inExpo(prog(t, ...T.dive));
-    const s0 = lerp(2.05, 2.55, pPush);
+        const s0 = lerp(2.05, 2.55, pPush);
     s = lerp(s0, 1, pOut);
     fx = lerp(todayCell.x, W / 2, pOut);
     fy = lerp(todayCell.y, gridCenterY, pOut);
-    // gentle follow of the dot during travel
-    const follow = 0.18 * prog(t, T.travel[0], 0.4);
-    fx = lerp(fx, dx, follow);
-    fy = lerp(fy, dy, follow);
-    // dive into the news date
-    s = s * lerp(1, 22, pDive);
-    fx = lerp(fx, newsCell.x, ease.outCubic(prog(t, ...T.dive)));
-    fy = lerp(fy, newsCell.y, ease.outCubic(prog(t, ...T.dive)));
-    const tx = W / 2 - fx * s, ty = H / 2 - fy * s + lerp(0, 0, pOut);
+    // the month stays put (no follow, no pan to another "slide"): only a gentle push towards the dot at the end
+    const pPushEnd = brandInOut(prog(t, T.land - 0.1, T.dive[0] + T.dive[1] - T.land + 0.1));
+    const fx0 = fx, fy0 = fy;
+    s = s * lerp(1, 1.18, pPushEnd);
+    fx = lerp(fx0, newsCell.x, pPushEnd * 0.35);
+    fy = lerp(fy0, newsCell.y, pPushEnd * 0.35);
+    const tx = W / 2 - fx * s, ty = H / 2 - fy * s;
     cal.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
 
     // --- overlays
@@ -166,8 +164,10 @@ export function buildHook(root, ep, cfg) {
     label.style.opacity = clamp(lIn) * (1 - lOut);
     label.style.transform = `translate(-50%, ${lerp(80, 0, lIn)}px) scale(${lerp(0.9, 1, lIn)})`;
     // iris: brand paper opens from the centre of the date we dive into
-    const iris = ease.inOutExpo(prog(t, T.dive[0] + T.dive[1] * 0.35, T.dive[1] * 0.65 + 0.05));
-    fill.style.clipPath = `circle(${iris * 1150}px at 50% 50%)`;
+    const iris = ease.inOutExpo(prog(t, T.dive[0] + T.dive[1] * 0.2, T.dive[1] * 0.8 + 0.05));
+    // iris opens from the red dot's position on screen – we never leave the October view
+    const sx = tx + dx * s, sy = ty + dy * s;
+    fill.style.clipPath = `circle(${iris * 2300}px at ${sx}px ${sy}px)`;
     fill.style.opacity = iris > 0 ? 1 : 0;
   }
 

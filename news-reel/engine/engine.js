@@ -120,6 +120,17 @@ async function main() {
   addSfx("transition_swish", outroStart - 0.35, -4);
   addSfx("logo_sting", outroStart + 0.35, -2);
 
+  // transition overlays (strobe = 1-frame colour flashes, streak = light line that opens into a panel)
+  const fx = document.createElement("div");
+  fx.className = "fx";
+  fx.innerHTML = `<div class="fx-strobe"></div><div class="fx-streak"><i></i></div>`;
+  stage.appendChild(fx);
+  const strobe = fx.querySelector(".fx-strobe"), streak = fx.querySelector(".fx-streak"), streakLine = streak.firstChild;
+  scenes.forEach((s) => {
+    if (s.def.transition === "strobe") addSfx("transition_swish", s.start - 0.12, -3), addSfx("hook_impact", s.start, -10);
+    if (s.def.transition === "streak") addSfx("hook_dive", s.start - 0.35, -6);
+  });
+
   const outroUpdate = buildOutro(stage, cfg);
   const outroEl = stage.querySelector(".outro");
 
@@ -186,7 +197,8 @@ async function main() {
 
     scenes.forEach((s, si) => {
       const local = t - s.start, dur = s.end - s.start;
-      const OUT = 0.32;
+      const hardOut = ["strobe", "streak"].includes(scenes[si + 1]?.def.transition);
+      const OUT = hardOut ? 0 : 0.24;
       const vis = local >= -0.02 && local < dur + OUT;
       s.el.style.display = vis ? "block" : "none";
       if (!vis) return;
@@ -195,13 +207,15 @@ async function main() {
       // zoom = dive through (scale up + blur), blur = soft focus crossfade.
       const outType = scenes[si + 1]?.def.transition ?? "push";
       const inType = si > 0 ? s.def.transition ?? "push" : "none";
-      const o = (outType === "whip" ? ease.inExpo : brandInOut)(prog(local, dur - 0.04, outType === "whip" ? 0.24 : OUT));
-      const i = snapOut(prog(local, -0.02, inType === "whip" ? 0.45 : 0.6));
+      // exits start a beat BEFORE the cut so the incoming scene always lands on a clean stage
+      const o = (outType === "whip" ? ease.inCubic : brandInOut)(prog(local, dur - (outType === "whip" ? 0.16 : 0.12), outType === "whip" ? 0.22 : OUT));
+      const i = snapOut(prog(local, inType === "whip" ? 0.02 : -0.02, inType === "whip" ? 0.45 : 0.6));
       let tx = 0, ty = 0, sc = 1, bl = 0, op = 1;
-      if (outType === "push") { ty -= o * 180; sc *= 1 - o * 0.04; bl += o * 18; op *= 1 - o; }
-      if (outType === "whip") { tx -= o * 700; bl += o * 34; op *= 1 - o * 0.9; }
-      if (outType === "zoom") { sc *= 1 + o * 1.4; bl += o * 26; op *= 1 - o; }
-      if (outType === "blur") { bl += o * 30; op *= 1 - o; }
+      // outgoing text must be gone before the incoming text writes into the same spot (no overlapping words)
+      if (outType === "push") { ty -= o * 180; sc *= 1 - o * 0.04; bl += o * 18; op *= 1 - Math.sqrt(o); }
+      if (outType === "whip") { tx -= o * 760; bl += o * 34; op *= 1 - Math.sqrt(o); }
+      if (outType === "zoom") { sc *= 1 + o * 1.4; bl += o * 26; op *= 1 - Math.sqrt(o); }
+      if (outType === "blur") { bl += o * 30; op *= 1 - Math.sqrt(o); }
       if (inType === "whip") { tx += (1 - i) * 620; bl += (1 - i) * 30; op *= clamp(i * 3); }
       if (inType === "zoom") { sc *= lerp(0.72, 1, i); bl += (1 - i) * 22; op *= clamp(i * 2); }
       if (inType === "blur") { bl += (1 - i) * 26; op *= clamp(i * 1.5); }
@@ -210,6 +224,31 @@ async function main() {
       s.el.style.filter = bl > 0.2 ? `blur(${bl}px)` : "none";
       s.update(Math.min(local, dur + OUT), dur);
     });
+
+    // ---- transition overlays
+    strobe.style.display = "none";
+    streak.style.display = "none";
+    for (const s of scenes) {
+      const d = t - s.start;
+      if (s.def.transition === "strobe" && d >= -0.1 && d < 0.0) {
+        const k = Math.floor((d + 0.1) / 0.0334);
+        strobe.style.display = "block";
+        strobe.style.background = ["var(--blue)", "var(--lime)", "var(--ink)"][Math.min(2, k)];
+      }
+      if (s.def.transition === "streak" && d >= -0.4 && d < 0.3) {
+        streak.style.display = "block";
+        const a = ease.inExpo(prog(d, -0.4, 0.18)); // line shoots across
+        const o = snapOut(prog(d, -0.22, 0.22)); // opens into a panel
+        const w = brandInOut(prog(d, 0.0, 0.3)); // panel wipes up and away
+        streakLine.style.transform = `scaleX(${a})`;
+        streak.style.clipPath = `inset(${lerp(959, 0, o)}px 0 ${lerp(959, 0, o) + w * 1920}px 0)`;
+        streak.style.background = o > 0.02 ? "var(--blue)" : "transparent";
+      }
+    }
+    const curScene = scenes.reduce((c, s) => (t >= s.start - 0.05 ? s : c), scenes[0]);
+    const darkScene = curScene && ["bigtype"].includes(curScene.def.template) && !["paper", "lime"].includes(curScene.def.props?.bg ?? "blue");
+    capEl.classList.toggle("on-dark", !!darkScene && t < outroStart);
+    hud.classList.toggle("on-dark", !!darkScene);
 
     outroEl.style.display = t >= outroStart - 0.3 ? "flex" : "none";
     if (t >= outroStart - 0.3) {
@@ -220,10 +259,10 @@ async function main() {
 
     capEl.style.display = showCaptions && t > B + 0.15 && t < outroStart ? "block" : "none";
     for (const c of chunkEls) {
-      const on = t >= c.start - 0.06 && t < c.until;
+      const on = t >= c.start - 0.03 && t < c.until; // never two caption lines at once
       c.el.style.display = on ? "flex" : "none";
       if (!on) continue;
-      const pIn = brandOut(prog(t, c.start - 0.06, 0.45));
+      const pIn = brandOut(prog(t, c.start - 0.03, 0.45));
       c.el.style.opacity = clamp(pIn * 2);
       c.el.style.transform = `translate(-50%, ${(1 - pIn) * 24}px)`;
       c.spans.forEach((sp, k) => {

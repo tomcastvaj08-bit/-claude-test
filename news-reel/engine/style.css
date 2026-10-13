@@ -73,7 +73,7 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .hud-bar b { display: block; height: 100%; background: linear-gradient(90deg, var(--blue), var(--blue-2)); transform-origin: 0 50%; }
 
 /* ---------------- scenes ---------------- */
-.scene { transform-origin: 50% 40%; }
+.scene { position: absolute; inset: 0; transform-origin: 50% 40%; }
 .sc { position: absolute; left: 96px; right: 96px; top: 300px; height: 980px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 40px; perspective: 1600px; }
 
 .sc-title .stack { display: flex; flex-direction: column; gap: 4px; }
@@ -289,3 +289,52 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .pr-caret { width: 3px; height: 46px; background: var(--blue); margin-left: 4px; }
 .pr-send { position: absolute; right: 14px; top: 14px; width: 84px; height: 84px; border-radius: 50%; background: var(--line); color: #fff; padding: 20px; transition: none; }
 .pr-send.on { background: var(--blue); }
+
+/* ================= vocabulary from the Claude motion reel ================= */
+.scene.full { transform-origin: 50% 50%; }
+.bt { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+.bt-blue { background: var(--blue); color: #fff; }
+.bt-ink { background: var(--ink); color: #fff; }
+.bt-lime { background: var(--lime); color: var(--ink); }
+.bt-paper { background: var(--paper); color: var(--ink); }
+.bt-pattern { position: absolute; inset: -10% 0; opacity: .16; }
+.bt-row { position: absolute; left: 0; white-space: nowrap; font-size: 210px; font-weight: 900; letter-spacing: -.05em; line-height: 1; color: transparent; -webkit-text-stroke: 2px currentColor; }
+.bt-blue .bt-row, .bt-ink .bt-row { -webkit-text-stroke-color: #fff; }
+.bt-word { position: relative; display: flex; font-size: 300px; font-weight: 900; letter-spacing: -.06em; line-height: .86; white-space: nowrap; transform-origin: 50% 50%; }
+.bt-ch { display: inline-block; overflow: hidden; padding-bottom: .04em; }
+.bt-ch i { display: inline-block; font-style: normal; }
+.bt-sub { position: relative; font-size: 46px; font-weight: 600; letter-spacing: -.01em; opacity: 0; }
+.bt-meta { position: absolute; top: 1240px; font-size: 26px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; opacity: 0; }
+.bt-meta.tl { left: 96px; } .bt-meta.tr { right: 96px; }
+
+.sc-metric { gap: 40px; }
+.mt-num { display: flex; align-items: flex-start; font-size: 300px; font-weight: 900; letter-spacing: -.06em; line-height: 1; font-variant-numeric: tabular-nums; }
+.mt-fix { color: var(--ink); }
+.mt-fix.b { color: var(--blue); font-size: .62em; margin-left: .04em; margin-top: .08em; }
+.mt-d { display: inline-block; height: 1em; overflow: hidden; }
+.mt-col { display: flex; flex-direction: column; will-change: transform, filter; }
+.mt-col i { display: block; height: 1em; font-style: normal; text-align: center; }
+.mt-row { display: flex; align-items: flex-end; gap: 50px; height: 300px; }
+.mt-bars { display: flex; align-items: flex-end; gap: 14px; height: 300px; width: 560px; }
+.mt-bars i { flex: 1; background: #d5dbe7; border-radius: 10px 10px 4px 4px; transform-origin: 50% 100%; }
+.mt-bars i.hi { background: linear-gradient(180deg, var(--blue-2), var(--blue)); }
+.mt-donut { position: relative; width: 230px; height: 230px; display: grid; place-items: center; }
+.mt-donut svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.mt-donut circle { fill: none; stroke-width: 12; }
+.mt-donut .bgc { stroke: var(--line); }
+.mt-donut .fg { stroke: var(--lime); stroke-linecap: round; }
+.mt-donut b { font-size: 56px; font-weight: 800; letter-spacing: -.04em; }
+.mt-donut span { position: absolute; bottom: -46px; font-size: 24px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+.pt { position: absolute; inset: 0; }
+.pt canvas { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+.pt-text { position: absolute; left: 96px; right: 96px; top: 780px; margin: 0 auto; }
+
+/* overlays */
+#stage > .fx { z-index: 20; pointer-events: none; }
+.fx-strobe { position: absolute; inset: 0; display: none; }
+.fx-streak { position: absolute; inset: 0; display: none; }
+.fx-streak i { position: absolute; left: 0; right: 0; top: 957px; height: 6px; background: linear-gradient(90deg, transparent, #fff 20%, #fff 80%, transparent); box-shadow: 0 0 30px 6px rgba(91,140,245,.9); transform-origin: 0 50%; }
+.captions.on-dark .cap span { color: rgba(255,255,255,.45) !important; }
+.captions.on-dark .cap span[style*="ink"] { color: #fff !important; }
+.hud.on-dark .hud-l, .hud.on-dark .hud-r { color: rgba(255,255,255,.85); }

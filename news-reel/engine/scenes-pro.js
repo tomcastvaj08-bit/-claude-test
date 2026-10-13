@@ -65,9 +65,10 @@ export function animateWords(root, t, times, { gap = 0.24 } = {}) {
     const inner = k.firstChild;
     const em = parseFloat(getComputedStyle(k).fontSize) || 60;
     k.style.width = `${(+k.dataset.w + gap * em) * p}px`;
-    inner.style.opacity = clamp(p * 1.6);
+    // opacity trails the width so a growing word never sits on top of its neighbour
+    inner.style.opacity = clamp((p - 0.3) / 0.55);
     inner.style.filter = p < 0.995 ? `blur(${(1 - p) * 14}px)` : "none";
-    inner.style.transform = `translateX(${(1 - p) * 40}px) scale(${lerp(1.06, 1, p)})`;
+    inner.style.transform = `translateX(${(1 - p) * 24}px) scale(${lerp(1.06, 1, p)})`;
     if (!k.classList.contains("b") && !k.classList.contains("g")) inner.style.color = c < 1 ? `color-mix(in srgb, var(--blue-2) ${(1 - c) * 100}%, var(--ink))` : "";
   });
 }
@@ -261,3 +262,115 @@ export const proTemplates = {
     };
   },
 };
+
+// ===================== vocabulary from the "Claude motion reel" reference =====================
+// bigtype   – full-bleed colour panel, one massive word that fills the width, outline word wallpaper
+//             scrolling behind, tiny editorial meta labels in the corners
+// metric    – odometer counter (digits roll with blur) + bar chart growing + donut ring
+// particles – streak particles flow in, condense into a ring of dots, then burst outward; text lands
+const seeded = (seed) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+
+Object.assign(proTemplates, {
+  // props: { word, bg: "blue"|"lime"|"ink"|"paper", meta: ["…", "…"], sub, pattern: true }
+  bigtype(el, p, ctx) {
+    const word = String(p.word ?? "").toUpperCase();
+    const rows = Array.from({ length: 9 }, (_, i) => `<div class="bt-row" style="top:${i * 13}%">${(word + " ").repeat(8)}</div>`).join("");
+    el.classList.add("full");
+    el.appendChild(h(`<div class="bt bt-${p.bg ?? "blue"}">
+      ${p.pattern === false ? "" : `<div class="bt-pattern">${rows}</div>`}
+      <div class="bt-meta tl">${esc(p.meta?.[0] ?? "")}</div><div class="bt-meta tr">${esc(p.meta?.[1] ?? "")}</div>
+      <div class="bt-word">${[...word].map((c) => `<span class="bt-ch"><i>${esc(c)}</i></span>`).join("")}</div>
+      ${p.sub ? `<div class="bt-sub">${esc(p.sub)}</div>` : ""}
+    </div>`));
+    const wEl = el.querySelector(".bt-word"), chs = [...el.querySelectorAll(".bt-ch i")], pat = el.querySelectorAll(".bt-row"), sub = el.querySelector(".bt-sub"), metas = el.querySelectorAll(".bt-meta");
+    ctx.sfx("hook_impact", 0.02, -9);
+    let fitted = false;
+    return (t, dur) => {
+      if (!fitted) {
+        // fit the word to the frame width
+        const w = wEl.scrollWidth || 1;
+        wEl.style.fontSize = `${Math.min(520, (parseFloat(getComputedStyle(wEl).fontSize) * 960) / w)}px`;
+        fitted = true;
+      }
+      chs.forEach((c, i) => {
+        const q = snapOut(prog(t, 0.04 + i * 0.035, 0.6));
+        c.style.transform = `translateY(${(1 - q) * 105}%)`;
+      });
+      const drift = t * 60;
+      pat.forEach((r, i) => (r.style.transform = `translateX(${(i % 2 ? -1 : 1) * drift - 400}px)`));
+      metas.forEach((m) => (m.style.opacity = brandOut(prog(t, 0.2, 0.5))));
+      wEl.style.transform = `scale(${1 + t * 0.02})`;
+      if (sub) {
+        const q = snapOut(prog(t, 0.45, 0.6));
+        sub.style.opacity = q;
+        sub.style.transform = `translateY(${(1 - q) * 30}px)`;
+      }
+    };
+  },
+
+  // props: { value: 312, prefix: "+", suffix: "%", label, bars: [..], donut: 0.7, donutLabel }
+  metric(el, p, ctx) {
+    const val = Math.round(Number(p.value ?? 0));
+    const digits = String(val).split("");
+    const bars = p.bars ?? [2, 3, 3, 4, 5, 5, 6, 8, 9, 12];
+    const maxB = Math.max(...bars);
+    el.appendChild(h(`<div class="sc sc-metric">
+      ${p.label ? `<div class="tag">${esc(p.label)}</div>` : ""}
+      <div class="mt-num">${p.prefix ? `<span class="mt-fix">${esc(p.prefix)}</span>` : ""}${digits.map(() => `<span class="mt-d"><span class="mt-col">${"0123456789".split("").map((d) => `<i>${d}</i>`).join("")}</span></span>`).join("")}<span class="mt-fix b">${esc(p.suffix ?? "")}</span></div>
+      <div class="mt-row">
+        ${p.donut != null ? `<div class="mt-donut"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" class="bgc"/><circle pathLength="1" cx="60" cy="60" r="50" class="fg"/></svg><b>${Math.round(p.donut * 100)}%</b>${p.donutLabel ? `<span>${esc(p.donutLabel)}</span>` : ""}</div>` : ""}
+        <div class="mt-bars">${bars.map((b, i) => `<i style="height:${(b / maxB) * 100}%" class="${i === bars.length - 1 ? "hi" : ""}"></i>`).join("")}</div>
+      </div>
+    </div>`));
+    const cols = [...el.querySelectorAll(".mt-col")], barEls = [...el.querySelectorAll(".mt-bars i")], ring = el.querySelector(".mt-donut .fg");
+    const k = el.querySelector(".tag");
+    ctx.sfx("bar_rise", 0.1, -3);
+    ctx.sfx("check_tick", 1.25, -6);
+    return (t) => {
+      if (k) { const q = brandOut(prog(t, 0, 0.5)); k.style.opacity = q; }
+      // odometer: each digit rolls through 0-9 (more turns for lower digits) and lands at its value with blur
+      cols.forEach((c, i) => {
+        const target = +digits[i];
+        const turns = (digits.length - i) * 1 + 1;
+        const q = snapOut(prog(t, 0.1 + i * 0.06, 1.15));
+        const pos = (turns * 10 + target) * q;
+        const speed = (1 - q);
+        c.style.transform = `translateY(${-(pos % 10) * 10}%)`;
+        c.style.filter = speed > 0.05 ? `blur(${speed * 8}px)` : "none";
+      });
+      barEls.forEach((b, i) => (b.style.transform = `scaleY(${snapOut(prog(t, 0.3 + i * 0.05, 0.7))})`));
+      if (ring) { ring.style.strokeDasharray = "1 1"; ring.style.strokeDashoffset = String(1 - (p.donut ?? 0) * brandInOut(prog(t, 0.4, 1.0))); }
+    };
+  },
+
+  // props: { text, count: 900 }
+  particles(el, p, ctx) {
+    el.classList.add("full");
+    el.appendChild(h(`<div class="pt"><canvas width="1080" height="1920"></canvas>${p.text ? kineticWords(p.text, "lg pt-text") : ""}</div>`));
+    const cv = el.querySelector("canvas"), g = cv.getContext("2d"), line = el.querySelector(".kw-line");
+    const rnd = seeded(7), N = p.count ?? 900;
+    const parts = Array.from({ length: N }, (_, i) => ({ a: (i / N) * Math.PI * 2, r0: 1200 + rnd() * 900, a0: rnd() * Math.PI * 2, ring: 330 + (i % 3) * 26, sw: rnd(), hue: rnd() < 0.18 ? 1 : rnd() < 0.3 ? 2 : 0 }));
+    const T1 = 1.0, T2 = 1.55; // condense, burst
+    ctx.sfx("hook_riser", T1 - 0.6, -6);
+    ctx.sfx("hook_impact", T2, -4);
+    let tw;
+    const pos = (q, tt) => {
+      const c = snapOut(prog(tt, 0, T1)), b = ease.inExpo(prog(tt, T2, 0.5));
+      const ang = lerp(q.a0 + tt * 0.6, q.a + tt * 0.25, c);
+      const r = lerp(q.r0, q.ring, c) + b * (900 + q.sw * 1200);
+      return [540 + Math.cos(ang) * r, 860 + Math.sin(ang) * r * (1 - 0.0 * c)];
+    };
+    return (t) => {
+      if (line && !tw) { measureWords(el); tw = timesForWords(line, ctx, T2 + 0.15, 0.09); }
+      g.clearRect(0, 0, 1080, 1920);
+      g.lineCap = "round";
+      for (const q of parts) {
+        const [x, y] = pos(q, t), [x0, y0] = pos(q, Math.max(0, t - 0.06));
+        g.strokeStyle = q.hue === 1 ? "rgba(47,107,237,.95)" : q.hue === 2 ? "rgba(127,216,88,.95)" : "rgba(37,42,53,.8)";
+        g.lineWidth = 2.2 + q.sw * 1.8;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x + 0.01, y); g.stroke();
+      }
+      if (line) animateWords(line, t, tw);
+    };
+  },
+});

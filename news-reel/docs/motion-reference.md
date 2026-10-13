@@ -51,3 +51,21 @@ Tři reference od uživatele (snímky v `docs/ref/`; `*-sheet` = 2 sn./s celé v
 3. Každý prvek, který vyjede, musí mít v řeči slovo, na které vyjede (`at`).
 4. Na konci každé scény ještě ~0,2 s klidu, pak odchod (engine to dělá sám).
 5. Konstrukční čáry / rozptýlené ikony / glitch řeš přes `custom` scénu a když se osvědčí, přesuň ji do `scenes-pro.js`.
+
+## 5. Reference v4 – „Claude motion reel“ (udělaný přes Claude Code)
+Snímky: `docs/ref/v4-*.jpg`. 14 s, natočeno z obrazovky notebooku. Je to sled krátkých „showreel“ obrazů, každý 0,8–1,5 s, mezi nimi tvrdé střihy a barevné záblesky.
+
+| čas | co se děje | proč to funguje | engine |
+|---|---|---|---|
+| 0,0–1,4 | tmavý rastr teček, jiskra proletí a natáhne se do světelné linky | „probuzení“ obrazu jedním světelným bodem | `transition: "streak"` |
+| 1,4–3,0 | bílý záblesk → plná oranžová, obří zúžený nápis CLAUDE. + drobné popisky (SHOWREEL — 2026) | kontrast měřítek: obří slovo × mikro text | šablona `bigtype` |
+| 3,2–4,8 | 3D vlna z kostiček v gradientu, skleněná koule obíhá | procedurální 3D pole = „wow“ bez obsahu | (mimo brand – nepoužito) |
+| 5,0–5,4 | EVERY na bílé → SINGLE opakované v řádcích (obrysový vzor) | typografie jako tapeta | `bigtype` (vzor řádků na pozadí) |
+| 5,5–6,0 | barevný stroboskop: modrá → fialová → oranžová → bílá, 1 snímek každá | rytmický střih bez pohybu | `transition: "strobe"` |
+| 6,0–7,6 | +312 % – číslice se točí jako tachometr (s rozmazáním), roste graf, kroužek | čísla „žijí“ | šablona `metric` (jen se skutečnými čísly!) |
+| 8,0–10,0 | tisíce čárek proudí, slijí se do prstence teček, prstenec exploduje paprsky | částice = energie, přechod do další scény | šablona `particles` |
+| 10,0–11,0 | UI karta „Render queue“ na modré | produkt v kontextu | `stack` / `phone` |
+| 11,0–12,6 | obrys kruhu s tečkami se morfuje do hvězdy/kytky | organický morf | (custom) |
+| 13,0–14,0 | tmavé logo s jiskrou | podpis | outro |
+
+**Poučení:** (1) každý obraz má jednu silnou kompoziční myšlenku (obří slovo, číslo, prstenec), (2) střídání barevných ploch je samo o sobě rytmus, (3) mikro popisky v rozích (mono/verzálky) dávají „editorial“ rám, (4) žádné dva texty přes sebe – nový text přijde až na čistou plochu.

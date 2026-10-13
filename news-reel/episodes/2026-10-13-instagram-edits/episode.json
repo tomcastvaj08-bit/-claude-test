@@ -5,7 +5,7 @@
   "newsDate": "2026-10-07",
   "title": "Instagram Edits nově podporuje carousely",
   "source": "🎬 Instagram Edits nově podporuje carousely — Novinka ze 7. října. Co se změnilo: Instagram Edits umožňuje vytvářet carousely kombinující fotografie, videa, texty a efekty. Lze využívat uložené fonty, styly i vlastní samolepky. Funkce je dostupná na iOS, Android následuje. Pro klienty: Rychlejší produkce carouselů a jednodušší kombinování statické grafiky s videem. Vyzkoušet: Vytvořit jeden carousel přímo v Edits a porovnat rychlost práce s dosavadním postupem.",
-  "script": "[[intro]][excited] Instagram Edits umí nově carousely! [[mix]]Fotky, videa, texty i efekty — všechno v jednom příspěvku. [[style]]A navíc tvoje uložené fonty, styly i vlastní samolepky. [[platform]]Zatím na iPhonu, Android je na cestě. [[clients]]Pro klienty to znamená rychlejší carousely a grafiku s videem bez přepínání appek. [[try]]Tak to zkus: jeden carousel přímo v Edits… a změř si, kolik času ušetříš.",
+  "script": "[[intro]][excited] Instagram Edits umí nově [[boom]]carousely! [[mix]]Fotky, videa, texty i efekty — všechno v jednom příspěvku. [[style]]A navíc tvoje uložené fonty, styly i vlastní samolepky. [[platform]]Zatím na iPhonu, Android je na cestě. [[clients]]Pro klienty to znamená rychlejší carousely [[clients2]]a grafiku s videem bez přepínání appek. [[try]]Tak to zkus: jeden carousel přímo v Edits… a změř si, kolik času ušetříš.",
   "scenes": [
     {
       "cue": "intro",
@@ -17,8 +17,21 @@
           "#833AB4",
           "#FD1D1D"
         ],
-        "tag": "Instagram · Novinka",
-        "caption": "teď umí **carousely**"
+        "tag": "Instagram · Novinka"
+      }
+    },
+    {
+      "cue": "boom",
+      "template": "bigtype",
+      "transition": "strobe",
+      "props": {
+        "word": "Carousely",
+        "bg": "blue",
+        "meta": [
+          "Instagram Edits",
+          "Nově"
+        ],
+        "sub": "fotky · videa · text · efekty"
       }
     },
     {
@@ -85,7 +98,7 @@
     {
       "cue": "platform",
       "template": "checklist",
-      "transition": "whip",
+      "transition": "streak",
       "props": {
         "title": "Kde to **jede?**",
         "items": [
@@ -105,11 +118,19 @@
     },
     {
       "cue": "clients",
-      "template": "words",
+      "template": "particles",
       "transition": "zoom",
       "props": {
+        "text": "Rychlejší **carousely**"
+      }
+    },
+    {
+      "cue": "clients2",
+      "template": "words",
+      "transition": "blur",
+      "props": {
         "kicker": "Pro klienty",
-        "text": "Rychlejší **carousely**, grafika i video bez přepínání appek.",
+        "text": "Grafika i video **bez přepínání** appek.",
         "size": "lg"
       }
     },
