@@ -338,3 +338,30 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .captions.on-dark .cap span { color: rgba(255,255,255,.45) !important; }
 .captions.on-dark .cap span[style*="ink"] { color: #fff !important; }
 .hud.on-dark .hud-l, .hud.on-dark .hud-r { color: rgba(255,255,255,.85); }
+.cal3d { position: absolute; inset: 0; transform-origin: 50% 45%; }
+
+/* ================= 3D environment + camera + finishing ================= */
+.bg { perspective: 1400px; perspective-origin: 50% 42%; }
+.world { position: absolute; left: 50%; top: 45%; width: 0; height: 0; transform-style: preserve-3d; }
+.floor { position: absolute; left: -3000px; top: 700px; width: 6000px; height: 5000px; transform-origin: 50% 0; transform: rotateX(84deg);
+  background-image: linear-gradient(rgba(47,107,237,.20) 2px, transparent 2px), linear-gradient(90deg, rgba(47,107,237,.20) 2px, transparent 2px);
+  background-size: 160px 160px; -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 45%, transparent 85%); mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 45%, transparent 85%); }
+.wobj { position: absolute; left: 0; top: 0; }
+.wobj.sphere { border-radius: 50%; }
+.wobj.glass { border-radius: 28%; background: linear-gradient(140deg, rgba(255,255,255,.75), rgba(255,255,255,.25)); border: 2px solid rgba(255,255,255,.9); box-shadow: 0 40px 80px -30px rgba(47,80,160,.25), inset 0 1px 0 #fff; }
+.cam { perspective: 1700px; perspective-origin: 50% 42%; }
+.scene { transform-style: flat; backface-visibility: hidden; }
+#stage > .finish { z-index: 30; pointer-events: none; }
+.grain { position: absolute; inset: -50%; opacity: .07; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); background-size: 300px; }
+.vig { position: absolute; inset: 0; background: radial-gradient(ellipse 85% 70% at 50% 45%, transparent 55%, rgba(30,40,70,.16) 100%); }
+
+/* material: layered light on every card (ambient + key + top highlight) */
+.card, .row, .step, .st-card, .ob-item, .cn-tile, .fan-card, .mu-v, .mu-src, .pr-pill {
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.95), 0 2px 4px rgba(20,30,60,.05), 0 20px 40px -20px rgba(20,30,60,.22), 0 70px 100px -60px rgba(47,80,160,.40) !important; }
+.card:not(.hl-blue):not(.hl-green), .row:not(.soon), .step:not(.on), .ob-item, .cn-tile, .mu-v, .mu-src { background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%); }
+/* explicit layer order – 3D compositing must never pull background objects over content */
+#stage > .bg { z-index: 0; isolation: isolate; }
+#stage > .cam { z-index: 2; isolation: isolate; }
+.objs { position: absolute; inset: 0; }
+.objs .wobj { position: absolute; left: 0; top: 0; will-change: transform; }

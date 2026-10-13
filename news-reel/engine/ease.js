@@ -68,3 +68,6 @@ export function inOut(local, dur, inDur = 0.45, outDur = 0.3, inFn = appleEase, 
 // Brand curves (same as the EFEKTIVE site): expo-like ease-out and a symmetric in-out.
 export const brandOut = bezier(0.16, 1, 0.3, 1);
 export const brandInOut = bezier(0.65, 0, 0.35, 1);
+
+// Reference-reel curve: very fast attack, long silky settle.
+export const snapOut = bezier(0.05, 0.7, 0.1, 1);

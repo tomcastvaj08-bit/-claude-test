@@ -1,6 +1,6 @@
 // Reel engine: hook (calendar) + explainer scenes + captions + outro on one timeline.
 // The renderer calls window.__setTime(t) for every (sub)frame and screenshots the page.
-import { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier } from "./ease.js";
+import { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, snapOut as snapOutE } from "./ease.js";
 import { buildHook, parseDate } from "./hook.js";
 import { templates as baseTemplates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
 import { proTemplates, kineticWords, animateWords, snapOut } from "./scenes-pro.js";
@@ -32,14 +32,41 @@ async function main() {
   // ---------- background: paper, fine grid, grain
   const bg = document.createElement("div");
   bg.className = "bg";
-  bg.innerHTML = `<div class="hair hv"></div><div class="hair hh"></div><div class="hair hh2"></div>
-    <div class="blob bb"></div><div class="blob bg2"></div>
-    <div class="cross"><i></i><i></i></div>
-    <div class="sphere blue s1"></div><div class="sphere green s2"></div>`;
+  // 3D environment: a perspective floor grid that always moves + glossy spheres and frosted glass panels
+  // placed at different depths (blurred by depth). A world camera travels to a new spot at every cut.
+  const WOBJ = [
+    { k: "sphere blue", x: 380, y: -620, z: -300, s: 190 }, { k: "sphere green", x: -420, y: 560, z: -150, s: 130 },
+    { k: "sphere blue", x: -760, y: -200, z: -900, s: 240 }, { k: "sphere green", x: 820, y: 380, z: -1100, s: 300 },
+    { k: "sphere blue", x: 200, y: 900, z: -1600, s: 260 }, { k: "glass", x: -520, y: -760, z: -700, s: 340 },
+    { k: "glass", x: 640, y: 120, z: -1300, s: 420 }, { k: "glass", x: -300, y: 260, z: -2000, s: 520 },
+    { k: "sphere green", x: 1200, y: -500, z: -1800, s: 220 }, { k: "glass", x: 1300, y: 700, z: -600, s: 300 },
+  ];
+  bg.innerHTML = `<div class="blob bb"></div><div class="blob bg2"></div>
+    <div class="world"><div class="floor"></div></div>
+    <div class="objs">${WOBJ.map((o) => `<div class="wobj ${o.k}" style="width:${o.s}px;height:${o.s}px;margin:${-o.s / 2}px 0 0 ${-o.s / 2}px"></div>`).join("")}</div>
+    <div class="cross"><i></i><i></i></div>`;
   stage.appendChild(bg);
   const glows = [...bg.querySelectorAll(".blob")];
-  const spheres = [...bg.querySelectorAll(".sphere")];
+  const world = bg.querySelector(".world"), floor = bg.querySelector(".floor");
+  const objEls = [...bg.querySelectorAll(".wobj")];
+  const spheres = [];
   const cross = bg.querySelector(".cross");
+  // per-scene camera spots in the world (x, y, rotateY, rotateX)
+  const SPOTS = [[0, 0, 0, 0], [520, -160, -12, 4], [-380, 140, 10, -3], [700, 60, -8, 6], [-200, -220, 14, -4], [-640, 80, -10, 3], [300, 200, 8, -5], [0, -60, 0, 2]];
+  // per-scene content camera moves
+  const SHOTS = ["orbitL", "push", "crane", "orbitR", "pull", "tilt"];
+  const shotXf = (name, l, dur) => {
+    const a = snapOut(prog(l, 0, 0.9)), d = brandInOut(prog(l, 0, Math.max(0.5, dur)));
+    switch (name) {
+      case "orbitL": return `translateZ(${lerp(-160, 20, a)}px) rotateY(${lerp(18, 3, a) - d * 5}deg) rotateX(${lerp(4, 0, a)}deg)`;
+      case "orbitR": return `translateZ(${lerp(-160, 20, a)}px) rotateY(${lerp(-18, -3, a) + d * 5}deg) rotateX(${lerp(4, 0, a)}deg)`;
+      case "push": return `translateZ(${lerp(-60, 30, a) + d * 110}px) rotateX(${lerp(6, 0, a)}deg)`;
+      case "pull": return `translateZ(${lerp(260, 40, a) - d * 40}px) rotateY(${lerp(-6, 0, a)}deg)`;
+      case "crane": return `translateY(${lerp(120, 0, a)}px) translateZ(${lerp(-120, 0, a)}px) rotateX(${lerp(20, 0, a) - d * 4}deg)`;
+      case "tilt": return `translateZ(${lerp(-80, 10, a)}px) rotateZ(${lerp(-4, 0, a) + d * 1.5}deg) rotateY(${lerp(8, 0, a)}deg)`;
+      default: return "";
+    }
+  };
 
   // ---------- hook
   const hookRoot = document.createElement("div");
@@ -55,6 +82,11 @@ async function main() {
   // ---------- camera layer (everything in the body sits on it; slow drift = "virtual camera")
   const cam = document.createElement("div");
   cam.className = "cam";
+  // finishing layers: animated film grain + vignette (keeps flat colours from looking "digital")
+  const finish = document.createElement("div");
+  finish.className = "finish";
+  finish.innerHTML = `<div class="grain"></div><div class="vig"></div>`;
+  const grain = finish.querySelector(".grain");
   stage.appendChild(cam);
 
   // ---------- HUD: index label + date + progress rule
@@ -138,6 +170,7 @@ async function main() {
   const capEl = document.createElement("div");
   capEl.className = "captions";
   stage.appendChild(capEl);
+  stage.appendChild(finish);
   const chunks = [];
   let cur = [];
   words.forEach((w, i) => {
@@ -168,6 +201,36 @@ async function main() {
       const a = t * (0.18 + i * 0.05) + i * 2.4;
       g.style.transform = `translate(${Math.cos(a) * 120}px, ${Math.sin(a * 1.2) * 160}px)`;
     });
+    // world camera: swing to the spot of the current scene (fast attack, long settle) + constant dolly drift
+    {
+      let ci = 0;
+      scenes.forEach((s, i) => (t >= s.start - 0.12 ? (ci = i) : 0));
+      const prevSpot = SPOTS[Math.max(0, ci - 1) % SPOTS.length], spot = SPOTS[ci % SPOTS.length];
+      const sw = ci === 0 ? 1 : snapOut(prog(t, (scenes[ci]?.start ?? 0) - 0.12, 0.75));
+      const [x, y, ry, rx] = prevSpot.map((v, k) => lerp(v, spot[k], sw));
+      const dz = (t - B) * 70;
+      world.style.transform = `translateZ(${dz}px) rotateX(${rx}deg) rotateY(${ry}deg) translate3d(${-x}px, ${-y}px, 0)`;
+      // objects: projected in JS (pinhole camera) so they always stay BEHIND the content layers
+      const F = 1400, cyR = (ry * Math.PI) / 180, cxR = (rx * Math.PI) / 180;
+      WOBJ.forEach((o, k) => {
+        let X = o.x - x, Y = o.y - y, Z = o.z + dz;
+        const X1 = X * Math.cos(cyR) + Z * Math.sin(cyR), Z1 = -X * Math.sin(cyR) + Z * Math.cos(cyR);
+        const Y1 = Y * Math.cos(cxR) - Z1 * Math.sin(cxR), Z2 = Y * Math.sin(cxR) + Z1 * Math.cos(cxR);
+        const e = objEls[k];
+        if (Z2 > F * 0.7) { e.style.display = "none"; return; }
+        const sc = F / (F - Z2);
+        e.style.display = "block";
+        e.style.transform = `translate(${540 + X1 * sc}px, ${860 + Y1 * sc}px) scale(${sc})`;
+        // keep the reading column clean: objects drifting behind text fade + defocus
+        const sx = 540 + X1 * sc, sy = 860 + Y1 * sc, rad = (o.s * sc) / 2;
+        const inCol = clamp(1 - (Math.abs(sx - 540) - 300 - rad * 0.3) / 160) * clamp(1 - (Math.abs(sy - 860) - 760) / 200);
+        e.style.opacity = String(1 - inCol * 0.85);
+        e.style.filter = `blur(${Math.min(26, Math.abs(Z2 + 200) / 110 + inCol * 14)}px)`;
+        e.style.zIndex = String(Math.round(2000 + Z2));
+      });
+      floor.style.backgroundPosition = `0 ${((t - B) * 260) % 160}px`;
+    }
+    grain.style.backgroundPosition = `${(Math.sin(t * 91.7) * 1000) | 0}px ${(Math.cos(t * 57.3) * 1000) | 0}px`;
     // brand spheres: fly in after the iris, then float with parallax against the camera
     spheres.forEach((sp, i) => {
       const e = brandOut(prog(t, B + 0.1 + i * 0.15, 1.6));
@@ -220,8 +283,11 @@ async function main() {
       if (inType === "zoom") { sc *= lerp(0.72, 1, i); bl += (1 - i) * 22; op *= clamp(i * 2); }
       if (inType === "blur") { bl += (1 - i) * 26; op *= clamp(i * 1.5); }
       s.el.style.opacity = op;
-      s.el.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`;
-      s.el.style.filter = bl > 0.2 ? `blur(${bl}px)` : "none";
+      s.el.style.transform = `translate(${tx}px, ${ty}px) scale(${sc}) ${shotXf(s.def.camera ?? SHOTS[si % SHOTS.length], local, dur)}`;
+      // chromatic fringe while a transition is moving (lens feel), plus motion blur from the transition
+      const ca = Math.max(si > 0 && inType !== "none" ? Math.sin(Math.PI * clamp(i)) : 0, Math.sin(Math.PI * clamp(o)));
+      const fringe = ca > 0.05 ? ` drop-shadow(${ca * 7}px 0 0 rgba(255,60,90,.35)) drop-shadow(${-ca * 7}px 0 0 rgba(40,140,255,.35))` : "";
+      s.el.style.filter = (bl > 0.2 ? `blur(${bl}px)` : "") + fringe || "none";
       s.update(Math.min(local, dur + OUT), dur);
     });
 

@@ -1,15 +1,17 @@
 // The series hook: identical every episode, only the dates change.
 // Apple Calendar (dark) month view -> slow push-in on TODAY (red) -> zoom out ->
 // red circle travels back day by day to the NEWS date -> lands -> camera dives into it.
-import { clamp, lerp, prog, ease, spring, appleEase, brandInOut } from "./ease.js";
+import { clamp, lerp, prog, ease, spring, appleEase, brandInOut, snapOut } from "./ease.js";
 
+// Fast and punchy: it's the hook. Punch-in on today, snap out to the month in 3D, the dot shoots back
+// to the news date, impact, iris. ~2.5 s total.
 export const HOOK = {
-  pushIn: [0.0, 1.35],   // slow push-in on today
-  zoomOut: [1.35, 0.85], // reveal whole month
-  travel: [2.15, 1.35],  // circle travels back in time (riser peaks at the end)
-  land: 3.5,             // impact
-  dive: [3.85, 0.75],    // dive into the news date -> red fill
-  duration: 4.6,         // body starts here (wipe from red)
+  pushIn: [0.0, 0.5],    // punch-in on today
+  zoomOut: [0.42, 0.5],  // snap out to the whole month (tilted plane)
+  travel: [0.82, 0.7],   // dot shoots back in time
+  land: 1.55,            // impact
+  dive: [1.8, 0.55],     // push towards the dot + iris
+  duration: 2.4,         // body starts here
 };
 
 const MONTHS = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
@@ -43,7 +45,7 @@ export function buildHook(root, ep, cfg) {
   const layer = document.createElement("div");
   layer.className = "hook";
   layer.innerHTML = `
-    <div class="cal">
+    <div class="cal3d"><div class="cal">
       <div class="cal-top"><span class="cal-back">‹ ${today.getUTCFullYear()}</span>
         <span class="cal-icons"><i></i><i></i><b>+</b></span></div>
       <div class="cal-month">${MONTHS[today.getUTCMonth()]}</div>
@@ -52,7 +54,7 @@ export function buildHook(root, ep, cfg) {
       <div class="cal-today-ring"></div>
       <div class="cal-dot"></div>
       <div class="cal-dot-num"></div>
-    </div>
+    </div></div>
     <div class="hook-badge"><span class="hb-dot"></span><span class="hb-title">Aktualita</span><span class="hb-no">${String(ep.number ?? 1).padStart(2, "0")}</span></div>
     <div class="hook-label"><span class="hl-small">NOVINKA ZE DNE</span><span class="hl-big">${news.getUTCDate()}. ${MONTHS_GEN[news.getUTCMonth()]}</span></div>
     <div class="hook-fill"></div>`;
@@ -80,7 +82,7 @@ export function buildHook(root, ep, cfg) {
   const path = [];
   for (let k = 0; k <= daysBack; k++) path.push(cellOf(new Date(+today - k * dayMs)));
 
-  const cal = layer.querySelector(".cal");
+  const cal = layer.querySelector(".cal"), cal3d = layer.querySelector(".cal3d");
   const dot = layer.querySelector(".cal-dot");
   const dotNum = layer.querySelector(".cal-dot-num");
   const ring = layer.querySelector(".cal-today-ring");
@@ -141,7 +143,7 @@ export function buildHook(root, ep, cfg) {
     let s, fx, fy;
     const pPush = ease.inOutSine(prog(t, ...T.pushIn));
     const pOut = ease.inOutCubic(prog(t, ...T.zoomOut));
-        const s0 = lerp(2.05, 2.55, pPush);
+        const s0 = lerp(1.5, 2.7, snapOut(prog(t, ...T.pushIn)));
     s = lerp(s0, 1, pOut);
     fx = lerp(todayCell.x, W / 2, pOut);
     fy = lerp(todayCell.y, gridCenterY, pOut);
@@ -153,6 +155,13 @@ export function buildHook(root, ep, cfg) {
     fy = lerp(fy0, newsCell.y, pPushEnd * 0.35);
     const tx = W / 2 - fx * s, ty = H / 2 - fy * s;
     cal.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    // 3D camera: arrive tilted, lay the month down as a plane, orbit slightly while the dot travels, flatten on impact
+    const tIn = snapOut(prog(t, 0, 0.6));
+    const tilt = lerp(0, 1, brandInOut(prog(t, T.zoomOut[0], 0.45))) * (1 - brandInOut(prog(t, T.land - 0.15, 0.45)));
+    const rx = (1 - tIn) * 28 + tilt * 22;
+    const ry = (1 - tIn) * -24 + tilt * lerp(10, -8, brandInOut(prog(t, T.travel[0], T.travel[1])));
+    const rz = (1 - tIn) * 6 + tilt * -3;
+    cal3d.style.transform = `perspective(1500px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${1 + tilt * 0.08})`;
 
     // --- overlays
     const bIn = appleEase(prog(t, 0.15, 0.6));
