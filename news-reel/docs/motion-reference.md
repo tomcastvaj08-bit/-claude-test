@@ -89,3 +89,12 @@ Volba hooku: `"hook": "board"` (výchozí) nebo `"hook": "calendar"` (iOS kalend
 - Formát 16:9, **24 fps a 180° závěrka** (6 dílčích snímků) – rozmazání pohybu je pak filmové, ne digitální.
 - Opar/halace: rozmazaná kopie podkladu přes sebe v režimu screen + zvednuté černé + světelný leak + těžká viněta + zrno.
 - Pohyb „jako kameraman“: švih s ~2 % přejetím a dorovnáním, zrychlující dolly, střih uprostřed nájezdu, ruka = několik nesouměřitelných nízkých frekvencí (ne čistý sinus).
+
+### 6c. Hook v3 (zpětná vazba k v8)
+- Kamera na začátku: plynulý **pojezd** podél zdi (translace + lehký push, křivka bezier(.38,0,.12,1)), žádné natáčení rotateY – to působilo „nakřivo“.
+- Zblízka musí mít kalendář stejnou texturu jako zdálky → jedna fotka, jedna kamera, papír z fotky papíru + světlo z podkladu, rozlišení canvasu 2,2× (ostré i při zoomu 2×).
+- Odtrhávané listy působily nerealisticky → skutečný měsíční kalendář, jen zakroužkování data.
+- Vítr: listy papíru se ohýbají (řetěz 3D proužků), lehčí papír víc, kalendář nejmíň; náraz větru putuje od okna.
+- Rozostřené listí v popředí (předrozmazané sprity, paralaxa 1,8–2,3× kamery) = hloubka ostrosti f/1.8.
+- Přechod do grafiky přes papír: ponoření do papíru → bílá → grafika „roste“ dál (scale 0.86→1) na jemné textuře papíru.
+- V grafice 1× 3D iPhone (Apple styl, psaní na displeji) a 1× `invert` záblesk v půlce videa.

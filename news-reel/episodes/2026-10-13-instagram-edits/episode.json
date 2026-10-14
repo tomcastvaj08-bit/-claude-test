@@ -97,20 +97,23 @@
     },
     {
       "cue": "platform",
-      "template": "checklist",
+      "template": "iphone",
       "transition": "streak",
       "props": {
-        "title": "Kde to **jede?**",
+        "kicker": "Kde to jede?",
+        "title": "Zatím jen na **iPhonu**",
+        "sub": "Android je na cestě",
+        "app": "Poznámky",
+        "heading": "Instagram Edits",
+        "date": "7. října 2026",
         "items": [
           {
-            "text": "iPhone · iOS",
-            "icon": "apple",
-            "at": "iPhonu"
+            "text": "iOS – dostupné",
+            "at": "iPhonu",
+            "done": true
           },
           {
-            "text": "Android",
-            "icon": "android",
-            "state": "soon",
+            "text": "Android – brzy",
             "at": "Android"
           }
         ]
@@ -119,7 +122,7 @@
     {
       "cue": "clients",
       "template": "particles",
-      "transition": "zoom",
+      "transition": "invert",
       "props": {
         "text": "Rychlejší **carousely**"
       }

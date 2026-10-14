@@ -344,6 +344,82 @@ Object.assign(proTemplates, {
   },
 
   // props: { text, count: 900 }
+  // 3D iPhone (Apple style): the phone flies in on a 3D arc, settles at a slight angle and slowly turns;
+  // on its screen an Apple Notes page is TYPED (heading + checklist), keys pop on the keyboard.
+  // props: { kicker, title, sub, app, heading, items:[{text, at, done}] }
+  iphone(el, p, ctx) {
+    const items = p.items ?? [];
+    const KB = ["qwertzuiop", "asdfghjkl", "yxcvbnm"];
+    el.appendChild(h(`<div class="sc sc-iphone">
+      <div class="ip-copy">
+        ${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}
+        ${p.title ? kineticWords(p.title, "md") : ""}
+        ${p.sub ? kineticWords(p.sub, "s muted") : ""}
+      </div>
+      <div class="ip-stage"><div class="ip-shadow"></div><div class="ip">
+        ${Array.from({ length: 12 }, (_, k) => `<i class="ip-edge" style="transform:translateZ(${-k * 2.3}px)"></i>`).join("")}
+        <i class="ip-btn b1"></i><i class="ip-btn b2"></i><i class="ip-btn b3"></i>
+        <div class="ip-front"><div class="ip-screen">
+          <div class="ip-status"><b>9:41</b><span class="ip-icons"><i class="sig"></i><i class="wifi"></i><i class="bat"></i></span></div>
+          <div class="ip-island"></div>
+          <div class="ip-nav"><span>‹ ${esc(p.app ?? "Poznámky")}</span><span>Hotovo</span></div>
+          <div class="ip-note">
+            <div class="ip-h"><span class="ty"></span></div>
+            <div class="ip-date">${esc(p.date ?? "dnes 9:41")}</div>
+            ${items.map(() => `<div class="ip-li"><i class="ip-cb"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></i><span class="ty"></span></div>`).join("")}
+          </div>
+          <div class="ip-kb">${KB.map((r, ri) => `<div class="ip-row r${ri}">${ri === 2 ? '<i class="k wide">⇧</i>' : ""}${[...r].map((c) => `<i class="k" data-k="${c}">${c}</i>`).join("")}${ri === 2 ? '<i class="k wide">⌫</i>' : ""}</div>`).join("")}
+            <div class="ip-row r3"><i class="k wide">123</i><i class="k space" data-k=" ">mezera</i><i class="k wide ret">↵</i></div></div>
+          <div class="ip-home"></div>
+        </div><div class="ip-glare"></div></div>
+      </div></div>
+    </div>`));
+    const phone = el.querySelector(".ip"), shadow = el.querySelector(".ip-shadow"), glare = el.querySelector(".ip-glare");
+    const typers = [...el.querySelectorAll(".ty")], lis = [...el.querySelectorAll(".ip-li")], cbs = [...el.querySelectorAll(".ip-cb")];
+    const keys = [...el.querySelectorAll(".k[data-k]")];
+    const copy = el.querySelector(".ip-copy"), tag = copy.querySelector(".tag"), [line, sub] = copy.querySelectorAll(".kw-line");
+    const strip = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    // typing schedule: heading right after the phone lands, each item on its spoken word
+    const CPS = 26;
+    const texts = [p.heading ?? "", ...items.map((it) => it.text)];
+    const starts = [0.55, ...items.map((it, i) => Math.max(0.55 + texts[0].length / CPS + 0.1 + i * 0.15, ctx.at(it.at, 1.2 + i * 0.6) - 0.1))];
+    ctx.sfx("phone_slide", -0.15, -3);
+    ctx.sfx("phone_typing", 0.5, -10);
+    items.forEach((it, i) => it.done && ctx.sfx("check_tick", starts[i + 1] + it.text.length / CPS + 0.05, -6));
+    let tLine, tSub;
+    return (t, dur) => {
+      if (!tLine && line) { measureWords(el); tLine = timesForWords(line, ctx, 0.15, 0.1); if (sub) tSub = timesForWords(sub, ctx, (tLine.at(-1) ?? 0) + 0.3, 0.06); }
+      if (line) animateWords(line, t, tLine);
+      if (sub) animateWords(sub, t, tSub);
+      if (tag) { const q = brandOut(prog(t, 0, 0.6)); tag.style.opacity = q; tag.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
+      // phone: 3D arc in, then a slow turntable drift + float
+      const e = snapOut(prog(t, -0.1, 1.0)), d = brandInOut(prog(t, 0.6, Math.max(1, dur)));
+      const ry = lerp(-62, -20, e) + d * 14, rx = lerp(38, 7, e) - d * 2, rz = lerp(14, 2.5, e);
+      const ty = (1 - e) * 900 + Math.sin(t * 1.4) * 8;
+      phone.style.transform = `translateY(${ty}px) translateZ(${(1 - e) * -400}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+      shadow.style.opacity = String(0.55 * e);
+      shadow.style.transform = `translateX(${-ry * 1.6}px) scale(${lerp(0.6, 1, e)}, 1)`;
+      glare.style.backgroundPosition = `${lerp(-40, 140, (ry + 62) / 76)}% 0`;
+      // typing
+      let active = null;
+      typers.forEach((ty, i) => {
+        const txt = texts[i] ?? "", n = Math.max(0, Math.min(txt.length, Math.floor((t - starts[i]) * CPS)));
+        ty.textContent = txt.slice(0, n);
+        const typing = t >= starts[i] && n < txt.length;
+        ty.classList.toggle("caret", typing || (n === txt.length && i === typers.length - 1 && t < starts[i] + txt.length / CPS + 0.8 && Math.floor(t * 2.2) % 2 === 0));
+        if (typing) active = strip(txt[n] ?? "");
+        if (i > 0) {
+          const li = lis[i - 1], q = brandOut(prog(t, starts[i] - 0.15, 0.35));
+          li.style.opacity = String(q); li.style.transform = `translateY(${(1 - q) * 14}px)`;
+          const done = items[i - 1].done && t >= starts[i] + txt.length / CPS + 0.05;
+          cbs[i - 1].classList.toggle("on", !!done);
+          cbs[i - 1].style.transform = `scale(${done ? 1 + 0.25 * Math.sin(Math.PI * clamp((t - starts[i] - txt.length / CPS - 0.05) / 0.25)) : 1})`;
+        }
+      });
+      keys.forEach((k) => k.classList.toggle("down", active != null && k.dataset.k === active));
+    };
+  },
+
   particles(el, p, ctx) {
     el.classList.add("full");
     el.appendChild(h(`<div class="pt"><canvas width="${window.__W ?? 1080}" height="${window.__H ?? 1920}"></canvas>${p.text ? kineticWords(p.text, "lg pt-text") : ""}</div>`));

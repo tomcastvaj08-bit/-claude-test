@@ -1,206 +1,516 @@
-// "Board" hook v2 – photographic. Two real plates (assets/plates: wide room + board close-up, generated
-// once with Higgsfield) carry all texture, light and haze. We only composite the tear-off calendar
-// (paper texture + the plate's own light/shadow multiplied over it) and drive a camera like an
-// operator would: whip pan with a small overshoot, accelerating push, jump cut, settle, handheld.
-// 24 fps + 180° shutter motion blur come from the renderer (sub-frame accumulation).
-import { clamp, lerp, prog, ease, brandOut, brandInOut, snapOut } from "./ease.js";
+// "Board" hook v3 – ONE photographic plate (assets/plates/wide.jpg: brick wall, chalkboard, sun through
+// blinds, haze) and ONE continuous camera, so every element keeps the same texture and light from the
+// wide shot to the close-up. On the board hang real-looking paper things: a printed wall calendar of the
+// news month (wire-o binding, magnet hanger), a sticky note, a note stuck on with chewing gum and a blank
+// sheet on two magnets – the sheet the motion graphics start on.
+//
+// Paper is drawn into canvases: real paper photo (fibres) → print multiplied into it → marker → the
+// plate's own light (sun stripes, shade) multiplied over → fine grain. Each sheet is cut into horizontal
+// strips chained in 3D, so the breeze BENDS the paper (lower part lifts and ripples) instead of rotating
+// a flat card. Foreground autumn leaves are out of focus (f/1.8, focus on the board) and parallax with
+// the camera. 24 fps + 180° shutter motion blur come from the renderer.
+//
+// Timeline: smooth truck left→right from the window onto the board → accelerating push → jump cut
+// closer → settle → the news day gets circled with a red marker → chalk arrow → pan to the blank
+// sheet → push into it until it fills the frame → hand-off to the clean motion graphics.
+import { clamp, lerp, prog, ease, brandOut, brandInOut, snapOut, bezier } from "./ease.js";
 
-const MONTHS_NOM = ["LEDEN", "ÚNOR", "BŘEZEN", "DUBEN", "KVĚTEN", "ČERVEN", "ČERVENEC", "SRPEN", "ZÁŘÍ", "ŘÍJEN", "LISTOPAD", "PROSINEC"];
+const MONTHS_NOM = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
 const MONTHS_GEN = ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"];
-const DAYS = ["neděle", "pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota"];
+const WD = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 const dayMs = 86400000;
 const parse = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const truck = bezier(0.38, 0, 0.12, 1); // smooth dolly: gentle start, long settle
 
-// plate geometry (px of the 3840×2160 plates)
-const PAD_W = 1000, PAD_H = 1250; // calendar pad in close-plate px
-const WIDE_CAL = { x: 2760, y: 800, k: 0.24 }; // where the pad hangs in the wide plate (+ its scale)
-const CLOSE_CAL = { x: 2330, y: 1090 };
+// ---- plate layout (px of the 3840×2160 plate; the board's inner area is ≈ x 1440–3820, y 175–1800)
+const PLATE = { w: 3840, h: 2160 };
+const CAL = { x: 2250, y: 1000, w: 620, h: 800, rot: -0.6, n: 14, res: 2.2, amp: 6, pow: 1.9, f: 1.1, seed: 0.4 };
+const PAPER = { x: 3070, y: 1420, w: 760, h: 540, rot: 1.3, n: 10, res: 2.2, amp: 10, pow: 1.6, f: 1.35, seed: 2.1 };
+const STICKY = { x: 1720, y: 700, w: 250, h: 250, rot: -6, n: 6, res: 2, amp: 13, pow: 1.3, f: 2.4, seed: 4.2, glue: 0.18 };
+const NOTE = { x: 2830, y: 720, w: 200, h: 280, rot: 5, n: 7, res: 2, amp: 15, pow: 1.4, f: 1.9, seed: 1.3 };
+
+// Czech public holidays (red in the grid, label in the cell)
+function easter(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  return new Date(Date.UTC(y, Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1));
+}
+function holidays(y) {
+  const H = { "1-1": "Nový rok", "5-1": "Svátek práce", "5-8": "Den vítězství", "7-5": "Cyril a Metoděj", "7-6": "Mistr Jan Hus", "9-28": "Den české státnosti",
+    "10-28": "Den vzniku ČSR", "11-17": "Den boje za svobodu", "12-24": "Štědrý den", "12-25": "1. svátek vánoční", "12-26": "2. svátek vánoční" };
+  const e = easter(y), gf = new Date(+e - 2 * dayMs), em = new Date(+e + dayMs);
+  H[`${gf.getUTCMonth() + 1}-${gf.getUTCDate()}`] = "Velký pátek";
+  H[`${em.getUTCMonth() + 1}-${em.getUTCDate()}`] = "Velikonoční pondělí";
+  return H;
+}
+const isoWeek = (d) => { const t = new Date(+d); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7) + 3); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - y0) / dayMs - 3 + ((y0.getUTCDay() + 6) % 7)) / 7); };
+const monthCells = (y, m) => { const first = new Date(Date.UTC(y, m, 1)); const off = (first.getUTCDay() + 6) % 7; return Array.from({ length: 42 }, (_, k) => new Date(+first + (k - off) * dayMs)); };
+
+// deterministic noise
+function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+const bump = (t, c, w) => { const u = (t - c) / (w / 2); return Math.abs(u) >= 1 ? 0 : 0.5 * (1 + Math.cos(Math.PI * u)); };
 
 export function buildBoardHook(root, ep, cfg) {
   const W = window.__W ?? 1920, H = window.__H ?? 1080;
-  const today = parse(ep.today), news = parse(ep.newsDate);
-  const back = Math.max(0, Math.round((today - news) / dayMs));
-  let days = [];
-  for (let k = 0; k <= back; k++) days.push(new Date(+today - k * dayMs));
-  if (days.length > 8) days = [...days.slice(0, 4), ...days.slice(-4)];
-  const nFlip = days.length - 1;
+  const news = parse(ep.newsDate);
+  const ny = news.getUTCFullYear(), nm = news.getUTCMonth();
+  const HOL = holidays(ny);
 
-  const T = { whip: [0, 1.05], push: [1.0, 0.45], cut: 1.45, cross: [1.95, 0.5], gust: 2.7, flip: 0.13, flipDur: 0.3 };
-  T.land = T.gust + Math.max(0, nFlip - 1) * T.flip + T.flipDur;
-  T.circle = [T.land + 0.02, 0.38];
-  T.text = T.land + 0.12;
-  T.dive = [T.land + 0.6, 0.45];
+  // ---- calendar grid layout (sheet units)
+  const G = { x0: 66, x1: 592, y0: 286, y1: 770 };
+  G.cw = (G.x1 - G.x0) / 7; G.rh = (G.y1 - G.y0) / 6;
+  const cells = monthCells(ny, nm);
+  const ni = cells.findIndex((d) => +d === +news);
+  const dateCell = { x: G.x0 + ((ni % 7) + 0.5) * G.cw, y: G.y0 + (Math.floor(ni / 7) + 0.5) * G.rh };
+  // sheet point → plate point (sheets are slightly rotated)
+  const toPlate = (S, px, py) => {
+    const a = (S.rot * Math.PI) / 180, dx = px - S.w / 2, dy = py - S.h / 2;
+    return { x: S.x + dx * Math.cos(a) - dy * Math.sin(a), y: S.y + dx * Math.sin(a) + dy * Math.cos(a) };
+  };
+  const DATE = toPlate(CAL, dateCell.x, dateCell.y);
+
+  // chalk arrow: from beside the circled day over to the blank sheet, head pointing down onto it
+  const arrowPath = () => {
+    const x0 = CAL.x + CAL.w / 2 + 50, y0 = DATE.y + 10, x1 = PAPER.x - PAPER.w / 2 + 170, y1 = PAPER.y - PAPER.h / 2 - 45;
+    return `M${x0} ${y0} C${x0 + 120} ${y0 - 70} ${x1 - 40} ${y1 - 150} ${x1} ${y1} M${x1} ${y1} l-58 -26 M${x1} ${y1} l6 -62`;
+  };
+  const T = { truck: [0, 1.45], push: [1.3, 0.5], cut: 1.8, circle: [2.12, 0.5], pan: [3.0, 0.72], write: [3.38, 0.62], dive: [3.92, 0.62] };
+  T.arrow = [T.circle[0] + 0.55, 0.36];
   T.end = T.dive[0] + T.dive[1];
 
-  // light map baked into each close-up sheet (moves with the sheet, fades as it flies off the board)
-  const LM_X = CLOSE_CAL.x - PAD_W / 2, LM_Y = CLOSE_CAL.y - PAD_H / 2;
-  const LM_STYLE = `background-image:url(../assets/plates/close.jpg);background-size:3840px 2160px;background-position:${-LM_X}px ${-LM_Y}px`;
-  const page = (d, i, withMarks) => `<div class="pg" style="z-index:${100 - i}">
-      <div class="pg-face front">
-        <div class="pg-top"><span>${MONTHS_NOM[d.getUTCMonth()]}</span><span>${d.getUTCFullYear()}</span></div>
-        <div class="pg-num">${d.getUTCDate()}</div><div class="pg-day">${DAYS[d.getUTCDay()]}</div>
-        ${withMarks && i === 0 ? `<svg class="pg-x" viewBox="0 0 1000 1250"><path pathLength="1" d="M190 420 C330 560 560 760 820 960"/><path pathLength="1" d="M830 430 C680 560 470 760 200 980"/></svg>` : ""}
-        ${withMarks && i === nFlip ? `<svg class="pg-o" viewBox="0 0 1000 1250"><path pathLength="1" d="M520 300 C790 300 880 520 860 680 C840 880 660 990 490 985 C280 980 150 840 155 650 C160 460 300 320 560 312"/></svg>` : ""}
-        ${withMarks ? `<div class="lm-in mul" style="${LM_STYLE}"></div><div class="lm-in col" style="${LM_STYLE}"></div>` : ""}
-        <div class="pg-shade"></div>
-      </div>
-      <div class="pg-face backf"></div>
-    </div>`;
-  const pad = (withMarks, cls) => `<div class="cpad ${cls}">
-      <div class="pad-shadow"></div><div class="pad-edge e3"></div><div class="pad-edge e2"></div><div class="pad-edge e1"></div>
-      ${(withMarks ? days : [days[0]]).map((d, i) => page(d, i, withMarks)).join("")}
-      <div class="pad-stub"></div><div class="pad-bind"></div><i class="pin2"></i>
-    </div>`;
-  // light map: the plate itself, aligned under the pad, multiplied over the paper → real stripes & shade on it
-  const lightmap = (plate, cx, cy, k) => {
-    const w = PAD_W * k, h = (PAD_H + 60) * k, x = cx - w / 2, y = cy - (PAD_H / 2) * k - 30 * k;
-    const st = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;background-image:url(../assets/plates/${plate}.jpg);background-position:${-x}px ${-y}px`;
-    return `<div class="lmap" style="${st}"></div><div class="lcol" style="${st}"></div>`;
-  };
+  // ---- DOM
+  const strips = (S) => { let inner = ""; const sh = S.h / S.n; for (let i = S.n - 1; i >= 0; i--) inner = `<div class="strip" style="top:${i ? sh : 0}px;height:${sh + 1}px"><canvas></canvas><i class="strip-sh"></i>${inner}</div>`; return inner; };
+  const sheet = (S, cls, extras = "", under = "") => `<div class="sh ${cls}" style="left:${S.x - S.w / 2}px;top:${S.y - S.h / 2}px;width:${S.w}px;height:${S.h}px;transform:rotate(${S.rot}deg)">
+      <div class="sh-shadow"></div>${under}<div class="sh-3d">${strips(S)}</div>${extras}</div>`;
+  const wires = Array.from({ length: 23 }, (_, k) => `<i class="wire" style="left:${40 + k * ((CAL.w - 80) / 22) - 4}px"></i>`).join("");
+  const calExtras = `${wires}<svg class="hanger" viewBox="0 0 200 120" style="left:${CAL.w / 2 - 100}px;top:-112px"><path d="M30 118 L100 20 L170 118"/></svg><i class="mag blue" style="left:${CAL.w / 2 - 34}px;top:-140px;width:68px;height:68px"></i>`;
+  const calUnder = `<div class="sh-under u3"></div><div class="sh-under u2"></div><div class="sh-under u1"></div>`;
+  const paperExtras = `<i class="mag blue" style="left:26px;top:-22px;width:52px;height:52px"></i><i class="mag green" style="left:${PAPER.w - 78}px;top:-20px;width:52px;height:52px"></i>`;
+  const noteExtras = `<i class="gum" style="left:${NOTE.w / 2 - 26}px;top:-14px"></i>`;
 
   const layer = document.createElement("div");
   layer.className = "bhook";
   layer.innerHTML = `
     <svg width="0" height="0" style="position:absolute">
-      <filter id="bh-marker"><feTurbulence type="fractalNoise" baseFrequency=".05 .9" numOctaves="2" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9"/></filter>
       <filter id="bh-chalk"><feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -2.4 1.7"/><feComposite in="SourceGraphic" operator="in"/></filter>
     </svg>
-    <div class="bh-shot wide"><div class="bh-plate">
+    <div class="bh-shot"><div class="bh-plate">
       <img src="../assets/plates/wide.jpg" class="plate-img"><img src="../assets/plates/wide.jpg" class="plate-glow">
-      <div class="calhold" style="left:${WIDE_CAL.x}px;top:${WIDE_CAL.y}px;transform:translate(-50%,-50%) scale(${WIDE_CAL.k})">${pad(false, "wide")}</div>
-      ${lightmap("wide", WIDE_CAL.x, WIDE_CAL.y, WIDE_CAL.k)}
+      ${sheet(STICKY, "sticky")}
+      ${sheet(NOTE, "note", noteExtras)}
+      ${sheet(CAL, "cal", calExtras, calUnder)}
+      ${sheet(PAPER, "paper", paperExtras)}
+      <svg class="chalk2-svg bh-arrow" style="left:0;top:0" width="${PLATE.w}" height="${PLATE.h}" viewBox="0 0 ${PLATE.w} ${PLATE.h}">
+        <path pathLength="1" d="${arrowPath()}"/>
+      </svg>
     </div></div>
-    <div class="bh-shot close"><div class="bh-plate">
-      <img src="../assets/plates/close.jpg" class="plate-img"><img src="../assets/plates/close.jpg" class="plate-glow">
-      <div class="calhold" style="left:${CLOSE_CAL.x}px;top:${CLOSE_CAL.y}px;transform:translate(-50%,-50%)">${pad(true, "close")}</div>
-      <div class="chalk2 bh-note" style="left:${CLOSE_CAL.x + 620}px;top:${CLOSE_CAL.y - 120}px">novinka!</div>
-      <svg class="chalk2-svg bh-arrow" style="left:${CLOSE_CAL.x + 520}px;top:${CLOSE_CAL.y + 40}px" width="420" height="360" viewBox="0 0 420 360"><path pathLength="1" d="M390 30 C300 70 190 170 70 300 M70 300 L100 200 M70 300 L170 280"/></svg>
-    </div></div>
+    <div class="bh-leaves"></div>
     <div class="bh-haze"></div><div class="bh-leak"></div><div class="bh-vig"></div>
-    <div class="bh-title"><span class="bt1">novinka ze</span><span class="bt2">${news.getUTCDate()}. ${MONTHS_GEN[news.getUTCMonth()]}</span></div>
-    <div class="bh-flash"></div>`;
+    <div class="bh-white"></div>`;
   root.appendChild(layer);
 
-  const wideShot = layer.querySelector(".bh-shot.wide"), closeShot = layer.querySelector(".bh-shot.close");
-  const widePlate = wideShot.firstElementChild, closePlate = closeShot.firstElementChild;
-  const pages = [...closeShot.querySelectorAll(".pg")];
-  const xs = [...closeShot.querySelectorAll(".pg-x path")], os = [...closeShot.querySelectorAll(".pg-o path")];
-  const stub = closeShot.querySelector(".pad-stub");
-  const note = closeShot.querySelector(".bh-note"), arrow = closeShot.querySelector(".bh-arrow path");
-  const leak = layer.querySelector(".bh-leak"), flash = layer.querySelector(".bh-flash");
-  const title = layer.querySelector(".bh-title"), bt1 = title.children[0], bt2 = title.children[1];
-
-  // operator-style handheld: a few incommensurate low frequencies, never a clean sine
-  const shake = (t, a = 1) => ({
-    x: a * (Math.sin(t * 1.31) * 5 + Math.sin(t * 2.97 + 1.3) * 2.6 + Math.sin(t * 6.1 + 0.4) * 0.9),
-    y: a * (Math.sin(t * 1.07 + 2.1) * 4 + Math.sin(t * 3.41 + 0.7) * 2.1 + Math.sin(t * 5.3) * 0.8),
-    r: a * (Math.sin(t * 0.83 + 0.5) * 0.18 + Math.sin(t * 2.3) * 0.06),
+  const shot = layer.querySelector(".bh-shot"), plate = shot.firstElementChild;
+  const plateImg = layer.querySelector(".plate-img");
+  const arrow = layer.querySelector(".bh-arrow path");
+  const leak = layer.querySelector(".bh-leak"), vig = layer.querySelector(".bh-vig"), haze = layer.querySelector(".bh-haze"), white = layer.querySelector(".bh-white");
+  const leavesEl = layer.querySelector(".bh-leaves");
+  const SHEETS = [
+    { S: STICKY, el: layer.querySelector(".sh.sticky") }, { S: NOTE, el: layer.querySelector(".sh.note") },
+    { S: CAL, el: layer.querySelector(".sh.cal") }, { S: PAPER, el: layer.querySelector(".sh.paper") },
+  ];
+  SHEETS.forEach((o) => {
+    o.strips = [...o.el.querySelectorAll(".strip")];
+    o.shades = o.strips.map((s) => s.querySelector(".strip-sh"));
+    o.canvases = o.strips.map((s) => s.querySelector("canvas"));
+    o.shadow = o.el.querySelector(".sh-shadow");
   });
-  const place = (plate, cx, cy, s, rot = 0, ry = 0) => {
-    // never show past the edge of the photo (extra 4 % margin covers rotation/handheld)
-    const m = 1.04;
-    s = Math.max(s, (m * W) / 3840, (m * H) / 2160);
-    const hw = W / (2 * s) * m, hh = H / (2 * s) * m;
-    cx = clamp(cx, hw, 3840 - hw); cy = clamp(cy, hh, 2160 - hh);
-    plate.style.transform = `translate(${W / 2 - cx * s}px, ${H / 2 - cy * s}px) scale(${s})`;
-    plate.parentElement.style.transform = `perspective(2200px) rotateY(${ry}deg) rotate(${rot}deg)`;
+  const calSheet = SHEETS[2];
+
+  // ------------------------------------------------------------ paper drawing (after fonts + images)
+  const paperImg = new Image(); paperImg.src = "../assets/plates/paper.jpg";
+  let noise = null, calBase = null, circleP = -1, paperBaseC = null, writeP = -1;
+
+  function makeNoise() {
+    const c = document.createElement("canvas"); c.width = c.height = 384;
+    const x = c.getContext("2d"), d = x.createImageData(384, 384), r = rng(77);
+    for (let i = 0; i < d.data.length; i += 4) { const v = 128 + (r() - 0.5) * 120; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    x.putImageData(d, 0, 0);
+    return c;
+  }
+  function canvasFor(S) { const c = document.createElement("canvas"); c.width = Math.round(S.w * S.res); c.height = Math.round(S.h * S.res); return c; }
+  // real paper photo at a constant fibre scale, a different crop per sheet
+  function paperBase(x, S, { filter = "saturate(.35) brightness(1.1)", tint = null, k = 1.9, seed = 1 } = {}) {
+    const r = rng(seed * 97 + 5);
+    const sw = Math.min(paperImg.width * 0.8, S.w * k), sh = Math.min(paperImg.height * 0.8, S.h * k);
+    const sx = paperImg.width * 0.1 + r() * (paperImg.width * 0.8 - sw), sy = paperImg.height * 0.1 + r() * (paperImg.height * 0.8 - sh);
+    x.save(); x.filter = filter; x.drawImage(paperImg, sx, sy, sw, sh, 0, 0, S.w, S.h); x.restore();
+    if (tint) { x.save(); x.globalCompositeOperation = "multiply"; x.fillStyle = tint; x.fillRect(0, 0, S.w, S.h); x.restore(); }
+  }
+  // finish: fine grain, edge falloff, then the plate's light (sun stripes / shade) multiplied over the sheet
+  // light map = only the LOW frequencies of the plate (sun stripes, shade – never the chalk smudges),
+  // levelled against the whole board so a lit stripe is equally bright on every sheet
+  let lmStats = null;
+  function lowres(sx, sy, sw, sh, k) {
+    const c = document.createElement("canvas"); c.width = Math.max(2, Math.round(sw / k)); c.height = Math.max(2, Math.round(sh / k));
+    const x = c.getContext("2d"); x.filter = "blur(1.2px)"; x.drawImage(plateImg, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    return c;
+  }
+  const lum = (d, i) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+  function boardStats() {
+    const c = lowres(1460, 200, 2340, 1580, 16), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data, v = [];
+    for (let i = 0; i < d.length; i += 4) v.push(lum(d, i));
+    v.sort((a, b) => a - b);
+    return { lo: v[Math.floor(v.length * 0.04)], hi: v[Math.floor(v.length * 0.97)] };
+  }
+  function lightMap(S) {
+    const lx = S.x - S.w / 2, ly = S.y - S.h / 2, K = 10;
+    const c = lowres(lx - 40, ly - 40, S.w + 80, S.h + 80, K), x = c.getContext("2d");
+    const img = x.getImageData(0, 0, c.width, c.height), d = img.data;
+    const col = document.createElement("canvas"); col.width = c.width; col.height = c.height;
+    col.getContext("2d").drawImage(c, 0, 0);
+    for (let i = 0; i < d.length; i += 4) {
+      let u = clamp((lum(d, i) - lmStats.lo) / (lmStats.hi - lmStats.lo)); u = u * u * (3 - 2 * u);
+      const v = 255 * (0.5 + 0.5 * u);
+      d[i] = Math.min(255, v * 1.04); d[i + 1] = v; d[i + 2] = v * 0.9; d[i + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    return { mul: c, col, pad: 40 / K };
+  }
+  function finish(x, S, lmStrength = 1) {
+    x.save();
+    x.globalCompositeOperation = "overlay"; x.globalAlpha = 0.16;
+    x.fillStyle = x.createPattern(noise, "repeat"); x.fillRect(0, 0, S.w, S.h);
+    x.globalCompositeOperation = "multiply"; x.globalAlpha = 1;
+    const g = x.createRadialGradient(S.w / 2, S.h / 2, Math.min(S.w, S.h) * 0.35, S.w / 2, S.h / 2, Math.max(S.w, S.h) * 0.75);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(1, "rgba(214,206,192,1)");
+    x.fillStyle = g; x.fillRect(0, 0, S.w, S.h);
+    if (!S.lm) S.lm = lightMap(S);
+    const { mul, col, pad } = S.lm;
+    x.imageSmoothingQuality = "high";
+    x.globalAlpha = lmStrength;
+    x.drawImage(mul, pad, pad, mul.width - 2 * pad, mul.height - 2 * pad, 0, 0, S.w, S.h);
+    x.globalCompositeOperation = "soft-light"; x.globalAlpha = 0.55; x.filter = "saturate(1.4)";
+    x.drawImage(col, pad, pad, col.width - 2 * pad, col.height - 2 * pad, 0, 0, S.w, S.h);
+    x.restore();
+  }
+  // printed ink: multiplied into the paper, slightly soft
+  function ink(x, fn) { x.save(); x.globalCompositeOperation = "multiply"; x.filter = "blur(.35px)"; fn(x); x.restore(); }
+
+  function drawCalendarBase() {
+    const S = CAL, c = canvasFor(S), x = c.getContext("2d");
+    x.scale(S.res, S.res);
+    paperBase(x, S, { filter: "saturate(.25) brightness(1.13) contrast(1.05)", seed: 3 });
+    ink(x, (x) => {
+      // punched holes for the wire-o binding
+      x.fillStyle = "#2a2622";
+      for (let k = 0; k < 23; k++) { const hx = 40 + k * ((S.w - 80) / 22); x.beginPath(); x.roundRect(hx - 4, 12, 8, 13, 3); x.fill(); }
+      x.textBaseline = "alphabetic";
+      x.fillStyle = "#1f2024";
+      x.font = '800 96px "Inter"'; x.letterSpacing = "-3px";
+      x.fillText(MONTHS_NOM[nm], 34, 168);
+      x.font = '600 34px "Inter"'; x.letterSpacing = "1px"; x.fillStyle = "#2f6bed";
+      x.fillText(String(ny), 38, 214);
+      // mini calendars of the previous / next month
+      [[nm - 1, 382], [nm + 1, 492]].forEach(([mm, mx]) => {
+        const d0 = new Date(Date.UTC(ny, mm, 1)), cy = d0.getUTCFullYear(), cmn = d0.getUTCMonth();
+        x.fillStyle = "#1f2024"; x.font = '700 12px "Inter"'; x.letterSpacing = "0px";
+        x.fillText(MONTHS_NOM[cmn].toUpperCase(), mx, 104);
+        x.font = '500 9px "Inter"'; x.textAlign = "right";
+        monthCells(cy, cmn).forEach((d, k) => {
+          if (d.getUTCMonth() !== cmn) return;
+          x.fillStyle = k % 7 === 6 ? "#c8352a" : "#3a3b40";
+          x.fillText(String(d.getUTCDate()), mx + 13 + (k % 7) * 14, 122 + Math.floor(k / 7) * 13);
+        });
+        x.textAlign = "left";
+      });
+      // rule + weekday header
+      x.fillStyle = "#1f2024"; x.fillRect(34, 236, S.w - 68, 2.4);
+      x.font = '700 15px "Inter"'; x.letterSpacing = "2px";
+      WD.forEach((w, k) => { x.fillStyle = k >= 5 ? "#c8352a" : "#3a3b40"; x.fillText(w.toUpperCase(), G.x0 + k * G.cw + 9, 272); });
+      // grid
+      x.strokeStyle = "rgba(40,40,46,.38)"; x.lineWidth = 1.1;
+      for (let r = 0; r <= 6; r++) { x.beginPath(); x.moveTo(G.x0, G.y0 + r * G.rh); x.lineTo(G.x1, G.y0 + r * G.rh); x.stroke(); }
+      for (let k = 0; k <= 7; k++) { x.beginPath(); x.moveTo(G.x0 + k * G.cw, G.y0); x.lineTo(G.x0 + k * G.cw, G.y1); x.stroke(); }
+      cells.forEach((d, k) => {
+        const cx = G.x0 + (k % 7) * G.cw, cy = G.y0 + Math.floor(k / 7) * G.rh, inM = d.getUTCMonth() === nm;
+        const hol = inM ? HOL[`${nm + 1}-${d.getUTCDate()}`] : null;
+        x.letterSpacing = "-0.5px"; x.font = '700 30px "Inter"';
+        x.fillStyle = !inM ? "rgba(60,60,66,.22)" : k % 7 === 6 || hol ? "#c8352a" : "#1f2024";
+        x.fillText(String(d.getUTCDate()), cx + 8, cy + 33);
+        if (hol) {
+          x.font = '500 9.5px "Inter"'; x.letterSpacing = "0px"; x.fillStyle = "#c8352a";
+          const lines = []; let line = "";
+          hol.split(" ").forEach((w) => { if ((line + " " + w).trim().length > 13) { lines.push(line.trim()); line = w; } else line += " " + w; });
+          lines.push(line.trim());
+          lines.slice(-2).forEach((l, j, a) => x.fillText(l, cx + 8, cy + G.rh - 8 + (j - (a.length - 1)) * 11));
+        }
+        if (k % 7 === 0) { x.font = '500 10px "Inter"'; x.letterSpacing = "0px"; x.fillStyle = "rgba(60,60,66,.55)"; x.fillText(String(isoWeek(d)), 40, cy + 20); }
+      });
+    });
+    return c;
+  }
+  // hand-drawn marker loop around the news day (wobbly, ~1.1 turns, a little overshoot)
+  const loop = (() => {
+    const r = rng(11), pts = [], N = 140, a0 = -2.25;
+    const rx = G.cw * 0.6, ry = G.rh * 0.47;
+    for (let i = 0; i <= N; i++) {
+      const u = i / N, a = a0 + u * Math.PI * 2 * 1.12;
+      const wob = 1 + Math.sin(u * 9 + 1.2) * 0.03 + (r() - 0.5) * 0.012 + u * 0.06;
+      pts.push([dateCell.x + Math.cos(a) * rx * wob, dateCell.y + 2 + Math.sin(a) * ry * wob]);
+    }
+    return pts;
+  })();
+  function drawCalendar(p) {
+    const S = CAL, x = calSheet.master.getContext("2d");
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.filter = "none";
+    x.drawImage(calBase, 0, 0);
+    x.scale(S.res, S.res);
+    if (p > 0) {
+      const n = Math.max(2, Math.round(p * (loop.length - 1)) + 1);
+      x.save(); x.globalCompositeOperation = "multiply"; x.lineCap = "round"; x.lineJoin = "round";
+      [[6.2, "rgba(206,32,24,.88)", 0], [3, "rgba(150,12,10,.35)", 0.8]].forEach(([lw, col, off]) => {
+        x.beginPath(); x.lineWidth = lw; x.strokeStyle = col;
+        loop.slice(0, n).forEach(([px, py], i) => (i ? x.lineTo(px + off, py + off) : x.moveTo(px + off, py + off)));
+        x.stroke();
+      });
+      x.restore();
+    }
+    finish(x, S);
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    blit(calSheet);
+  }
+  // the blank sheet: the news date gets hand-written on it (blue marker, revealed left → right) as we arrive
+  function drawPaper(p) {
+    const S = PAPER, o = SHEETS[3];
+    if (!paperBaseC) {
+      paperBaseC = canvasFor(S);
+      const x = paperBaseC.getContext("2d"); x.scale(S.res, S.res);
+      paperBase(x, S, { filter: "saturate(.2) brightness(1.15)", seed: 7, k: 1.7 });
+      o.master = canvasFor(S);
+    }
+    const x = o.master.getContext("2d");
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.filter = "none";
+    x.drawImage(paperBaseC, 0, 0);
+    x.scale(S.res, S.res);
+    const lines = [
+      { txt: `aktualita #${String(ep.number ?? 1).padStart(2, "0")}`, font: '700 40px "Caveat"', x: 52, y: 86, col: "rgba(60,62,72,.8)", a: 0, b: 0.25 },
+      { txt: `novinka ze ${news.getUTCDate()}. ${MONTHS_GEN[nm]}`, font: '700 92px "Caveat"', x: 46, y: 196, col: "rgba(36,84,206,.92)", a: 0.22, b: 0.85 },
+    ];
+    ink(x, (x) => {
+      lines.forEach((l) => {
+        const u = clamp((p - l.a) / (l.b - l.a));
+        if (u <= 0) return;
+        x.font = l.font; const w = x.measureText(l.txt).width;
+        x.save(); x.translate(l.x, l.y); x.rotate(-0.025);
+        x.beginPath(); x.rect(-10, -110, (w + 20) * u, 160); x.clip();
+        x.fillStyle = l.col; x.fillText(l.txt, 0, 0);
+        x.restore();
+      });
+      const u = clamp((p - 0.82) / 0.18);
+      if (u > 0) {
+        x.strokeStyle = "rgba(36,84,206,.75)"; x.lineWidth = 4; x.lineCap = "round";
+        x.beginPath(); x.moveTo(50, 222); x.bezierCurveTo(200, 214, 380, 220, 50 + 560 * u, 210); x.stroke();
+      }
+    });
+    finish(x, S);
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    blit(o);
+  }
+  function drawSticky() {
+    const S = STICKY, c = canvasFor(S), x = c.getContext("2d");
+    x.scale(S.res, S.res);
+    paperBase(x, S, { filter: "saturate(0) brightness(1.2)", tint: "#f6dc63", seed: 2, k: 1.2 });
+    ink(x, (x) => {
+      x.fillStyle = "rgba(30,30,36,.85)"; x.font = '700 40px "Caveat"';
+      x.save(); x.translate(26, 92); x.rotate(-0.05); x.fillText("každé pondělí", 0, 0); x.fillText("→ novinky", 12, 50); x.restore();
+      x.strokeStyle = "rgba(30,30,36,.8)"; x.lineWidth = 3.4; x.lineCap = "round"; x.lineJoin = "round";
+      x.beginPath(); x.moveTo(176, 168); x.lineTo(190, 186); x.lineTo(222, 142); x.stroke();
+    });
+    finish(x, S);
+    return c;
+  }
+  function drawNote() {
+    const S = NOTE, c = canvasFor(S), x = c.getContext("2d");
+    x.scale(S.res, S.res);
+    paperBase(x, S, { filter: "saturate(.15) brightness(1.12)", seed: 5, k: 1.4 });
+    ink(x, (x) => {
+      x.strokeStyle = "rgba(90,140,210,.45)"; x.lineWidth = 1;
+      for (let y = 58; y < S.h; y += 26) { x.beginPath(); x.moveTo(0, y); x.lineTo(S.w, y); x.stroke(); }
+      x.strokeStyle = "rgba(210,70,70,.5)"; x.beginPath(); x.moveTo(30, 0); x.lineTo(30, S.h); x.stroke();
+      x.fillStyle = "rgba(30,30,40,.82)"; x.font = '700 30px "Caveat"';
+      ["nápady:", "– carousel", "– reels", "– AI"].forEach((l, i) => x.fillText(l, 38, 52 + i * 26));
+    });
+    finish(x, S);
+    return c;
+  }
+  // master → strip canvases
+  function blit(o) {
+    const S = o.S, sh = S.h / S.n;
+    o.canvases.forEach((cv, i) => {
+      const x = cv.getContext("2d");
+      x.clearRect(0, 0, cv.width, cv.height);
+      x.drawImage(o.master, 0, Math.round(i * sh * S.res), cv.width, cv.height, 0, 0, cv.width, cv.height);
+    });
+  }
+
+  // ---- out-of-focus foreground leaves (sprites pre-blurred once) + parallax against the camera
+  const LEAVES = [
+    { tc: 0.45, xc: 760, yc: 330, size: 640, blur: 59, k: 2.3, vx: 360, vy: 120, col: "#d9772b", rot: 40 },
+    { tc: 0.95, xc: 1560, yc: 860, size: 448, blur: 43, k: 1.9, vx: 300, vy: 80, col: "#e2a23a", rot: -70 },
+    { tc: 1.6, xc: 300, yc: 180, size: 416, blur: 40, k: 1.8, vx: 260, vy: 140, col: "#b9521e", rot: 90 },
+    { tc: 2.35, xc: 1730, yc: 210, size: 512, blur: 51, k: 2.0, vx: 210, vy: 90, col: "#de8a2e", rot: -50 },
+    { tc: 2.85, xc: 200, yc: 900, size: 416, blur: 40, k: 1.8, vx: 230, vy: 60, col: "#e2a23a", rot: 70 },
+    { tc: 3.45, xc: 1250, yc: 150, size: 576, blur: 54, k: 2.3, vx: 300, vy: 130, col: "#d06a26", rot: 60 },
+    { tc: 4.0, xc: 520, yc: 920, size: 448, blur: 45, k: 2.0, vx: 280, vy: 80, col: "#e09a35", rot: -80 },
+  ];
+  function leafSprite(L, i) {
+    const pad = L.blur * 2.2, c = document.createElement("canvas");
+    c.width = c.height = Math.ceil(L.size + pad * 2);
+    const x = c.getContext("2d"), r = rng(31 + i * 7);
+    x.filter = `blur(${L.blur}px)`;
+    x.translate(c.width / 2, c.height / 2);
+    const s = L.size / 2;
+    // ovate leaf with a jagged edge and a midrib (only its silhouette survives the defocus)
+    x.beginPath();
+    for (let k = 0; k <= 48; k++) {
+      const a = (k / 48) * Math.PI * 2;
+      const rr = s * (0.55 + 0.45 * Math.abs(Math.cos(a / 2))) * (1 + (k % 2 ? 0.06 : -0.03) * (0.6 + r()));
+      const px = Math.sin(a) * rr * 0.62, py = -Math.cos(a) * rr;
+      k ? x.lineTo(px, py) : x.moveTo(px, py);
+    }
+    x.closePath();
+    const g = x.createLinearGradient(-s, -s, s, s);
+    g.addColorStop(0, "#f6c46a"); g.addColorStop(0.5, L.col); g.addColorStop(1, "#7a3412");
+    x.fillStyle = g; x.fill();
+    x.strokeStyle = "rgba(90,40,10,.6)"; x.lineWidth = s * 0.05; x.beginPath(); x.moveTo(0, -s * 0.95); x.lineTo(0, s * 1.15); x.stroke();
+    c.style.width = c.style.height = `${c.width}px`;
+    c.style.margin = `${-c.width / 2}px 0 0 ${-c.width / 2}px`;
+    return c;
+  }
+  let leafEls = [];
+
+  async function prepare() {
+    await Promise.all([paperImg.decode().catch(() => {}), plateImg.decode().catch(() => {})]);
+    await Promise.all(['800 96px "Inter"', '600 34px "Inter"', '700 30px "Inter"', '500 10px "Inter"', '700 40px "Caveat"'].map((f) => document.fonts.load(f, "aktualita #0123456789 každé pondělí → novinky nápady – ČSR " + MONTHS_NOM.join(" ") + MONTHS_GEN.join(" ") + Object.values(HOL).join(" "))));
+    noise = makeNoise();
+    lmStats = boardStats();
+    SHEETS.forEach((o) => o.canvases.forEach((cv) => { cv.width = Math.round(o.S.w * o.S.res); cv.height = Math.round((o.S.h / o.S.n + 1) * o.S.res); }));
+    calBase = drawCalendarBase();
+    calSheet.master = canvasFor(CAL);
+    drawCalendar(0); circleP = 0;
+    SHEETS[0].master = drawSticky(); SHEETS[1].master = drawNote(); drawPaper(0); writeP = 0;
+    [SHEETS[0], SHEETS[1]].forEach(blit);
+    leafEls = LEAVES.map((L, i) => { const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
+  }
+
+  // ------------------------------------------------------------ camera
+  const shake = (t, a = 1) => ({
+    x: a * (Math.sin(t * 1.31) * 4 + Math.sin(t * 2.97 + 1.3) * 2 + Math.sin(t * 6.1 + 0.4) * 0.6),
+    y: a * (Math.sin(t * 1.07 + 2.1) * 3.2 + Math.sin(t * 3.41 + 0.7) * 1.6 + Math.sin(t * 5.3) * 0.6),
+    r: a * (Math.sin(t * 0.83 + 0.5) * 0.12 + Math.sin(t * 2.3) * 0.04),
+  });
+  const clampCam = (cx, cy, s) => {
+    const m = 1.03;
+    s = Math.max(s, (m * W) / PLATE.w, (m * H) / PLATE.h);
+    const hw = (W / (2 * s)) * m, hh = (H / (2 * s)) * m;
+    return { cx: clamp(cx, hw, PLATE.w - hw), cy: clamp(cy, hh, PLATE.h - hh), s };
   };
+  // close-up framing: month name + the news day both in shot
+  const closeC = (() => { const sy = Math.max((150 + dateCell.y) / 2, dateCell.y - 190); const p = toPlate(CAL, lerp(CAL.w / 2, dateCell.x, 0.4), sy); return { x: p.x, y: p.y }; })();
+  function camAt(t) {
+    // 1) truck left → right along the wall (pure translation = a real dolly past a flat wall), slight push
+    const a = truck(prog(t, ...T.truck));
+    let cx = lerp(1150, 2380, a), cy = lerp(1190, 1050, a), s = lerp(0.9, 1.0, a), rot = 0;
+    // 2) accelerating push towards the calendar
+    const q = ease.inQuad(prog(t, ...T.push));
+    cx = lerp(cx, CAL.x + 20, q); cy = lerp(cy, CAL.y - 10, q); s = lerp(s, 1.32, q);
+    if (t >= T.cut) {
+      // 3) jump cut a step closer, settle, slow creep
+      const b = brandOut(prog(t, T.cut, 0.9));
+      cx = lerp(closeC.x + 70, closeC.x, b); cy = lerp(closeC.y + 50, closeC.y, b);
+      s = lerp(1.98, 1.84, b) + (t - T.cut) * 0.02; rot = lerp(-0.8, 0, b);
+      // 4) pan to the blank sheet (slight pull-out mid-pan, like an operator) + push into it until it fills the frame
+      const p = brandInOut(prog(t, ...T.pan));
+      cx = lerp(cx, PAPER.x - 30, p); cy = lerp(cy, PAPER.y + 25, p);
+      s = lerp(s, 1.5, Math.sin(Math.PI * Math.min(1, p * 1.1)) * 0.6 + p * 0.4);
+      const d = ease.inCubic(prog(t, ...T.dive)), dd = brandOut(prog(t, ...T.dive));
+      s = lerp(s, (W / PAPER.w) * 2.1, d); cx = lerp(cx, PAPER.x + 20, dd); cy = lerp(cy, PAPER.y + 50, dd);
+    }
+    return { cx, cy, s, rot };
+  }
+  const screenOff = (t) => { const c = camAt(t), k = clampCam(c.cx, c.cy, c.s); return { x: W / 2 - k.cx * k.s, y: H / 2 - k.cy * k.s }; };
+  const leafRef = LEAVES.map((L) => screenOff(L.tc));
+
+  // ------------------------------------------------------------ wind
+  const wind = (t) => 0.3 + 0.7 * bump(t, 2.05, 1.6) + 0.6 * bump(t, 3.35, 1.2) + 0.25 * bump(t, 0.6, 1.2);
+  function flutter(o, t) {
+    const S = o.S, tl = t - (S.x / PLATE.w) * 0.35; // the gust travels from the window side
+    const A = S.amp * wind(tl) * (0.75 + 0.25 * Math.sin(tl * 2.1 + S.seed));
+    let prev = 0;
+    o.strips.forEach((st, i) => {
+      const u = (i + 1) / S.n;
+      let th = A * Math.pow(u, S.pow) * (1 + 0.38 * Math.sin(2 * Math.PI * (1.25 * u - S.f * tl) + S.seed));
+      th += A * 0.12 * u * Math.sin(tl * S.f * 9.3 + i * 0.8 + S.seed);
+      if (S.glue && u <= S.glue + 1e-6) th = 0;
+      th = Math.max(0, th);
+      st.style.transform = `rotateX(${(th - prev).toFixed(3)}deg)`;
+      o.shades[i].style.opacity = String(clamp(th * 0.008));
+      prev = th;
+    });
+    o.shadow.style.transform = `translate(${12 + prev * 0.9}px, ${18 + prev * 1.4}px)`;
+    o.shadow.style.opacity = String(0.55 - prev * 0.006);
+  }
 
   function update(t) {
     const on = t < T.end + 0.05;
     layer.style.display = on ? "block" : "none";
     if (!on) return;
-    const sh = shake(t, t < T.cut ? 1.4 : 1);
-    if (t < T.cut) {
-      wideShot.style.display = "block"; closeShot.style.display = "none";
-      // whip: fast attack, long settle, a 2 % overshoot the operator corrects
-      const u = prog(t, ...T.whip);
-      const p = snapOut(u) + 0.022 * Math.sin(Math.PI * clamp((u - 0.5) / 0.5));
-      let cx = lerp(820, 2560, p), cy = lerp(1180, 1010, p), s = lerp(0.8, 0.53, p);
-      const ry = lerp(16, 0, snapOut(u));
-      // accelerating dolly push towards the small calendar
-      const q = ease.inQuad(prog(t, ...T.push));
-      cx = lerp(cx, WIDE_CAL.x, q); cy = lerp(cy, WIDE_CAL.y, q); s = lerp(s, 1.45, q);
-      place(widePlate, cx + sh.x / s, cy + sh.y / s, s, sh.r, ry);
-    } else {
-      wideShot.style.display = "none"; closeShot.style.display = "block";
-      // jump cut: a step closer, then a short settle and a slow creep in
-      const a = brandOut(prog(t, T.cut, 0.85));
-      let cx = lerp(CLOSE_CAL.x + 90, CLOSE_CAL.x + 10, a), cy = lerp(CLOSE_CAL.y + 70, CLOSE_CAL.y + 20, a);
-      let s = lerp(0.5, 0.58, a) + (t - T.cut) * 0.012, rot = lerp(-1.2, 0, a);
-      // the gust nudges the camera a little
-      const g = prog(t, T.gust - 0.15, 0.9);
-      cx += Math.sin(g * Math.PI) * 26; rot += Math.sin(g * Math.PI * 2) * 0.35;
-      // dive into the circled date
-      const d = ease.inExpo(prog(t, ...T.dive)), dd = brandOut(prog(t, ...T.dive));
-      cx = lerp(cx, CLOSE_CAL.x, dd); cy = lerp(cy, CLOSE_CAL.y + 40, dd); s *= lerp(1, 6, d);
-      place(closePlate, cx + sh.x / s, cy + sh.y / s, s, rot + sh.r);
-    }
+    const c = camAt(t);
+    const sh = shake(t, t < T.cut ? 0.3 : 0.75);
+    const k = clampCam(c.cx + sh.x / c.s, c.cy + sh.y / c.s, c.s);
+    plate.style.transform = `translate(${W / 2 - k.cx * k.s}px, ${H / 2 - k.cy * k.s}px) scale(${k.s})`;
+    shot.style.transform = `rotate(${c.rot + sh.r}deg)`;
 
-    // marker cross-out
-    xs.forEach((p, i) => { p.style.strokeDashoffset = String(1 - brandInOut(prog(t, T.cross[0] + i * 0.24, 0.21))); });
-    // pages: tremble in the breeze, then the gust flips them towards camera, over the binding and away
-    // pages: every sheet sits a hair above the one below (no z-fighting / no show-through). The breeze
-    // lifts the top sheet towards camera, then the gust RIPS the sheets off one after another: torn top
-    // edge, they curl, flutter and fly up-right out of frame – several in the air at once.
-    let torn = false;
-    pages.forEach((pg, i) => {
-      if (i === nFlip) { pg.style.transform = "translateZ(0px)"; return; }
-      const zBase = (nFlip - i) * 3;
-      const ts = T.gust + i * T.flip;
-      const lift = i === 0 ? Math.abs(Math.sin(t * 27)) * 9 * prog(t, T.gust - 0.55, 0.5) : 0; // breeze, towards camera only
-      const bend = ease.inQuad(prog(t, ts - 0.09, 0.09)) * 22;
-      const u = prog(t, ts, 0.8);
-      if (u <= 0) {
-        pg.style.transform = `translateZ(${zBase}px) rotateX(${lift + bend}deg)`;
-        pg.style.clipPath = "none";
-        pg.style.visibility = "visible";
-        pg.querySelector(".front").style.visibility = "visible";
-        pg.querySelector(".backf").style.visibility = "hidden";
-        pg.querySelector(".pg-shade").style.opacity = String((lift + bend) / 90);
-        return;
-      }
-      torn = true;
-      const e = ease.inQuad(u), w = i % 2 ? 1 : -1;
-      const tx = e * 2600 + Math.sin(u * 7 + i) * 60 * u;
-      const ty = -e * 1100 + Math.sin(u * Math.PI) * 140;
-      const tz = zBase + u * 700;
-      const rx = 22 + 70 * u + Math.sin(u * 11 + i * 1.7) * 38 * u;
-      const ry = Math.sin(u * 6 + i) * 40 * u;
-      const rz = (35 + i * 9) * w * e + Math.sin(u * 9 + i) * 10;
-      pg.style.transform = `translate3d(${tx}px, ${ty}px, ${tz}px) rotateZ(${rz}deg) rotateY(${ry}deg) rotateX(${rx}deg)`;
-      // torn perforation on the top edge
-      pg.style.clipPath = "polygon(0% 2.2%, 4% 0.6%, 9% 2%, 14% 0.4%, 20% 1.8%, 26% 0.5%, 31% 2.1%, 37% 0.7%, 43% 1.9%, 49% 0.3%, 55% 2%, 61% 0.6%, 67% 1.8%, 73% 0.4%, 79% 2.1%, 85% 0.7%, 91% 1.9%, 96% 0.5%, 100% 1.6%, 100% 100%, 0% 100%)";
-      pg.style.visibility = u >= 1 ? "hidden" : "visible";
-      const facing = Math.cos((rx * Math.PI) / 180) * Math.cos((ry * Math.PI) / 180);
-      pg.querySelector(".front").style.visibility = facing < 0 ? "hidden" : "visible";
-      pg.querySelector(".backf").style.visibility = facing < 0 ? "visible" : "hidden";
-      pg.querySelector(".pg-shade").style.opacity = String(clamp(0.1 + (1 - Math.abs(facing)) * 0.45));
-      pg.querySelectorAll(".lm-in").forEach((l) => (l.style.opacity = String(clamp(1 - u * 2.2))));
+    SHEETS.forEach((o) => flutter(o, t));
+    const p = brandInOut(prog(t, ...T.circle));
+    if (calBase && Math.abs(p - circleP) > 1e-4) { drawCalendar(p); circleP = p; }
+    const wp = prog(t, ...T.write);
+    if (paperBaseC && Math.abs(wp - writeP) > 1e-4) { drawPaper(wp); writeP = wp; }
+    arrow.style.strokeDashoffset = String(1 - brandInOut(prog(t, ...T.arrow)));
+
+    // leaves: own drift + tumble, parallax with the camera (closer to the lens = faster)
+    const off = { x: W / 2 - k.cx * k.s, y: H / 2 - k.cy * k.s };
+    LEAVES.forEach((L, i) => {
+      const e = leafEls[i];
+      if (!e) return;
+      const dt = t - L.tc;
+      const x = L.xc + L.vx * dt + Math.sin(t * 1.7 + i) * 30 + (off.x - leafRef[i].x) * L.k;
+      const y = L.yc + L.vy * dt + Math.sin(t * 2.3 + i * 2) * 26 + (off.y - leafRef[i].y) * L.k;
+      const m = L.size * 1.5, vis = x > -m && x < W + m && y > -m && y < H + m;
+      e.style.display = vis ? "block" : "none";
+      if (!vis) return;
+      const flip = Math.cos(t * 2.6 + i * 1.9);
+      e.style.transform = `translate(${x}px, ${y}px) rotate(${L.rot + t * 55 * (i % 2 ? 1 : -1)}deg) scale(${0.35 + 0.65 * Math.abs(flip)}, 1)`;
     });
-    stub.style.opacity = torn ? "1" : "0";
-    os.forEach((p) => { p.style.strokeDashoffset = String(1 - brandInOut(prog(t, ...T.circle))); });
-    const n = brandOut(prog(t, T.circle[0] + 0.12, 0.45));
-    note.style.clipPath = `inset(-20% ${100 - n * 100}% -20% -5%)`;
-    arrow.style.strokeDashoffset = String(1 - brandInOut(prog(t, T.circle[0] + 0.05, 0.35)));
 
-    // clean title over the plate (like the reference: neutral sans + one handwritten word)
-    const a1 = snapOut(prog(t, T.text, 0.6)), a2 = snapOut(prog(t, T.text + 0.12, 0.6));
-    const out = ease.inQuad(prog(t, T.dive[0], 0.2));
-    bt1.style.opacity = String(a1 * (1 - out)); bt1.style.filter = `blur(${(1 - a1) * 12}px)`; bt1.style.transform = `translateY(${(1 - a1) * 30}px)`;
-    bt2.style.opacity = String(a2 * (1 - out)); bt2.style.filter = `blur(${(1 - a2) * 14}px)`; bt2.style.transform = `translateY(${(1 - a2) * 40}px) rotate(-3deg)`;
-
-    leak.style.opacity = String(0.5 + Math.sin(t * 1.7) * 0.12);
-    flash.style.opacity = String(ease.inQuad(prog(t, T.end - 0.2, 0.2)));
+    // grade: as we dive into the sheet the room falls away – haze/vignette ease off, frame goes paper-white
+    const into = brandInOut(prog(t, T.dive[0] + 0.15, T.dive[1] - 0.1));
+    leak.style.opacity = String((0.5 + Math.sin(t * 1.7) * 0.12) * (1 - into * 0.8));
+    vig.style.opacity = String(1 - into * 0.85);
+    haze.style.opacity = String(1 - into * 0.6);
+    white.style.opacity = String(ease.inQuad(prog(t, T.end - 0.3, 0.3)) * 0.75);
+    layer.style.opacity = String(1 - ease.inQuad(prog(t, T.end - 0.16, 0.2)));
   }
 
   const sfx = [
-    { name: "camera_whip", at: 0.0, gain: 0 }, { name: "wind_gust", at: 0.05, gain: -12 },
-    { name: "transition_swish", at: T.push[0] + 0.05, gain: -6 }, { name: "hook_impact", at: T.cut, gain: -13 },
-    { name: "marker_scratch", at: T.cross[0] - 0.02, gain: -2 },
-    { name: "wind_gust", at: T.gust - 0.45, gain: -3 }, { name: "paper_rip", at: T.gust - 0.03, gain: 0 }, { name: "page_flutter", at: T.gust + 0.1, gain: -3 },
-    { name: "marker_scratch", at: T.circle[0], gain: -7 }, { name: "ui_pop", at: T.text, gain: -8 },
-    { name: "hook_dive", at: T.dive[0] - 0.1, gain: -4 }, { name: "reveal_shimmer", at: T.end - 0.25, gain: -7 },
+    { name: "camera_glide", at: 0.0, gain: -2 }, { name: "wind_gust", at: 0.1, gain: -12 },
+    { name: "transition_swish", at: T.push[0] + 0.05, gain: -7 }, { name: "hook_impact", at: T.cut, gain: -14 },
+    { name: "paper_breeze", at: 1.55, gain: -6 },
+    { name: "marker_scratch", at: T.circle[0] - 0.02, gain: -3 }, { name: "marker_scratch", at: T.write[0] + 0.1, gain: -8 },
+    { name: "camera_whip", at: T.pan[0] - 0.05, gain: -6 }, { name: "paper_breeze", at: T.pan[0] + 0.1, gain: -10 },
+    { name: "hook_dive", at: T.dive[0] + 0.05, gain: -5 }, { name: "reveal_shimmer", at: T.end - 0.25, gain: -7 },
   ];
-  return { update, duration: T.end, cues: { impact: T.land, whoosh: T.dive[0], ticks: [], riser: [0, T.land] }, sfx };
+  return { update, prepare, duration: T.end, cues: { impact: T.circle[0], whoosh: T.dive[0], ticks: [], riser: [0, T.circle[0]] }, sfx };
 }

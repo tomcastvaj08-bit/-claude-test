@@ -48,7 +48,7 @@ async function main() {
     { k: "glass", x: 640, y: 120, z: -1300, s: 420 }, { k: "glass", x: -300, y: 260, z: -2000, s: 520 },
     { k: "sphere green", x: 1200, y: -500, z: -1800, s: 220 }, { k: "glass", x: 1300, y: 700, z: -600, s: 300 },
   ];
-  bg.innerHTML = `<div class="blob bb"></div><div class="blob bg2"></div>
+  bg.innerHTML = `<div class="bg-tex"></div><div class="blob bb"></div><div class="blob bg2"></div>
     <div class="world"><div class="floor"></div></div>
     <div class="objs">${WOBJ.map((o) => `<div class="wobj ${o.k}" style="width:${o.s}px;height:${o.s}px;margin:${-o.s / 2}px 0 0 ${-o.s / 2}px"></div>`).join("")}</div>
     <div class="cross"><i></i><i></i></div>`;
@@ -167,12 +167,14 @@ async function main() {
   // transition overlays (strobe = 1-frame colour flashes, streak = light line that opens into a panel)
   const fx = document.createElement("div");
   fx.className = "fx";
-  fx.innerHTML = `<div class="fx-strobe"></div><div class="fx-streak"><i></i></div>`;
+  fx.innerHTML = `<div class="fx-strobe"></div><div class="fx-streak"><i></i></div><div class="fx-invert"></div><div class="fx-flash"></div>`;
   stage.appendChild(fx);
   const strobe = fx.querySelector(".fx-strobe"), streak = fx.querySelector(".fx-streak"), streakLine = streak.firstChild;
+  const invertFx = fx.querySelector(".fx-invert"), flashFx = fx.querySelector(".fx-flash");
   scenes.forEach((s) => {
     if (s.def.transition === "strobe") addSfx("transition_swish", s.start - 0.12, -3), addSfx("hook_impact", s.start, -10);
     if (s.def.transition === "streak") addSfx("hook_dive", s.start - 0.35, -6);
+    if (s.def.transition === "invert") addSfx("invert_hit", s.start - 0.09, -1), addSfx("hook_impact", s.start - 0.04, -12);
   });
 
   const outroUpdate = buildOutro(stage, cfg);
@@ -260,7 +262,8 @@ async function main() {
     const bodyT = t - B;
     cam.style.display = inBody ? "block" : "none";
     const camIn = brandOut(prog(t, B - 0.1, 1.2));
-    cam.style.transform = `translateY(${(1 - camIn) * 140}px) scale(${lerp(1.08, 1, camIn) + bodyT * 0.0025})`;
+    // the board hook ends pushing into a sheet of paper → the graphics keep that push (grow into place)
+    cam.style.transform = hookKind === "calendar" ? `translateY(${(1 - camIn) * 140}px) scale(${lerp(1.08, 1, camIn) + bodyT * 0.0025})` : `scale(${lerp(0.86, 1, camIn) + bodyT * 0.0025})`;
 
     const hudIn = brandOut(prog(t, B + 0.2, 0.9));
     const hudOut = brandInOut(prog(t, outroStart - 0.2, 0.5));
@@ -273,7 +276,7 @@ async function main() {
 
     scenes.forEach((s, si) => {
       const local = t - s.start, dur = s.end - s.start;
-      const hardOut = ["strobe", "streak"].includes(scenes[si + 1]?.def.transition);
+      const hardOut = ["strobe", "streak", "invert"].includes(scenes[si + 1]?.def.transition);
       const OUT = hardOut ? 0 : 0.24;
       const vis = local >= -0.02 && local < dur + OUT;
       s.el.style.display = vis ? "block" : "none";
@@ -295,6 +298,7 @@ async function main() {
       if (inType === "whip") { tx += (1 - i) * 620; bl += (1 - i) * 30; op *= clamp(i * 3); }
       if (inType === "zoom") { sc *= lerp(0.72, 1, i); bl += (1 - i) * 22; op *= clamp(i * 2); }
       if (inType === "blur") { bl += (1 - i) * 26; op *= clamp(i * 1.5); }
+      if (inType === "invert") { const pu = snapOut(prog(local, 0, 0.5)); sc *= lerp(1.2, 1, pu); bl += (1 - pu) * 6; }
       s.el.style.opacity = op;
       s.el.style.transform = `translate(${tx}px, ${ty}px) scale(${sc}) ${shotXf(s.def.camera ?? SHOTS[si % SHOTS.length], local, dur)}`;
       // chromatic fringe while a transition is moving (lens feel), plus motion blur from the transition
@@ -321,12 +325,20 @@ async function main() {
     // ---- transition overlays
     strobe.style.display = "none";
     streak.style.display = "none";
+    invertFx.style.display = "none";
+    flashFx.style.opacity = "0";
     for (const s of scenes) {
       const d = t - s.start;
       if (s.def.transition === "strobe" && d >= -0.1 && d < 0.0) {
         const k = Math.floor((d + 0.1) / 0.0334);
         strobe.style.display = "block";
         strobe.style.background = ["var(--blue)", "var(--lime)", "var(--ink)"][Math.min(2, k)];
+      }
+      // invert = 1 white flash frame → the frame flips to its negative for ~4 frames → snaps back (attention hit)
+      if (s.def.transition === "invert" && d >= -0.09 && d < 0.3) {
+        if (d < -0.045) flashFx.style.opacity = "1";
+        else if (d < 0.17) invertFx.style.display = "block";
+        else flashFx.style.opacity = String(0.55 * (1 - prog(d, 0.17, 0.13)));
       }
       if (s.def.transition === "streak" && d >= -0.4 && d < 0.3) {
         streak.style.display = "block";
@@ -390,6 +402,7 @@ async function main() {
   // photographic plates must be decoded before the first frame
   await Promise.all([...document.images].map((im) => (im.complete ? im.decode().catch(() => {}) : new Promise((r) => { im.onload = im.onerror = r; }))));
   await Promise.all([...document.images].map((im) => im.decode().catch(() => {})));
+  if (hook.prepare) await hook.prepare(); // canvases (paper, print, light) need fonts + plates
   window.__setTime(0);
   document.body.dataset.ready = "1";
 }

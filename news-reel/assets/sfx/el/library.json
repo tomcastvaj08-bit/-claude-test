@@ -84,5 +84,30 @@
   "prompt": "Several quick paper sheets ripping off a tear-off calendar pad in rapid succession, crisp close-mic tearing",
   "generation": "xgH3AhA9j3Z90JuhLCpM",
   "use": "trhání listů kalendáře (board hook)"
+ },
+ "camera_glide": {
+  "prompt": "Smooth cinematic camera dolly glide, soft airy whoosh moving left to right, gentle low rumble, no hard hit",
+  "generation": "mVWBZmwPsC0XpMZxi3By",
+  "use": "plynulý pojezd kamery na začátku hooku"
+ },
+ "paper_breeze": {
+  "prompt": "Gentle breeze rustling paper sheets pinned to a wall, soft paper flapping and fluttering, close and airy",
+  "generation": "Wmr7GqdWchv4pst9rfpi",
+  "use": "vítr hýbe papíry / kalendářem na tabuli"
+ },
+ "invert_hit": {
+  "prompt": "Punchy bright flash impact, short digital camera flash pop with a quick reversed swell into a crisp hit, modern trailer transition",
+  "generation": "fdZ0Xf7Hb4ySk1wwdE0g",
+  "use": "přechod invert/flash v půlce videa"
+ },
+ "phone_slide": {
+  "prompt": "Sleek smartphone sliding into frame, smooth airy whoosh ending with a soft glassy tap",
+  "generation": "7lH83nhv6PxZOxMSO4qU",
+  "use": "příjezd 3D iPhonu"
+ },
+ "phone_typing": {
+  "prompt": "Fast soft iPhone keyboard typing, quick light glassy key taps, about two seconds",
+  "generation": "jO2qfncPx0HW7vNKFXDJ",
+  "use": "psaní textu na iPhonu"
  }
 }
