@@ -132,3 +132,18 @@ Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně
 - **předávka do grafiky:** reverzní swell, sub úder a třpyt.
 
 Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.
+
+### Cold open – postavička před hookem (volitelné)
+Před hook lze předřadit krátkou scénku s ručně kreslenou 2D postavičkou (`engine/coldopen.js`, assety a popis v `news-reel/assets/coldopen/README.md`). Varianty: `notebook`, `laptop`, `nap`, `phone`, `newspaper`. Každá končí pointou „Počkej… co je dneska za datum?!“, výskokem a whip panem do hooku.
+- **Zapnutí:** `"coldOpen": "<id>"` v episode.json, nebo `--cold <id>` při renderu.
+- **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`.
+- **Rotace:** varianty střídej po týdnech, ať se neokoukají.
+
+Animace:
+- limitovaná 2D (klíčové kresby střídané na dvojky);
+- line boil (SVG displacement přeseedovaný 12× za s);
+- „přečmárávací“ ghost vrstva a glitch každých 1,7 s;
+- světlo z okna násobené přes postavu a stín na zdi;
+- papírový flip (otočí se jako list papíru).
+
+Nové varianty: první kresbu generuj s referencí místnosti a sheetu, další jako editace té první (ať nábytek drží). Hlas „Pavel“, eleven_v4, a časy slov ze Scribe zapiš do `voice/timing.json`.

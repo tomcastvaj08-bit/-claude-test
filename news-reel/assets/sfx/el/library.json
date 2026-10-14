@@ -157,5 +157,47 @@
   "generation": "Yj7zj2zBULcgS85TlvaX",
   "use": "reverzní nádech do ponoření do papíru (vrchol 1,7 s → umístit na konec hooku)",
   "normalized": "peak -1 dBFS"
+ },
+ "pen_scribble": {
+  "prompt": "Fast frantic pen scribbling and underlining on paper in a notebook, close-mic, repeated strokes",
+  "generation": "XBKn0hloQgzaYqgR60p7",
+  "use": "cold open notebook – čmárání",
+  "normalized": "peak -1 dBFS"
+ },
+ "laptop_clicks": {
+  "prompt": "Soft laptop trackpad clicks and light keyboard typing in a quiet room, close-mic",
+  "generation": "d8qKeSqmqgNeKGn7SHKv",
+  "use": "cold open laptop",
+  "normalized": "peak -1 dBFS"
+ },
+ "phone_buzz": {
+  "prompt": "Smartphone vibrating loudly on a wooden desk, two buzzes",
+  "generation": "uYZ1XBqHySYSuBXcXuzd",
+  "use": "cold open nap – budíček",
+  "normalized": "peak -1 dBFS"
+ },
+ "newspaper_rustle": {
+  "prompt": "Newspaper pages rustling and turning, crisp paper handling, close-mic",
+  "generation": "qdTrW97wMxkn01hzvYI8",
+  "use": "cold open newspaper",
+  "normalized": "peak -1 dBFS"
+ },
+ "record_scratch": {
+  "prompt": "Classic comedic vinyl record scratch stop, short and punchy",
+  "generation": "nNQc1nF4GDS3AbZc6DtB",
+  "use": "zamrznutí na „Počkej…“",
+  "normalized": "peak -1 dBFS"
+ },
+ "cartoon_zip": {
+  "prompt": "Cartoon zip whoosh, character dashing off super fast, short",
+  "generation": "TGz081IAjpyyQjXX85oP",
+  "use": "výskok ze židle / sprint",
+  "normalized": "peak -1 dBFS"
+ },
+ "chair_clatter": {
+  "prompt": "Wooden chair tipping over and clattering on a wooden floor",
+  "generation": "noqRPHW0peF88rboE0k7",
+  "use": "padající židle",
+  "normalized": "peak -1 dBFS"
  }
 }

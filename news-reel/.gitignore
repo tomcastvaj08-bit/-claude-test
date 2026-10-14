@@ -3,3 +3,6 @@ node_modules/
 episodes/*/build/
 assets/voice/*_raw.mp3
 assets/plates/*.png
+assets/coldopen/*.png
+!assets/coldopen/character_sheet.png
+assets/coldopen/src/

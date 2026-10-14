@@ -3,6 +3,7 @@
 import { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, snapOut as snapOutE } from "./ease.js";
 import { buildHook, parseDate } from "./hook.js";
 import { buildBoardHook } from "./hook-board.js";
+import { buildColdOpen } from "./coldopen.js";
 import { templates as baseTemplates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
 import { proTemplates, kineticWords, animateWords, snapOut } from "./scenes-pro.js";
 const templates = { ...baseTemplates, ...proTemplates };
@@ -393,6 +394,24 @@ async function main() {
     estimated: !!voice.estimated,
     sfx: sfx.sort((a, b) => a.at - b.at),
   };
+  // ---------- optional cold open (character pre-scene) BEFORE the hook: ?cold=<id> or ep.coldOpen.
+  // ?only=cold renders just the pre-scene + the first second of the hook (to judge the hand-off).
+  const coldId = q.get("cold") ?? ep.coldOpen ?? null;
+  if (coldId) {
+    const timing = await loadJSON("../assets/coldopen/voice/timing.json");
+    const coRoot = document.createElement("div");
+    stage.appendChild(coRoot);
+    const co = buildColdOpen(coRoot, coldId, timing[coldId], ep);
+    await co.prepare();
+    const C = co.duration, inner = window.__setTime, m = window.__meta;
+    window.__setTime = (t) => { co.update(t); if (t >= C) inner(t - C); };
+    const total = q.get("only") === "cold" ? C + 1.2 : C + m.duration;
+    window.__meta = {
+      ...m, duration: total, voiceStart: m.voiceStart + C, voiceEnd: m.voiceEnd + C, outroStart: m.outroStart + C, coldOpen: { id: coldId, duration: C },
+      sceneStarts: m.sceneStarts.map((s) => ({ ...s, start: s.start + C, end: s.end + C })),
+      sfx: [...co.sfx, ...m.sfx.map((e) => ({ ...e, at: +(e.at + C).toFixed(3) }))].filter((e) => e.at < total).sort((a, b) => a.at - b.at),
+    };
+  }
   await document.fonts.load('800 100px "Inter"');
   await document.fonts.load('400 40px "Inter"');
   await document.fonts.load('800 40px "Inter"', "ěščřžýáíéůú");

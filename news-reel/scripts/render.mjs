@@ -25,7 +25,12 @@ if (!existsSync(join(epDir, "episode.json"))) {
   console.error("usage: render.mjs episodes/<id> [--stills t1,t2] [--fps n] [--contact]");
   process.exit(1);
 }
-const build = join(epDir, "build");
+const epBuild = join(epDir, "build");
+// cold open (character pre-scene before the hook): --cold <id> prepends it, --cold-only renders just it
+// (+ the first second of the hook) into build/cold-<id>/
+const coldId = opt("--cold");
+const coldOnly = args.includes("--cold-only");
+const build = coldId && coldOnly ? join(epBuild, `cold-${coldId}`) : epBuild;
 mkdirSync(build, { recursive: true });
 
 // ---------- static server over news-reel/
@@ -43,7 +48,7 @@ const browser = await chromium.launch({ args: ["--font-render-hinting=none", "--
 const page = await browser.newPage({ viewport: { width: cfg.video.width, height: cfg.video.height }, deviceScaleFactor: 1 });
 page.on("console", (m) => m.type() !== "log" && console.log(`[page ${m.type()}] ${m.text()}`));
 page.on("pageerror", (e) => console.error(`[page error] ${e.message}`));
-const url = `http://127.0.0.1:${port}/engine/index.html?ep=/${relative(ROOT, epDir)}`;
+const url = `http://127.0.0.1:${port}/engine/index.html?ep=/${relative(ROOT, epDir)}${coldId ? `&cold=${coldId}` : ""}${coldOnly ? "&only=cold" : ""}`;
 await page.goto(url);
 await page.waitForFunction(() => document.body.dataset.ready || document.body.dataset.error, null, { timeout: 30000 });
 const err = await page.evaluate(() => document.body.dataset.error);
@@ -165,7 +170,7 @@ function buildSfxStem(meta) {
 function mixAndMux(silent, meta) {
   const A = cfg.audio;
   const stem = buildSfxStem(meta);
-  const voice = join(build, "voice.mp3");
+  const voice = join(epBuild, "voice.mp3");
   const vms = Math.round(meta.voiceStart * 1000);
   const inputs = ["-i", silent, "-i", voice, "-i", stem];
   const f = [
