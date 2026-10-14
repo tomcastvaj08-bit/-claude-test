@@ -15,7 +15,8 @@
     "tailSeconds": 0.6,
     "motionBlur": 6,
     "shutter": 0.5,
-    "grain": 11
+    "grain": 11,
+    "captions": false
   },
   "voice": {
     "provider": "elevenlabs",

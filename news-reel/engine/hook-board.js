@@ -25,19 +25,23 @@ export function buildBoardHook(root, ep, cfg) {
   if (days.length > 8) days = [...days.slice(0, 4), ...days.slice(-4)];
   const nFlip = days.length - 1;
 
-  const T = { whip: [0, 1.05], push: [1.0, 0.45], cut: 1.45, cross: [1.95, 0.5], gust: 2.62, flip: 0.105, flipDur: 0.46 };
+  const T = { whip: [0, 1.05], push: [1.0, 0.45], cut: 1.45, cross: [1.95, 0.5], gust: 2.7, flip: 0.13, flipDur: 0.3 };
   T.land = T.gust + Math.max(0, nFlip - 1) * T.flip + T.flipDur;
   T.circle = [T.land + 0.02, 0.38];
   T.text = T.land + 0.12;
   T.dive = [T.land + 0.6, 0.45];
   T.end = T.dive[0] + T.dive[1];
 
+  // light map baked into each close-up sheet (moves with the sheet, fades as it flies off the board)
+  const LM_X = CLOSE_CAL.x - PAD_W / 2, LM_Y = CLOSE_CAL.y - PAD_H / 2;
+  const LM_STYLE = `background-image:url(../assets/plates/close.jpg);background-size:3840px 2160px;background-position:${-LM_X}px ${-LM_Y}px`;
   const page = (d, i, withMarks) => `<div class="pg" style="z-index:${100 - i}">
       <div class="pg-face front">
         <div class="pg-top"><span>${MONTHS_NOM[d.getUTCMonth()]}</span><span>${d.getUTCFullYear()}</span></div>
         <div class="pg-num">${d.getUTCDate()}</div><div class="pg-day">${DAYS[d.getUTCDay()]}</div>
         ${withMarks && i === 0 ? `<svg class="pg-x" viewBox="0 0 1000 1250"><path pathLength="1" d="M190 420 C330 560 560 760 820 960"/><path pathLength="1" d="M830 430 C680 560 470 760 200 980"/></svg>` : ""}
         ${withMarks && i === nFlip ? `<svg class="pg-o" viewBox="0 0 1000 1250"><path pathLength="1" d="M520 300 C790 300 880 520 860 680 C840 880 660 990 490 985 C280 980 150 840 155 650 C160 460 300 320 560 312"/></svg>` : ""}
+        ${withMarks ? `<div class="lm-in mul" style="${LM_STYLE}"></div><div class="lm-in col" style="${LM_STYLE}"></div>` : ""}
         <div class="pg-shade"></div>
       </div>
       <div class="pg-face backf"></div>
@@ -45,7 +49,7 @@ export function buildBoardHook(root, ep, cfg) {
   const pad = (withMarks, cls) => `<div class="cpad ${cls}">
       <div class="pad-shadow"></div><div class="pad-edge e3"></div><div class="pad-edge e2"></div><div class="pad-edge e1"></div>
       ${(withMarks ? days : [days[0]]).map((d, i) => page(d, i, withMarks)).join("")}
-      <div class="pad-bind"></div><i class="pin2"></i>
+      <div class="pad-stub"></div><div class="pad-bind"></div><i class="pin2"></i>
     </div>`;
   // light map: the plate itself, aligned under the pad, multiplied over the paper → real stripes & shade on it
   const lightmap = (plate, cx, cy, k) => {
@@ -69,7 +73,6 @@ export function buildBoardHook(root, ep, cfg) {
     <div class="bh-shot close"><div class="bh-plate">
       <img src="../assets/plates/close.jpg" class="plate-img"><img src="../assets/plates/close.jpg" class="plate-glow">
       <div class="calhold" style="left:${CLOSE_CAL.x}px;top:${CLOSE_CAL.y}px;transform:translate(-50%,-50%)">${pad(true, "close")}</div>
-      ${lightmap("close", CLOSE_CAL.x, CLOSE_CAL.y, 1)}
       <div class="chalk2 bh-note" style="left:${CLOSE_CAL.x + 620}px;top:${CLOSE_CAL.y - 120}px">novinka!</div>
       <svg class="chalk2-svg bh-arrow" style="left:${CLOSE_CAL.x + 520}px;top:${CLOSE_CAL.y + 40}px" width="420" height="360" viewBox="0 0 420 360"><path pathLength="1" d="M390 30 C300 70 190 170 70 300 M70 300 L100 200 M70 300 L170 280"/></svg>
     </div></div>
@@ -82,6 +85,7 @@ export function buildBoardHook(root, ep, cfg) {
   const widePlate = wideShot.firstElementChild, closePlate = closeShot.firstElementChild;
   const pages = [...closeShot.querySelectorAll(".pg")];
   const xs = [...closeShot.querySelectorAll(".pg-x path")], os = [...closeShot.querySelectorAll(".pg-o path")];
+  const stub = closeShot.querySelector(".pad-stub");
   const note = closeShot.querySelector(".bh-note"), arrow = closeShot.querySelector(".bh-arrow path");
   const leak = layer.querySelector(".bh-leak"), flash = layer.querySelector(".bh-flash");
   const title = layer.querySelector(".bh-title"), bt1 = title.children[0], bt2 = title.children[1];
@@ -136,20 +140,45 @@ export function buildBoardHook(root, ep, cfg) {
     // marker cross-out
     xs.forEach((p, i) => { p.style.strokeDashoffset = String(1 - brandInOut(prog(t, T.cross[0] + i * 0.24, 0.21))); });
     // pages: tremble in the breeze, then the gust flips them towards camera, over the binding and away
+    // pages: every sheet sits a hair above the one below (no z-fighting / no show-through). The breeze
+    // lifts the top sheet towards camera, then the gust RIPS the sheets off one after another: torn top
+    // edge, they curl, flutter and fly up-right out of frame – several in the air at once.
+    let torn = false;
     pages.forEach((pg, i) => {
-      if (i === nFlip) return;
-      const start = T.gust + i * T.flip;
-      const f = prog(t, start, T.flipDur);
-      const tremble = i === 0 ? Math.sin(t * 31) * 3.5 * prog(t, T.gust - 0.5, 0.45) * (1 - f) : 0;
-      const ang = ease.inOutCubic(f) * 172 + tremble;
-      const fly = ease.inQuad(prog(t, start + T.flipDur * 0.65, 0.4));
-      pg.style.transform = `translateY(${-fly * 1600}px) translateZ(${Math.sin(f * Math.PI) * 140}px) rotateX(${-ang}deg) rotateZ(${Math.sin(f * 5 + i) * 7 * f}deg)`;
-      pg.style.visibility = fly > 0.98 ? "hidden" : "visible";
-      const back = ang > 90;
-      pg.querySelector(".front").style.visibility = back ? "hidden" : "visible";
-      pg.querySelector(".backf").style.visibility = back ? "visible" : "hidden";
-      pg.querySelector(".pg-shade").style.opacity = String(Math.sin(clamp(f) * Math.PI) * 0.45);
+      if (i === nFlip) { pg.style.transform = "translateZ(0px)"; return; }
+      const zBase = (nFlip - i) * 3;
+      const ts = T.gust + i * T.flip;
+      const lift = i === 0 ? Math.abs(Math.sin(t * 27)) * 9 * prog(t, T.gust - 0.55, 0.5) : 0; // breeze, towards camera only
+      const bend = ease.inQuad(prog(t, ts - 0.09, 0.09)) * 22;
+      const u = prog(t, ts, 0.8);
+      if (u <= 0) {
+        pg.style.transform = `translateZ(${zBase}px) rotateX(${lift + bend}deg)`;
+        pg.style.clipPath = "none";
+        pg.style.visibility = "visible";
+        pg.querySelector(".front").style.visibility = "visible";
+        pg.querySelector(".backf").style.visibility = "hidden";
+        pg.querySelector(".pg-shade").style.opacity = String((lift + bend) / 90);
+        return;
+      }
+      torn = true;
+      const e = ease.inQuad(u), w = i % 2 ? 1 : -1;
+      const tx = e * 2600 + Math.sin(u * 7 + i) * 60 * u;
+      const ty = -e * 1100 + Math.sin(u * Math.PI) * 140;
+      const tz = zBase + u * 700;
+      const rx = 22 + 70 * u + Math.sin(u * 11 + i * 1.7) * 38 * u;
+      const ry = Math.sin(u * 6 + i) * 40 * u;
+      const rz = (35 + i * 9) * w * e + Math.sin(u * 9 + i) * 10;
+      pg.style.transform = `translate3d(${tx}px, ${ty}px, ${tz}px) rotateZ(${rz}deg) rotateY(${ry}deg) rotateX(${rx}deg)`;
+      // torn perforation on the top edge
+      pg.style.clipPath = "polygon(0% 2.2%, 4% 0.6%, 9% 2%, 14% 0.4%, 20% 1.8%, 26% 0.5%, 31% 2.1%, 37% 0.7%, 43% 1.9%, 49% 0.3%, 55% 2%, 61% 0.6%, 67% 1.8%, 73% 0.4%, 79% 2.1%, 85% 0.7%, 91% 1.9%, 96% 0.5%, 100% 1.6%, 100% 100%, 0% 100%)";
+      pg.style.visibility = u >= 1 ? "hidden" : "visible";
+      const facing = Math.cos((rx * Math.PI) / 180) * Math.cos((ry * Math.PI) / 180);
+      pg.querySelector(".front").style.visibility = facing < 0 ? "hidden" : "visible";
+      pg.querySelector(".backf").style.visibility = facing < 0 ? "visible" : "hidden";
+      pg.querySelector(".pg-shade").style.opacity = String(clamp(0.1 + (1 - Math.abs(facing)) * 0.45));
+      pg.querySelectorAll(".lm-in").forEach((l) => (l.style.opacity = String(clamp(1 - u * 2.2))));
     });
+    stub.style.opacity = torn ? "1" : "0";
     os.forEach((p) => { p.style.strokeDashoffset = String(1 - brandInOut(prog(t, ...T.circle))); });
     const n = brandOut(prog(t, T.circle[0] + 0.12, 0.45));
     note.style.clipPath = `inset(-20% ${100 - n * 100}% -20% -5%)`;
@@ -169,7 +198,7 @@ export function buildBoardHook(root, ep, cfg) {
     { name: "camera_whip", at: 0.0, gain: 0 }, { name: "wind_gust", at: 0.05, gain: -12 },
     { name: "transition_swish", at: T.push[0] + 0.05, gain: -6 }, { name: "hook_impact", at: T.cut, gain: -13 },
     { name: "marker_scratch", at: T.cross[0] - 0.02, gain: -2 },
-    { name: "wind_gust", at: T.gust - 0.4, gain: -3 }, { name: "page_flutter", at: T.gust - 0.04, gain: 0 },
+    { name: "wind_gust", at: T.gust - 0.45, gain: -3 }, { name: "paper_rip", at: T.gust - 0.03, gain: 0 }, { name: "page_flutter", at: T.gust + 0.1, gain: -3 },
     { name: "marker_scratch", at: T.circle[0], gain: -7 }, { name: "ui_pop", at: T.text, gain: -8 },
     { name: "hook_dive", at: T.dive[0] - 0.1, gain: -4 }, { name: "reveal_shimmer", at: T.end - 0.25, gain: -7 },
   ];

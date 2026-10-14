@@ -203,7 +203,8 @@ async function main() {
     return { el: d, words: c, spans: [...d.children], start: abs(c[0].start), end: abs(c[c.length - 1].end) };
   });
   chunkEls.forEach((c, i) => (c.until = i + 1 < chunkEls.length ? Math.min(chunkEls[i + 1].start - 0.04, c.end + 0.7) : c.end + 0.5));
-  const showCaptions = ep.captions !== false;
+  // subtitles are off by default (the on-screen motion text explains); enable with "captions": true
+  const showCaptions = ep.captions ?? cfg.video.captions ?? false;
 
   // ---------- frame update
   window.__setTime = (t) => {
