@@ -14,7 +14,8 @@
     "fps": 24,
     "tailSeconds": 0.6,
     "motionBlur": 6,
-    "shutter": 0.5
+    "shutter": 0.5,
+    "grain": 11
   },
   "voice": {
     "provider": "elevenlabs",

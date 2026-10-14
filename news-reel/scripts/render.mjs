@@ -100,7 +100,11 @@ if (args.includes("--cuts")) {
   const shutter = Number(cfg.video.shutter ?? 0.5); // 0.5 = 180° film shutter
   const frames = Math.ceil(meta.duration * fps);
   const silent = join(build, "video_silent.mp4");
-  const vf = mb > 1 ? ["-vf", `tmix=frames=${mb},select='eq(mod(n,${mb}),${mb - 1})',setpts=N/${fps}/TB`] : [];
+  // film grain is added AFTER the sub-frame average (otherwise averaging would wash it out):
+  // luma-weighted temporal noise, new pattern every frame, a little chroma grain
+  const g = Number(cfg.video.grain ?? 0);
+  const grainF = g > 0 ? `,noise=c0s=${g}:c0f=t+u:c1s=${(g * 0.35).toFixed(1)}:c1f=t:c2s=${(g * 0.35).toFixed(1)}:c2f=t` : "";
+  const vf = mb > 1 ? ["-vf", `tmix=frames=${mb},select='eq(mod(n,${mb}),${mb - 1})',setpts=N/${fps}/TB${grainF}`] : g > 0 ? ["-vf", grainF.slice(1)] : [];
   const ff = spawn("ffmpeg", ["-y", "-v", "error", "-f", "image2pipe", "-framerate", String(fps * mb), "-c:v", "mjpeg", "-i", "-", ...vf, "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", "-r", String(fps), silent], { stdio: ["pipe", "inherit", "inherit"] });
   const t0 = Date.now();
   for (let f = 0; f < frames; f++) {
