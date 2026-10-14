@@ -176,4 +176,10 @@ function mixAndMux(silent, meta) {
   const out = join(build, "reel.mp4");
   execFileSync("ffmpeg", ["-y", "-v", "error", ...inputs, "-filter_complex", f.join(";"), "-map", "0:v", "-map", "[out]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out], { stdio: "inherit" });
   console.log(`✔ ${out}`);
+  // shareable copy (grain makes the master huge): two-pass ~7 Mb/s → ~25 MB per 30 s
+  const web = join(build, "reel_web.mp4");
+  const kbps = Math.round(Number(cfg.video.webMbps ?? 6.8) * 1000);
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", out, "-c:v", "libx264", "-preset", "slow", "-b:v", `${kbps}k`, "-pass", "1", "-passlogfile", join(build, "x264"), "-an", "-f", "null", "/dev/null"], { stdio: "inherit" });
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", out, "-c:v", "libx264", "-preset", "slow", "-b:v", `${kbps}k`, "-pass", "2", "-passlogfile", join(build, "x264"), "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", web], { stdio: "inherit" });
+  console.log(`✔ ${web} (sdílení)`);
 }

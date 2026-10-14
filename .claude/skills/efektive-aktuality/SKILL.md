@@ -121,4 +121,4 @@ SFX se skládají automaticky: hook (swell, rewind, ticky, riser, impact, dive, 
 node scripts/render.mjs episodes/<id>             # motion blur 4× (config.video.motionBlur), ~4–6 min
 node scripts/render.mjs episodes/<id> --mux-only  # jen přemíchat zvuk
 ```
-Pošli `build/reel.mp4` přes `SendUserFile` + text voiceoveru, délku a seznam scén. Commitni `episode.json` (+ nové šablony/zvuky); `build/` se necommituje.
+Pošli `build/reel_web.mp4` (kopie pod 30 MB; master `reel.mp4` se zrnem má stovky MB) přes `SendUserFile` + text voiceoveru, délku a seznam scén. Commitni `episode.json` (+ nové šablony/zvuky); `build/` se necommituje.
