@@ -123,3 +123,12 @@ node scripts/render.mjs episodes/<id>             # motion blur 4× (config.vide
 node scripts/render.mjs episodes/<id> --mux-only  # jen přemíchat zvuk
 ```
 Titulky dole jsou ve výchozím stavu VYPNUTÉ (sdělení nesou texty ve scénách; zapnout jde `"captions": true`). Pošli `build/reel_web.mp4` (kopie pod 30 MB; master `reel.mp4` se zrnem má stovky MB) přes `SendUserFile` + text voiceoveru, délku a seznam scén. Commitni `episode.json` (+ nové šablony/zvuky); `build/` se necommituje.
+
+### Zvukový design (filmový mix)
+Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně je to v `news-reel/docs/sfx-design.md`:
+- **atmosféry:** město za oknem, vítr, drone;
+- **efekty k obrazu:** žaluzie, listí a průlety listů časované na rozostřené listy, papír, fixa, kamera;
+- **motiv času:** hodiny v detailu kalendáře;
+- **předávka do grafiky:** reverzní swell, sub úder a třpyt.
+
+Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.

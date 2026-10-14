@@ -13,7 +13,7 @@ import { createServer } from "node:http";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, createReadStream } from "node:fs";
 import { join, dirname, resolve, relative, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { chromium } from "playwright";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -143,8 +143,17 @@ function buildSfxStem(meta) {
   events.forEach((e, i) => {
     inputs.push("-i", e.file);
     const ms = Math.max(0, Math.round(e.at * 1000));
-    // trim long generations, soften their tails
-    filters.push(`[${i}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:2.6,afade=t=out:st=2.1:d=0.5,volume=${e.gain}dB,adelay=${ms}|${ms}[s${i}]`);
+    // per-layer edit like in a DAW: length, fades, EQ (distance = less lows/highs), stereo position
+    //   { name, at, gain, dur=2.6, fi=0, fo=0.5, hp, lp, pan (-1 left … 1 right) }
+    const dur = e.dur ?? 2.6, fo = Math.min(e.fo ?? 0.5, dur);
+    const ch = [`aresample=48000`, `aformat=channel_layouts=stereo`, `atrim=0:${dur}`];
+    if (e.fi) ch.push(`afade=t=in:st=0:d=${e.fi}`);
+    ch.push(`afade=t=out:st=${(dur - fo).toFixed(3)}:d=${fo}`);
+    if (e.hp) ch.push(`highpass=f=${e.hp}`);
+    if (e.lp) ch.push(`lowpass=f=${e.lp}`);
+    if (e.pan) { const L = Math.min(1, 1 - e.pan), R = Math.min(1, 1 + e.pan); ch.push(`pan=stereo|c0=${L.toFixed(2)}*c0|c1=${R.toFixed(2)}*c1`); }
+    ch.push(`volume=${e.gain}dB`, `adelay=${ms}|${ms}`);
+    filters.push(`[${i}:a]${ch.join(",")}[s${i}]`);
   });
   filters.push(`${events.map((_, i) => `[s${i}]`).join("")}amix=inputs=${events.length}:normalize=0:duration=longest,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
   const stem = join(build, "sfx_stem.wav");
@@ -172,7 +181,20 @@ function mixAndMux(silent, meta) {
     f.push(`[3:a]aresample=48000,aformat=channel_layouts=stereo,volume=${A.musicGainDb}dB,afade=t=out:st=${Math.max(0, meta.duration - 1.2)}:d=1.2,atrim=0:${meta.duration}[m0]`, `[m0][vk]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=350[m]`);
     mix = "[v][s][m]";
   }
-  f.push(`${mix}amix=inputs=${music ? 3 : 2}:normalize=0:duration=longest,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
+  // master: TWO-PASS LINEAR loudnorm (one gain for the whole film) – single-pass loudnorm is dynamic and
+  // would pump quiet passages (the hook's ambience) up to dialogue level, flattening the mix
+  const pre = `${mix}amix=inputs=${music ? 3 : 2}:normalize=0:duration=longest`;
+  const probe = spawnSync("ffmpeg", ["-hide_banner", "-nostats", ...inputs, "-filter_complex", `${f.join(";")};${pre},loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json[out]`, "-map", "[out]", "-f", "null", "-"], { encoding: "utf8" }).stderr ?? "";
+  // one static gain to -14 LUFS + a brickwall limiter for the peaks (loudnorm's "linear" mode silently
+  // falls back to dynamic whenever the peaks would not fit – that is what flattened the hook)
+  let ln = "loudnorm=I=-14:TP=-1.5:LRA=11";
+  try {
+    const m = JSON.parse(probe.slice(probe.lastIndexOf("{"), probe.lastIndexOf("}") + 1));
+    const g = -14 - Number(m.input_i);
+    ln = `volume=${g.toFixed(2)}dB,alimiter=limit=0.79:attack=3:release=60:level=disabled`;
+    console.log(`master: ${m.input_i} LUFS → −14 LUFS (statický zisk ${g.toFixed(1)} dB + limiter −2 dBFS)`);
+  } catch { console.warn("⚠ měření hlasitosti selhalo – dynamický loudnorm"); }
+  f.push(`${pre},${ln},aresample=48000,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
   const out = join(build, "reel.mp4");
   execFileSync("ffmpeg", ["-y", "-v", "error", ...inputs, "-filter_complex", f.join(";"), "-map", "0:v", "-map", "[out]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out], { stdio: "inherit" });
   console.log(`✔ ${out}`);

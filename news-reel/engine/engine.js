@@ -121,7 +121,7 @@ async function main() {
   });
   // SFX events (absolute seconds) – scenes register theirs through ctx.sfx(name, localTime, gainDb)
   const sfx = [];
-  const addSfx = (name, at, gain = 0) => sfx.push({ name, at: +at.toFixed(3), gain });
+  const addSfx = (name, at, gain = 0, opts = {}) => sfx.push({ name, at: +at.toFixed(3), gain, ...opts });
   const scenes = defs.map((def, i) => {
     const el = document.createElement("div");
     el.className = `scene scene-${def.template}`;
@@ -149,7 +149,8 @@ async function main() {
 
   // series sound signature (hook) + cuts + outro
   const hc = hook.cues;
-  if (hook.sfx) hook.sfx.forEach((e) => addSfx(e.name, e.at, e.gain));
+  // hook = its own bus (one fader for the whole cinematic layer)
+  if (hook.sfx) hook.sfx.forEach(({ name, at, gain, ...opts }) => addSfx(name, at, gain + (hook.busGain ?? 0), opts));
   else {
     addSfx("hook_swell", 0, -4);
     addSfx("synth_riser", Math.max(0, hc.impact - 2.4 + 0.04), -8);

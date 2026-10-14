@@ -504,13 +504,43 @@ export function buildBoardHook(root, ep, cfg) {
     layer.style.opacity = String(1 - ease.inQuad(prog(t, T.end - 0.16, 0.2)));
   }
 
+  // Sound design (layered like a film mix – see docs/sfx-design.md):
+  //  BEDS   = the room: far city + wind through the open window, a low drone that glues it (felt, not heard)
+  //  SPOTS  = what we SEE moving: blinds by the window, leaves (rustle + close fly-bys synced to the bokeh
+  //           leaves), paper in the gusts, marker, camera moves
+  //  MOTIF  = a wall clock ticks once we are close on the calendar (time / date)
+  //  HANDOFF= reverse swell sucks into the sheet, sub hit + shimmer as the graphics land; beds fade with it
+  // EQ = distance (far things lose lows+highs), pan = where it is in frame (window on the left).
+  const B = T.end, leafAt = (k) => LEAVES[k].tc - 0.4; // fly-by sample peaks 0.4 s in
   const sfx = [
-    { name: "camera_glide", at: 0.0, gain: -2 }, { name: "wind_gust", at: 0.1, gain: -12 },
-    { name: "transition_swish", at: T.push[0] + 0.05, gain: -7 }, { name: "hook_impact", at: T.cut, gain: -14 },
-    { name: "paper_breeze", at: 1.55, gain: -6 },
-    { name: "marker_scratch", at: T.circle[0] - 0.02, gain: -3 }, { name: "marker_scratch", at: T.write[0] + 0.1, gain: -8 },
-    { name: "camera_whip", at: T.pan[0] - 0.05, gain: -6 }, { name: "paper_breeze", at: T.pan[0] + 0.1, gain: -10 },
-    { name: "hook_dive", at: T.dive[0] + 0.05, gain: -5 }, { name: "reveal_shimmer", at: T.end - 0.25, gain: -7 },
+    // beds
+    { name: "amb_city", at: 0, gain: -17.2, dur: B + 0.35, fi: 0.3, fo: 0.8, hp: 160, lp: 5200, pan: -0.25 },
+    { name: "wind_bed", at: 0, gain: -5.1, dur: B + 0.3, fi: 0.25, fo: 0.7, hp: 120, pan: -0.15 },
+    { name: "cine_drone", at: 0, gain: -20.7, dur: B + 0.5, fi: 0.8, fo: 0.9, lp: 1800 },
+    // window side – the shot starts at the window
+    { name: "blinds_rattle", at: 0.05, gain: -14.7, dur: 1.9, fi: 0.08, fo: 0.8, hp: 400, pan: -0.6 },
+    { name: "blinds_rattle", at: T.cut + 0.15, gain: -21, dur: 1.4, fi: 0.2, fo: 0.6, hp: 600, lp: 4000, pan: -0.75 },
+    // leaves: rustle on the gusts + close fly-bys of the big out-of-focus leaves
+    { name: "leaves_rustle", at: 0.1, gain: -13.8, dur: 2.2, fi: 0.3, fo: 0.8, hp: 250, pan: -0.2 },
+    { name: "leaves_rustle", at: 1.85, gain: -6.4, dur: 1.6, fi: 0.3, fo: 0.6, hp: 300, pan: 0.25 },
+    { name: "leaf_passby", at: leafAt(0), gain: -12.3, dur: 1.2, fo: 0.4, pan: -0.25, hp: 120 },
+    { name: "leaf_passby", at: leafAt(3), gain: -15.3, dur: 1.2, fo: 0.4, pan: 0.7, hp: 120 },
+    { name: "leaf_passby", at: leafAt(5), gain: -13.3, dur: 1.2, fo: 0.4, pan: 0.25, hp: 120 },
+    // camera + paper + marker
+    { name: "camera_glide", at: 0.0, gain: -10, hp: 45 },
+    { name: "wind_gust", at: 1.75, gain: 9.7, pan: -0.2, hp: 100 }, { name: "wind_gust", at: 3.05, gain: 7.7, pan: -0.1, hp: 100 },
+    { name: "transition_swish", at: T.push[0] + 0.05, gain: -12.6, hp: 80 }, { name: "hook_impact", at: T.cut, gain: -14.7 },
+    { name: "paper_breeze", at: 1.85, gain: 13.7, hp: 150 },
+    { name: "marker_scratch", at: T.circle[0] - 0.02, gain: 2.8 },
+    { name: "camera_whip", at: T.pan[0] - 0.05, gain: -13.9, hp: 60 }, { name: "paper_breeze", at: T.pan[0] + 0.1, gain: 11.7, pan: 0.3, hp: 150 },
+    { name: "marker_scratch", at: T.write[0] + 0.1, gain: 0.8, pan: 0.15 },
+    // time motif
+    { name: "clock_tick", at: T.cut, gain: -12.2, dur: T.dive[0] - T.cut + 0.3, fi: 0.1, fo: 0.35, hp: 500, lp: 7000, pan: 0.35 },
+    // hand-off into the graphics
+    { name: "dive_swell", at: B - 1.72, gain: -10.6, dur: 1.85, fo: 0.08 },
+    { name: "hook_dive", at: T.dive[0] + 0.05, gain: -10.3 },
+    { name: "hook_impact", at: B - 0.02, gain: -9.7, lp: 180 },
+    { name: "reveal_shimmer", at: B - 0.25, gain: -11.6 },
   ];
-  return { update, prepare, duration: T.end, cues: { impact: T.circle[0], whoosh: T.dive[0], ticks: [], riser: [0, T.circle[0]] }, sfx };
+  return { update, prepare, busGain: 1.5, duration: T.end, cues: { impact: T.circle[0], whoosh: T.dive[0], ticks: [], riser: [0, T.circle[0]] }, sfx };
 }

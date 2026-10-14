@@ -1,5 +1,5 @@
 {
- "_info": "Zvuková knihovna série, generovaná přes ElevenLabs (eleven_text_to_sound_v2), flow PLDyeTpdQaz9fhURQ66G. Engine na ně odkazuje jménem (ctx.sfx / addSfx). Nový zvuk: vygeneruj ho, ulož sem jako <jmeno>.mp3 a přidej záznam.",
+ "_info": "Zvuková knihovna série, generovaná přes ElevenLabs (eleven_text_to_sound_v2), flow PLDyeTpdQaz9fhURQ66G. Engine na ně odkazuje jménem (ctx.sfx / addSfx). Nový zvuk: vygeneruj ho, ulož sem jako <jmeno>.mp3 a přidej záznam. Atmosféry generuj s duration_seconds (creative_update_node + creative_run_flow_nodes), jinak vyjdou ~1 s. Nové soubory normalizuj na špičku -1 dBFS.",
  "hook_swell": {
   "prompt": "Soft airy whoosh swelling in slowly, smooth and clean, subtle low hum underneath",
   "generation": "qOS3w2U65whuVclNch74",
@@ -109,5 +109,53 @@
   "prompt": "Fast soft iPhone keyboard typing, quick light glassy key taps, about two seconds",
   "generation": "jO2qfncPx0HW7vNKFXDJ",
   "use": "psaní textu na iPhonu"
+ },
+ "amb_city": {
+  "prompt": "Distant city ambience heard through an open window on a calm autumn afternoon, far-off traffic hum, a faint distant car horn, a few distant birds, soft and spacious",
+  "generation": "Uc0n8I2OubgO5pwqV5YS",
+  "use": "bed: vzdálené město za oknem (hook), 7 s",
+  "normalized": "peak -1 dBFS"
+ },
+ "wind_bed": {
+  "prompt": "Soft steady wind blowing through an open window with gentle gusts swelling and fading, airy and warm, no howling",
+  "generation": "al7bJuvJI0d2sdDIX5NE",
+  "use": "bed: vítr oknem s nárazy (hook), 7 s",
+  "normalized": "peak -1 dBFS"
+ },
+ "cine_drone": {
+  "prompt": "Warm cinematic ambient drone pad, deep and soft, subtle tension slowly rising, film score texture, no melody",
+  "generation": "bDurSEE0jPuJgtgle1ra",
+  "use": "bed: hluboký filmový podklad, spojuje hook (spíš cítit než slyšet)",
+  "normalized": "peak -1 dBFS"
+ },
+ "leaves_rustle": {
+  "prompt": "Dry autumn leaves swirling and skittering in a breeze, close crisp rustling, a few leaves brushing past",
+  "generation": "Do57xGQ8wlHlKZzqa8kn",
+  "use": "šustění listí při nárazech větru",
+  "normalized": "peak -1 dBFS"
+ },
+ "leaf_passby": {
+  "prompt": "A dry leaf flutters past right next to the microphone, loud close papery flutter with a soft air whoosh",
+  "generation": "g2I8t2h9lzxUeIrStO20",
+  "use": "průlet rozostřeného listu těsně u kamery (vrchol 0,4 s)",
+  "normalized": "peak -1 dBFS"
+ },
+ "blinds_rattle": {
+  "prompt": "Venetian window blinds gently swaying and lightly tapping against the window frame in a breeze, soft slat clatter",
+  "generation": "eqqVm11YNQfL5Gjro2wh",
+  "use": "žaluzie u okna (začátek záběru)",
+  "normalized": "peak -1 dBFS"
+ },
+ "clock_tick": {
+  "prompt": "Close-up old mechanical wall clock ticking, clear steady tick tock once per second, warm wooden room",
+  "generation": "fXQ4VID11NEOwr94m3fW",
+  "use": "motiv času – nástěnné hodiny pod detailem kalendáře",
+  "normalized": "peak -1 dBFS"
+ },
+ "dive_swell": {
+  "prompt": "Cinematic reverse swell, airy breath-like suction rising and cutting off sharply at the end, soft shimmer on top",
+  "generation": "Yj7zj2zBULcgS85TlvaX",
+  "use": "reverzní nádech do ponoření do papíru (vrchol 1,7 s → umístit na konec hooku)",
+  "normalized": "peak -1 dBFS"
  }
 }
