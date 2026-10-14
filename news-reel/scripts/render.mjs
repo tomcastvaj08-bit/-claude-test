@@ -189,12 +189,13 @@ function mixAndMux(silent, meta) {
   // master: TWO-PASS LINEAR loudnorm (one gain for the whole film) – single-pass loudnorm is dynamic and
   // would pump quiet passages (the hook's ambience) up to dialogue level, flattening the mix
   const pre = `${mix}amix=inputs=${music ? 3 : 2}:normalize=0:duration=longest`;
-  const probe = spawnSync("ffmpeg", ["-hide_banner", "-nostats", ...inputs, "-filter_complex", `${f.join(";")};${pre},loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json[out]`, "-map", "[out]", "-f", "null", "-"], { encoding: "utf8" }).stderr ?? "";
+  const probe = spawnSync("ffmpeg", ["-hide_banner", "-nostats", ...inputs, "-filter_complex", `${f.join(";")};${pre},atrim=0:${meta.duration.toFixed(3)},ebur128=framelog=quiet[out]`, "-map", "[out]", "-f", "null", "-"], { encoding: "utf8" }).stderr ?? "";
   // one static gain to -14 LUFS + a brickwall limiter for the peaks (loudnorm's "linear" mode silently
   // falls back to dynamic whenever the peaks would not fit – that is what flattened the hook)
   let ln = "loudnorm=I=-14:TP=-1.5:LRA=11";
   try {
-    const m = JSON.parse(probe.slice(probe.lastIndexOf("{"), probe.lastIndexOf("}") + 1));
+    // EBU R128 integrated loudness of the exact programme length (loudnorm's own estimate drifts on short clips)
+    const m = { input_i: Number(probe.slice(probe.lastIndexOf("Integrated loudness:")).match(/I:\s*(-?[\d.]+)/)[1]) };
     const g = -14 - Number(m.input_i);
     ln = `volume=${g.toFixed(2)}dB,alimiter=limit=0.79:attack=3:release=60:level=disabled`;
     console.log(`master: ${m.input_i} LUFS → −14 LUFS (statický zisk ${g.toFixed(1)} dB + limiter −2 dBFS)`);
