@@ -82,3 +82,10 @@ Snímky: `docs/ref/v5-hook.jpg` (8 sn./s), `docs/ref/v5-frames.jpg` (plné rozli
 **Náš hook `board` (engine/hook-board.js):** švih ze dřeva na tabuli → malý odtrhávací kalendář připíchnutý na tabuli → zrychlující najetí → střih blíž + dojezd → dnešní datum přeškrtne červená fixa (dva tahy) → zavane vítr a listy se přetočí (ohnou se ke kameře přes vazbu a odletí) až na datum novinky → zakroužkování fixou + křídou „novinka!“ se šipkou → průlet do čísla → teplý záblesk → čistá motion grafika.
 Zvuky: `camera_whip`, `wind_gust`, `marker_scratch`, `page_flutter` (+ swish, impact, dive, shimmer).
 Volba hooku: `"hook": "board"` (výchozí) nebo `"hook": "calendar"` (iOS kalendář) v `episode.json`, globálně `config.series.hook`.
+
+### 6b. Poučení z prvního pokusu (CSS tabule = „AI-kové, laciné“)
+- Prostředí z CSS gradientů a šumu nikdy nevypadá skutečně → **fotografické podklady** (Higgsfield 4K) a my jen kompozitujeme objekty, které musí být přesné (kalendář s daty).
+- Kompozit musí převzít světlo scény: přes papír se násobí (multiply) jas podkladu + soft-light barva podkladu → pruhy světla a stín z fotky leží i na kalendáři.
+- Formát 16:9, **24 fps a 180° závěrka** (6 dílčích snímků) – rozmazání pohybu je pak filmové, ne digitální.
+- Opar/halace: rozmazaná kopie podkladu přes sebe v režimu screen + zvednuté černé + světelný leak + těžká viněta + zrno.
+- Pohyb „jako kameraman“: švih s ~2 % přejetím a dorovnáním, zrychlující dolly, střih uprostřed nájezdu, ruka = několik nesouměřitelných nízkých frekvencí (ne čistý sinus).

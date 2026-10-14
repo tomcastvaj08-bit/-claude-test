@@ -56,6 +56,9 @@ if (meta.estimated) console.warn("⚠ build/words.json chybí – časování je
 console.log(`duration ${meta.duration.toFixed(2)}s, scenes: ${meta.sceneStarts.map((s) => `${s.template}@${s.start.toFixed(2)}`).join(" ")}`);
 
 const setT = (t) => page.evaluate((t) => window.__setTime(t), t);
+// warm-up: touch every second of the timeline once so lazily-loaded layers/backgrounds are ready
+for (let t = 0; t < meta.duration; t += 0.5) await setT(t);
+await page.waitForTimeout(800);
 
 async function stills(times, dir = join(build, "stills")) {
   mkdirSync(dir, { recursive: true });
@@ -74,8 +77,8 @@ if (args.includes("--cuts")) {
   const times = [];
   meta.sceneStarts.forEach((s) => [-0.1, 0.05, 0.2].forEach((d) => times.push(+(s.start + d).toFixed(2))));
   const files = await stills(times, join(build, "cuts"));
-  const cols = 6;
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-pattern_type", "glob", "-i", join(build, "cuts", "*.png"), "-vf", `scale=270:480,tile=${cols}x${Math.ceil(files.length / cols)}:padding=6:color=white`, "-frames:v", "1", join(build, "cuts.png")]);
+  const cols = cfg.video.width > cfg.video.height ? 4 : 6;
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-pattern_type", "glob", "-i", join(build, "cuts", "*.png"), "-vf", `scale=${Math.round(cfg.video.width / 4)}:${Math.round(cfg.video.height / 4)},tile=${cols}x${Math.ceil(files.length / cols)}:padding=6:color=white`, "-frames:v", "1", join(build, "cuts.png")]);
   console.log(join(build, "cuts.png"));
 } else if (opt("--stills")) {
   const files = await stills(opt("--stills").split(",").map(Number));
@@ -84,8 +87,8 @@ if (args.includes("--cuts")) {
   const times = [];
   for (let t = 0.3; t < meta.duration; t += meta.duration > 30 ? 1.5 : 1) times.push(+t.toFixed(2));
   const files = await stills(times, join(build, "contact"));
-  const cols = 6;
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-pattern_type", "glob", "-i", join(build, "contact", "*.png"), "-vf", `scale=270:480,tile=${cols}x${Math.ceil(files.length / cols)}:padding=6:color=white`, "-frames:v", "1", join(build, "contact.png")]);
+  const cols = cfg.video.width > cfg.video.height ? 4 : 6;
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-pattern_type", "glob", "-i", join(build, "contact", "*.png"), "-vf", `scale=${Math.round(cfg.video.width / 4)}:${Math.round(cfg.video.height / 4)},tile=${cols}x${Math.ceil(files.length / cols)}:padding=6:color=white`, "-frames:v", "1", join(build, "contact.png")]);
   console.log(join(build, "contact.png"));
 } else if (args.includes("--mux-only") && existsSync(join(build, "video_silent.mp4"))) {
   // audio-only change (new voice / mix tweak): reuse the rendered frames
@@ -94,7 +97,7 @@ if (args.includes("--cuts")) {
   const fps = Number(opt("--fps") ?? meta.fps);
   // motion blur: N sub-frames per frame across a 180° shutter, averaged by ffmpeg (tmix)
   const mb = Math.max(1, Number(opt("--mb") ?? cfg.video.motionBlur ?? 1));
-  const shutter = 0.5;
+  const shutter = Number(cfg.video.shutter ?? 0.5); // 0.5 = 180° film shutter
   const frames = Math.ceil(meta.duration * fps);
   const silent = join(build, "video_silent.mp4");
   const vf = mb > 1 ? ["-vf", `tmix=frames=${mb},select='eq(mod(n,${mb}),${mb - 1})',setpts=N/${fps}/TB`] : [];

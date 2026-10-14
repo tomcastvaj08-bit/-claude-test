@@ -9,11 +9,12 @@
     "outroKicker": "Další aktuality každý týden"
   },
   "video": {
-    "width": 1080,
-    "height": 1920,
-    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "fps": 24,
     "tailSeconds": 0.6,
-    "motionBlur": 4
+    "motionBlur": 6,
+    "shutter": 0.5
   },
   "voice": {
     "provider": "elevenlabs",

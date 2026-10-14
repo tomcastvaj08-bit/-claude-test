@@ -29,6 +29,12 @@ async function main() {
   const ep = await loadJSON(`${epDir}/episode.json`);
   const voice = (await loadJSON(`${epDir}/build/words.json`, null)) ?? estimateVoice(ep);
   const stage = document.getElementById("stage");
+  // frame size from config (16:9 landscape by default, 9:16 still supported)
+  const W = cfg.video.width, H = cfg.video.height;
+  window.__W = W; window.__H = H;
+  document.documentElement.style.setProperty("--W", `${W}px`);
+  document.documentElement.style.setProperty("--H", `${H}px`);
+  if (W > H) stage.classList.add("land");
 
   // ---------- background: paper, fine grid, grain
   const bg = document.createElement("div");
@@ -226,10 +232,10 @@ async function main() {
         if (Z2 > F * 0.7) { e.style.display = "none"; return; }
         const sc = F / (F - Z2);
         e.style.display = "block";
-        e.style.transform = `translate(${540 + X1 * sc}px, ${860 + Y1 * sc}px) scale(${sc})`;
+        e.style.transform = `translate(${W / 2 + X1 * sc}px, ${H * 0.45 + Y1 * sc}px) scale(${sc})`;
         // keep the reading column clean: objects drifting behind text fade + defocus
-        const sx = 540 + X1 * sc, sy = 860 + Y1 * sc, rad = (o.s * sc) / 2;
-        const inCol = clamp(1 - (Math.abs(sx - 540) - 300 - rad * 0.3) / 160) * clamp(1 - (Math.abs(sy - 860) - 760) / 200);
+        const sx = W / 2 + X1 * sc, sy = H * 0.45 + Y1 * sc, rad = (o.s * sc) / 2;
+        const inCol = clamp(1 - (Math.abs(sx - W / 2) - W * 0.3 - rad * 0.3) / 160) * clamp(1 - (Math.abs(sy - H * 0.45) - H * 0.4) / 200);
         e.style.opacity = String(1 - inCol * 0.85);
         e.style.filter = `blur(${Math.min(26, Math.abs(Z2 + 200) / 110 + inCol * 14)}px)`;
         e.style.zIndex = String(Math.round(2000 + Z2));
@@ -295,6 +301,20 @@ async function main() {
       const fringe = ca > 0.05 ? ` drop-shadow(${ca * 7}px 0 0 rgba(255,60,90,.35)) drop-shadow(${-ca * 7}px 0 0 rgba(40,140,255,.35))` : "";
       s.el.style.filter = (bl > 0.2 ? `blur(${bl}px)` : "") + fringe || "none";
       s.update(Math.min(local, dur + OUT), dur);
+      if (!s.fitted) {
+        // auto-fit: if the content (measured once, at rest) is taller/wider than the scene box, scale it down
+        s.fitted = true;
+        const sc = s.el.querySelector(".sc");
+        if (sc) {
+          s.update(Math.max(0.1, dur - 0.25), dur); // measure the scene at rest (everything landed)
+          const box = sc.getBoundingClientRect();
+          let top = Infinity, bot = -Infinity, left = Infinity, right = -Infinity;
+          [...sc.children].forEach((c) => { const r = c.getBoundingClientRect(); top = Math.min(top, r.top); bot = Math.max(bot, r.bottom); left = Math.min(left, r.left); right = Math.max(right, r.right); });
+          const k = Math.min(1, (box.height * 0.98) / Math.max(1, bot - top), (box.width * 1.02) / Math.max(1, right - left));
+          if (k < 0.995) { sc.style.transform = `scale(${k})`; sc.style.transformOrigin = "50% 50%"; }
+          s.update(Math.min(local, dur + OUT), dur);
+        }
+      }
     });
 
     // ---- transition overlays
@@ -313,7 +333,7 @@ async function main() {
         const o = snapOut(prog(d, -0.22, 0.22)); // opens into a panel
         const w = brandInOut(prog(d, 0.0, 0.3)); // panel wipes up and away
         streakLine.style.transform = `scaleX(${a})`;
-        streak.style.clipPath = `inset(${lerp(959, 0, o)}px 0 ${lerp(959, 0, o) + w * 1920}px 0)`;
+        streak.style.clipPath = `inset(${lerp(H / 2 - 1, 0, o)}px 0 ${lerp(H / 2 - 1, 0, o) + w * H}px 0)`;
         streak.style.background = o > 0.02 ? "var(--blue)" : "transparent";
       }
     }
@@ -364,6 +384,11 @@ async function main() {
   await document.fonts.load('800 40px "Inter"', "ěščřžýáíéůú");
   await document.fonts.load('700 60px "Caveat"', "co je nového? týden úterý");
   await document.fonts.ready;
+  // CSS background textures (paper) are not <img>: preload them explicitly
+  await Promise.all(["../assets/plates/paper.jpg"].map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
+  // photographic plates must be decoded before the first frame
+  await Promise.all([...document.images].map((im) => (im.complete ? im.decode().catch(() => {}) : new Promise((r) => { im.onload = im.onerror = r; }))));
+  await Promise.all([...document.images].map((im) => im.decode().catch(() => {})));
   window.__setTime(0);
   document.body.dataset.ready = "1";
 }

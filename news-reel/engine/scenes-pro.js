@@ -289,7 +289,7 @@ Object.assign(proTemplates, {
       if (!fitted) {
         // fit the word to the frame width
         const w = wEl.scrollWidth || 1;
-        wEl.style.fontSize = `${Math.min(520, (parseFloat(getComputedStyle(wEl).fontSize) * 960) / w)}px`;
+        wEl.style.fontSize = `${Math.min((window.__H ?? 1920) * 0.3, 520, (parseFloat(getComputedStyle(wEl).fontSize) * (window.__W ?? 1080) * 0.8) / w)}px`;
         fitted = true;
       }
       chs.forEach((c, i) => {
@@ -346,7 +346,7 @@ Object.assign(proTemplates, {
   // props: { text, count: 900 }
   particles(el, p, ctx) {
     el.classList.add("full");
-    el.appendChild(h(`<div class="pt"><canvas width="1080" height="1920"></canvas>${p.text ? kineticWords(p.text, "lg pt-text") : ""}</div>`));
+    el.appendChild(h(`<div class="pt"><canvas width="${window.__W ?? 1080}" height="${window.__H ?? 1920}"></canvas>${p.text ? kineticWords(p.text, "lg pt-text") : ""}</div>`));
     const cv = el.querySelector("canvas"), g = cv.getContext("2d"), line = el.querySelector(".kw-line");
     const rnd = seeded(7), N = p.count ?? 900;
     const parts = Array.from({ length: N }, (_, i) => ({ a: (i / N) * Math.PI * 2, r0: 1200 + rnd() * 900, a0: rnd() * Math.PI * 2, ring: 330 + (i % 3) * 26, sw: rnd(), hue: rnd() < 0.18 ? 1 : rnd() < 0.3 ? 2 : 0 }));
@@ -358,11 +358,12 @@ Object.assign(proTemplates, {
       const c = snapOut(prog(tt, 0, T1)), b = ease.inExpo(prog(tt, T2, 0.5));
       const ang = lerp(q.a0 + tt * 0.6, q.a + tt * 0.25, c);
       const r = lerp(q.r0, q.ring, c) + b * (900 + q.sw * 1200);
-      return [540 + Math.cos(ang) * r, 860 + Math.sin(ang) * r * (1 - 0.0 * c)];
+      const FW = window.__W ?? 1080, FH = window.__H ?? 1920, k = (Math.min(FW, FH) / 1080) * (FW > FH ? 0.82 : 1);
+      return [FW / 2 + Math.cos(ang) * r * k, FH * (FW > FH ? 0.5 : 0.45) + Math.sin(ang) * r * k];
     };
     return (t) => {
       if (line && !tw) { measureWords(el); tw = timesForWords(line, ctx, T2 + 0.15, 0.09); }
-      g.clearRect(0, 0, 1080, 1920);
+      g.clearRect(0, 0, window.__W ?? 1080, window.__H ?? 1920);
       g.lineCap = "round";
       for (const q of parts) {
         const [x, y] = pos(q, t), [x0, y0] = pos(q, Math.max(0, t - 0.06));
