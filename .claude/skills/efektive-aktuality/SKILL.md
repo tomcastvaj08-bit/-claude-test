@@ -1,6 +1,6 @@
 ---
 name: efektive-aktuality
-description: Vyrobí vertikální Reel (1080x1920 MP4) série AKTUALITY ze vstupu od ChatGPT – stálý hook s Apple kalendářem (dnešní datum → odjede zpět na datum novinky), český voiceover přes ElevenLabs eleven_v4 (hlas Karel), motion grafika v brandu EFEKTIVE podle firemní prezentace (Inter, chladně bílá, grafit, modrá + listová zelená, lesklé koule) synchronizovaná na slova, vrstvené zvukové efekty z ElevenLabs a motion blur. Použij, když uživatel vloží týdenní aktuality ve formátu „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“ nebo řekne „udělej reel / aktualitu / zapni skill aktuality“.
+description: Vyrobí vertikální Reel (1080x1920 MP4) série AKTUALITY ze vstupu od ChatGPT – stálý hook „tabule“ (švih kamery na školní tabuli ve slunci, odtrhávací kalendář, přeškrtnutí dnešního data fixou, vítr přetočí listy na datum novinky; alternativně iOS kalendář), český voiceover přes ElevenLabs eleven_v4 (hlas Karel), motion grafika v brandu EFEKTIVE podle firemní prezentace (Inter, chladně bílá, grafit, modrá + listová zelená, lesklé koule) synchronizovaná na slova, vrstvené zvukové efekty z ElevenLabs a motion blur. Použij, když uživatel vloží týdenní aktuality ve formátu „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“ nebo řekne „udělej reel / aktualitu / zapni skill aktuality“.
 ---
 
 # AKTUALITY – automatická výroba Reelsu
@@ -111,7 +111,7 @@ node scripts/render.mjs episodes/<id> --cuts             # build/cuts.png – ok
 node scripts/render.mjs episodes/<id> --stills 6.2,9.8
 ```
 Prohlédni (Read) oba listy. **Tvrdé pravidlo: nikdy dva texty přes sebe** (odcházející nadpis × přicházející, popisky × HUD, dva řádky titulků). Dále: přetečení textu, kolize s titulky, prázdná místa, prvky co přijdou po slově. Oprav a opakuj.
-**Hook:** kalendář zůstává na aktuálním měsíci (dny jiných měsíců jsou prázdné), kolečko jen sjede na datum novinky, clona se otevře z kolečka – na hook.js nesahej.
+**Hook:** výchozí je `board` (engine/hook-board.js – tabule, odtrhávací kalendář, přeškrtnutí, listy ve větru; rozbor v docs/motion-reference.md §6). Alternativa `"hook": "calendar"` v episode.json (iOS kalendář, zůstává na aktuálním měsíci). Data se doplní sama z `today`/`newsDate`; na hook soubory mezi epizodami nesahej.
 
 ### 6. Zvuk
 SFX se skládají automaticky: hook (swell, rewind, ticky, riser, impact, dive, shimmer), každý střih (swish), prvky scén (pop, swipe, tick, bar_rise) a outro (logo sting) → **jedna stopa** `build/sfx_stem.wav` (plán v `build/sfx_plan.json`). Po prohlédnutí contact sheetu zvaž extra vrstvy specifické pro epizodu: vygeneruj je přes `creative_generate_in_flow` (`node_type: "sfx"`, `model_id: "eleven_text_to_sound_v2"`, `generations_count: 1`, prompt = jeden konkrétní zvuk), ulož do `assets/sfx/el/<jmeno>.mp3`, zapiš do `library.json` a zavolej je přes `ctx.sfx` (v `custom` scéně) – nebo je přidej do knihovny pro další epizody.

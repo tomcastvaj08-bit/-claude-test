@@ -3,6 +3,7 @@
     "brand": "EFEKTIVE",
     "title": "AKTUALITY",
     "handle": "@efektive",
+    "hook": "board",
     "accent": "#2f6bed",
     "locale": "cs-CZ",
     "outroKicker": "Další aktuality každý týden"

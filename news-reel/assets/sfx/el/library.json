@@ -1,15 +1,83 @@
 {
-  "_info": "Zvuková knihovna série, generovaná přes ElevenLabs (eleven_text_to_sound_v2), flow PLDyeTpdQaz9fhURQ66G. Engine na ně odkazuje jménem (ctx.sfx / addSfx). Nový zvuk: vygeneruj ho, ulož sem jako <jmeno>.mp3 a přidej záznam.",
-  "hook_swell":       { "prompt": "Soft airy whoosh swelling in slowly, smooth and clean, subtle low hum underneath", "generation": "qOS3w2U65whuVclNch74", "use": "začátek hooku" },
-  "hook_riser":       { "prompt": "Tension riser, rising synth swell with filtered white noise building fast to a sharp peak", "generation": "ZumrZSNCHJS6t4hpNOy8", "use": "poslední vteřina před dopadem (vrstvený se synth riser.wav)" },
-  "hook_rewind":      { "prompt": "Fast mechanical clock ticks accelerating, crisp close-mic ticking", "generation": "0WAhHh1rkLBoITRnUBKi", "use": "kolečko jede zpět v čase" },
-  "hook_impact":      { "prompt": "Deep sub boom impact with a crisp snap transient and short tail", "generation": "PJHg0mb2uXqSjqa5Iyex", "use": "dopad na datum novinky" },
-  "hook_dive":        { "prompt": "Fast air whoosh rushing past, short smooth swoosh", "generation": "R8YHQxe9CCP7xWDTdr2V", "use": "ponoření do data" },
-  "reveal_shimmer":   { "prompt": "Soft bright digital shimmer, short airy sparkle chime", "generation": "J4t5iuWdZTZluHbbCjFR", "use": "odhalení (clona, app, CTA)" },
-  "ui_pop":           { "prompt": "Soft glassy UI pop, short clean bubble click", "generation": "507vdPXmiG8yR4MWn3OM", "use": "objevení prvku" },
-  "transition_swish": { "prompt": "Short clean swoosh, smooth soft air swish, quick", "generation": "7LUjAZtEGSQQGJoAhiZ5", "use": "střih mezi scénami" },
-  "card_swipe":       { "prompt": "Quick soft swipe on a smartphone touchscreen with a tiny click", "generation": "T8vHzZ0ZKwcraMvpLOMY", "use": "posun karuselu" },
-  "check_tick":       { "prompt": "Satisfying UI confirmation tick, soft high click with a tiny bright chime", "generation": "bnRSGEorYGQvDToYC5l0", "use": "zaškrtnutí" },
-  "bar_rise":         { "prompt": "Short rising digital tone sweep, smooth upward synth glide", "generation": "Sgt4j4pBkbrch1yV0Nw2", "use": "růst grafu / čísla" },
-  "logo_sting":       { "prompt": "Short elegant logo sting, warm synth chord with a soft bell hit", "generation": "hAoOaf8uvYagw5o29Jue", "use": "outro s logem" }
+ "_info": "Zvuková knihovna série, generovaná přes ElevenLabs (eleven_text_to_sound_v2), flow PLDyeTpdQaz9fhURQ66G. Engine na ně odkazuje jménem (ctx.sfx / addSfx). Nový zvuk: vygeneruj ho, ulož sem jako <jmeno>.mp3 a přidej záznam.",
+ "hook_swell": {
+  "prompt": "Soft airy whoosh swelling in slowly, smooth and clean, subtle low hum underneath",
+  "generation": "qOS3w2U65whuVclNch74",
+  "use": "začátek hooku"
+ },
+ "hook_riser": {
+  "prompt": "Tension riser, rising synth swell with filtered white noise building fast to a sharp peak",
+  "generation": "ZumrZSNCHJS6t4hpNOy8",
+  "use": "poslední vteřina před dopadem (vrstvený se synth riser.wav)"
+ },
+ "hook_rewind": {
+  "prompt": "Fast mechanical clock ticks accelerating, crisp close-mic ticking",
+  "generation": "0WAhHh1rkLBoITRnUBKi",
+  "use": "kolečko jede zpět v čase"
+ },
+ "hook_impact": {
+  "prompt": "Deep sub boom impact with a crisp snap transient and short tail",
+  "generation": "PJHg0mb2uXqSjqa5Iyex",
+  "use": "dopad na datum novinky"
+ },
+ "hook_dive": {
+  "prompt": "Fast air whoosh rushing past, short smooth swoosh",
+  "generation": "R8YHQxe9CCP7xWDTdr2V",
+  "use": "ponoření do data"
+ },
+ "reveal_shimmer": {
+  "prompt": "Soft bright digital shimmer, short airy sparkle chime",
+  "generation": "J4t5iuWdZTZluHbbCjFR",
+  "use": "odhalení (clona, app, CTA)"
+ },
+ "ui_pop": {
+  "prompt": "Soft glassy UI pop, short clean bubble click",
+  "generation": "507vdPXmiG8yR4MWn3OM",
+  "use": "objevení prvku"
+ },
+ "transition_swish": {
+  "prompt": "Short clean swoosh, smooth soft air swish, quick",
+  "generation": "7LUjAZtEGSQQGJoAhiZ5",
+  "use": "střih mezi scénami"
+ },
+ "card_swipe": {
+  "prompt": "Quick soft swipe on a smartphone touchscreen with a tiny click",
+  "generation": "T8vHzZ0ZKwcraMvpLOMY",
+  "use": "posun karuselu"
+ },
+ "check_tick": {
+  "prompt": "Satisfying UI confirmation tick, soft high click with a tiny bright chime",
+  "generation": "bnRSGEorYGQvDToYC5l0",
+  "use": "zaškrtnutí"
+ },
+ "bar_rise": {
+  "prompt": "Short rising digital tone sweep, smooth upward synth glide",
+  "generation": "Sgt4j4pBkbrch1yV0Nw2",
+  "use": "růst grafu / čísla"
+ },
+ "logo_sting": {
+  "prompt": "Short elegant logo sting, warm synth chord with a soft bell hit",
+  "generation": "hAoOaf8uvYagw5o29Jue",
+  "use": "outro s logem"
+ },
+ "marker_scratch": {
+  "prompt": "Two quick marker pen strokes scratching on paper, close-mic, crisp",
+  "generation": "Ylh8ZD2KGjEbF0j0rD8j",
+  "use": "přeškrtnutí / zakroužkování data (board hook)"
+ },
+ "page_flutter": {
+  "prompt": "Rapid paper calendar pages flipping and fluttering in a gust of wind",
+  "generation": "GO4VhRyhjE5saKgeaFRW",
+  "use": "listy kalendáře ve větru"
+ },
+ "wind_gust": {
+  "prompt": "Short soft gust of wind through an open window, airy",
+  "generation": "kdTIPlOBws3klUZKfbFd",
+  "use": "závan větru"
+ },
+ "camera_whip": {
+  "prompt": "Fast cinematic whip pan whoosh with a low thump at the end",
+  "generation": "Dlapr23aLekUSpkEsb4v",
+  "use": "švih kamery na začátku"
+ }
 }

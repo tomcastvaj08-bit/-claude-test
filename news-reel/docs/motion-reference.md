@@ -69,3 +69,16 @@ Snímky: `docs/ref/v4-*.jpg`. 14 s, natočeno z obrazovky notebooku. Je to sled 
 | 13,0–14,0 | tmavé logo s jiskrou | podpis | outro |
 
 **Poučení:** (1) každý obraz má jednu silnou kompoziční myšlenku (obří slovo, číslo, prstenec), (2) střídání barevných ploch je samo o sobě rytmus, (3) mikro popisky v rozích (mono/verzálky) dávají „editorial“ rám, (4) žádné dva texty přes sebe – nový text přijde až na čistou plochu.
+
+## 6. Reference v5 – „tabule“ (InVideo MCP reel) → nový hook `board`
+Snímky: `docs/ref/v5-hook.jpg` (8 sn./s), `docs/ref/v5-frames.jpg` (plné rozlišení).
+
+**Proč první 3 sekundy fungují:**
+- **Skutečné prostředí místo grafiky:** zelená školní tabule (křídový prach, rozmazané stopy po houbě), vlevo dřevěná stěna, tabule v tmavém dřevěném rámu. Na tabuli polaroidy s červenými špendlíky a ohnutým rohem, ručně psané popisky.
+- **Světlo:** teplé slunce přes žaluzie = šikmé zlaté pruhy přes celou scénu, teplé ladění (soft-light oranžová), silná viněta, zrno, plovoucí prach ve světle, světelný „leak“.
+- **Kamera:** 0–0,9 s rychlý švih po stěně na tabuli (počáteční natočení ~30°, rozjezd prudký, dojezd měkký), **směrové rozmazání pohybu** jen ve směru jízdy (dlouhá závěrka ~180–360°). Pak zrychlující najetí, **střih uprostřed nájezdu** na bližší záběr a krátké dojetí. Celou dobu jemné „z ruky“ chvění.
+- **Typo:** čisté bílé písmo + jedno ručně psané křídové slovo, drobné křídové poznámky po tabuli.
+
+**Náš hook `board` (engine/hook-board.js):** švih ze dřeva na tabuli → malý odtrhávací kalendář připíchnutý na tabuli → zrychlující najetí → střih blíž + dojezd → dnešní datum přeškrtne červená fixa (dva tahy) → zavane vítr a listy se přetočí (ohnou se ke kameře přes vazbu a odletí) až na datum novinky → zakroužkování fixou + křídou „novinka!“ se šipkou → průlet do čísla → teplý záblesk → čistá motion grafika.
+Zvuky: `camera_whip`, `wind_gust`, `marker_scratch`, `page_flutter` (+ swish, impact, dive, shimmer).
+Volba hooku: `"hook": "board"` (výchozí) nebo `"hook": "calendar"` (iOS kalendář) v `episode.json`, globálně `config.series.hook`.

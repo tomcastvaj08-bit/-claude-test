@@ -2,6 +2,7 @@
 // The renderer calls window.__setTime(t) for every (sub)frame and screenshots the page.
 import { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, snapOut as snapOutE } from "./ease.js";
 import { buildHook, parseDate } from "./hook.js";
+import { buildBoardHook } from "./hook-board.js";
 import { templates as baseTemplates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
 import { proTemplates, kineticWords, animateWords, snapOut } from "./scenes-pro.js";
 const templates = { ...baseTemplates, ...proTemplates };
@@ -71,7 +72,9 @@ async function main() {
   // ---------- hook
   const hookRoot = document.createElement("div");
   stage.appendChild(hookRoot);
-  const hook = buildHook(hookRoot, ep, cfg);
+  // hook style: "board" (chalkboard + tear-off calendar) or "calendar" (iOS month view)
+  const hookKind = ep.hook ?? cfg.series.hook ?? "board";
+  const hook = hookKind === "calendar" ? buildHook(hookRoot, ep, cfg) : buildBoardHook(hookRoot, ep, cfg);
   const B = hook.duration;
   const voiceStart = B + (cfg.audio.voiceStartOffset ?? 0);
   const voiceEnd = voiceStart + voice.duration;
@@ -140,14 +143,17 @@ async function main() {
 
   // series sound signature (hook) + cuts + outro
   const hc = hook.cues;
-  addSfx("hook_swell", 0, -4);
-  addSfx("synth_riser", hc.impact - 2.4 + 0.04, -8);
-  addSfx("hook_riser", hc.impact - 1.04, -3);
-  addSfx("hook_rewind", hc.ticks[0] ?? hc.riser[0], -6);
-  hc.ticks.forEach((t) => addSfx("tick", t, -14));
-  addSfx("hook_impact", hc.impact, 0);
-  addSfx("hook_dive", hc.whoosh - 0.1, -3);
-  addSfx("reveal_shimmer", B - 0.25, -8);
+  if (hook.sfx) hook.sfx.forEach((e) => addSfx(e.name, e.at, e.gain));
+  else {
+    addSfx("hook_swell", 0, -4);
+    addSfx("synth_riser", Math.max(0, hc.impact - 2.4 + 0.04), -8);
+    addSfx("hook_riser", Math.max(0, hc.impact - 1.04), -3);
+    addSfx("hook_rewind", hc.ticks[0] ?? hc.riser[0], -6);
+    hc.ticks.forEach((t) => addSfx("tick", t, -14));
+    addSfx("hook_impact", hc.impact, 0);
+    addSfx("hook_dive", hc.whoosh - 0.1, -3);
+    addSfx("reveal_shimmer", B - 0.25, -8);
+  }
   scenes.slice(1).forEach((s) => addSfx("transition_swish", s.start - 0.14, -7));
   addSfx("transition_swish", outroStart - 0.35, -4);
   addSfx("logo_sting", outroStart + 0.35, -2);
@@ -356,6 +362,7 @@ async function main() {
   await document.fonts.load('800 100px "Inter"');
   await document.fonts.load('400 40px "Inter"');
   await document.fonts.load('800 40px "Inter"', "ěščřžýáíéůú");
+  await document.fonts.load('700 60px "Caveat"', "co je nového? týden úterý");
   await document.fonts.ready;
   window.__setTime(0);
   document.body.dataset.ready = "1";
