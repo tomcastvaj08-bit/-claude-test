@@ -6,3 +6,4 @@ assets/plates/*.png
 assets/coldopen/*.png
 !assets/coldopen/character_sheet.png
 assets/coldopen/src/
+assets/coldopen/env/*.png
