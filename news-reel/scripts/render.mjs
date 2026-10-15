@@ -141,7 +141,30 @@ function resolveSfx(name) {
   for (const f of [join(dir, "el", `${name}.mp3`), join(dir, "el", `${name}.wav`), join(dir, alias[name] ?? `${name}.wav`)]) if (existsSync(f)) return f;
   return null;
 }
+// integrated loudness (EBU R128) of a file, optionally only its first `dur` seconds
+function lufsOf(file, dur) {
+  const a = ["-hide_banner", "-nostats", "-i", file, ...(dur ? ["-t", String(dur)] : []), "-af", "ebur128=framelog=quiet", "-f", "null", "-"];
+  const r = spawnSync("ffmpeg", a, { encoding: "utf8" }).stderr ?? "";
+  const m = r.slice(r.lastIndexOf("Integrated loudness:")).match(/I:\s*(-?[\d.]+)/);
+  return m ? Number(m[1]) : null;
+}
+// dialogue-relative levels (cold opens): a layer with `rel` (LU relative to the dialogue line) gets its gain
+// from the measured loudness of its own file, so foley sits in the same place under the voice in every scene,
+// whatever level ElevenLabs delivered the voice or the effect at
+function resolveRelative(meta) {
+  const ref = meta.masterRef && meta.sfx.find((e) => e.name === meta.masterRef.name);
+  if (!ref) return;
+  const lv = lufsOf(resolveSfx(ref.name)) + (ref.gain ?? 0);
+  for (const e of meta.sfx) {
+    if (e.rel == null || e === ref) continue;
+    const f = resolveSfx(e.name);
+    const lf = f && lufsOf(f, e.dur ?? 2.6);
+    if (lf == null || lf < -70) continue;
+    e.gain = +(lv + e.rel - lf).toFixed(1);
+  }
+}
 function buildSfxStem(meta) {
+  resolveRelative(meta);
   if (!existsSync(join(ROOT, "assets", "sfx", "riser.wav"))) execFileSync("node", [join(ROOT, "scripts", "sfx.mjs")], { stdio: "inherit" });
   const events = meta.sfx.map((e) => ({ ...e, file: resolveSfx(e.name) })).filter((e) => e.file);
   const missing = meta.sfx.filter((e) => !resolveSfx(e.name)).map((e) => e.name);
@@ -203,9 +226,7 @@ function mixAndMux(silent, meta) {
     if (ref) {
       // dialogue-referenced master (cold opens): the character's line lands exactly where the narrator sits
       // in the main film (config.audio.dialogueLufs), whatever the foley adds around it
-      const vf = resolveSfx(ref.name);
-      const vp = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", vf, "-af", "ebur128=framelog=quiet", "-f", "null", "-"], { encoding: "utf8" }).stderr ?? "";
-      const lv = Number(vp.slice(vp.lastIndexOf("Integrated loudness:")).match(/I:\s*(-?[\d.]+)/)[1]);
+      const lv = lufsOf(resolveSfx(ref.name));
       const target = meta.masterRef.lufs ?? A.dialogueLufs ?? -16.3;
       g = target - (lv + (ref.gain ?? 0) + A.sfxGainDb);
       console.log(`master: hlas ${lv} LUFS → ${target} LUFS jako vypravěč (zisk ${g.toFixed(1)} dB), celek ${(Number(m.input_i) + g).toFixed(1)} LUFS`);

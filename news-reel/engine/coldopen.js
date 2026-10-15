@@ -43,16 +43,16 @@ export const COLD_OPENS = {
       { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.22, [0.6, 0.45]]], jump: "up" },
     ],
     foley: (T) => [
-      { name: "newspaper_rustle", at: 0.05, gain: -13, dur: 1.4, fo: 0.4 },
-      { name: "villager_hmm", at: 0.4, gain: -15, dur: 0.9, fo: 0.25 },
-      { name: "page_turn", at: T.v(1.02), gain: -5 },
-      { name: "newspaper_rustle", at: T.v(1.1), gain: -16, dur: 1.0, fo: 0.3 },
-      { name: "villager_hmm", at: T.v(1.6), gain: -14, dur: 0.75, fo: 0.2 },
-      { name: "gulp", at: T.wait + 0.42, gain: -11 },
-      { name: "newspaper_rustle", at: T.v(3.0), gain: -18, dur: 0.6, fo: 0.2 },
-      { name: "transition_swish", at: T.v(3.0) + 0.38, gain: -15 },
-      { name: "paper_flurry", at: T.leap, gain: -8 },
-      { name: "chair_clatter", at: T.leap + 0.2, gain: -10 },
+      { name: "newspaper_rustle", at: 0.05, rel: -11, dur: 1.4, fo: 0.4 },
+      { name: "villager_hmm", at: 0.4, rel: -7, dur: 0.9, fo: 0.25 },
+      { name: "page_turn", at: T.v(1.02), rel: -6 },
+      { name: "newspaper_rustle", at: T.v(1.1), rel: -14, dur: 1.0, fo: 0.3 },
+      { name: "villager_hmm", at: T.v(1.6), rel: -7, dur: 0.75, fo: 0.2 },
+      { name: "gulp", at: T.wait + 0.42, rel: -9 },
+      { name: "newspaper_rustle", at: T.v(3.0), rel: -16, dur: 0.6, fo: 0.2 },
+      { name: "transition_swish", at: T.v(3.0) + 0.38, rel: -13 },
+      { name: "paper_flurry", at: T.leap, rel: -8 },
+      { name: "chair_clatter", at: T.leap + 0.2, rel: -9 },
     ],
   },
   laptop: {
@@ -75,13 +75,13 @@ export const COLD_OPENS = {
       { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.22, [0.5, 0.4]]], jump: "up" },
     ],
     foley: (T) => [
-      { name: "laptop_fan", at: 0, gain: -24, dur: T.leap + 0.3, fi: 0.3, fo: 0.3, hp: 120 },
-      { name: "keyboard_typing", at: 0.05, gain: -10, dur: T.v(0.5) - 0.05, fo: 0.08 },
-      { name: "trackpad_click", at: T.v(0.9), gain: -9, dur: 1.2, fo: 0.2 },
-      { name: "keyboard_typing", at: T.v(1.4), gain: -15, dur: 0.6, fo: 0.15 },
-      { name: "villager_hmm", at: T.v(2.25), gain: -15, dur: 0.5, fo: 0.2 },
-      { name: "gulp", at: T.wait + 0.4, gain: -11 },
-      { name: "chair_creak", at: T.leap, gain: -7 },
+      { name: "laptop_fan", at: 0, rel: -19, dur: T.leap + 0.3, fi: 0.3, fo: 0.3, hp: 120 },
+      { name: "keyboard_typing", at: 0.05, rel: -9, dur: T.v(0.5) - 0.05, fo: 0.08 },
+      { name: "trackpad_click", at: T.v(0.9), rel: -10, dur: 1.2, fo: 0.2 },
+      { name: "keyboard_typing", at: T.v(1.4), rel: -14, dur: 0.6, fo: 0.15 },
+      { name: "villager_hmm", at: T.v(2.25), rel: -7, dur: 0.5, fo: 0.2 },
+      { name: "gulp", at: T.wait + 0.4, rel: -9 },
+      { name: "chair_creak", at: T.leap, rel: -9 },
     ],
   },
   nap: {
@@ -98,12 +98,12 @@ export const COLD_OPENS = {
       { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.2, [0.45, 0.42]]], jump: "dive" },
     ],
     foley: (T) => [
-      { name: "snore", at: 0.0, gain: -11, dur: T.v(0.28), fo: 0.12 },
-      { name: "phone_buzz", at: 1.5, gain: -6 },
-      { name: "phone_buzz", at: 2.05, gain: -8, hp: 200 },
-      { name: "sheet_rustle", at: T.v(0.26), gain: -7 },
-      { name: "gulp", at: T.v(1.12), gain: -14 },
-      { name: "sheet_rustle", at: T.leap - 0.04, gain: -7 },
+      { name: "snore", at: 0.0, rel: -4, dur: T.v(0.28), fo: 0.12 },
+      { name: "phone_buzz", at: 1.5, rel: -6 },
+      { name: "phone_buzz", at: 2.05, rel: -9, hp: 200 },
+      { name: "sheet_rustle", at: T.v(0.26), rel: -8 },
+      { name: "gulp", at: T.v(1.12), rel: -9 },
+      { name: "sheet_rustle", at: T.leap - 0.04, rel: -8 },
     ],
   },
   phone: {
@@ -119,11 +119,11 @@ export const COLD_OPENS = {
       { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.18, [0.5, 0.5]]], jump: "run" },
     ],
     foley: (T) => [
-      { name: "phone_scroll", at: 0.1, gain: -9, dur: T.v(1.9) - 0.1, fo: 0.2 },
-      { name: "villager_hmm", at: T.v(1.25), gain: -16, dur: 0.55, fo: 0.2 },
-      { name: "yawn", at: T.v(2.0), gain: -10, dur: 0.95, fo: 0.25 },
-      { name: "gulp", at: T.wait + 0.45, gain: -11 },
-      { name: "run_away", at: T.leap + 0.04, gain: -7 },
+      { name: "phone_scroll", at: 0.1, rel: -9, dur: T.v(1.9) - 0.1, fo: 0.2 },
+      { name: "villager_hmm", at: T.v(1.25), rel: -7, dur: 0.55, fo: 0.2 },
+      { name: "yawn", at: T.v(2.0), rel: -6, dur: 0.95, fo: 0.25 },
+      { name: "gulp", at: T.wait + 0.45, rel: -9 },
+      { name: "run_away", at: T.leap + 0.04, rel: -8 },
     ],
   },
   notebook: {
@@ -139,12 +139,12 @@ export const COLD_OPENS = {
       { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.22, [0.45, 0.35]]], jump: "up" },
     ],
     foley: (T) => [
-      { name: "pencil_write", at: 0.05, gain: -9, dur: T.v(2.6) - 0.05, fo: 0.12 },
-      { name: "villager_hmm", at: T.v(2.65), gain: -12, dur: 1.4, fo: 0.3 },
-      { name: "pen_drop", at: T.wait + 0.05, gain: -8 },
-      { name: "gulp", at: T.v(4.62), gain: -13 },
-      { name: "chair_creak", at: T.leap, gain: -7 },
-      { name: "paper_flurry", at: T.leap + 0.04, gain: -14, dur: 1.2, fo: 0.4 },
+      { name: "pencil_write", at: 0.05, rel: -10, dur: T.v(2.6) - 0.05, fo: 0.12 },
+      { name: "villager_hmm", at: T.v(2.65), rel: -7, dur: 1.4, fo: 0.3 },
+      { name: "pen_drop", at: T.wait + 0.05, rel: -8 },
+      { name: "gulp", at: T.v(4.62), rel: -9 },
+      { name: "chair_creak", at: T.leap, rel: -9 },
+      { name: "paper_flurry", at: T.leap + 0.04, rel: -12, dur: 1.2, fo: 0.4 },
     ],
   },
 };
@@ -282,7 +282,6 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
       setSheet(R, `${V}${id}/${p}`, foldX, footY);
       shadowEl.src = `${V}${id}/${p}.webp`;
       let { s, ox, oy } = camAt(sh, lt, p);
-      if (sh.crash && lt >= sh.crash.at && lt < sh.crash.at + 0.067) flashA = 0.35;
       const hand = shake(t, s > 1.3 ? 1.0 : 0.55);
       ox += hand.x; oy += hand.y;
       // the sheet in the room: turned away from the lens and folded – he is visibly flat
@@ -337,7 +336,6 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
       face.style.transform = `translate(${hs.x.toFixed(1)}px, ${hs.y.toFixed(1)}px) scale(${(1 + lt * 0.022 + punch).toFixed(4)})`;
       cuBg.style.transform = `scale(${(1.04 + lt * 0.015).toFixed(4)}) translate(${(-hs.x * 0.35).toFixed(1)}px, 0)`;
       bend(F, fpaper, 8 + Math.sin(t * 1.1) * 1.2, 5);
-      if (lt < 0.067) flashA = 0.25;
     }
     flash.style.opacity = String(flashA);
     leak.style.opacity = String(0.4 + Math.sin(t * 1.7) * 0.08);
@@ -347,12 +345,12 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
   const voiceName = "../../coldopen/voice/" + id;
   const sfx = [
     { name: voiceName, at: T.vOff, gain: 0, dur: tim.dur + 0.25, fo: 0.08 },
-    { name: D.room, at: 0, gain: -14, dur: T.end + 0.3, fi: 0.25, fo: 0.35, hp: 90 },
-    { name: "amb_city", at: 0, gain: -27, dur: T.end + 0.3, fi: 0.4, fo: 0.4, hp: 160, lp: 4200, pan: D.leak === "right" ? 0.35 : -0.35 },
-    ...(D.window ? [{ name: "wind_bed", at: 0, gain: -22, dur: T.end + 0.3, fi: 0.4, fo: 0.4, hp: 180, lp: 6000, pan: D.leak === "right" ? 0.3 : -0.3 }] : []),
-    { name: "record_scratch", at: T.wait - 0.06, gain: -9, dur: 0.85, fo: 0.25 },
-    { name: "hook_impact", at: T.date - 0.04, gain: -16, lp: 220 },
-    { name: "camera_glide", at: T.pan - 0.15, gain: -9, dur: 0.9, fo: 0.3 },
+    { name: D.room, at: 0, rel: -17, dur: T.end + 0.3, fi: 0.25, fo: 0.35, hp: 90 },
+    { name: "amb_city", at: 0, rel: -24, dur: T.end + 0.3, fi: 0.4, fo: 0.4, hp: 160, lp: 4200, pan: D.leak === "right" ? 0.35 : -0.35 },
+    ...(D.window ? [{ name: "wind_bed", at: 0, rel: -21, dur: T.end + 0.3, fi: 0.4, fo: 0.4, hp: 180, lp: 6000, pan: D.leak === "right" ? 0.3 : -0.3 }] : []),
+    { name: "record_scratch", at: T.wait - 0.06, rel: -6, dur: 0.85, fo: 0.25 },
+    { name: "hook_impact", at: T.date - 0.04, rel: -11, lp: 220 },
+    { name: "camera_glide", at: T.pan - 0.15, rel: -10, dur: 0.9, fo: 0.3 },
     ...D.foley(T),
   ];
   const poses = Object.keys(M.poses);
