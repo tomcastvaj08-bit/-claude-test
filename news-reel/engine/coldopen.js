@@ -346,8 +346,12 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
       // close-up: his face over the real room behind him (the 4K plate, lightly defocused); lips from the voice
       // lips follow the real voice: amplitude envelope of the line (24 values/s), held on twos
       const fi = Math.floor(Math.floor((t - T.vOff) * 12) * 2);
-      const e = fi >= 0 && fi < env.length ? Math.max(env[fi], env[fi + 1] ?? 0) : 0;
-      const m = e > 0.5 ? "open" : e > 0.16 ? "half" : "closed";
+      // syllables, not loudness: compare with the local peak (±0.2 s) so a shouted line still opens and closes
+      const ea = (i) => (i >= 0 && i < env.length ? env[i] : 0);
+      const e = (ea(fi) + ea(fi + 1)) / 2;
+      let lm = 0.05; for (let j = fi - 4; j <= fi + 5; j++) lm = Math.max(lm, ea(j));
+      const r = e / lm;
+      const m = e < 0.14 ? "closed" : r > 0.82 && e > 0.45 ? "open" : r > 0.45 ? "half" : "closed";
       setSheet(F, `${V}face/${m}`, 0.62, 0.98);
       const fp = shots.find((s) => s.kind === "room" && s.crash) ?? shots[0];
       const hp = focusOf("head", fp.poses[fp.poses.length - 1][1]);
