@@ -131,5 +131,25 @@
  "notebook_k4_cut": "2fcdcd3f-cf67-40be-af73-9104a72062e3",
  "nap_k4_cut": "c718f413-fe21-4f71-b7cb-5270061e7934",
  "laptop_k4_cut": "798831ac-155d-4719-9f49-6696a47dd4c6",
+ "inbetweens_v4": {
+  "newspaper_k1a": "441c37c1-5d5a-4165-b2ca-7c54ed11d351",
+  "newspaper_k1b": "ce665178-43a6-4288-a946-c0834b0ad027",
+  "newspaper_k2a": "3341123e-d9ce-4e92-ba89-12916a6d99ac",
+  "notebook_k1a": "ac2be57c-56ce-4d04-b743-2645ef103a11",
+  "notebook_k1b": "2f472ef4-3360-4187-9218-d3d89edd22b2",
+  "phone_k1a": "ffd4a5fe-5965-47e3-addf-d87537479036",
+  "phone_k1b": "a2d8508b-8a2c-41ad-9331-246f021169ec",
+  "nap_k1a": "febf7b86-2203-45d2-b249-0523442db101"
+ },
+ "laptop_v4_behind_mac": {
+  "comp_a": "042a45ad-64ae-43e0-99ae-704e952a4563",
+  "comp_b": "77b2dab7-68b9-4251-876e-d901a15138c4",
+  "cut_a": "2d791cf2-4419-4dd0-8558-8e24831a6859",
+  "cut_b (k1)": "d5fe6266-d82a-44b8-9b61-066ef0a00922",
+  "k1a": "b9f4e107-32a8-488c-8bfe-dca9f21f12fc",
+  "k2": "de7cfa32-980f-4414-85a1-8030e78de810",
+  "k3": "8aa37eef-b50e-424d-b739-41c93d51f49a",
+  "k4": "3c191a2c-dff5-43a2-a52f-3b0ceaf30f55"
+ },
  "_info": "Higgsfield gpt_image_2_5, 2k, quality high. Composites = room photo + character sheet; *_cut = transparent extraction; redraws = edits of the cut."
 }
