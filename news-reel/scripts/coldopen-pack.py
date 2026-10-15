@@ -9,9 +9,46 @@ redraws exist. The engine works in those normalised coords, so the plate resolut
 import json, os, glob
 import cv2
 import numpy as np
+from scipy import ndimage as ndi
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "assets", "coldopen")
 SRC, OUT = os.path.join(ROOT, "src"), os.path.join(ROOT, "v2")
+
+def peel_rim(im, a):
+    """No paper cut-out look: remove the thin white rim the model draws around the silhouette.
+    Pale pixels connected to the outside within ~18 px of the edge go transparent."""
+    rgb = im[..., :3].astype(np.float32) / 255
+    lum = rgb[..., 2] * .299 + rgb[..., 1] * .587 + rgb[..., 0] * .114
+    sat = rgb.max(2) - rgb.min(2)
+    solid = a > 0.5
+    # the rim is cream / warm-lit (not pure white) in the composites: pale and weakly saturated
+    cand = (lum > 0.5) & (sat < 0.34) & (ndi.distance_transform_edt(solid) < 24)
+    outside = ~solid
+    lab, _ = ndi.label(cand | outside)
+    rim = np.isin(lab, np.unique(lab[outside & (lab > 0)])) & cand
+    solid = solid & ~rim
+    # dotted / dashed rims break that connectivity: peel pale boundary pixels layer by layer,
+    # then drop the dark specks left behind on the old rim line
+    pale = (lum > 0.45) & (sat < 0.36)
+    for _ in range(8):
+        edge = solid & ~ndi.binary_erosion(solid)
+        solid = solid & ~(edge & pale)
+    lab, n = ndi.label(solid)
+    if n > 1:
+        sizes = ndi.sum(solid, lab, range(1, n + 1))
+        solid = np.isin(lab, [i + 1 for i, z in enumerate(sizes) if z >= 400])
+    return cv2.GaussianBlur(np.where(solid, a, 0).astype(np.float32), (0, 0), 0.7)
+
+
+def ink_layer(im, a):
+    """Only the darkest ballpoint strokes (black with alpha) – the engine re-traces these."""
+    rgb = im[..., :3].astype(np.float32) / 255
+    lum = rgb[..., 2] * .299 + rgb[..., 1] * .587 + rgb[..., 0] * .114
+    ink = np.clip((0.2 - lum) / 0.12, 0, 1) * np.clip(a * 1.5, 0, 1)
+    out = np.zeros((*a.shape, 4), np.uint8); out[..., :3] = 16
+    out[..., 3] = (ink * 255).astype(np.uint8)
+    return out
+
 SCENES = ["newspaper", "nap", "laptop", "phone", "notebook"]
 man = {}
 for sc in SCENES:
@@ -21,12 +58,16 @@ for sc in SCENES:
         P = cv2.imread(os.path.join(ROOT, "env", sc + ".png"), cv2.IMREAD_COLOR)
     pw = 3200; ph = round(pw * P.shape[0] / P.shape[1])
     cv2.imwrite(os.path.join(od, "plate.jpg"), cv2.resize(P, (pw, ph), interpolation=cv2.INTER_AREA), [cv2.IMWRITE_JPEG_QUALITY, 90])
+    # inserts / close-ups crop into the room at 2–3×: they need the full 4K texture, not a blur
+    cv2.imwrite(os.path.join(od, "plate4k.jpg"), P if P.shape[1] <= 4096 else cv2.resize(P, (4096, round(4096 * P.shape[0] / P.shape[1]))), [cv2.IMWRITE_JPEG_QUALITY, 86])
     # low-res, heavily blurred plate: light/colour wrap over the drawing + close-up backgrounds
     b = cv2.GaussianBlur(cv2.resize(P, (640, round(640 * ph / pw)), interpolation=cv2.INTER_AREA), (0, 0), 6)
     cv2.imwrite(os.path.join(od, "plate_blur.jpg"), b, [cv2.IMWRITE_JPEG_QUALITY, 88])
     poses = {}
     for f in sorted(glob.glob(os.path.join(SRC, "reg", f"{sc}_k*.webp"))):
-        name = os.path.basename(f)[len(sc) + 1:-5]          # k1, k1_r1, ...
+        name = os.path.basename(f)[len(sc) + 1:-5]          # k1 … k4 (redraw variants _rN are not used: they blink)
+        if "_r" in name:
+            continue
         im = cv2.imread(f, cv2.IMREAD_UNCHANGED)
         a = im[..., 3].astype(np.float32) / 255
         # kill the soft white glow some redraws carry; keep a crisp paper edge (1px feather)
@@ -39,10 +80,11 @@ for sc in SCENES:
         cloud = pale & soft
         cloud = cv2.morphologyEx(cloud.astype(np.uint8), cv2.MORPH_OPEN, np.ones((9, 9), np.uint8)).astype(bool)
         a = np.where(cloud, a * 0.08, a)
-        a = cv2.GaussianBlur(a, (0, 0), 0.6)
+        a = peel_rim(im, a)
         im[..., 3] = (a * 255).astype(np.uint8)
         im[a < 0.02] = 0
         cv2.imwrite(os.path.join(od, name + ".webp"), im, [cv2.IMWRITE_WEBP_QUALITY, 92])
+        cv2.imwrite(os.path.join(od, name + "_ink.webp"), ink_layer(im, a), [cv2.IMWRITE_WEBP_QUALITY, 90])
         H, W = a.shape
         ys, xs = np.nonzero(a > 0.5)
         x0, y0, x1, y1 = xs.min(), ys.min(), xs.max(), ys.max()
@@ -55,10 +97,13 @@ for sc in SCENES:
 # close-up faces (lip-sync): open / half / closed mouth, each with two hand redraws
 fd = os.path.join(OUT, "face"); os.makedirs(fd, exist_ok=True)
 for f in sorted(glob.glob(os.path.join(SRC, "face", "*.webp"))):
+    if "_r" in os.path.basename(f):
+        continue
     im = cv2.imread(f, cv2.IMREAD_UNCHANGED)
     im = cv2.resize(im, (2304, round(2304 * im.shape[0] / im.shape[1])), interpolation=cv2.INTER_AREA)
     a = np.clip((im[..., 3].astype(np.float32) / 255 - 0.3) / 0.55, 0, 1)
     im[..., 3] = (cv2.GaussianBlur(a, (0, 0), 0.6) * 255).astype(np.uint8)
     im[im[..., 3] < 5] = 0
     cv2.imwrite(os.path.join(fd, os.path.basename(f)), im, [cv2.IMWRITE_WEBP_QUALITY, 92])
+    cv2.imwrite(os.path.join(fd, os.path.basename(f)[:-5] + "_ink.webp"), ink_layer(im, im[..., 3].astype(np.float32) / 255), [cv2.IMWRITE_WEBP_QUALITY, 90])
 json.dump(man, open(os.path.join(OUT, "manifest.json"), "w"), indent=1)

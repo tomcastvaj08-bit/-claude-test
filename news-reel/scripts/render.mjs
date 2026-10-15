@@ -198,9 +198,19 @@ function mixAndMux(silent, meta) {
   try {
     // EBU R128 integrated loudness of the exact programme length (loudnorm's own estimate drifts on short clips)
     const m = { input_i: Number(probe.slice(probe.lastIndexOf("Integrated loudness:")).match(/I:\s*(-?[\d.]+)/)[1]) };
-    const g = -14 - Number(m.input_i);
+    let g = -14 - Number(m.input_i);
+    const ref = meta.masterRef && meta.sfx.find((e) => e.name === meta.masterRef.name);
+    if (ref) {
+      // dialogue-referenced master (cold opens): the character's line lands exactly where the narrator sits
+      // in the main film (config.audio.dialogueLufs), whatever the foley adds around it
+      const vf = resolveSfx(ref.name);
+      const vp = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", vf, "-af", "ebur128=framelog=quiet", "-f", "null", "-"], { encoding: "utf8" }).stderr ?? "";
+      const lv = Number(vp.slice(vp.lastIndexOf("Integrated loudness:")).match(/I:\s*(-?[\d.]+)/)[1]);
+      const target = meta.masterRef.lufs ?? A.dialogueLufs ?? -16.3;
+      g = target - (lv + (ref.gain ?? 0) + A.sfxGainDb);
+      console.log(`master: hlas ${lv} LUFS → ${target} LUFS jako vypravěč (zisk ${g.toFixed(1)} dB), celek ${(Number(m.input_i) + g).toFixed(1)} LUFS`);
+    } else console.log(`master: ${m.input_i} LUFS → −14 LUFS (statický zisk ${g.toFixed(1)} dB + limiter −2 dBFS)`);
     ln = `volume=${g.toFixed(2)}dB,alimiter=limit=0.79:attack=3:release=60:level=disabled`;
-    console.log(`master: ${m.input_i} LUFS → −14 LUFS (statický zisk ${g.toFixed(1)} dB + limiter −2 dBFS)`);
   } catch { console.warn("⚠ měření hlasitosti selhalo – dynamický loudnorm"); }
   f.push(`${pre},${ln},aresample=48000,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
   const out = join(build, "reel.mp4");

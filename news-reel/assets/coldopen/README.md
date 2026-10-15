@@ -1,11 +1,13 @@
-# Cold opens – postavička před hookem (v2)
+# Cold opens – postavička před hookem (v3)
 
 Krátké scénky (7–9 s) před hookem „tabule“. Plochá 2D kresba ze `character_sheet.png` (tenká jako papír) žije ve skutečných fotkách místností od uživatele (`env/*.jpg`). Z prostředí není nakreslené nic: sedí na skutečné židli, leží na skutečné posteli, opírá se o skutečné cihly.
 
+Postavička je plochý papír ve 3D: natočená od kamery a lehce přehnutá. Skutečné předměty před ní ji zakrývají (occludery: víko MacBooku, hrana a nohy stolu).
+
 Každá scénka:
-- ≥ 5 střihů: celek → polocelek / insert (co dělá) → „Počkej…“ (freeze, record scratch, crash zoom) → detail obličeje s lip-syncem („co je dneska za datum?!“) → celek s výskokem → whip pan do hooku;
+- střihy jen při změně záběru, 3–4 na scénu: celek → polocelek / insert (co dělá) → „Počkej…“ (freeze, record scratch, crash zoom) → detail obličeje s lip-syncem („co je dneska za datum?!“) → celek s výskokem → whip pan do hooku;
 - 30 fps se závěrkou 1/40 s (`renderFps`/`shutter` v meta, render.mjs je převezme);
-- foley ke každé akci + room tone místnosti.
+- foley ke každé akci + room tone místnosti. Hlas je masterovaný na úroveň vypravěče (−16,3 LUFS).
 
 | id | prostředí | děj | insert |
 |---|---|---|---|
@@ -20,11 +22,11 @@ Každá scénka:
 1. **Kompozit**: fotka místnosti + character sheet → postavička nakreslená přímo do fotky (správné měřítko, perspektiva, dotyk se židlí; skutečný nábytek před ním ho zakrývá).
 2. **Výřez**: ten kompozit s `background: transparent` → jen postavička na průhledném pozadí.
 3. **Registrace**: `scripts/coldopen-register.py PLATE COMP CUT OUT` (SIFT + RANSAC). Spáruje místnost v kompozitu s čistou fotkou a výřez se kresbou v kompozitu, takže každá póza sedí na stejný nábytek. Model při editaci často posune nebo zvětší záběr, proto je to nutné.
-4. **Překreslení (line boil)**: každá držená póza (k1–k3) má 2 ručně překreslené varianty (edit výřezu: „redraw this exact drawing again by hand…“). `scripts/coldopen-redraw-reg.py MASTER REDRAW OUT` je přilícuje na master. Engine je cykluje 8×/s a nikdy neukáže stejnou kresbu dvakrát po sobě.
+4. **Žádné střídání variant** (v2 je měla, blikalo to). Silueta je pevná. Engine „překresluje“ jen čáry propisky: `kN_ink.webp` (nejtmavší tahy) se každý 3. snímek jinak posune a barvy se nepatrně chvějí, obojí oříznuté do siluety. Ručně překreslené varianty z Higgsfieldu zůstávají jen v `src/` a v `higgsfield-jobs.json`.
 5. **Balení**: `scripts/coldopen-pack.py` → `v2/<scene>/`
-   - `plate.jpg` (z 4K upscale, 3200 px) a `plate_blur.jpg`;
-   - `k1…k4[_r1|_r2].webp` s vyčištěnou alfou (pryč šedé „glow“ mraky, papírový okraj zůstává);
-   - `v2/face/` (open/half/closed × 3 kresby pro lip-sync);
+   - `plate.jpg` (3200 px) a `plate4k.jpg` (inserty a detaily ořezávají přímo 4K fotku, takže je pod nimi vidět skutečná textura);
+   - `k1…k4.webp` a `k1…k4_ink.webp`. Alfa je vyčištěná: pryč bílý papírový okraj (i tečkovaný) a šedé „glow“ mraky;
+   - `v2/face/` (open/half/closed + ink pro lip-sync);
    - `v2/manifest.json` (bbox a hlava každé pózy, souřadnice 0..1 fotky).
 
 Póza `k1`/`k2` = činnost, `k3` = zamrznutí, `k4` = výskok / sprint / skok z postele. Všechna ID jobů jsou v `v2/higgsfield-jobs.json`. Zdrojové PNG (kompozity, výřezy, 4K fotky) leží v `src/` a jsou v `.gitignore`.
@@ -45,7 +47,7 @@ Foley (ElevenLabs SFX, flow `PLDyeTpdQaz9fhURQ66G`, `assets/sfx/el/`):
 
 ## Render
 
-Render jen scénky (+1 s hooku), 30 fps / 1/40 s:
+Render jen scénky (končí panem, hook se nerenderuje), 30 fps / 1/40 s:
 
     node scripts/render.mjs episodes/<id> --cold newspaper --cold-only
 

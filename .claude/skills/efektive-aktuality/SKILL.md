@@ -139,20 +139,22 @@ Před hook lze předřadit krátkou scénku (7–9 s). Plochá 2D postavička ze
 - **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`. Render je automaticky 30 fps se závěrkou 1/40 s (0.75).
 - **Rotace:** varianty střídej po týdnech, ať se neokoukají.
 
-Pravidla (zpětná vazba uživatele):
-- **Prostředí se nekreslí.** Vždy reálná fotka. Kreslená je jen postavička a to, co drží (noviny, mobil, notýsek).
-- **Postavička je 2D, plochá jako papír.** Má tenký bílý papírový okraj, vrhá stín do místnosti a při skoku se otočí hranou jako list.
-- **Pořád se překresluje:** každá držená póza má 3 ručně kreslené verze cyklované 8×/s, navrch jemný SVG boil a občas RGB glitch.
-- **Minimálně 3 střihy**, reálně 5–6: celek → polocelek / insert → freeze s crash zoomem → detail obličeje s lip-syncem → výskok.
-- **Krátké repliky** (jsme v hooku). Insert novin: žádné kroužkování, rychlý zoom na datum a zbytek rozmazat, aby se dalo přečíst.
-- **Kamera 2.5D:** fotka a kresba se hýbou spolu (nikdy z židle neklouže). Rozostřené listy v popředí a prach ve světle dělají paralaxu a hloubku.
-- **Zvuk:** foley ke všemu, co dělá (stránky, klávesnice + větrák notebooku, scroll, chrápání, tužka), přemýšlivé „hmm“ jako vesničan z Minecraftu, room tone místnosti.
+Pravidla (zpětná vazba uživatele, v3):
+- **Prostředí se nekreslí.** Vždy reálná fotka. Kreslená je jen postavička a to, co drží. Skutečný nábytek před ním ho zakrývá (occludery z fotky: víko MacBooku, hrana stolu, nohy stolu).
+- **Žádný vystřižený obrázek.** Bez bílého okraje a bez blikání. Silueta se nikdy nemění (žádné střídání překreslených variant). „Překreslování“ = jen černé čáry propisky se lehce přetahují (ink vrstva, posun každý 3. snímek), barvy se nepatrně chvějí; obojí je oříznuté do pevné siluety.
+- **Placatý papír ve 3D.** Postavička stojí v prostoru natočená (yaw ~12–17°) a lehce přehnutá na svislém ohybu, takže je vidět, že je plochá. Nikdy není rovnoběžně s kamerou.
+- **Střih jen tam, kde se mění záběr.** Pózy a „Počkej“ freeze se mění uvnitř záběru (najetí + crash zoom), nikdy střih na stejný pohled. Typicky celek → insert → polocelek → detail obličeje → výskok.
+- **Inserty a detaily na reálné textuře** (4K fotka s mírným rozostřením). Nikdy rozmazaná jednolitá barva. Mobil celý i s rámečkem, MacBook s rámečkem a pantem, mobil na skutečné dece.
+- **Čitelnost:** na obrazovce max. 2 články. U novin rychlý zoom na datum a zbytek rozostřený, žádné kroužkování.
+- **Klid:** malé výskoky bez odlétání přes celý obraz. Konec = obyčejný pan kamery doprava, bez šedých snímků. Render `--cold-only` končí panem (hook se znovu nerenderuje).
+- **Listí** jen občas proletí, menší a dál. Prach ve světle. Žádné statické rozmazané fleky.
+- **Zvuk:** foley ke všemu, co dělá, a „hmm“ jako vesničan z Minecraftu. Hlas postavy je masterovaný na úroveň vypravěče z motion grafiky (`config.audio.dialogueLufs` −16,3 LUFS, `meta.masterRef`).
 
 Nová varianta / nové prostředí (Higgsfield `gpt_image_2_5`, 2k high):
 1. kompozit fotky a sheetu;
 2. průhledný výřez (`background: transparent`);
 3. `scripts/coldopen-register.py`;
-4. 2 překreslení každé pózy + `scripts/coldopen-redraw-reg.py`;
-5. `scripts/coldopen-pack.py`;
-6. pózy a záběry nadefinuj v `COLD_OPENS`;
+4. `scripts/coldopen-pack.py` (ořízne bílý okraj, vytáhne ink vrstvu, uloží 4K plate pro inserty);
+5. occludery (polygony skutečných předmětů před ním) zapiš do scény;
+6. pózy, záběry, `paper` (yaw/fold) nadefinuj v `COLD_OPENS`;
 7. hlas „Pavel“ (eleven_v4) + časy ze Scribe zapiš do `voice/timing.json`.

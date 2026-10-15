@@ -36,6 +36,7 @@
     "musicGainDb": -21,
     "sfxGainDb": -2,
     "hookVoiceAt": 0.25,
-    "voiceStartOffset": -0.1
+    "voiceStartOffset": -0.1,
+    "dialogueLufs": -16.3
   }
 }
