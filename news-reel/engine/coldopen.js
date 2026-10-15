@@ -14,7 +14,7 @@
 //     so you can see he is flat;
 //   • inserts and close-ups sit on the real room texture (4K plate), never on a smeared colour;
 //   • leaves only drift through now and then, small and far; dust in the light;
-//   • calm leaps; the scene ends on a plain camera pan to the right (the hook follows in the film).
+//   • no leap / run-away: he says „co je dneska za datum?!“, then the close-up pans right (the hook follows in the film).
 // Cutting: no cut between two similar framings – pose changes and the "Počkej" freeze happen INSIDE a shot.
 import { clamp, lerp, prog, ease, snapOut } from "./ease.js";
 
@@ -40,7 +40,6 @@ export const COLD_OPENS = {
         crash: { at: T.wait + 0.05, z: 2.05, f: { of: "head", dy: 0.07 } } },
       { at: T.v(3.0), kind: "insert", insert: "news" },
       { at: T.date - 0.04, kind: "cu" },
-      { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.22, [0.6, 0.45]]], jump: "up" },
     ],
     foley: (T) => [
       { name: "newspaper_rustle", at: 0.05, rel: -11, dur: 1.4, fo: 0.4 },
@@ -51,8 +50,6 @@ export const COLD_OPENS = {
       { name: "gulp", at: T.wait + 0.42, rel: -9 },
       { name: "newspaper_rustle", at: T.v(3.0), rel: -16, dur: 0.6, fo: 0.2 },
       { name: "transition_swish", at: T.v(3.0) + 0.38, rel: -13 },
-      { name: "paper_flurry", at: T.leap, rel: -8 },
-      { name: "chair_clatter", at: T.leap + 0.2, rel: -9 },
     ],
   },
   laptop: {
@@ -72,16 +69,14 @@ export const COLD_OPENS = {
         keys: [[0, 1.85, { of: "head", dy: 0.1 }], [T.wait - T.v(2.22), 1.92, { of: "head", dy: 0.1 }]],
         crash: { at: T.wait - T.v(2.22) + 0.05, z: 2.3, f: { of: "head", dy: 0.05 } } },
       { at: T.date - 0.04, kind: "cu" },
-      { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.22, [0.48, 0.38]]], jump: "up" },
     ],
     foley: (T) => [
-      { name: "laptop_fan", at: 0, rel: -19, dur: T.leap + 0.3, fi: 0.3, fo: 0.3, hp: 120 },
+      { name: "laptop_fan", at: 0, rel: -19, dur: T.end + 0.3, fi: 0.3, fo: 0.3, hp: 120 },
       { name: "keyboard_typing", at: 0.05, rel: -9, dur: T.v(0.5) - 0.05, fo: 0.08 },
       { name: "trackpad_click", at: T.v(0.9), rel: -10, dur: 1.2, fo: 0.2 },
       { name: "keyboard_typing", at: T.v(1.4), rel: -14, dur: 0.6, fo: 0.15 },
       { name: "villager_hmm", at: T.v(2.25), rel: -7, dur: 0.5, fo: 0.2 },
       { name: "gulp", at: T.wait + 0.4, rel: -9 },
-      { name: "chair_creak", at: T.leap, rel: -9 },
     ],
   },
   nap: {
@@ -95,7 +90,6 @@ export const COLD_OPENS = {
       { at: T.v(0.28), kind: "room", poses: [[0, "k3"]],
         keys: [[0, 1.42, { of: "head", dy: 0.17 }]], crash: { at: T.wait - T.v(0.28) + 0.04, z: 1.85, f: { of: "head", dy: 0.09 } } },
       { at: T.date - 0.04, kind: "cu" },
-      { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.2, [0.45, 0.42]]], jump: "dive" },
     ],
     foley: (T) => [
       { name: "snore", at: 0.0, rel: -4, dur: T.v(0.28), fo: 0.12 },
@@ -103,7 +97,6 @@ export const COLD_OPENS = {
       { name: "phone_buzz", at: 2.05, rel: -9, hp: 200 },
       { name: "sheet_rustle", at: T.v(0.26), rel: -8 },
       { name: "gulp", at: T.v(1.12), rel: -9 },
-      { name: "sheet_rustle", at: T.leap - 0.04, rel: -8 },
     ],
   },
   phone: {
@@ -116,14 +109,12 @@ export const COLD_OPENS = {
         keys: [[0, 1.55, { of: "head", dy: 0.2 }], [T.wait - T.v(1.9), 1.62, { of: "head", dy: 0.2 }]],
         crash: { at: T.wait - T.v(1.9) + 0.02, z: 1.95, f: { of: "head", dy: 0.1 } } },
       { at: T.date - 0.04, kind: "cu" },
-      { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.18, [0.5, 0.5]]], jump: "run" },
     ],
     foley: (T) => [
       { name: "phone_scroll", at: 0.1, rel: -9, dur: T.v(1.9) - 0.1, fo: 0.2 },
       { name: "villager_hmm", at: T.v(1.25), rel: -7, dur: 0.55, fo: 0.2 },
       { name: "yawn", at: T.v(2.0), rel: -6, dur: 0.95, fo: 0.25 },
       { name: "gulp", at: T.wait + 0.45, rel: -9 },
-      { name: "run_away", at: T.leap + 0.04, rel: -8 },
     ],
   },
   notebook: {
@@ -136,15 +127,12 @@ export const COLD_OPENS = {
         keys: [[0, 1.62, { of: "head", dy: 0.16 }], [T.wait - T.v(2.6), 1.7, { of: "head", dy: 0.15 }]],
         crash: { at: T.wait - T.v(2.6) + 0.05, z: 2.05, f: { of: "head", dy: 0.07 } } },
       { at: T.date - 0.04, kind: "cu" },
-      { at: T.leap, kind: "leap", poses: [[0, "k4"]], keys: [[0, 1.22, [0.45, 0.35]]], jump: "up" },
     ],
     foley: (T) => [
       { name: "pencil_write", at: 0.05, rel: -10, dur: T.v(2.6) - 0.05, fo: 0.12 },
       { name: "villager_hmm", at: T.v(2.65), rel: -7, dur: 1.4, fo: 0.3 },
       { name: "pen_drop", at: T.wait + 0.05, rel: -8 },
       { name: "gulp", at: T.v(4.62), rel: -9 },
-      { name: "chair_creak", at: T.leap, rel: -9 },
-      { name: "paper_flurry", at: T.leap + 0.04, rel: -12, dur: 1.2, fo: 0.4 },
     ],
   },
 };
@@ -157,7 +145,8 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
   const Hw = W * M.plate[1] / M.plate[0]; // world height at zoom 1 (plate aspect)
   const T = { vOff: D.vOff, v: (x) => D.vOff + x };
   T.wait = T.v(tim.wait); T.date = T.v(tim.date); T.vEnd = T.v(tim.dur);
-  T.leap = T.vEnd + 0.06; T.pan = T.leap + 0.55; T.end = T.pan + 0.5;
+  // no leap / run-away any more: he says the line, a beat, then the camera pans right into the hook
+  T.pan = T.vEnd + 0.2; T.end = T.pan + 0.5;
   const talk = tim.talk.map(([a, b]) => [T.v(a), T.v(b)]);
   const env = tim.env ?? [];
   const shots = D.shots(T).map((s, i, all) => ({ ...s, to: i + 1 < all.length ? all[i + 1].at : T.end }));
@@ -188,6 +177,8 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
   const $ = (s, el = layer) => el.querySelector(s);
   const room = $(".c2-room"), world = $(".c2-world"), paper = $(".c2-room .c2-paper"), shadowEl = $(".c2-shadow");
   const ins = $(".c2-ins"), insIn = $(".c2-ins-in"), insBg = $(".c2-ins .c2-bg"), cu = $(".c2-cu"), cuBg = $(".c2-cu .c2-bg"), face = $(".c2-face"), fpaper = $(".c2-fpaper");
+  // the close-up room runs on past the right edge of the frame: the closing pan reveals it
+  cuBg.style.right = `${-Math.round(W * 0.65)}px`; cuBg.style.transformOrigin = `${W / 2 + 30}px 50%`;
   const flash = $(".c2-flash"), leak = $(".c2-leak");
   const turb = [...layer.querySelectorAll("feTurbulence")];
   const rig = (el) => ({ halves: [...el.querySelectorAll(".c2-half")], fills: [...el.querySelectorAll(".c2-fill")], inks: [...el.querySelectorAll(".c2-ink")], cur: null });
@@ -355,11 +346,14 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
       setSheet(F, `${V}face/${m}`, 0.62, 0.98);
       const fp = shots.find((s) => s.kind === "room" && s.crash) ?? shots[0];
       const hp = focusOf("head", fp.poses[fp.poses.length - 1][1]);
-      roomBg(cuBg, [hp[0] - 0.02, hp[1] + 0.03], 2.3, 7, 0.82);
+      // the background is defocused room; keep >= 0.6 W of plate to its right so the closing pan has somewhere to go
+      roomBg(cuBg, [Math.min(hp[0] - 0.02, 0.52), hp[1] + 0.03], 2.3, 7, 0.82);
+      // closing camera pan to the right (the hook follows): face (near) slides out faster than the room (far)
+      const pz = ease.inQuad(prog(t, T.pan, T.end - T.pan));
       const punch = snapOut(prog(lt, 0, 0.16)) * 0.04 + snapOut(prog(t, talk[talk.length - 1][0] + 0.45, 0.12)) * 0.04;
       const hs = shake(t * 1.6, 1.1);
-      face.style.transform = `translate(${hs.x.toFixed(1)}px, ${hs.y.toFixed(1)}px) scale(${(1 + lt * 0.022 + punch).toFixed(4)})`;
-      cuBg.style.transform = `scale(${(1.04 + lt * 0.015).toFixed(4)}) translate(${(-hs.x * 0.35).toFixed(1)}px, 0)`;
+      face.style.transform = `translate(${(hs.x - pz * W * 1.25).toFixed(1)}px, ${hs.y.toFixed(1)}px) scale(${(1 + lt * 0.022 + punch).toFixed(4)})`;
+      cuBg.style.transform = `translate(${(-pz * W * 0.6).toFixed(1)}px, 0) scale(${(1.04 + lt * 0.015).toFixed(4)}) translate(${(-hs.x * 0.35).toFixed(1)}px, 0)`;
       bend(F, fpaper, 8 + Math.sin(t * 1.1) * 1.2, 5);
       if (lt < 0.067) flashA = 0.25;
     }
@@ -381,7 +375,8 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
   ];
   const poses = Object.keys(M.poses);
   const images = [`${V}${id}/plate.jpg`, `${V}${id}/plate4k.jpg`, ...poses.flatMap((n) => [`${V}${id}/${n}.webp`, `${V}${id}/${n}_ink.webp`]),
-    ...["open", "half", "closed"].flatMap((m) => [`${V}face/${m}.webp`, `${V}face/${m}_ink.webp`]), ...(id === "notebook" ? [`${V}insert/notebook_page.webp`, `${V}insert/notebook_hand.webp`] : [])];
+    ...["open", "half", "closed"].flatMap((m) => [`${V}face/${m}.webp`, `${V}face/${m}_ink.webp`]), ...(id === "notebook" ? [`${V}insert/notebook_page.webp`, `${V}insert/notebook_hand.webp`] : []),
+    ...(id === "nap" ? [`${V}insert/nap_pov_bed.jpg`, `${V}insert/nap_pov_hand.webp`] : [])];
   async function prepare() {
     await Promise.all(images.map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
     await Promise.all(['900 120px "Inter"', '700 60px "Caveat"'].map((f) => document.fonts.load(f, "DENNÍ ZPRÁVY AI MĚNÍ SVĚT " + DAYS.join(" ") + MONTHS_GEN.join(" ") + " 0123456789")));
@@ -492,19 +487,34 @@ function buildInsert(el, bg, roomBg, D, shot, today, W, H) {
     };
   }
   if (kind === "lockscreen") {
-    // the phone lying on the real blanket next to him lights up: today's date + "nová aktualita"
-    el.innerHTML = `<div class="c2-lock"><div class="co-phone c2-phone"><div class="c2-ls">
+    // first person: lying in bed he looks down at his own hand on the duvet; the phone lies next to it (where it
+    // lies in the wide shot) and lights up with today's date + "nová aktualita". After the buzz the hand reaches for it.
+    el.innerHTML = `<div class="c2-glow"></div><div class="c2-lock c2-lock-flat"><div class="co-phone c2-phone"><div class="c2-ls">
       <div class="c2-ls-date">${DAYS_CAP[today.getUTCDay()]} ${today.getUTCDate()}. ${MONTHS_GEN[today.getUTCMonth()]}</div><div class="c2-ls-time">16:42</div>
-      <div class="c2-ls-note"><b>EFEKTIVE AKTUALITY</b><span>Nová AI aktualita je venku! 🔥</span><em>teď</em></div></div><div class="co-island"></div></div></div>`;
-    roomBg(bg, [0.55, 0.72], 2.6, 1.4, 0.82);
+      <div class="c2-ls-note"><b>EFEKTIVE AKTUALITY</b><span>Nová AI aktualita je venku! 🔥</span><em>teď</em></div></div><div class="co-island"></div></div></div>
+      <img class="c2-povhand" src="${V}insert/nap_pov_hand.webp">`;
+    bg.style.backgroundImage = `url(${V}insert/nap_pov_bed.jpg)`;
+    bg.style.backgroundSize = "cover"; bg.style.backgroundPosition = "50% 50%";
     const wrap = el.querySelector(".c2-lock"), ls = el.querySelector(".c2-ls"), note = el.querySelector(".c2-ls-note");
+    const hand = el.querySelector(".c2-povhand"), glow = el.querySelector(".c2-glow");
     return (t, lt) => {
-      ls.style.opacity = String(snapOut(prog(lt, 0.12, 0.14)));
+      const on = snapOut(prog(lt, 0.12, 0.14));
+      ls.style.opacity = String(on);
       note.style.transform = `translateY(${((1 - snapOut(prog(lt, 0.2, 0.2))) * -60).toFixed(1)}px)`;
       note.style.opacity = String(snapOut(prog(lt, 0.2, 0.15)));
+      glow.style.opacity = String(on * 0.75);
       const buzz = (lt > 0.12 && lt < 0.5) || (lt > 0.62 && lt < 0.85) ? 1 : 0;
-      wrap.style.transform = `translate(${(buzz * Math.sin(lt * 190) * 6).toFixed(1)}px, ${(buzz * Math.cos(lt * 170) * 3).toFixed(1)}px) perspective(1700px) rotateX(38deg) rotateZ(${(-14 + buzz * Math.sin(lt * 150) * 1).toFixed(2)}deg) scale(${(0.78 + lt * 0.03).toFixed(4)})`;
-      bg.style.filter = `blur(1.4px) brightness(${(0.8 + snapOut(prog(lt, 0.12, 0.14)) * 0.08).toFixed(3)})`;
+      wrap.style.transform = `translate(${(-450 + buzz * Math.sin(lt * 190) * 5).toFixed(1)}px, ${(-20 + buzz * Math.cos(lt * 170) * 2.5).toFixed(1)}px) perspective(1500px) rotateX(50deg) rotateZ(${(17 + buzz * Math.sin(lt * 150) * 0.8).toFixed(2)}deg) scale(0.64)`;
+      // his hand: breathing, a twitch on the first buzz, then it slides over towards the phone
+      const reach = ease.inOutSine(prog(lt, 0.42, 0.42));
+      const twitch = lt > 0.14 && lt < 0.3 ? Math.sin((lt - 0.14) / 0.16 * Math.PI) * 6 : 0;
+      const tq = Math.floor(t * 12) / 12;
+      hand.style.transform = `translate(${(-reach * 120 - twitch).toFixed(1)}px, ${(-reach * 40 + Math.sin(tq * 1.8) * 3).toFixed(1)}px) rotate(${(-reach * 5).toFixed(2)}deg)`;
+      // first-person camera: he lies there breathing, the view drifts a little
+      const hs = { x: Math.sin(t * 1.1) * 5, y: Math.cos(t * 0.8) * 4 + Math.sin(tq * 1.8) * 2 };
+      el.style.transform = `translate(${hs.x.toFixed(1)}px, ${hs.y.toFixed(1)}px) scale(${(1.02 + lt * 0.02).toFixed(4)})`;
+      bg.style.transform = el.style.transform;
+      bg.style.filter = `brightness(${(0.86 + on * 0.06).toFixed(3)})`;
     };
   }
   return () => {};

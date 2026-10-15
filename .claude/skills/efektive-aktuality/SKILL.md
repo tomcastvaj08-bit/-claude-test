@@ -134,19 +134,23 @@ Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně
 Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.
 
 ### Cold open – postavička před hookem (volitelné)
-Před hook lze předřadit krátkou scénku (7–9 s). Plochá 2D postavička ze character sheetu žije ve **skutečných fotkách místností** uživatele (`engine/coldopen.js`, assety a celý postup v `news-reel/assets/coldopen/README.md`). Varianty: `newspaper`, `nap`, `laptop`, `phone`, `notebook`. Každá končí pointou „Počkej… co je dneska za datum?!“, výskokem a whip panem do hooku.
+Před hook lze předřadit krátkou scénku (7–9 s). Plochá 2D postavička ze character sheetu žije ve **skutečných fotkách místností** uživatele (`engine/coldopen.js`, assety a celý postup v `news-reel/assets/coldopen/README.md`). Varianty: `newspaper`, `nap`, `laptop`, `phone`, `notebook`. Každá končí pointou „Počkej… co je dneska za datum?!“ v detailu obličeje a panem kamery doprava do hooku.
 - **Zapnutí:** `"coldOpen": "<id>"` v episode.json, nebo `--cold <id>` při renderu.
-- **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`. Render je automaticky 30 fps se závěrkou 1/40 s (0.75).
+- **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`. Render je automaticky 24 fps se závěrkou 1/24 s (1.0). Na schválení stačí framy: `--stills t1,t2,…`, celé video renderuj až po „jo“.
 - **Rotace:** varianty střídej po týdnech, ať se neokoukají.
 
-Pravidla (zpětná vazba uživatele, v3):
+Pravidla (zpětná vazba uživatele, v4):
 - **Prostředí se nekreslí.** Vždy reálná fotka. Kreslená je jen postavička a to, co drží. Skutečný nábytek před ním ho zakrývá (occludery z fotky: víko MacBooku, hrana stolu, nohy stolu).
-- **Žádný vystřižený obrázek.** Bez bílého okraje a bez blikání. Silueta se nikdy nemění (žádné střídání překreslených variant). „Překreslování“ = jen černé čáry propisky se lehce přetahují (ink vrstva, posun každý 3. snímek), barvy se nepatrně chvějí; obojí je oříznuté do pevné siluety.
+- **Žádný vystřižený obrázek.** Bez bílého okraje a bez blikání. Silueta se nemění střídáním celých překreseb; mezifáze (`coldopen-inbetween.py`) mění jen tu část, která se hýbe (ruka, hlava, noviny). „Překreslování“ = jen černé čáry propisky se lehce přetahují (ink vrstva, posun každý 3. snímek), barvy se nepatrně chvějí; obojí je oříznuté do pevné siluety.
 - **Placatý papír ve 3D.** Postavička stojí v prostoru natočená (yaw ~12–17°) a lehce přehnutá na svislém ohybu, takže je vidět, že je plochá. Nikdy není rovnoběžně s kamerou.
-- **Střih jen tam, kde se mění záběr.** Pózy a „Počkej“ freeze se mění uvnitř záběru (najetí + crash zoom), nikdy střih na stejný pohled. Typicky celek → insert → polocelek → detail obličeje → výskok.
+- **Střih jen tam, kde se mění záběr.** Pózy a „Počkej“ freeze se mění uvnitř záběru (najetí + crash zoom), nikdy střih na stejný pohled. Typicky celek → insert → polocelek → detail obličeje → pan doprava.
 - **Inserty a detaily na reálné textuře** (4K fotka s mírným rozostřením). Nikdy rozmazaná jednolitá barva. Mobil celý i s rámečkem, MacBook s rámečkem a pantem, mobil na skutečné dece.
 - **Čitelnost:** na obrazovce max. 2 články. U novin rychlý zoom na datum a zbytek rozostřený, žádné kroužkování.
-- **Klid:** malé výskoky bez odlétání přes celý obraz. Konec = obyčejný pan kamery doprava, bez šedých snímků. Render `--cold-only` končí panem (hook se znovu nerenderuje).
+- **Nikdy nestojí:** dýchá, přenáší váhu, drbe se, ruka kreslí (mezifáze po dvou snímcích). Čmárání = ruka s tužkou fakt jede po tazích.
+- **Lip-sync jen na mluvené slovo** (obálka hlasu podle slabik), mezi slovy zavřená pusa.
+- **Žádné leknutí, výskok ani útěk na konci.** Řekne „co je dneska za datum?!“ a kamera v detailu odjede doprava, bez šedých snímků. Flash při crash zoomu může zůstat.
+- **Mobil u postele z jeho pohledu** (first person): vlastní ruka na peřině, mobil leží vedle ní, po zabzučení se ruka natáhne.
+- **MacBook:** postava sedí ZA notebookem (víko a stůl ji zakrývají), nikdy z boku s rukama přes něj. Render `--cold-only` končí panem (hook se znovu nerenderuje).
 - **Listí** jen občas proletí, menší a dál. Prach ve světle. Žádné statické rozmazané fleky.
 - **Zvuk:** foley ke všemu, co dělá, a „hmm“ jako vesničan z Minecraftu. Hlas postavy je masterovaný na úroveň vypravěče z motion grafiky (`config.audio.dialogueLufs` −16,3 LUFS, `meta.masterRef`).
 

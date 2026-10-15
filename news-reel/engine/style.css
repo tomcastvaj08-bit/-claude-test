@@ -579,3 +579,9 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .c2-ls-note b { display: block; font: 800 24px var(--sans); letter-spacing: .04em; color: #555; }
 .c2-ls-note span { display: block; font: 700 34px/1.2 var(--sans); margin-top: 8px; }
 .c2-ls-note em { position: absolute; right: 26px; top: 26px; font: 500 22px var(--sans); color: #888; font-style: normal; }
+
+/* nap: first-person lock screen – phone lying on the duvet next to his own hand */
+.c2-lock.c2-lock-flat { filter: drop-shadow(0 14px 16px rgba(30,15,5,.55)); }
+.c2-povhand { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 95% 100%; }
+.c2-glow { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(ellipse 360px 240px at 510px 520px, rgba(170,130,255,.45), rgba(170,130,255,0) 70%); }

@@ -26,9 +26,9 @@ Pravidlo: **každá akce postavičky má svůj reálný zvuk** a každá místno
 | dálka | `amb_city` | −27 dB, hp 160 / lp 4,2 k | pan na stranu okna |
 | okno | `wind_bed` | −22 dB | jen místnosti s otevřeným oknem (noviny, notýsek) |
 | přemýšlení | `villager_hmm` | −12 až −16 dB | krátké „hmm“ ve stylu vesničanů z Minecraftu, střižené na 0,5–1,4 s |
-| noviny | `newspaper_rustle`, `page_turn` (na střih do polocelku), `paper_flurry` (výskok) | −5 až −16 dB | |
-| notebook | `laptop_fan` (celá scéna −24 dB), `keyboard_typing`, `trackpad_click` | | větrák zní pod vším, dokud nevyskočí |
-| mobil | `phone_scroll` (celý scroll), `yawn`, `run_away` (sprint) | | |
-| postel | `snore` (do probuzení), `phone_buzz` ×2, `sheet_rustle` (probuzení + skok) | | |
+| noviny | `newspaper_rustle`, `page_turn` (na střih do polocelku) | −5 až −16 dB | |
+| notebook | `laptop_fan` (celá scéna −24 dB), `keyboard_typing`, `trackpad_click` | | větrák zní pod celou scénou |
+| mobil | `phone_scroll` (celý scroll), `yawn` | | |
+| postel | `snore` (do probuzení), `phone_buzz` ×2, `sheet_rustle` (probuzení) | | |
 | notýsek | `pencil_write`, `pen_drop` na „Počkej“ | | |
-| pointa | `record_scratch` (freeze), `gulp`, `hook_impact` lp 220 (střih na detail), `cartoon_zip` + `chair_creak`/`chair_clatter` (výskok), `camera_whip` | | |
+| pointa | `record_scratch` (freeze), `gulp`, `hook_impact` lp 220 (střih na detail), `camera_glide` (pan z detailu doprava; od v4 bez výskoku a útěku) | | |

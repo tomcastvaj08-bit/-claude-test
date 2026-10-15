@@ -151,5 +151,10 @@
   "k3": "8aa37eef-b50e-424d-b739-41c93d51f49a",
   "k4": "3c191a2c-dff5-43a2-a52f-3b0ceaf30f55"
  },
+ "nap_pov_insert_v4": {
+  "bed_crop_media": "ccf297fb-95b1-42c5-9c33-3bc0f0b0585a",
+  "hand_a": "77cd2dbb-a639-4f28-97c2-d1c9791bab91",
+  "hand_b (used)": "8ad753e1-42bb-456d-a9dc-c0bcb8a0c1a4"
+ },
  "_info": "Higgsfield gpt_image_2_5, 2k, quality high. Composites = room photo + character sheet; *_cut = transparent extraction; redraws = edits of the cut."
 }
