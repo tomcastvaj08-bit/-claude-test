@@ -282,6 +282,7 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
       setSheet(R, `${V}${id}/${p}`, foldX, footY);
       shadowEl.src = `${V}${id}/${p}.webp`;
       let { s, ox, oy } = camAt(sh, lt, p);
+      if (sh.crash && lt >= sh.crash.at && lt < sh.crash.at + 0.067) flashA = 0.35;
       const hand = shake(t, s > 1.3 ? 1.0 : 0.55);
       ox += hand.x; oy += hand.y;
       // the sheet in the room: turned away from the lens and folded – he is visibly flat
@@ -336,6 +337,7 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
       face.style.transform = `translate(${hs.x.toFixed(1)}px, ${hs.y.toFixed(1)}px) scale(${(1 + lt * 0.022 + punch).toFixed(4)})`;
       cuBg.style.transform = `scale(${(1.04 + lt * 0.015).toFixed(4)}) translate(${(-hs.x * 0.35).toFixed(1)}px, 0)`;
       bend(F, fpaper, 8 + Math.sin(t * 1.1) * 1.2, 5);
+      if (lt < 0.067) flashA = 0.25;
     }
     flash.style.opacity = String(flashA);
     leak.style.opacity = String(0.4 + Math.sin(t * 1.7) * 0.08);
