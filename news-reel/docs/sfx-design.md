@@ -15,3 +15,20 @@ Pravidla:
 - Bedy nikdy natvrdo: fade-in 0,25–0,8 s a fade-out s přechodem.
 - Pod hlasem žádné bedy (hook končí přesně tam, kde začíná voiceover).
 - Nové atmosféry generuj s `duration_seconds` (jinak vyjdou ~1 s), normalizuj na špičku −1 dBFS a zapiš do `assets/sfx/el/library.json`.
+
+# Zvukový design cold openů (v2)
+
+Pravidlo: **každá akce postavičky má svůj reálný zvuk** a každá místnost svůj room tone. Hlas vždy navrchu, foley o 5–15 dB níž. Master pak srovná ebur128 na −14 LUFS.
+
+| vrstva | zvuk | úroveň | poznámka |
+|---|---|---|---|
+| room tone | `room_bedroom` (noviny, postel) / `room_office` (notebook, mobil, notýsek) | −14 dB, hp 90 | celá scéna, fade 0,25 / 0,35 s |
+| dálka | `amb_city` | −27 dB, hp 160 / lp 4,2 k | pan na stranu okna |
+| okno | `wind_bed` | −22 dB | jen místnosti s otevřeným oknem (noviny, notýsek) |
+| přemýšlení | `villager_hmm` | −12 až −16 dB | krátké „hmm“ ve stylu vesničanů z Minecraftu, střižené na 0,5–1,4 s |
+| noviny | `newspaper_rustle`, `page_turn` (na střih do polocelku), `paper_flurry` (výskok) | −5 až −16 dB | |
+| notebook | `laptop_fan` (celá scéna −24 dB), `keyboard_typing`, `trackpad_click` | | větrák zní pod vším, dokud nevyskočí |
+| mobil | `phone_scroll` (celý scroll), `yawn`, `run_away` (sprint) | | |
+| postel | `snore` (do probuzení), `phone_buzz` ×2, `sheet_rustle` (probuzení + skok) | | |
+| notýsek | `pencil_write`, `pen_drop` na „Počkej“ | | |
+| pointa | `record_scratch` (freeze), `gulp`, `hook_impact` lp 220 (střih na detail), `cartoon_zip` + `chair_creak`/`chair_clatter` (výskok), `camera_whip` | | |

@@ -6,6 +6,7 @@
 //   node scripts/render.mjs episodes/<id> --stills 0.5,2.5,6   PNG stills for a quick visual check
 //   node scripts/render.mjs episodes/<id> --fps 15        faster draft
 //   node scripts/render.mjs episodes/<id> --mb 4          motion blur (4 sub-frames/frame; default config.video.motionBlur)
+//   node scripts/render.mjs episodes/<id> --shutter 0.75  shutter as a fraction of the frame (0.5 = 180°)
 //   node scripts/render.mjs episodes/<id> --contact       contact sheet (one frame every second)
 //   node scripts/render.mjs episodes/<id> --cuts          frames around every cut (overlap QA)
 //   node scripts/render.mjs episodes/<id> --mux-only      only re-mix audio onto the last rendered video
@@ -99,10 +100,11 @@ if (args.includes("--cuts")) {
   // audio-only change (new voice / mix tweak): reuse the rendered frames
   mixAndMux(join(build, "video_silent.mp4"), meta);
 } else {
-  const fps = Number(opt("--fps") ?? meta.fps);
+  // cold opens ask for their own cadence (30 fps, 1/40 s = 0.75 shutter) via meta.renderFps / meta.shutter
+  const fps = Number(opt("--fps") ?? meta.renderFps ?? meta.fps);
   // motion blur: N sub-frames per frame across a 180° shutter, averaged by ffmpeg (tmix)
   const mb = Math.max(1, Number(opt("--mb") ?? cfg.video.motionBlur ?? 1));
-  const shutter = Number(cfg.video.shutter ?? 0.5); // 0.5 = 180° film shutter
+  const shutter = Number(opt("--shutter") ?? meta.shutter ?? cfg.video.shutter ?? 0.5); // 0.5 = 180° film shutter, 0.75 = 1/40 s at 30 fps
   const frames = Math.ceil(meta.duration * fps);
   const silent = join(build, "video_silent.mp4");
   // film grain is added AFTER the sub-frame average (otherwise averaging would wash it out):

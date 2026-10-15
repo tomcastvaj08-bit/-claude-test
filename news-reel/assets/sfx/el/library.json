@@ -199,5 +199,90 @@
   "generation": "noqRPHW0peF88rboE0k7",
   "use": "padající židle",
   "normalized": "peak -1 dBFS"
+ },
+ "villager_hmm": {
+  "prompt": "Cartoon villager thinking sounds: short nasal mumbling grunts 'hmm', 'hrrm', 'huh', 'hmm-hm', like Minecraft villagers, comedic, close mic, dry, no music",
+  "generation": "1FKvwqEWH6v0vwRaDMpz",
+  "use": "cold open"
+ },
+ "page_turn": {
+  "prompt": "A single large newspaper page being turned over, crisp paper sheet flip and soft rustle, close-mic, dry room",
+  "generation": "ER6TToXSiK5NguHOddsV",
+  "use": "cold open"
+ },
+ "laptop_fan": {
+  "prompt": "Laptop cooling fan humming and whirring steadily, soft electronic whine and airflow, close mic, quiet room, constant",
+  "generation": "2REbh7ZGbdFmOXFXuCqf",
+  "use": "cold open"
+ },
+ "keyboard_typing": {
+  "prompt": "Typing on a MacBook laptop keyboard, soft fast key clicks in bursts with short pauses, close-mic, dry",
+  "generation": "LA9vCCZGWRZetQoS5c0P",
+  "use": "cold open"
+ },
+ "trackpad_click": {
+  "prompt": "Three soft laptop trackpad clicks spaced apart, close-mic, dry",
+  "generation": "hBx1jmSc47UX4AwpxC2p",
+  "use": "cold open"
+ },
+ "phone_scroll": {
+  "prompt": "Thumb swiping and scrolling on a smartphone glass screen, soft skin-on-glass swishes and tiny taps, repeated flicks, close-mic",
+  "generation": "4R1CKlge9lSYikZACAST",
+  "use": "cold open"
+ },
+ "snore": {
+  "prompt": "Cartoon man snoring in bed, two long nasal snores, rattling inhale and a whistling exhale, comedic, close",
+  "generation": "y9luH8M05Oefy07I33Ws",
+  "use": "cold open"
+ },
+ "sheet_rustle": {
+  "prompt": "Bed sheets and a heavy duvet rustling fast as someone sits up abruptly in bed, fabric whoosh, close-mic",
+  "generation": "VLFIjUxeXErpKDRiuZAZ",
+  "use": "cold open"
+ },
+ "room_bedroom": {
+  "prompt": "Quiet bedroom room tone in the late afternoon, very soft distant city through a closed window, faint low hum, calm and warm, no voices",
+  "generation": "FmP8UI7ByKXNr2Kjc0E0",
+  "use": "cold open"
+ },
+ "room_office": {
+  "prompt": "Quiet home office room tone at sunset, soft air, faint birds outside a window, very distant traffic, calm, no voices",
+  "generation": "LiQd5TORiGPv0XXss7Zq",
+  "use": "cold open"
+ },
+ "pencil_write": {
+  "prompt": "Pencil writing on paper in a notebook, steady scratchy graphite strokes and quick underlines, close-mic, dry",
+  "generation": "JC7RfV4jsPjEtyXYYdEW",
+  "use": "cold open"
+ },
+ "pen_drop": {
+  "prompt": "A pen dropping onto a wooden desk, bouncing once and rolling briefly, close-mic",
+  "generation": "w07SVzDLGThGRkqC1nns",
+  "use": "cold open"
+ },
+ "chair_creak": {
+  "prompt": "Leather office chair creaking loudly and rolling back fast on its plastic wheels as someone jumps up",
+  "generation": "Id8Zg0KEMEQxAtveciiN",
+  "use": "cold open"
+ },
+ "run_away": {
+  "prompt": "Fast footsteps of leather shoes sprinting away on a wooden floor, quick scramble, fading out",
+  "generation": "A3q8Ql3rW5guuSy79MLv",
+  "use": "cold open"
+ },
+ "paper_flurry": {
+  "prompt": "Many newspaper sheets thrown up into the air and fluttering around, crisp loud paper flurry",
+  "generation": "DyiULfTe9lW6s5cKHwTs",
+  "use": "cold open"
+ },
+ "gulp": {
+  "prompt": "Cartoon nervous gulp, a single loud comedic swallow, close-mic",
+  "generation": "opAgtUaMCUDOpLuMFq6j",
+  "use": "cold open"
+ },
+ "yawn": {
+  "prompt": "A young man yawning loudly and bored, one long cartoonish yawn with a little sigh at the end, close-mic",
+  "generation": "TWZYQ46Rb5qOh9LhGNc6",
+  "use": "cold open"
  }
 }

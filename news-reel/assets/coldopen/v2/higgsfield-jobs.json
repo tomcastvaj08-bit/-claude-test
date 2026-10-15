@@ -1,0 +1,135 @@
+{
+ "newspaper_k1": "30597d77-4372-4bd8-a94a-79808e9ac8fb",
+ "newspaper_k1_cut": "5e118504-595d-4ade-ac0b-e8ceb77c1fcf",
+ "nap_k1": "31b383d8-5092-4ecd-a145-54457f989a76",
+ "laptop_k1": "20cf0739-ea6f-4275-b8aa-6e7152630e77",
+ "phone_k1": "57c6da6c-85cc-4c1c-af61-97a7b1f3c003",
+ "notebook_k1": "78e48d2e-ca3c-48b8-bb6f-29abd68ed2ad",
+ "newspaper_k2": "054e93b4-aa3a-48c1-98e3-c77447f8011b",
+ "newspaper_k3": "c9855837-e124-4e3b-8dbd-cdadd432a303",
+ "env4k": {
+  "newspaper": "58ef4652-12e1-4cd1-8ea7-261d46f2b0a8",
+  "nap": "2526951a-3c99-48d5-9da9-d787e99bb71f",
+  "laptop": "1be4bc71-0bd9-45d9-81f0-9cc5271875b0",
+  "phone": "8cbeb455-58a7-4077-a75d-f7af3c33bb3e",
+  "notebook": "22238910-bb44-4f5c-b5b3-89a9dd034233"
+ },
+ "media": {
+  "newspaper": "68c03fa0-b5c9-4c6f-945e-c51dd9115389",
+  "nap": "4caca235-3d8b-4ef4-838b-0eeadd0bbd9c",
+  "laptop": "af425d9e-d410-4170-ba03-7ad4d8d16862",
+  "phone": "9cb2f857-3052-451c-9023-414621dedf74",
+  "notebook": "a7d0ae96-5101-4728-9b78-b2d5f2c2f5f9",
+  "sheet": "1aca39f5-f86b-458b-a236-e69af6d70110",
+  "face_open": "e4442ad9-9ccf-486d-a287-924303b46485",
+  "face_half": "893e6eb8-77d0-454c-ac4f-1a25d921bc66",
+  "face_closed": "3d175cf4-50ae-481e-8d6a-189cb91f7612"
+ },
+ "nap_k1_cut": "bc32b15b-89dd-4aa4-a395-4c6d91818473",
+ "laptop_k1_cut": "095c48d2-b93d-4b17-a061-e665dee65052",
+ "phone_k1_cut": "1eebd0d9-d290-4b1e-9f6d-b88ef123e3c9",
+ "newspaper_k3_cut": "26cbbed6-3e90-4a2f-8da0-9bd1b7a49b55",
+ "nap_k2": "f2c82374-e630-411e-952b-340be947d1cd",
+ "nap_k3": "cd29ea1c-e086-4c15-87f5-76a0bf954a77",
+ "laptop_k2": "883be678-52b8-420d-b50a-58c67f14c426",
+ "phone_k2": "fcd29631-0b81-4d49-809c-0eb08b518d8d",
+ "notebook_k1_cut": "f099ade6-3775-42c6-8991-86d6d724f1dd",
+ "newspaper_k2_cut": "c321b03f-ad9e-4384-95d9-56dbf9f0b358",
+ "newspaper_k4": "ec9e7d70-3d1f-4ef2-b394-64677b79fa1a",
+ "laptop_k3": "c0390d28-94d3-422e-abc0-dc5416c850b7",
+ "phone_k3": "99227d7b-82b7-4038-852e-391d9b0d715d",
+ "notebook_k2": "8708f3c8-8874-46d8-bb36-aad14a3cec06",
+ "notebook_k3": "31c70fe3-b528-41c8-9dca-e72f41ef6363",
+ "nap_k2_cut": "425df451-50d5-477c-ad63-b9255095d444",
+ "newspaper_k4_cut": "fa373700-7d43-470d-914c-711df1a5ba49",
+ "laptop_k2_cut": "385402d9-51fb-45e9-b6b7-3afae1f1be60",
+ "laptop_k3_cut": "e0cef680-ccd1-4f29-9f94-b1f7720f792d",
+ "phone_k2_cut": "ba156eca-378a-4874-9481-b86cf486b562",
+ "phone_k3_cut": "a3ce9ec6-58bc-44bd-bb74-664c4748654e",
+ "notebook_k2_cut": "03f1d180-450c-470e-8dd8-1904d1502aca",
+ "notebook_k3_cut": "ece72d79-f430-427d-aefe-0a4eff150f24",
+ "nap_k3_cut": "355036ba-767b-4e5e-9aec-73be017a20eb",
+ "nap_k4": "8bd61dad-77a9-40c2-b4c6-bce28c54aee8",
+ "laptop_k4": "5eb4ad8f-7f13-406a-8b06-fa5dc9b60cac",
+ "phone_k4": "8c176347-79c0-469c-9c81-ed3fb7dfb7e8",
+ "notebook_k4": "3ff1bea1-959b-4d01-8ca1-f5211148cd5d",
+ "redraws": {
+  "newspaper_k1": [
+   "de1e7568-3757-4487-98e9-6fe279e6e674",
+   "b870d5bc-0de6-40c5-875a-2c5c9af54356"
+  ],
+  "newspaper_k2": [
+   "8bdeab24-7315-4eb8-8f6a-112ce25f7deb",
+   "dc638294-f464-453e-8c47-4f1f613676e8"
+  ],
+  "newspaper_k3": [
+   "88aca858-f87c-4074-9dda-ebd789540b72",
+   "17808fea-ae15-438b-8b94-1f4adced67d4"
+  ],
+  "nap_k1": [
+   "3388646d-ef16-4641-bcc3-74e31ce5051d",
+   "716a74c0-aa75-4c86-a759-d466fe419e51"
+  ],
+  "nap_k2": [
+   "3025741b-50a9-4df4-9c3d-63ef8b6fe48b",
+   "ca3bb1ec-253c-4e7f-83a1-9a50a4e14d01"
+  ],
+  "nap_k3": [
+   "92de745d-6f85-4e59-a1a1-323db9e44d70",
+   "7272de46-d2fb-41ea-a972-0169ee59b097"
+  ],
+  "laptop_k1": [
+   "02ec5e21-07d7-4500-a97d-3726f6bf6468",
+   "e578b52e-cae2-4b95-9155-ca99536566b8"
+  ],
+  "laptop_k2": [
+   "85eb9da3-bdcf-4b36-908a-0232647f282a",
+   "1d8470ad-12eb-4b2c-9d0e-08a2ee0f0940"
+  ],
+  "laptop_k3": [
+   "4b0dc41f-950f-4a37-8a9e-6f15556a4a52",
+   "96d08028-ad99-4ae7-bc43-62e8c6158619"
+  ],
+  "phone_k1": [
+   "bea91aac-6a35-407d-b45b-6ad8eff4036b",
+   "51ceac55-d8be-4c5b-b045-e50b22e901ac"
+  ],
+  "phone_k2": [
+   "01f9b966-7d78-49c5-b3b8-8837471accb0",
+   "f4554554-1c5b-4683-a19c-52adb57f45f1"
+  ],
+  "phone_k3": [
+   "b22fc1b4-d938-460a-ac37-b57dd2549b8f",
+   "22628f72-9416-413c-9ff6-99a613dd8c2f"
+  ],
+  "notebook_k1": [
+   "50a9a90c-2b39-4196-aad6-2e2a6472a3d1",
+   "781be67f-e241-4807-a708-c9e2fbb8abf9"
+  ],
+  "notebook_k2": [
+   "44adc494-85bd-4231-a076-d74f0130c5b5",
+   "3488ccc4-f964-4c91-823f-adad5c26a678"
+  ],
+  "notebook_k3": [
+   "4cb6b16e-daec-4f2a-9cb2-9e6258be02c7",
+   "45548d33-efd8-46ff-981f-acb12fb39994"
+  ],
+  "face_open": [
+   "8d70cfc7-41ee-4f27-bb95-5bf448525b2a",
+   "4d98d848-730e-42a0-b3fc-6306aa167a19"
+  ],
+  "face_half": [
+   "0842803d-d767-4a8e-bb62-ce87c22bf3ec",
+   "3254fc2e-7537-4217-87dc-c82a0c062fdb"
+  ],
+  "face_closed": [
+   "0d399b29-ae35-4995-a868-ff062f111d16",
+   "e07ae159-a811-4bca-a0e9-1094d96fc735"
+  ]
+ },
+ "phone_k4_cut": "d276a08a-6a3c-4f8e-bc1e-b1666c8f782b",
+ "notebook_k4_cut": "2fcdcd3f-cf67-40be-af73-9104a72062e3",
+ "nap_k4_cut": "c718f413-fe21-4f71-b7cb-5270061e7934",
+ "laptop_k4_cut": "798831ac-155d-4719-9f49-6696a47dd4c6",
+ "_info": "Higgsfield gpt_image_2_5, 2k, quality high. Composites = room photo + character sheet; *_cut = transparent extraction; redraws = edits of the cut."
+}

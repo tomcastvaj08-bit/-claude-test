@@ -522,3 +522,54 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 /* screens glow a little and catch the room light */
 .co-scr-in::after, .co-phone::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; border-radius: inherit;
   background: linear-gradient(120deg, rgba(255,255,255,.16), transparent 40%), radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(40,20,0,.25)); }
+
+/* ---------- cold opens v2: flat 2D drawing inside the real photographed room (engine/coldopen.js) ---------- */
+.c2 .c2-shot { position: absolute; inset: 0; overflow: hidden; }
+.c2-world { position: absolute; left: 0; top: 0; width: 1920px; transform-origin: 0 0; }
+.c2-plate { position: absolute; inset: 0; width: 100%; height: 100%; }
+.c2-char { position: absolute; inset: 0; isolation: isolate; will-change: transform, filter; }
+.c2-d { position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; }
+/* the room's light on the paper: colour wrap (soft-light) + light/shadow (multiply), masked to the drawing */
+.c2-lm, .c2-lc { position: absolute; inset: 0; background-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; pointer-events: none; }
+.c2-lm { filter: grayscale(1) brightness(1.75) contrast(1.15); mix-blend-mode: multiply; opacity: .28; }
+.c2-lc { filter: saturate(1.25); mix-blend-mode: soft-light; opacity: .38; }
+.c2-leaves, .c2-dust { position: absolute; inset: 0; pointer-events: none; }
+.c2-leaves canvas { position: absolute; left: 0; top: 0; opacity: .9; }
+.c2-dust i { position: absolute; left: 0; top: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255,232,190,.95), rgba(255,200,120,0) 70%); mix-blend-mode: screen; }
+.c2-insbg { position: absolute; inset: -40px; background-size: 330% auto; background-repeat: no-repeat; filter: blur(12px) brightness(.72); }
+.c2-ins-in { position: absolute; inset: 0; }
+.c2-flash { position: absolute; inset: 0; background: #fff8ee; opacity: 0; pointer-events: none; }
+.c2-leak-r { left: auto; right: -10%; }
+/* close-up: his face over the defocused room */
+.c2-cubg { background-size: 230% auto; filter: blur(9px) brightness(.8) saturate(1.1); }
+.c2-face { position: absolute; left: -120px; top: -10px; width: 1920px; height: 1086px; transform-origin: 62% 48%; isolation: isolate; }
+.c2-f { position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; }
+.c2-flc { opacity: .3; }
+/* insert: his newspaper. Two copies – a soft one and a sharp one masked to the date line (rack focus) */
+.c2-news { position: absolute; left: 0; top: 0; width: 1600px; height: 1000px; transform-origin: 0 0; }
+.c2-paper { position: absolute; inset: 0; background: #ece4d2 url("../assets/plates/paper.jpg") center / cover; padding: 46px 70px; color: #1b1a17; font-family: Georgia, "Times New Roman", serif; box-shadow: 0 40px 90px rgba(0,0,0,.55); filter: url(#c2-boil); }
+.c2-p-sharp { -webkit-mask-image: radial-gradient(ellipse 330px 70px at 1010px 228px, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 330px 70px at 1010px 228px, #000 55%, transparent 100%); box-shadow: none; }
+.c2-mast { font: 900 120px/1 Georgia, serif; text-align: center; letter-spacing: .03em; border-bottom: 6px double #222; padding-bottom: 14px; }
+.c2-dline { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding: 14px 4px 12px; }
+.c2-dl { font: italic 400 24px Georgia, serif; color: #3a3630; }
+.c2-date { font: 700 46px/1 Georgia, serif; color: #141210; margin-left: 300px; }
+.c2-head { font: 900 168px/1 Georgia, serif; letter-spacing: -.01em; margin: 26px 0 10px; }
+.c2-sub { font: italic 400 38px/1.25 Georgia, serif; color: #2c2924; margin-bottom: 26px; }
+.c2-body { display: flex; gap: 40px; }
+.c2-photo { flex: 0 0 520px; height: 330px; background: repeating-linear-gradient(135deg, rgba(30,30,30,.55) 0 3px, transparent 3px 11px), #b9ae98; border: 3px solid #222; }
+.c2-cols { flex: 1; columns: 3; column-gap: 34px; } .c2-cols p { height: 13px; background: rgba(30,28,24,.48); margin: 0 0 13px; border-radius: 2px; }
+.c2-focusvig { position: absolute; inset: 0; background: radial-gradient(ellipse 34% 20% at 50% 50%, transparent 55%, rgba(10,5,0,.55) 100%); opacity: 0; pointer-events: none; }
+/* insert: notebook */
+.c2-nb { position: absolute; left: 0; top: -3px; width: 1920px; height: 1086px; filter: url(#c2-boil); }
+.c2-nb img, .c2-nb svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.c2-nb path { fill: none; stroke: #141414; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: .88; }
+.c2-scr { filter: url(#c2-boil); }
+.c2-phw, .c2-lock { filter: url(#c2-boil); }
+/* insert: lock screen on the blanket */
+.c2-ls { position: absolute; inset: 0; border-radius: 50px; background: radial-gradient(120% 80% at 30% 10%, #ff9d5c, #8a3fd1 55%, #1d1240); color: #fff; font-family: var(--sans); text-align: center; padding-top: 120px; }
+.c2-ls-date { font: 600 36px var(--sans); opacity: .92; }
+.c2-ls-time { font: 700 190px/1 var(--sans); letter-spacing: -.03em; margin-top: 6px; }
+.c2-ls-note { position: absolute; left: 22px; right: 22px; top: 470px; background: rgba(255,255,255,.82); color: #15171c; border-radius: 30px; padding: 26px 28px; text-align: left; backdrop-filter: blur(10px); }
+.c2-ls-note b { display: block; font: 800 24px var(--sans); letter-spacing: .04em; color: #555; }
+.c2-ls-note span { display: block; font: 700 34px/1.2 var(--sans); margin-top: 8px; }
+.c2-ls-note em { position: absolute; right: 26px; top: 26px; font: 500 22px var(--sans); color: #888; font-style: normal; }

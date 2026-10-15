@@ -401,13 +401,16 @@ async function main() {
     const timing = await loadJSON("../assets/coldopen/voice/timing.json");
     const coRoot = document.createElement("div");
     stage.appendChild(coRoot);
-    const co = buildColdOpen(coRoot, coldId, timing[coldId], ep);
+    const manifest = await loadJSON("../assets/coldopen/v2/manifest.json");
+    const co = buildColdOpen(coRoot, coldId, timing[coldId], ep, manifest);
     await co.prepare();
     const C = co.duration, inner = window.__setTime, m = window.__meta;
     window.__setTime = (t) => { co.update(t); if (t >= C) inner(t - C); };
     const total = q.get("only") === "cold" ? C + 1.2 : C + m.duration;
     window.__meta = {
       ...m, duration: total, voiceStart: m.voiceStart + C, voiceEnd: m.voiceEnd + C, outroStart: m.outroStart + C, coldOpen: { id: coldId, duration: C },
+      // the pre-scene is shot "live": 30 fps, 1/40 s shutter (choppier, crisper than the 24p film look)
+      ...(q.get("only") === "cold" ? { renderFps: co.fps ?? 30, shutter: co.shutter ?? 0.75 } : {}),
       sceneStarts: m.sceneStarts.map((s) => ({ ...s, start: s.start + C, end: s.end + C })),
       sfx: [...co.sfx, ...m.sfx.map((e) => ({ ...e, at: +(e.at + C).toFixed(3) }))].filter((e) => e.at < total).sort((a, b) => a.at - b.at),
     };

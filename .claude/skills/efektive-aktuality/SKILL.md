@@ -134,16 +134,25 @@ Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně
 Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.
 
 ### Cold open – postavička před hookem (volitelné)
-Před hook lze předřadit krátkou scénku s ručně kreslenou 2D postavičkou (`engine/coldopen.js`, assety a popis v `news-reel/assets/coldopen/README.md`). Varianty: `notebook`, `laptop`, `nap`, `phone`, `newspaper`. Každá končí pointou „Počkej… co je dneska za datum?!“, výskokem a whip panem do hooku.
+Před hook lze předřadit krátkou scénku (7–9 s). Plochá 2D postavička ze character sheetu žije ve **skutečných fotkách místností** uživatele (`engine/coldopen.js`, assety a celý postup v `news-reel/assets/coldopen/README.md`). Varianty: `newspaper`, `nap`, `laptop`, `phone`, `notebook`. Každá končí pointou „Počkej… co je dneska za datum?!“, výskokem a whip panem do hooku.
 - **Zapnutí:** `"coldOpen": "<id>"` v episode.json, nebo `--cold <id>` při renderu.
-- **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`.
+- **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`. Render je automaticky 30 fps se závěrkou 1/40 s (0.75).
 - **Rotace:** varianty střídej po týdnech, ať se neokoukají.
 
-Animace:
-- limitovaná 2D (klíčové kresby střídané na dvojky);
-- line boil (SVG displacement přeseedovaný 12× za s);
-- „přečmárávací“ ghost vrstva a glitch každých 1,7 s;
-- světlo z okna násobené přes postavu a stín na zdi;
-- papírový flip (otočí se jako list papíru).
+Pravidla (zpětná vazba uživatele):
+- **Prostředí se nekreslí.** Vždy reálná fotka. Kreslená je jen postavička a to, co drží (noviny, mobil, notýsek).
+- **Postavička je 2D, plochá jako papír.** Má tenký bílý papírový okraj, vrhá stín do místnosti a při skoku se otočí hranou jako list.
+- **Pořád se překresluje:** každá držená póza má 3 ručně kreslené verze cyklované 8×/s, navrch jemný SVG boil a občas RGB glitch.
+- **Minimálně 3 střihy**, reálně 5–6: celek → polocelek / insert → freeze s crash zoomem → detail obličeje s lip-syncem → výskok.
+- **Krátké repliky** (jsme v hooku). Insert novin: žádné kroužkování, rychlý zoom na datum a zbytek rozmazat, aby se dalo přečíst.
+- **Kamera 2.5D:** fotka a kresba se hýbou spolu (nikdy z židle neklouže). Rozostřené listy v popředí a prach ve světle dělají paralaxu a hloubku.
+- **Zvuk:** foley ke všemu, co dělá (stránky, klávesnice + větrák notebooku, scroll, chrápání, tužka), přemýšlivé „hmm“ jako vesničan z Minecraftu, room tone místnosti.
 
-Nové varianty: první kresbu generuj s referencí místnosti a sheetu, další jako editace té první (ať nábytek drží). Hlas „Pavel“, eleven_v4, a časy slov ze Scribe zapiš do `voice/timing.json`.
+Nová varianta / nové prostředí (Higgsfield `gpt_image_2_5`, 2k high):
+1. kompozit fotky a sheetu;
+2. průhledný výřez (`background: transparent`);
+3. `scripts/coldopen-register.py`;
+4. 2 překreslení každé pózy + `scripts/coldopen-redraw-reg.py`;
+5. `scripts/coldopen-pack.py`;
+6. pózy a záběry nadefinuj v `COLD_OPENS`;
+7. hlas „Pavel“ (eleven_v4) + časy ze Scribe zapiš do `voice/timing.json`.
