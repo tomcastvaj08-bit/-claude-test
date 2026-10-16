@@ -138,7 +138,7 @@ server.close();
 function resolveSfx(name) {
   const dir = join(ROOT, "assets", "sfx");
   const alias = { synth_riser: "riser.wav", tick: "tick.wav" };
-  for (const f of [join(dir, "el", `${name}.mp3`), join(dir, "el", `${name}.wav`), join(dir, alias[name] ?? `${name}.wav`)]) if (existsSync(f)) return f;
+  for (const f of [join(dir, "el", `${name}.mp3`), join(dir, "el", `${name}.wav`), join(dir, "designed", `${name}.wav`), join(dir, alias[name] ?? `${name}.wav`)]) if (existsSync(f)) return f;
   return null;
 }
 // integrated loudness (EBU R128) of a file, optionally only its first `dur` seconds
@@ -174,9 +174,9 @@ function buildSfxStem(meta) {
     inputs.push("-i", e.file);
     const ms = Math.max(0, Math.round(e.at * 1000));
     // per-layer edit like in a DAW: length, fades, EQ (distance = less lows/highs), stereo position
-    //   { name, at, gain, dur=2.6, fi=0, fo=0.5, hp, lp, pan (-1 left … 1 right) }
+    //   { name, at, gain, dur=2.6, ss (start offset in the file), fi=0, fo=0.5, hp, lp, pan (-1 left … 1 right) }
     const dur = e.dur ?? 2.6, fo = Math.min(e.fo ?? 0.5, dur);
-    const ch = [`aresample=48000`, `aformat=channel_layouts=stereo`, `atrim=0:${dur}`];
+    const ch = [`aresample=48000`, `aformat=channel_layouts=stereo`, e.ss ? `atrim=${e.ss}:${(e.ss + dur).toFixed(3)},asetpts=PTS-STARTPTS` : `atrim=0:${dur}`];
     if (e.fi) ch.push(`afade=t=in:st=0:d=${e.fi}`);
     ch.push(`afade=t=out:st=${(dur - fo).toFixed(3)}:d=${fo}`);
     if (e.hp) ch.push(`highpass=f=${e.hp}`);

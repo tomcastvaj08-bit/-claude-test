@@ -32,3 +32,16 @@ Pravidlo: **každá akce postavičky má svůj reálný zvuk** a každá místno
 | postel | `snore` (do probuzení), `phone_buzz` ×2, `sheet_rustle` (probuzení) | | |
 | notýsek | `pencil_write`, `pen_drop` na „Počkej“ | | |
 | pointa | `record_scratch` (freeze), `gulp`, `hook_impact` lp 220 (střih na detail), `camera_glide` (pan z detailu doprava; od v4 bez výskoku a útěku) | | |
+
+## Cold opens v5: filmová vrstva (ne AI)
+
+Postup podle praxe filmových zvukařů:
+- **Dialog první**, pak atmosféra, pak jen efekty, které něco říkají.
+- **Atmosféra se stříhá s obrazem.** Každý záběr má vlastní perspektivu (EQ a hlasitost podle velikosti záběru). Zvuk dalšího záběru nastoupí o 3 snímky dřív (J-cut).
+- **Ticho před úderem.** 0,1 s vakuum před leknutím.
+- **Vrstvené švihy.** Sub + střed + vzduch, filtr jede s pohybem, transient přesně na snímku střihu.
+- **Údery.** Klik (attack) + tělo s poklesem výšky + krátký dozvuk + sub drop. Sub má 2. a 3. harmonickou, aby byl slyšet i z reproduktoru mobilu.
+- **Napětí.** Nízký drone (A1 + kvinta, záznějový) od „Počkej“ do konce.
+- **Konec.** Reverse swell + putující švih L→P do hooku.
+
+Generuje `scripts/sfx-design.py` do `assets/sfx/designed/` (časy vrcholů v `peaks.json`). Pravidla umístění jsou v `engine/coldopen.js` (sekce „sound“).

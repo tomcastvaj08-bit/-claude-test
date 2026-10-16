@@ -585,3 +585,10 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .c2-povhand { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 95% 100%; }
 .c2-glow { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; mix-blend-mode: screen;
   background: radial-gradient(ellipse 360px 240px at 510px 520px, rgba(170,130,255,.45), rgba(170,130,255,0) 70%); }
+
+/* phone: first-person – his hand holds the phone, the app sits in the keyed screen quad (matrix3d) */
+.c2-povph { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 60% 90%; }
+.c2-povph .c2-povhand { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.c2-povscr { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; background: #fff; }
+.c2-povscr .co-feed { border-radius: 0; padding: 70px 18px; }
+.c2-povglare { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,240,220,.16), rgba(255,255,255,0) 40%, rgba(0,0,0,.08)); pointer-events: none; }

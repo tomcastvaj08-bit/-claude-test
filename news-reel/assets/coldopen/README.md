@@ -1,11 +1,12 @@
-# Cold opens – postavička před hookem (v4)
+# Cold opens – postavička před hookem (v5)
 
-Krátké scénky (7–9 s) před hookem „tabule“. Plochá 2D kresba ze `character_sheet.png` (tenká jako papír) žije ve skutečných fotkách místností od uživatele (`env/*.jpg`). Z prostředí není nakreslené nic: sedí na skutečné židli, leží na skutečné posteli, opírá se o skutečné cihly.
+Krátké scénky (4,5–6,5 s) před hookem „tabule“. Plochá 2D kresba ze `character_sheet.png` (tenká jako papír) žije ve skutečných fotkách místností od uživatele (`env/*.jpg`). Z prostředí není nakreslené nic: sedí na skutečné židli, leží na skutečné posteli, opírá se o skutečné cihly.
 
 Postavička je plochý papír ve 3D: natočená od kamery a lehce přehnutá. Skutečné předměty před ní ji zakrývají (occludery: víko MacBooku, hrana a nohy stolu).
 
 Každá scénka:
-- střihy jen při změně záběru, 3–4 na scénu: celek → insert (co dělá) → polocelek, „Počkej…“ (freeze, record scratch, crash zoom) → detail obličeje s lip-syncem („co je dneska za datum?!“) → kamera v detailu odjede doprava do hooku. Žádné leknutí, výskok ani útěk;
+- tempo sociálních sítí (jsme v hooku): záběry 0,5–1,4 s, střih jen při změně velikosti/úhlu. Celek → insert (co dělá) → polocelek → „Počkej…“ jako samostatný ostrý střih s crash zoomem (pár snímků) → detail obličeje s lip-syncem („co je dneska za datum?!“) → rychlý švih kamery doprava do hooku. Žádné leknutí, výskok ani útěk;
+- pauzy v replikách jsou vystřižené (`scripts/coldopen-tighten.py` → `voice/<id>_t.wav`, v `timing.json` je `map` z původních časů na nové; v enginu `T.v(x)` = čas v PŮVODNÍ replice);
 - nikdy nestojí: dýchá, přenáší váhu, drbe se. Mezifáze pózy se střídají po dvou snímcích (12 kreseb/s);
 - lip-sync jen když mluví: z obálky hlasitosti hlasu (`env` v `timing.json`) podle slabik (poměr k lokálnímu maximu), mezi slovy je pusa zavřená;
 - 24 fps se závěrkou 1/24 s (`renderFps`/`shutter` v meta, render.mjs je převezme);
@@ -16,7 +17,7 @@ Každá scénka:
 | `newspaper` | dřevěná židle u cihlové zdi | čte noviny, drbe se → listuje („hmm“) → „Počkej… tyhle noviny jsou starý!“ | rychlý zoom na datum v novinách (dnes − 8 dní), vše ostatní rozmazané |
 | `nap` | postel | spí a chrápe, mobil vedle něj zabzučí → „Hm?! Co?!“ | z jeho pohledu: vlastní ruka na peřině, vedle leží mobil (dnešní datum + notifikace), po zabzučení se po něm ruka natáhne |
 | `laptop` | stůl s MacBookem (sedí ZA ním, víko a stůl ho zakrývají) | píše, nudí se, kliká („tohle znám… nuda…“), „Počkej“ = drží se za víko | obrazovka se starými články |
-| `phone` | prázdný roh u cihel | opřený o zeď scrolluje, drbe se na krku, zívá → „Moment!“ | feed samých starých postů |
+| `phone` | prázdný roh u cihel | opřený o zeď scrolluje, drbe se na krku, zívá → „Moment!“ | z jeho pohledu: mobil drží jeho kreslená ruka, palec scrolluje (feed sedí do vyklíčovaného displeje, `scripts/coldopen-povphone.py`) | feed samých starých postů |
 | `notebook` | stůl u okna s lampou | čmárá „AI“ do notýsku, přemýšlí („hmm“) | notýsek: stránka + ruka zvlášť, hrot tužky jede po tazích podtržení |
 
 ## Jak vznikají kresby (Higgsfield `gpt_image_2_5`, 2k high)
@@ -32,6 +33,17 @@ Každá scénka:
    - `v2/manifest.json` (bbox a hlava každé pózy, souřadnice 0..1 fotky).
 
 Póza `k1`/`k2` = činnost (+ mezifáze `k1a`/`k1b`/`k2a`), `k3` = zamrznutí. `k4` (výskok) se od v4 nepoužívá. Všechna ID jobů jsou v `v2/higgsfield-jobs.json`. Zdrojové PNG (kompozity, výřezy, 4K fotky) leží v `src/` a jsou v `.gitignore`.
+
+## Zvuk (v5): tři vrstvy jako ve filmu
+
+1. **Dialog**: zkrácená replika, masterovaná na úroveň vypravěče (−16,3 LUFS), high-pass 75 Hz.
+2. **Atmosféra stříhaná s obrazem**: každý záběr má vlastní perspektivu (celek plný pokoj, insert blíž a tmavší, detail subjektivní a tlumený). Atmosféra dalšího záběru začíná 3 snímky před střihem (J-cut, ucho vede oko). Záběr před „Počkej“ ztichne 0,1 s předem: krátké vakuum, aby úder dopadl.
+3. **Designovaná vrstva** (`scripts/sfx-design.py` → `assets/sfx/designed/`, syntéza, žádná AI):
+   - švihy ze tří vrstev (sub + střed + vzduch), filtr jede s pohybem, vrchol přesně na střihu;
+   - „Počkej“ = švih + klik + tělo + sub drop (s harmonickými, aby váha byla slyšet i z mobilu);
+   - nízký tension drone pod uvědoměním;
+   - reverse swell do detailu a do hooku, putující švih L→P na závěrečném panu;
+   - vibrace mobilu v matraci.
 
 ## Hlas a zvuk
 

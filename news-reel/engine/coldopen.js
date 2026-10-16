@@ -17,6 +17,7 @@
 //   • no leap / run-away: he says „co je dneska za datum?!“, then the close-up pans right (the hook follows in the film).
 // Cutting: no cut between two similar framings – pose changes and the "Počkej" freeze happen INSIDE a shot.
 import { clamp, lerp, prog, ease, snapOut } from "./ease.js";
+import POVPHONE from "../assets/coldopen/v2/insert/phone_pov.json" with { type: "json" };
 
 const A = "../assets/coldopen/";
 const V = A + "v2/";
@@ -31,29 +32,28 @@ const DAYS_CAP = DAYS.map((d) => d[0].toUpperCase() + d.slice(1));
 // paper: { yaw, fold } – how the sheet stands in the room (deg).  shadow: cast shadow offset (px).
 // occ: plate polygons (0..1) of real objects IN FRONT of him.  leaves: drift-throughs { t, dur, y0, y1, s, dir }.
 export const COLD_OPENS = {
+  // Tempo (social hook): shots 0.5–1.4 s, the „Počkej“ shock is its own hard cut (a few frames, snap zoom),
+  // dialogue pauses are pulled up (scripts/coldopen-tighten.py). T.v(x) = cue at x s of the ORIGINAL line.
   newspaper: {
-    vOff: 0.45, room: "room_bedroom", window: true, shadow: [26, -2], leak: "left", paper: { yaw: -17, fold: 9 },
-    leaves: [{ t: 0.3, dur: 2.2, y0: 0.18, y1: 0.42, s: 120, dir: 1 }, { t: 2.0, dur: 2.0, y0: 0.62, y1: 0.8, s: 90, dir: 1 }],
+    vOff: 0.3, room: "room_bedroom", window: true, shadow: [26, -2], leak: "left", paper: { yaw: -17, fold: 9 },
+    leaves: [{ t: 0.2, dur: 2.0, y0: 0.18, y1: 0.42, s: 120, dir: 1 }],
     shots: (T) => [
-      { at: 0, kind: "room", poses: [[0, "k1"], [0.85, "k1b"], [1.35, "k1"], [1.75, "k1a"], [2.35, "k1"], [T.v(1.05), "k2"], [T.v(1.05) + 0.5, "k2a"], [T.wait, "k3"]],
-        keys: [[0, 1.04, "body"], [T.v(1.05), 1.32, { of: "head", dy: 0.24 }], [T.wait, 1.62, { of: "head", dy: 0.16 }]],
-        crash: { at: T.wait + 0.05, z: 2.05, f: { of: "head", dy: 0.07 } } },
+      { at: 0, kind: "room", poses: [[0, "k1"], [0.42, "k1b"], [0.78, "k1a"]], keys: [[0, 1.04, "body"], [T.v(0.7), 1.1, "body"]] },
+      { at: T.v(0.7), kind: "room", poses: [[0, "k2"], [0.38, "k2a"]], keys: [[0, 1.36, { of: "head", dy: 0.22 }], [1.0, 1.44, { of: "head", dy: 0.2 }]] },
+      { at: T.wait, kind: "room", shock: true, poses: [[0, "k3"]], keys: [[0, 1.72, { of: "head", dy: 0.12 }]], crash: { at: 0, z: 2.1, f: { of: "head", dy: 0.07 } } },
       { at: T.v(3.0), kind: "insert", insert: "news" },
       { at: T.date - 0.04, kind: "cu" },
     ],
     foley: (T) => [
-      { name: "newspaper_rustle", at: 0.05, rel: -11, dur: 1.4, fo: 0.4 },
-      { name: "villager_hmm", at: 0.4, rel: -7, dur: 0.9, fo: 0.25 },
-      { name: "page_turn", at: T.v(1.02), rel: -6 },
-      { name: "newspaper_rustle", at: T.v(1.1), rel: -14, dur: 1.0, fo: 0.3 },
-      { name: "villager_hmm", at: T.v(1.6), rel: -7, dur: 0.75, fo: 0.2 },
-      { name: "gulp", at: T.wait + 0.42, rel: -9 },
-      { name: "newspaper_rustle", at: T.v(3.0), rel: -16, dur: 0.6, fo: 0.2 },
-      { name: "transition_swish", at: T.v(3.0) + 0.38, rel: -13 },
+      { name: "villager_hmm", at: 0.0, rel: -8, dur: 0.42, fo: 0.12 },
+      { name: "newspaper_rustle", at: 0.03, rel: -12, dur: T.v(0.7), fo: 0.1 },
+      { name: "page_turn", at: T.v(0.7) - 0.05, rel: -7 },
+      { name: "gulp", at: T.wait + 0.32, rel: -10 },
+      { name: "newspaper_rustle", at: T.v(3.0) - 0.04, rel: -17, dur: 0.5, fo: 0.2 },
     ],
   },
   laptop: {
-    vOff: 0.55, room: "room_office", window: false, shadow: [16, -2], leak: "left", paper: { yaw: -8, fold: 6 },
+    vOff: 0.35, room: "room_office", window: false, shadow: [16, -2], leak: "left", paper: { yaw: -8, fold: 6 },
     // he works on the MacBook from the far side of the desk: the real lid and desk are in front of him
     occ: [
       [[0.352, 0.452], [0.474, 0.449], [0.479, 0.462], [0.491, 0.592], [0.539, 0.592], [0.536, 0.603], [0.366, 0.603]],
@@ -61,78 +61,73 @@ export const COLD_OPENS = {
       [[0.596, 0.64], [0.614, 0.64], [0.614, 1.0], [0.596, 1.0]],
       [[0.722, 0.64], [0.746, 0.64], [0.746, 1.0], [0.722, 1.0]],
     ],
-    leaves: [{ t: 0.2, dur: 2.3, y0: 0.25, y1: 0.4, s: 110, dir: 1 }],
+    leaves: [{ t: 0.1, dur: 2.0, y0: 0.25, y1: 0.4, s: 110, dir: 1 }],
     shots: (T) => [
-      { at: 0, kind: "room", poses: [{ cycle: ["k1", "k1", "k1a", "k1"], from: 0, to: 99, hold: 0.25 }], keys: [[0, 1.08, [0.45, 0.42]], [T.v(0.5), 1.18, [0.44, 0.4]]] },
-      { at: T.v(0.5), kind: "insert", insert: "screen" },
-      { at: T.v(2.22), kind: "room", poses: [[0, "k2"], [T.wait - T.v(2.22), "k3"]],
-        keys: [[0, 1.85, { of: "head", dy: 0.1 }], [T.wait - T.v(2.22), 1.92, { of: "head", dy: 0.1 }]],
-        crash: { at: T.wait - T.v(2.22) + 0.05, z: 2.3, f: { of: "head", dy: 0.05 } } },
+      { at: 0, kind: "room", poses: [{ cycle: ["k1", "k1", "k1a", "k1"], from: 0, to: 99, hold: 0.17 }], keys: [[0, 1.1, [0.45, 0.42]], [0.6, 1.17, [0.44, 0.4]]] },
+      { at: 0.55, kind: "insert", insert: "screen" },
+      { at: T.v(1.75), kind: "room", poses: [[0, "k2"]], keys: [[0, 1.8, { of: "head", dy: 0.1 }], [0.6, 1.88, { of: "head", dy: 0.1 }]] },
+      { at: T.wait, kind: "room", shock: true, poses: [[0, "k3"]], keys: [[0, 2.0, { of: "head", dy: 0.08 }]], crash: { at: 0, z: 2.35, f: { of: "head", dy: 0.05 } } },
       { at: T.date - 0.04, kind: "cu" },
     ],
     foley: (T) => [
-      { name: "laptop_fan", at: 0, rel: -19, dur: T.end + 0.3, fi: 0.3, fo: 0.3, hp: 120 },
-      { name: "keyboard_typing", at: 0.05, rel: -9, dur: T.v(0.5) - 0.05, fo: 0.08 },
-      { name: "trackpad_click", at: T.v(0.9), rel: -10, dur: 1.2, fo: 0.2 },
-      { name: "keyboard_typing", at: T.v(1.4), rel: -14, dur: 0.6, fo: 0.15 },
-      { name: "villager_hmm", at: T.v(2.25), rel: -7, dur: 0.5, fo: 0.2 },
-      { name: "gulp", at: T.wait + 0.4, rel: -9 },
+      { name: "laptop_fan", at: 0, rel: -21, dur: T.end + 0.3, fi: 0.2, fo: 0.3, hp: 120 },
+      { name: "keyboard_typing", at: 0.02, rel: -9, dur: 0.55, fo: 0.06 },
+      { name: "trackpad_click", at: T.v(0.9), rel: -10, dur: 0.9, fo: 0.15 },
+      { name: "gulp", at: T.wait + 0.3, rel: -10 },
     ],
   },
   nap: {
-    vOff: 2.3, room: "room_bedroom", window: false, shadow: [18, -4], leak: "left", paper: { yaw: 14, fold: 6 },
+    vOff: 1.15, room: "room_bedroom", window: false, shadow: [18, -4], leak: "left", paper: { yaw: 14, fold: 6 },
     head: { k1: [0.822, 0.462], k2: [0.822, 0.462] }, // the Zzz above him would bias the auto head point
-    leaves: [{ t: 0.15, dur: 2.4, y0: 0.2, y1: 0.36, s: 100, dir: 1 }],
+    leaves: [{ t: 0.05, dur: 1.6, y0: 0.2, y1: 0.36, s: 100, dir: 1 }],
     shots: (T) => [
-      { at: 0, kind: "room", poses: [{ cycle: ["k1", "k1", "k1a", "k1a"], from: 0, to: 1.18, hold: 0.3 }, [1.18, "k2"]],
-        keys: [[0, 1.03, "body"], [0.5, 1.03, "body"], [1.7, 1.75, { of: "head", dx: -0.06, dy: 0.08 }]] },
-      { at: 1.72, kind: "insert", insert: "lockscreen" },
-      { at: T.v(0.28), kind: "room", poses: [[0, "k3"]],
-        keys: [[0, 1.42, { of: "head", dy: 0.17 }]], crash: { at: T.wait - T.v(0.28) + 0.04, z: 1.85, f: { of: "head", dy: 0.09 } } },
+      { at: 0, kind: "room", poses: [{ cycle: ["k1", "k1", "k1a", "k1a"], from: 0, to: 99, hold: 0.25 }], keys: [[0, 1.03, "body"], [0.45, 1.06, "body"]] },
+      { at: 0.45, kind: "room", poses: [[0, "k1"], [0.2, "k2"]], keys: [[0, 1.75, { of: "head", dx: -0.06, dy: 0.08 }], [0.4, 1.82, { of: "head", dx: -0.06, dy: 0.08 }]] },
+      { at: 0.82, kind: "insert", insert: "lockscreen" },
+      { at: T.v(0.2), kind: "room", shock: true, poses: [[0, "k3"]], keys: [[0, 1.5, { of: "head", dy: 0.15 }]], crash: { at: Math.max(0, T.wait - T.v(0.2)), z: 1.9, f: { of: "head", dy: 0.09 } } },
       { at: T.date - 0.04, kind: "cu" },
     ],
     foley: (T) => [
-      { name: "snore", at: 0.0, rel: -4, dur: T.v(0.28), fo: 0.12 },
-      { name: "phone_buzz", at: 1.5, rel: -6 },
-      { name: "phone_buzz", at: 2.05, rel: -9, hp: 200 },
-      { name: "sheet_rustle", at: T.v(0.26), rel: -8 },
-      { name: "gulp", at: T.v(1.12), rel: -9 },
+      { name: "snore", at: 0.0, rel: -5, dur: 0.82, fo: 0.08 },
+      { name: "phone_buzz", at: 0.6, rel: -7 },
+      { name: "d_buzz_bed", at: 0.6, rel: -16, hp: 70 },
+      { name: "phone_buzz", at: 1.15, rel: -10, hp: 200 },
+      { name: "sheet_rustle", at: T.v(0.2) - 0.03, rel: -8 },
+      { name: "gulp", at: T.v(1.12), rel: -10 },
     ],
   },
   phone: {
-    vOff: 0.45, room: "room_office", window: false, shadow: [-26, -2], leak: "right", paper: { yaw: 16, fold: 7 },
-    leaves: [{ t: 0.25, dur: 2.2, y0: 0.2, y1: 0.34, s: 110, dir: -1 }],
+    vOff: 0.3, room: "room_office", window: false, shadow: [-26, -2], leak: "right", paper: { yaw: 16, fold: 7 },
+    leaves: [{ t: 0.15, dur: 2.0, y0: 0.2, y1: 0.34, s: 110, dir: -1 }],
     shots: (T) => [
-      { at: 0, kind: "room", poses: [[0, "k1"], { cycle: ["k1", "k1a"], from: 0.3, to: 0.95, hold: 0.17 }, [0.95, "k1b"], [1.45, "k1"]], keys: [[0, 1.04, "body"], [T.v(0.7), 1.12, "body"]] },
-      { at: T.v(0.7), kind: "insert", insert: "feed" },
-      { at: T.v(1.9), kind: "room", poses: [[0, "k2"], [T.wait - 0.04 - T.v(1.9), "k3"]],
-        keys: [[0, 1.55, { of: "head", dy: 0.2 }], [T.wait - T.v(1.9), 1.62, { of: "head", dy: 0.2 }]],
-        crash: { at: T.wait - T.v(1.9) + 0.02, z: 1.95, f: { of: "head", dy: 0.1 } } },
+      { at: 0, kind: "room", poses: [[0, "k1"], { cycle: ["k1", "k1a"], from: 0.2, to: 99, hold: 0.17 }], keys: [[0, 1.05, "body"], [T.v(0.55), 1.12, "body"]] },
+      { at: T.v(0.55), kind: "insert", insert: "feed" },
+      { at: T.v(1.75), kind: "room", poses: [[0, "k1b"], [0.3, "k2"]], keys: [[0, 1.5, { of: "head", dy: 0.2 }], [0.8, 1.58, { of: "head", dy: 0.2 }]] },
+      { at: T.wait, kind: "room", shock: true, poses: [[0, "k3"]], keys: [[0, 1.75, { of: "head", dy: 0.14 }]], crash: { at: 0, z: 2.0, f: { of: "head", dy: 0.1 } } },
       { at: T.date - 0.04, kind: "cu" },
     ],
     foley: (T) => [
-      { name: "phone_scroll", at: 0.1, rel: -9, dur: T.v(1.9) - 0.1, fo: 0.2 },
-      { name: "villager_hmm", at: T.v(1.25), rel: -7, dur: 0.55, fo: 0.2 },
-      { name: "yawn", at: T.v(2.0), rel: -6, dur: 0.95, fo: 0.25 },
-      { name: "gulp", at: T.wait + 0.45, rel: -9 },
+      { name: "phone_scroll", at: 0.05, rel: -9, dur: T.v(1.75) - 0.05, fo: 0.12 },
+      { name: "yawn", at: T.v(2.0), rel: -7, dur: 0.6, fo: 0.2 },
+      { name: "gulp", at: T.wait + 0.32, rel: -10 },
     ],
   },
   notebook: {
-    vOff: 0.45, room: "room_office", window: true, shadow: [-24, -2], leak: "right", paper: { yaw: 12, fold: 7 },
-    leaves: [{ t: 0.2, dur: 2.4, y0: 0.15, y1: 0.3, s: 110, dir: -1 }, { t: 3.4, dur: 2.0, y0: 0.55, y1: 0.7, s: 85, dir: -1 }],
+    vOff: 0.3, room: "room_office", window: true, shadow: [-24, -2], leak: "right", paper: { yaw: 12, fold: 7 },
+    leaves: [{ t: 0.1, dur: 2.0, y0: 0.15, y1: 0.3, s: 110, dir: -1 }],
     shots: (T) => [
-      { at: 0, kind: "room", poses: [{ cycle: ["k1", "k1a", "k1", "k1b"], from: 0, to: 99, hold: 0.125 }], keys: [[0, 1.05, "body"], [T.v(1.0), 1.13, "body"]] },
-      { at: T.v(1.0), kind: "insert", insert: "notebook" },
-      { at: T.v(2.6), kind: "room", poses: [[0, "k2"], [T.wait - T.v(2.6), "k3"]],
-        keys: [[0, 1.62, { of: "head", dy: 0.16 }], [T.wait - T.v(2.6), 1.7, { of: "head", dy: 0.15 }]],
-        crash: { at: T.wait - T.v(2.6) + 0.05, z: 2.05, f: { of: "head", dy: 0.07 } } },
+      { at: 0, kind: "room", poses: [{ cycle: ["k1", "k1a", "k1", "k1b"], from: 0, to: 99, hold: 0.125 }], keys: [[0, 1.05, "body"], [T.v(0.7), 1.12, "body"]] },
+      { at: T.v(0.7), kind: "insert", insert: "notebook" },
+      { at: T.v(2.2), kind: "room", poses: [[0, "k2"]], keys: [[0, 1.55, { of: "head", dy: 0.17 }], [0.7, 1.6, { of: "head", dy: 0.16 }]] },
+      { at: T.v(2.95), kind: "room", poses: [[0, "k2"]], keys: [[0, 2.0, { of: "head", dy: 0.1 }], [0.5, 2.05, { of: "head", dy: 0.1 }]] },
+      { at: T.wait, kind: "room", shock: true, poses: [[0, "k3"]], keys: [[0, 1.8, { of: "head", dy: 0.13 }]], crash: { at: 0, z: 2.1, f: { of: "head", dy: 0.07 } } },
       { at: T.date - 0.04, kind: "cu" },
     ],
     foley: (T) => [
-      { name: "pencil_write", at: 0.05, rel: -10, dur: T.v(2.6) - 0.05, fo: 0.12 },
-      { name: "villager_hmm", at: T.v(2.65), rel: -7, dur: 1.4, fo: 0.3 },
-      { name: "pen_drop", at: T.wait + 0.05, rel: -8 },
-      { name: "gulp", at: T.v(4.62), rel: -9 },
+      { name: "pencil_write", at: 0.03, rel: -10, dur: T.v(2.2) - 0.03, fo: 0.08 },
+      { name: "villager_hmm", at: T.v(2.2), rel: -8, dur: 0.75, fo: 0.2 },
+      { name: "pen_drop", at: T.wait + 0.04, rel: -9 },
+      { name: "gulp", at: T.v(4.62), rel: -10 },
     ],
   },
 };
@@ -143,11 +138,15 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
   if (!D) throw new Error(`unknown cold open ${id}`);
   const M = manifest[id];
   const Hw = W * M.plate[1] / M.plate[0]; // world height at zoom 1 (plate aspect)
-  const T = { vOff: D.vOff, v: (x) => D.vOff + x };
-  T.wait = T.v(tim.wait); T.date = T.v(tim.date); T.vEnd = T.v(tim.dur);
-  // no leap / run-away any more: he says the line, a beat, then the camera pans right into the hook
-  T.pan = T.vEnd + 0.2; T.end = T.pan + 0.5;
-  const talk = tim.talk.map(([a, b]) => [T.v(a), T.v(b)]);
+  // tightened line: tim.map takes original-line seconds to the edited line, so cues written against the
+  // original read (T.v) still land on the same syllable
+  const mp = tim.map ? (x) => { const m = tim.map; let i = 1; while (i < m.length - 1 && x > m[i][0]) i++;
+    const [a0, b0] = m[i - 1], [a1, b1] = m[i]; return a1 === a0 ? b0 : b0 + (b1 - b0) * clamp((x - a0) / (a1 - a0)); } : (x) => x;
+  const T = { vOff: D.vOff, v: (x) => D.vOff + mp(x) };
+  T.wait = D.vOff + tim.wait; T.date = D.vOff + tim.date; T.vEnd = D.vOff + tim.dur;
+  // no leap / run-away: he says the line, a beat, then a fast whip pan right into the hook
+  T.pan = T.vEnd + 0.08; T.end = T.pan + 0.4;
+  const talk = tim.talk.map(([a, b]) => [D.vOff + a, D.vOff + b]);
   const env = tim.env ?? [];
   const shots = D.shots(T).map((s, i, all) => ({ ...s, to: i + 1 < all.length ? all[i + 1].at : T.end }));
   const pose = (name) => M.poses[name];
@@ -362,21 +361,59 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
   }
 
   // ---------------------------------------------------------------- sound (relative to the cold open start)
-  const voiceName = "../../coldopen/voice/" + id;
+  const voiceName = "../../coldopen/voice/" + (tim.file ?? id);
+  // Sound is cut like a film, in three layers:
+  //  1. dialogue (tightened line), mastered to the narrator's level;
+  //  2. ambience CUT WITH THE PICTURE: every shot has its own perspective (wide = full room, insert = closer and
+  //     darker, close-up = subjective, dull), each shot's ambience starts 3 frames before its picture (J-cut,
+  //     the ear leads the eye), and the shot before the „Počkej“ shock drops out 0.1 s early – the vacuum makes
+  //     the hit land;
+  //  3. a designed layer (scripts/sfx-design.py, synthesised, no AI) placed on the frame: air whooshes on
+  //     camera cuts, click + body + sub on the shock and the close-up, a low tension drone under the
+  //     realisation, a reverse swell and a travelling whoosh into the hook.
+  const amb = [];
+  const PERS = { room: { g: 0 }, insert: { g: -3, lp: 5200 }, cu: { g: -6, lp: 3200 } };
+  shots.forEach((sh, i) => {
+    const nx = shots[i + 1];
+    const a0 = Math.max(0, sh.at - (i ? 0.12 : 0)), a1 = (nx ? nx.at - (nx.shock ? 0.1 : 0) : T.end) + (nx?.shock ? 0 : 0.03);
+    const P = PERS[sh.kind] ?? PERS.room, len = a1 - a0;
+    const seg = (name, rel, x = {}) => amb.push({ name, at: a0, rel: rel + P.g, dur: len, ss: a0, fi: i ? 0.1 : 0.25, fo: nx?.shock ? 0.02 : 0.04, ...x,
+      lp: Math.min(x.lp ?? 20000, P.lp ?? 20000) < 20000 ? Math.min(x.lp ?? 20000, P.lp ?? 20000) : undefined });
+    seg(D.room, -17, { hp: 90 });
+    seg("amb_city", -24, { hp: 160, lp: 4200, pan: D.leak === "right" ? 0.35 : -0.35 });
+    if (D.window) seg("wind_bed", -21, { hp: 180, lp: 6000, pan: D.leak === "right" ? 0.3 : -0.3 });
+  });
+  const des = [];
+  shots.forEach((sh, i) => {
+    if (!i) return;
+    const c = sh.at, prev = shots[i - 1];
+    if (sh.shock) {
+      des.push({ name: "d_whoosh_m", at: c - 0.34, rel: -19, dur: 0.6 });
+      des.push({ name: "d_hit", at: c, rel: -11, dur: 1.0 }, { name: "d_sub", at: c, rel: -13, dur: 1.1 });
+      des.push({ name: "record_scratch", at: c - 0.03, rel: -9, dur: 0.6, fo: 0.2 });
+    } else if (sh.kind === "cu") {
+      des.push({ name: "d_riser", at: c - 0.62, rel: -20, dur: 0.62, ss: 0.28, fi: 0.05, fo: 0.005 });
+      des.push({ name: "d_sub", at: c, rel: -15, dur: 1.0 }, { name: "d_hit", at: c, rel: -17, dur: 0.8 });
+      des.push({ name: "hook_impact", at: c, rel: -15, lp: 220 });
+    } else if (sh.kind === "insert" || prev.kind === "insert") {
+      des.push({ name: "d_whoosh_s", at: c - 0.26, rel: -20, dur: 0.5 });
+    } else {
+      des.push({ name: "d_whoosh_s", at: c - 0.26, rel: -24, dur: 0.5, lp: 3000 });
+    }
+  });
+  des.push({ name: "d_tension", at: T.wait, rel: -26, dur: T.end - T.wait + 0.25, fi: 0.4, fo: 0.25, hp: 40 });
+  des.push({ name: "d_whoosh_pan", at: T.end - 0.08 - 0.52, rel: -15, dur: 0.8, fo: 0.2 });
+  des.push({ name: "d_riser", at: T.end - 0.9, rel: -22, dur: 0.9, fo: 0.005 });
   const sfx = [
-    { name: voiceName, at: T.vOff, gain: 0, dur: tim.dur + 0.25, fo: 0.08 },
-    { name: D.room, at: 0, rel: -17, dur: T.end + 0.3, fi: 0.25, fo: 0.35, hp: 90 },
-    { name: "amb_city", at: 0, rel: -24, dur: T.end + 0.3, fi: 0.4, fo: 0.4, hp: 160, lp: 4200, pan: D.leak === "right" ? 0.35 : -0.35 },
-    ...(D.window ? [{ name: "wind_bed", at: 0, rel: -21, dur: T.end + 0.3, fi: 0.4, fo: 0.4, hp: 180, lp: 6000, pan: D.leak === "right" ? 0.3 : -0.3 }] : []),
-    { name: "record_scratch", at: T.wait - 0.06, rel: -6, dur: 0.85, fo: 0.25 },
-    { name: "hook_impact", at: T.date - 0.04, rel: -11, lp: 220 },
-    { name: "camera_glide", at: T.pan - 0.15, rel: -10, dur: 0.9, fo: 0.3 },
+    { name: voiceName, at: T.vOff, gain: 0, dur: tim.dur + 0.25, fo: 0.08, hp: 75 },
+    ...amb, ...des,
     ...D.foley(T),
   ];
   const poses = Object.keys(M.poses);
   const images = [`${V}${id}/plate.jpg`, `${V}${id}/plate4k.jpg`, ...poses.flatMap((n) => [`${V}${id}/${n}.webp`, `${V}${id}/${n}_ink.webp`]),
     ...["open", "half", "closed"].flatMap((m) => [`${V}face/${m}.webp`, `${V}face/${m}_ink.webp`]), ...(id === "notebook" ? [`${V}insert/notebook_page.webp`, `${V}insert/notebook_hand.webp`] : []),
-    ...(id === "nap" ? [`${V}insert/nap_pov_bed.jpg`, `${V}insert/nap_pov_hand.webp`] : [])];
+    ...(id === "nap" ? [`${V}insert/nap_pov_bed.jpg`, `${V}insert/nap_pov_hand.webp`] : []),
+    ...(id === "phone" ? [`${V}insert/phone_pov_bg.jpg`, ...POVPHONE.hands.map((h) => `${V}insert/${h}`)] : [])];
   async function prepare() {
     await Promise.all(images.map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
     await Promise.all(['900 120px "Inter"', '700 60px "Caveat"'].map((f) => document.fonts.load(f, "DENNÍ ZPRÁVY AI MĚNÍ SVĚT " + DAYS.join(" ") + MONTHS_GEN.join(" ") + " 0123456789")));
@@ -473,17 +510,29 @@ function buildInsert(el, bg, roomBg, D, shot, today, W, H) {
     };
   }
   if (kind === "feed") {
-    // the whole phone (frame, island, rounded body) in his hand's place, the brick wall behind
+    // first person: his own drawn hand holds the phone (screen keyed out of the drawing, the thumb stays in
+    // front of the app), the real brick corner behind. The thumb swipes up on every flick of the feed.
     const posts = ["Před 3 týdny", "Před měsícem", "Před 2 týdny", "Před 5 týdny", "Před 4 týdny", "Před 6 týdny", "Před 3 týdny", "Před 2 měsíci"];
     const C1 = ["#2f6bed", "#4ea51f", "#c8352a", "#e2a23a"];
     const PH = ["laptop", "nap", "notebook", "newspaper"];
-    el.innerHTML = `<div class="c2-phw"><div class="co-phone c2-phone"><div class="co-feed">${posts.map((p, k) => `<div class="co-post"><div class="co-av" style="background:${C1[k % 4]}"></div><b>@ai_novinky</b><span>${p}</span><div class="co-img" style="background:url(${V}${PH[k % 4]}/plate.jpg) ${(k * 23) % 100}% 50% / cover"></div></div>`).join("")}</div><div class="co-island"></div></div></div>`;
-    roomBg(bg, [0.57, 0.42], 2.0, 4, 0.84);
-    const feed = el.querySelector(".co-feed"), wrap = el.querySelector(".c2-phw");
+    const J = POVPHONE;
+    el.innerHTML = `<div class="c2-povph"><div class="c2-povscr" style="width:${J.screen[0]}px;height:${J.screen[1]}px;transform:matrix3d(${J.matrix3d.join(",")})"><div class="co-feed">${posts.map((p, k) => `<div class="co-post"><div class="co-av" style="background:${C1[k % 4]}"></div><b>@ai_novinky</b><span>${p}</span><div class="co-img" style="background:url(${V}${PH[k % 4]}/plate.jpg) ${(k * 23) % 100}% 50% / cover"></div></div>`).join("")}</div><div class="c2-povglare"></div></div>
+      ${J.hands.map((h, i) => `<img class="c2-povhand" data-i="${i}" src="${V}insert/${h}" style="display:${i ? "none" : "block"}">`).join("")}</div>`;
+    bg.style.backgroundImage = `url(${V}insert/phone_pov_bg.jpg)`;
+    bg.style.backgroundSize = "cover"; bg.style.backgroundPosition = "50% 50%";
+    const feed = el.querySelector(".co-feed"), grp = el.querySelector(".c2-povph"), hands = [...el.querySelectorAll(".c2-povhand")];
     return (t, lt) => {
-      const flick = lt * 150 + Math.floor(lt / 0.6) * 260 + snapOut(clamp((lt % 0.6) / 0.42)) * 260;
+      const per = 0.5, ph = lt % per, k = Math.floor(lt / per);
+      const flick = lt * 120 + k * 300 + snapOut(clamp(ph / 0.3)) * 300;
       feed.style.transform = `translateY(${(-flick).toFixed(1)}px)`;
-      wrap.style.transform = `translate(${(Math.sin(t * 1.2) * 6).toFixed(1)}px, ${(Math.cos(t * 0.9) * 5).toFixed(1)}px) scale(${(0.84 + lt * 0.015).toFixed(4)}) perspective(1600px) rotateY(${(-12 + Math.sin(lt * 1.3) * 2).toFixed(2)}deg) rotateX(6deg) rotate(-4deg)`;
+      // thumb drawn on twos: up while the feed is flicked, back down to rest
+      const up = hands.length > 1 && ph > 0.04 && ph < 0.24;
+      hands.forEach((h, i) => { h.style.display = (up ? i === 1 : i === 0) ? "block" : "none"; });
+      const tq = Math.floor(t * 12) / 12;
+      const hx = Math.sin(tq * 1.7) * 7 + Math.sin(tq * 4.1) * 2, hy = Math.cos(tq * 1.3) * 6 + Math.sin(tq * 3.3) * 2;
+      grp.style.transform = `translate(${hx.toFixed(1)}px, ${hy.toFixed(1)}px) rotate(${(Math.sin(tq * 1.1) * 0.6).toFixed(2)}deg) scale(${(1 + lt * 0.02).toFixed(4)})`;
+      bg.style.transform = `translate(${(-hx * 0.35).toFixed(1)}px, ${(-hy * 0.35).toFixed(1)}px) scale(1.03)`;
+      bg.style.filter = "blur(1.2px) brightness(0.86)";
     };
   }
   if (kind === "lockscreen") {
@@ -498,16 +547,16 @@ function buildInsert(el, bg, roomBg, D, shot, today, W, H) {
     const wrap = el.querySelector(".c2-lock"), ls = el.querySelector(".c2-ls"), note = el.querySelector(".c2-ls-note");
     const hand = el.querySelector(".c2-povhand"), glow = el.querySelector(".c2-glow");
     return (t, lt) => {
-      const on = snapOut(prog(lt, 0.12, 0.14));
+      const on = snapOut(prog(lt, 0.0, 0.08));
       ls.style.opacity = String(on);
-      note.style.transform = `translateY(${((1 - snapOut(prog(lt, 0.2, 0.2))) * -60).toFixed(1)}px)`;
-      note.style.opacity = String(snapOut(prog(lt, 0.2, 0.15)));
+      note.style.transform = `translateY(${((1 - snapOut(prog(lt, 0.06, 0.16))) * -60).toFixed(1)}px)`;
+      note.style.opacity = String(snapOut(prog(lt, 0.06, 0.12)));
       glow.style.opacity = String(on * 0.75);
-      const buzz = (lt > 0.12 && lt < 0.5) || (lt > 0.62 && lt < 0.85) ? 1 : 0;
+      const buzz = lt < 0.2 || (lt > 0.33 && lt < 0.55) ? 1 : 0;
       wrap.style.transform = `translate(${(-450 + buzz * Math.sin(lt * 190) * 5).toFixed(1)}px, ${(-20 + buzz * Math.cos(lt * 170) * 2.5).toFixed(1)}px) perspective(1500px) rotateX(50deg) rotateZ(${(17 + buzz * Math.sin(lt * 150) * 0.8).toFixed(2)}deg) scale(0.64)`;
       // his hand: breathing, a twitch on the first buzz, then it slides over towards the phone
-      const reach = ease.inOutSine(prog(lt, 0.42, 0.42));
-      const twitch = lt > 0.14 && lt < 0.3 ? Math.sin((lt - 0.14) / 0.16 * Math.PI) * 6 : 0;
+      const reach = ease.inOutSine(prog(lt, 0.16, 0.34));
+      const twitch = lt < 0.12 ? Math.sin(lt / 0.12 * Math.PI) * 6 : 0;
       const tq = Math.floor(t * 12) / 12;
       hand.style.transform = `translate(${(-reach * 120 - twitch).toFixed(1)}px, ${(-reach * 40 + Math.sin(tq * 1.8) * 3).toFixed(1)}px) rotate(${(-reach * 5).toFixed(2)}deg)`;
       // first-person camera: he lies there breathing, the view drifts a little
