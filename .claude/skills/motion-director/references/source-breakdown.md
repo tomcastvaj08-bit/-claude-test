@@ -55,3 +55,25 @@ ellipse draws) · 14 doodle boil (white outline on 3s, heart, clapper) · 15 ver
 | 5:36–5:52 | "Another creator's price $20 $29 / miftahul's price? The cheapest it will be. Won't stay this cheap. The price goes up soon. Get it while you can." | Ember Spot | D1 arched words behind character |
 | 5:53–6:13 | "Step one: grab the skill. Comment SKILL. Straight to your DMs. One more thing. Premium. Handpicked. Coming soon. Stay tuned." | Studio Green | product boxes fly in (A13) |
 | 6:14–6:19 | Outro | black | CapCut + IG logo |
+
+## C. Steve Jobs quote edit — Lumitris (IG reel DeUmXBotjIH, 1728×720, 35 s)
+Full spec in `editorial-quote-edit.md`. Shot list (s → content → layout):
+0.0–4.67 old Mac on desk in meadow, leaves, push-in → L2 serif flanking ("much ⟷ broader",
+"once you ⟷ discover", "one simple ⟷ fact") · 4.67–5.6 B/W photo collage with cyan/red
+blocks → L4 "everything around" · 5.6–6.0 Oppenheimer close-up → L1 "you … call" ·
+6.0–7.07 foggy field, tiny figure → L3 letter build "life" (figure in front of letters) ·
+7.07–7.77 dark workshop, lamp → L1 "made", "up" · 7.77–8.53 lecture hall → L3 word
+window "people" + glow · 8.53–9.1 office group → L1 "there", RGB glitch in · 9.1–10.03
+black → L3 "smarter" build + PiP boxes, "no" · 10.03–10.7 Zuckerberg PiP → "than" label ·
+10.7–12.77 young Jobs on bike → L1 "you." / "and you can" + red label "you" · 12.0–12.77
+black → giant grey "Change" + PiP boxes popping · 12.77–15.0 office/factory → L1 "You can
+influence", "You can build" · 15.0–16.0 rockets → L4 "your own things" · 16.0–17.63 crowd /
+hands on keyboard → L1 "other people can use" · 17.63–19.3 grey mosaic grid fills →
+L4 "And the minute that you" · 19.3–21.17 Oppenheimer → L3 "understand" fade-up (persists
+over cut to Eisenberg), L1 "that you can poke life" · 21.17–21.7 → L3 "and" · 21.7–24.17
+computer scenes → L1 "actually something will make", "push in and something will pop" ·
+24.17–24.73 → L3 "out" · 24.73 red label "the other" · 24.73–26.57 Jobs & Gates, Jobs on
+stage → L1 "side", "that you can change" · 26.57–28.23 Bezos, Musk → L4 "you can mold it." ·
+28.23–30.4 Wozniak-era Jobs, keynote → L1 "ummm", "That's maybe the most" · 30.4–31.03
+Verstappen → L3 zoom-shrink "important" · 31.03–32.67 jockey, Musk, field → L1 "think."
+(×2) · 32.67–35.27 black end card "PRODUCED BY LUMITRIS".

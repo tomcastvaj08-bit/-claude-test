@@ -30,6 +30,7 @@ _ROLE = {
     "serif_it": ("InstrumentSerif-Italic.ttf", None), "serif": ("InstrumentSerif-Regular.ttf", None),
     "pixel": ("Silkscreen-Bold.ttf", None), "lcd": ("VT323-Regular.ttf", None),
     "mono": ("JetBrainsMono.ttf", {"wght": 500}), "ui": ("Inter.ttf", {"wght": 500}),
+    "edit": ("InterDisplay-Regular.otf", None), "edit_med": ("InterDisplay-Medium.otf", None),
 }
 _font_cache = {}
 

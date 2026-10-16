@@ -16,7 +16,11 @@ was 1080×608 — multiply by 1.78) and **9:16 1080×1920** (reel). "f" = frame 
 | **Mono labels** ("0 CAMERAS / 0 LIGHTS / 0 CREW", "02 / 04", "SHOT NO: 097436") | small mono, tracked | **JetBrains Mono** | wght 500, tracking +12 % | UPPERCASE |
 | **UI** (chat UIs, buttons) | Inter / system | **Inter** | 400–600 | sentence |
 
+| **Editorial sans** (Mode Q: spread words, giant words, label boxes) | Helvetica Neue / Neue Haas Regular, very tight | **Inter Display** | Regular (Medium for giant words), tracking −2 % small / −5 % giant | lowercase |
+
 Never mix more than **3** of these in one frame (base + one hero + optional mono label).
+Mode Q uses **only** Inter Display (+ Instrument Serif Italic in the hook) — see
+`editorial-quote-edit.md`.
 
 ## 2. Sizes & hierarchy
 

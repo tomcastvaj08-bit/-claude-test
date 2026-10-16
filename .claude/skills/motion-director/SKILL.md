@@ -1,6 +1,6 @@
 ---
 name: motion-director
-description: Strict motion-design director for short-form and explainer videos (Reels/TikTok 9:16 and YouTube 16:9) built in code — kinetic captions, typography, transitions, 3D text in space, poster/editorial scenes, backgrounds. Use whenever the user asks to make, animate, edit, caption or add effects/transitions to a video, motion graphics, kinetic typography, an animated explainer, a reel, a promo, or "a video like the reference ones". Encodes a frame-measured house style taken from two reference videos (tenfoldmarc "17 video effects" reel and miftahul_islam_efaz "Claude motion director" film). Overrides default/generic choices — never produce template-looking "AI slop".
+description: Strict motion-design director for short-form and explainer videos (Reels/TikTok 9:16, YouTube 16:9, 2.4:1 quote edits) built in code — kinetic captions, typography, transitions, 3D text in space, poster/editorial scenes, backgrounds, montage pacing. Use whenever the user asks to make, animate, edit, caption or add effects/transitions to a video, motion graphics, kinetic typography, an animated explainer, a reel, a promo, a quote/voiceover edit, or "a video like the reference ones". Encodes a frame-measured house style taken from three reference videos (tenfoldmarc "17 video effects" reel, miftahul_islam_efaz "Claude motion director" film, Lumitris Steve Jobs quote edit). Overrides default/generic choices — never produce template-looking "AI slop".
 ---
 
 # Motion Director
@@ -69,7 +69,18 @@ never invent a new "creative" move.
 | `references/sound-sync.md` | Timing words/hits to voice and SFX. |
 | `references/storyboard-template.md` | Step 1 of the workflow. |
 | `references/qa-checklist.md` | Before delivering. |
-| `references/source-breakdown.md` | When you need the literal shot list of the two reference videos. |
+| `references/source-breakdown.md` | When you need the literal shot list of the reference videos. |
+| `references/editorial-quote-edit.md` | **Mode Q** — voiceover quote / manifesto / founder story cut over footage: spread-word layouts, giant words, label boxes, collage, mosaic, PiP, and the measured cutting pace. |
+
+## 2b. Choose the mode first
+
+| Mode | When | Look |
+|---|---|---|
+| **M — Motion director** (default, sections 3–4 below) | explainers, product/tool videos, reels with a character or UI, tutorials | dark warm worlds, colourful hero words, 3D text, physical transitions |
+| **Q — Editorial quote edit** (`editorial-quote-edit.md`) | a spoken quote/voiceover over real or archival footage, manifesto, brand film teaser, motivational edit | one white sans family, spread words, giant words, mosaics, hard cuts on every word, median shot 0.8 s |
+
+The two modes do not mix inside one video, except that Mode M may borrow Q's pacing
+rules (cut on the word, short shots) and Q may borrow M's RGB block glitch.
 
 ## 3. The look in one paragraph (memorise)
 
@@ -103,7 +114,10 @@ blur-in, skew-slide, typewriter, binary-decode, counter, arched text, perspectiv
 occlusion compositing, zoom blur, whip-flash, pixel-block wipe, glitch slice, particle
 disintegrate, scale pop, vignette, film grain, ffmpeg writer). `scripts/demo.py` is a
 worked example that renders a 16:9 sequence using the house style — copy its structure.
-`scripts/contact_sheet.sh` makes QA strips. For subject masks (occlusion), use
+`scripts/contact_sheet.sh` makes QA strips. Mode Q primitives live in `scripts/qlib.py`
+(spread rows, flanking pair, giant letter build with occlusion, word window, label box,
+RGB block glitch, mosaic, collage, PiP-over-black, brand lock-up, grade) with a worked
+example `scripts/demo_quote.py SOURCE out.mp4 [seg.tflite]`. For subject masks (occlusion), use
 MediaPipe selfie-multiclass (see `references/3d-space.md` §Masks).
 
 If the user supplies footage, keep their footage as the subject and apply the system on
