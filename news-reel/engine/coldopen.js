@@ -418,7 +418,7 @@ export function buildColdOpen(root, id, tim, ep, manifest) {
     await Promise.all(images.map((src) => { const im = new Image(); im.src = src; return im.decode().catch(() => {}); }));
     await Promise.all(['900 120px "Inter"', '700 60px "Caveat"'].map((f) => document.fonts.load(f, "DENNÍ ZPRÁVY AI MĚNÍ SVĚT " + DAYS.join(" ") + MONTHS_GEN.join(" ") + " 0123456789")));
   }
-  return { update, prepare, duration: T.end, sfx, T, fps: 24, shutter: 1.0, masterRef: { name: voiceName } };
+  return { update, prepare, duration: T.end, sfx, T, fps: 24, shutter: 1.0, masterRef: { name: voiceName }, cuts: shots.slice(1).map((sh) => sh.at) };
 }
 
 // ---------------------------------------------------------------- inserts (what he is looking at) – on real room texture

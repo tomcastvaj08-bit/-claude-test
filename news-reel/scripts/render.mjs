@@ -117,7 +117,10 @@ if (args.includes("--cuts")) {
   for (let f = 0; f < frames; f++) {
     for (let k = 0; k < mb; k++) {
       const sub = mb > 1 ? (k / (mb - 1) - 1) * shutter : 0; // sub-frames trail the frame time
-      await setT(Math.max(0, (f + sub) / fps));
+      // the shutter never opens across a hard cut: sub-frames stay inside the current shot (no ghost of the
+      // previous shot on the first frame after a cut)
+      const tf = f / fps, cut = (meta.cuts ?? []).reduce((c, x) => (x <= tf + 1e-6 && x > c ? x : c), 0);
+      await setT(Math.max(0, cut, (f + sub) / fps));
       const buf = await page.screenshot({ type: "jpeg", quality: 95 });
       if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once("drain", r));
     }

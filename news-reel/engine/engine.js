@@ -411,7 +411,7 @@ async function main() {
     window.__meta = {
       ...m, duration: total, voiceStart: m.voiceStart + C, voiceEnd: m.voiceEnd + C, outroStart: m.outroStart + C, coldOpen: { id: coldId, duration: C },
       // the pre-scene is shot "live": 30 fps, 1/40 s shutter (choppier, crisper than the 24p film look)
-      ...(q.get("only") === "cold" ? { renderFps: co.fps ?? 30, shutter: co.shutter ?? 0.75, masterRef: co.masterRef } : {}),
+      ...(q.get("only") === "cold" ? { renderFps: co.fps ?? 30, shutter: co.shutter ?? 0.75, masterRef: co.masterRef, cuts: co.cuts } : {}),
       sceneStarts: m.sceneStarts.map((s) => ({ ...s, start: s.start + C, end: s.end + C })),
       sfx: [...co.sfx, ...m.sfx.map((e) => ({ ...e, at: +(e.at + C).toFixed(3) }))].filter((e) => e.at < total).sort((a, b) => a.at - b.at),
     };
