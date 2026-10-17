@@ -79,6 +79,7 @@ async function main() {
   // ---------- hook
   const hookRoot = document.createElement("div");
   stage.appendChild(hookRoot);
+  hookRoot.style.cssText = "position:absolute;inset:0;transform-origin:50% 50%;";
   // hook style: "board" (chalkboard + tear-off calendar) or "calendar" (iOS month view)
   const hookKind = ep.hook ?? cfg.series.hook ?? "board";
   const hook = hookKind === "calendar" ? buildHook(hookRoot, ep, cfg) : buildBoardHook(hookRoot, ep, cfg);
@@ -212,7 +213,22 @@ async function main() {
 
   // ---------- frame update
   window.__setTime = (t) => {
-    const inBody = t > B - 0.6;
+    const HO = hook.handoff; // [start, len] of the hook's 3D camera move into the graphics (board "cut" hook)
+    const inBody = HO ? t >= HO[0] : t > B - 0.6;
+    // 3D camera move to the right (like an AE camera truck + pan): the calendar plane swings away to the
+    // left, the graphics plane comes in from the right and lands flat. Both share one perspective.
+    let in3d = "";
+    if (HO) {
+      // the two planes are adjacent faces of one box (edges meet – no gap), the camera orbits to the right
+      // face and pulls back a little mid-move
+      const e = brandInOut(prog(t, HO[0], HO[1])), th = e * 90, pull = Math.sin(e * Math.PI) * 380, R = W / 2;
+      const face = (a) => `perspective(2100px) translateZ(${(-R - pull).toFixed(1)}px) rotateY(${a.toFixed(2)}deg) translateZ(${R}px) `;
+      hookRoot.style.transform = e > 0 ? face(-th) : "";
+      hookRoot.style.filter = e > 0 ? `brightness(${(1 - e * 0.5).toFixed(3)})` : "";
+      in3d = e < 1 ? face(90 - th) : "";
+      bg.style.filter = e < 1 ? `brightness(${(0.6 + e * 0.4).toFixed(3)})` : "";
+      bg.style.transform = in3d;
+    }
     bg.style.display = inBody ? "block" : "none";
     glows.forEach((g, i) => {
       const a = t * (0.18 + i * 0.05) + i * 2.4;
@@ -265,7 +281,8 @@ async function main() {
     cam.style.display = inBody ? "block" : "none";
     const camIn = brandOut(prog(t, B - 0.1, 1.2));
     // the board hook ends pushing into a sheet of paper → the graphics keep that push (grow into place)
-    cam.style.transform = hookKind === "calendar" ? `translateY(${(1 - camIn) * 140}px) scale(${lerp(1.08, 1, camIn) + bodyT * 0.0025})` : `scale(${lerp(0.86, 1, camIn) + bodyT * 0.0025})`;
+    cam.style.transform = hookKind === "calendar" ? `translateY(${(1 - camIn) * 140}px) scale(${lerp(1.08, 1, camIn) + bodyT * 0.0025})`
+      : HO ? `${in3d}scale(${lerp(0.94, 1, camIn) + bodyT * 0.0025})` : `scale(${lerp(0.86, 1, camIn) + bodyT * 0.0025})`;
 
     const hudIn = brandOut(prog(t, B + 0.2, 0.9));
     const hudOut = brandInOut(prog(t, outroStart - 0.2, 0.5));
@@ -280,7 +297,7 @@ async function main() {
       const local = t - s.start, dur = s.end - s.start;
       const hardOut = ["strobe", "streak", "invert"].includes(scenes[si + 1]?.def.transition);
       const OUT = hardOut ? 0 : 0.24;
-      const vis = local >= -0.02 && local < dur + OUT;
+      const vis = local >= (si === 0 && HO ? HO[0] - s.start : -0.02) && local < dur + OUT;
       s.el.style.display = vis ? "block" : "none";
       if (!vis) return;
       // transitions (see docs/motion-reference.md): the NEXT scene's type decides how this one leaves,

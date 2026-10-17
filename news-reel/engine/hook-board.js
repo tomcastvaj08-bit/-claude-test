@@ -75,9 +75,15 @@ export function buildBoardHook(root, ep, cfg) {
     const x0 = CAL.x + CAL.w / 2 + 50, y0 = DATE.y + 10, x1 = PAPER.x - PAPER.w / 2 + 170, y1 = PAPER.y - PAPER.h / 2 - 45;
     return `M${x0} ${y0} C${x0 + 120} ${y0 - 70} ${x1 - 40} ${y1 - 150} ${x1} ${y1} M${x1} ${y1} l-58 -26 M${x1} ${y1} l6 -62`;
   };
-  const T = { truck: [0, 1.45], push: [1.3, 0.5], cut: 1.8, circle: [2.12, 0.5], pan: [3.0, 0.72], write: [3.38, 0.62], dive: [3.92, 0.62] };
-  T.arrow = [T.circle[0] + 0.55, 0.36];
-  T.end = T.dive[0] + T.dive[1];
+  // mode "cut" (default since v4): no truck along the wall, no paper. Hard cut straight onto the calendar,
+  // the news day dead centre, a push-in while the marker circles it, then a 3D camera move to the right
+  // that carries the motion graphics in (engine: hook.handoff). Mode "full" = the original long take.
+  const SHORT = (ep.hookBoard ?? cfg.series.hookBoard ?? "cut") !== "full";
+  const T = SHORT
+    ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [0.3, 0.42], pan: [99, 1], write: [99, 1], dive: [99, 1], out: [1.0, 0.62] }
+    : { truck: [0, 1.45], push: [1.3, 0.5], cut: 1.8, circle: [2.12, 0.5], pan: [3.0, 0.72], write: [3.38, 0.62], dive: [3.92, 0.62] };
+  T.arrow = SHORT ? [99, 1] : [T.circle[0] + 0.55, 0.36];
+  T.end = SHORT ? T.out[0] + T.out[1] : T.dive[0] + T.dive[1];
 
   // ---- DOM
   const strips = (S) => { let inner = ""; const sh = S.h / S.n; for (let i = S.n - 1; i >= 0; i--) inner = `<div class="strip" style="top:${i ? sh : 0}px;height:${sh + 1}px"><canvas></canvas><i class="strip-sh"></i>${inner}</div>`; return inner; };
@@ -402,7 +408,8 @@ export function buildBoardHook(root, ep, cfg) {
     drawCalendar(0); circleP = 0;
     SHEETS[0].master = drawSticky(); SHEETS[1].master = drawNote(); drawPaper(0); writeP = 0;
     [SHEETS[0], SHEETS[1]].forEach(blit);
-    leafEls = LEAVES.map((L, i) => { const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
+    // short hook: the date must read – only the leaf that crosses the left edge during the 3D move stays
+    leafEls = LEAVES.map((L, i) => { if (SHORT && i !== 2) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
   }
 
   // ------------------------------------------------------------ camera
@@ -420,6 +427,12 @@ export function buildBoardHook(root, ep, cfg) {
   // close-up framing: month name + the news day both in shot
   const closeC = (() => { const sy = Math.max((150 + dateCell.y) / 2, dateCell.y - 190); const p = toPlate(CAL, lerp(CAL.w / 2, dateCell.x, 0.4), sy); return { x: p.x, y: p.y }; })();
   function camAt(t) {
+    if (SHORT) {
+      // push-in on the circled day, kept exactly in the middle of the frame (AE-style camera push: fast
+      // start, long ease-out), still creeping while the 3D move takes us right
+      const z = brandOut(prog(t, 0, 1.5));
+      return { cx: DATE.x, cy: DATE.y, s: lerp(1.6, 2.35, z) + t * 0.03, rot: lerp(-0.5, 0, z) };
+    }
     // 1) truck left → right along the wall (pure translation = a real dolly past a flat wall), slight push
     const a = truck(prog(t, ...T.truck));
     let cx = lerp(1150, 2380, a), cy = lerp(1190, 1050, a), s = lerp(0.9, 1.0, a), rot = 0;
@@ -500,6 +513,7 @@ export function buildBoardHook(root, ep, cfg) {
     leak.style.opacity = String((0.5 + Math.sin(t * 1.7) * 0.12) * (1 - into * 0.8));
     vig.style.opacity = String(1 - into * 0.85);
     haze.style.opacity = String(1 - into * 0.6);
+    if (SHORT) { white.style.opacity = "0"; layer.style.opacity = "1"; return; }
     white.style.opacity = String(ease.inQuad(prog(t, T.end - 0.3, 0.3)) * 0.75);
     layer.style.opacity = String(1 - ease.inQuad(prog(t, T.end - 0.16, 0.2)));
   }
@@ -542,5 +556,25 @@ export function buildBoardHook(root, ep, cfg) {
     { name: "hook_impact", at: B - 0.02, gain: -9.7, lp: 180 },
     { name: "reveal_shimmer", at: B - 0.25, gain: -11.6 },
   ];
+  if (SHORT) {
+    // short hook: room + marker on the push-in, then the 3D move right (designed whoosh peaking mid-move,
+    // a reverse swell into it, a soft sub as the graphics land) – the cold open already set up the room
+    const O = T.out[0], L = T.out[1];
+    const sfxS = [
+      { name: "amb_city", at: 0, gain: -17.2, dur: O + L + 0.3, fi: 0.05, fo: 0.4, hp: 160, lp: 5200, pan: -0.25 },
+      { name: "wind_bed", at: 0, gain: -6, dur: O + L + 0.2, fi: 0.05, fo: 0.4, hp: 120, pan: -0.15 },
+      { name: "hook_impact", at: 0, gain: -13, lp: 260 },
+      { name: "clock_tick", at: 0.02, gain: -13, dur: O + 0.2, fi: 0.02, fo: 0.2, hp: 500, lp: 7000, pan: 0.35 },
+      { name: "paper_breeze", at: 0.05, gain: 9, hp: 150 },
+      { name: "marker_scratch", at: T.circle[0] - 0.02, gain: 2.8 },
+      { name: "d_riser", at: O - 0.55, gain: -9, dur: 0.75, ss: 0.15, fi: 0.05, fo: 0.05 },
+      { name: "d_whoosh_pan", at: O + L * 0.5 - 0.52, gain: -5, dur: 0.8, fo: 0.2 },
+      { name: "hook_impact", at: O + L - 0.04, gain: -11, lp: 180 },
+      { name: "reveal_shimmer", at: O + L - 0.2, gain: -13 },
+    ];
+    // engine: graphics start (voice, first scene) a beat into the move; the move itself is drawn by the engine
+    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out,
+      cues: { impact: T.circle[0], whoosh: O, ticks: [], riser: [0, T.circle[0]] }, sfx: sfxS };
+  }
   return { update, prepare, busGain: 1.5, duration: T.end, cues: { impact: T.circle[0], whoosh: T.dive[0], ticks: [], riser: [0, T.circle[0]] }, sfx };
 }

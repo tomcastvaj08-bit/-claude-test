@@ -134,6 +134,9 @@ Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně
 Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.
 
 ### Cold open – postavička před hookem (volitelné)
+### Hook „tabule“ – krátká verze (výchozí od 17. 10.)
+Žádný pojezd podél zdi a žádný papír s „novinka ze X“. Hook začíná tvrdým střihem rovnou na detail kalendáře se dnem novinky **přesně uprostřed obrazu**. Kamera na něj najíždí (rychlý start, dlouhé dojetí) a fix ho zakroužkuje. Pak přijde 3D přechod doprava jako v After Effects: kalendář a motion grafika jsou dvě sousední stěny jedné kostky, kamera se otočí na pravou stěnu a lehce při tom couvne. Grafika (Instagram Edits…) naskočí rovnou. Celý hook má asi 1,6 s. Dlouhou verzi zapne `"hookBoard": "full"` v episode.json.
+
 Před hook lze předřadit krátkou scénku (4,5–6,5 s). Plochá 2D postavička ze character sheetu žije ve **skutečných fotkách místností** uživatele (`engine/coldopen.js`, assety a celý postup v `news-reel/assets/coldopen/README.md`). Varianty: `newspaper`, `nap`, `laptop`, `phone`, `notebook`. Každá končí pointou „Počkej… co je dneska za datum?!“ v detailu obličeje a panem kamery doprava do hooku.
 - **Zapnutí:** `"coldOpen": "<id>"` v episode.json, nebo `--cold <id>` při renderu.
 - **Jen scénka na schválení:** `--cold <id> --cold-only`; výstup v `build/cold-<id>/`. Render je automaticky 24 fps se závěrkou 1/24 s (1.0). Na schválení stačí framy: `--stills t1,t2,…`, celé video renderuj až po „jo“.
