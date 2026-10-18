@@ -155,8 +155,16 @@ function lufsOf(file, dur) {
 // from the measured loudness of its own file, so foley sits in the same place under the voice in every scene,
 // whatever level ElevenLabs delivered the voice or the effect at
 function resolveRelative(meta) {
-  const ref = meta.masterRef && meta.sfx.find((e) => e.name === meta.masterRef.name);
+  const refName = meta.masterRef?.name ?? meta.coldRef?.name;
+  const ref = refName && meta.sfx.find((e) => e.name === refName);
   if (!ref) return;
+  if (!meta.masterRef && existsSync(join(epBuild, "voice.mp3"))) {
+    // full film with a cold open in front: the character's line sits at exactly the narrator's level
+    // (it runs through the sfx bus, so the bus gain is compensated); the master then treats both alike
+    const narr = lufsOf(join(epBuild, "voice.mp3")) + (cfg.audio.voiceGainDb ?? 0);
+    ref.gain = +(narr - lufsOf(resolveSfx(ref.name)) - (cfg.audio.sfxGainDb ?? 0)).toFixed(1);
+    console.log(`cold open: hlas postavy srovnán na vypravěče (${narr.toFixed(1)} LUFS, zisk ${ref.gain} dB)`);
+  }
   const lv = lufsOf(resolveSfx(ref.name)) + (ref.gain ?? 0);
   for (const e of meta.sfx) {
     if (e.rel == null || e === ref) continue;

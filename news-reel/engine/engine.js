@@ -225,6 +225,9 @@ async function main() {
       const face = (a) => `perspective(2100px) translateZ(${(-R - pull).toFixed(1)}px) rotateY(${a.toFixed(2)}deg) translateZ(${R}px) `;
       hookRoot.style.transform = e > 0 ? face(-th) : "";
       hookRoot.style.filter = e > 0 ? `brightness(${(1 - e * 0.5).toFixed(3)})` : "";
+      // the calendar face must be GONE once the graphics face has turned in – it falls into shadow and fades
+      // out over the second half of the turn instead of hanging on as a dark sliver at the left edge
+      hookRoot.style.opacity = String(1 - ease.inOutSine(clamp((e - 0.35) / 0.4)));
       in3d = e < 1 ? face(90 - th) : "";
       bg.style.filter = e < 1 ? `brightness(${(0.6 + e * 0.4).toFixed(3)})` : "";
       bg.style.transform = in3d;
@@ -427,8 +430,10 @@ async function main() {
     const total = q.get("only") === "cold" ? C : C + m.duration;
     window.__meta = {
       ...m, duration: total, voiceStart: m.voiceStart + C, voiceEnd: m.voiceEnd + C, outroStart: m.outroStart + C, coldOpen: { id: coldId, duration: C },
-      // the pre-scene is shot "live": 30 fps, 1/40 s shutter (choppier, crisper than the 24p film look)
-      ...(q.get("only") === "cold" ? { renderFps: co.fps ?? 30, shutter: co.shutter ?? 0.75, masterRef: co.masterRef, cuts: co.cuts } : {}),
+      // ?only=cold renders the pre-scene alone at its own fps/shutter (co.fps / co.shutter)
+      ...(q.get("only") === "cold" ? { renderFps: co.fps ?? 30, shutter: co.shutter ?? 0.75, masterRef: co.masterRef, cuts: co.cuts }
+        // full film: the pre-scene's hard cuts + the cut into the hook never get blended by the shutter
+        : { coldRef: co.masterRef, cuts: [...(co.cuts ?? []), C, ...(m.cuts ?? []).map((x) => x + C)] }),
       sceneStarts: m.sceneStarts.map((s) => ({ ...s, start: s.start + C, end: s.end + C })),
       sfx: [...co.sfx, ...m.sfx.map((e) => ({ ...e, at: +(e.at + C).toFixed(3) }))].filter((e) => e.at < total).sort((a, b) => a.at - b.at),
     };
