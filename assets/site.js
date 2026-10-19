@@ -519,7 +519,7 @@ document.documentElement.classList.add("js");
     const src = v.ig
       ? `https://www.instagram.com/reel/${v.ig}/embed/`
       : `https://www.youtube-nocookie.com/embed/${v.yt}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
-    vframe.innerHTML = `<iframe src="${src}" title="Video: ${v.title}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen ${v.ig ? 'scrolling="no"' : ""}></iframe>`;
+    vframe.innerHTML = `<iframe src="${src}" title="Video: ${v.title}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe>`;
     vext.hidden = !v.ig;
     if (v.ig) vext.href = `https://www.instagram.com/reel/${v.ig}/`;
     vmodal.hidden = false;
@@ -535,6 +535,14 @@ document.documentElement.classList.add("js");
   }
   vmodal.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeVideo));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVideo(); });
+  // Instagram's embed reports its real height; size the frame to it so there is no empty space.
+  window.addEventListener("message", (e) => {
+    if (!/^https:\/\/([a-z0-9-]+\.)*instagram\.com$/.test(e.origin)) return;
+    let d = e.data;
+    try { if (typeof d === "string") d = JSON.parse(d); } catch (err) { return; }
+    const f = vframe.querySelector("iframe");
+    if (f && d && d.type === "MEASURE" && d.details && d.details.height > 200) f.style.height = d.details.height + "px";
+  });
 
   // Portfolio: each thumbnail plays its reel.
   document.querySelectorAll(".work-vid").forEach((b) => b.addEventListener("click", () => openVideo({ title: b.dataset.title, ig: b.dataset.ig })));

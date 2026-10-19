@@ -943,7 +943,8 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 
 /* ---------- Video modal: Instagram reels ---------- */
 .vm-box.ig { width: min(100%, 400px); }
-.vm-box.ig .vm-frame { aspect-ratio: auto; height: min(78svh, 760px); background: #fff; }
+.vm-box.ig .vm-frame { aspect-ratio: auto; height: auto; max-height: calc(100svh - 150px); overflow-y: auto; overscroll-behavior: contain; background: #fff; }
+.vm-box.ig .vm-frame iframe { position: static; display: block; height: 640px; transition: height 250ms var(--ease-out); }
 .vm-ext { justify-self: center; display: inline-flex; align-items: center; gap: 4px; color: #fff; font-weight: 600; font-size: 0.92rem; text-decoration: none; }
 .vm-ext svg { width: 18px; height: 18px; }
 .vm-ext[hidden] { display: none; }
