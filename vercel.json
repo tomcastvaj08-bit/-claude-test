@@ -1,5 +1,9 @@
 {
   "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "portfolio.efektive.cz" }], "destination": "/portfolio" },
+    { "source": "/", "has": [{ "type": "host", "value": "klienti.efektive.cz" }], "destination": "/klienti" }
+  ],
   "headers": [
     { "source": "/(.*)", "headers": [ { "key": "X-Content-Type-Options", "value": "nosniff" } ] }
   ]
