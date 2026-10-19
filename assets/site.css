@@ -949,6 +949,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 .vm-ext svg { width: 18px; height: 18px; }
 .vm-ext[hidden] { display: none; }
 .xavs img { font-size: 0; color: transparent; background: #e8ecf3; }
+.person .role { font-weight: 600; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--ink); }
 @media (min-width: 1024px) {
   .stk.a { width: 156px; right: -128px; }
   .stk.b { width: 170px; left: -140px; }
