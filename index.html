@@ -3,29 +3,36 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-<meta name="theme-color" content="#f2f4f7" />
-<meta name="color-scheme" content="light" />
-<meta name="description" content="Jedno video, dva pohledy. Teecee ukazuje, jak video vzniklo s AI, Maty vysvětluje, proč funguje." />
-<meta property="og:title" content="EFEKTIVE" />
-<meta property="og:description" content="Jedno video, dva pohledy. Přidej se na Patreonu." />
 <title>EFEKTIVE</title>
-
+<meta name="description" content="AI videa, reklamy na Meta a Google a přednášky o AI marketingu. Na Patreonu ke každému videu ukazujeme, jak vzniklo a proč prodává." />
+<meta property="og:title" content="EFEKTIVE | AI videa, která prodávají" />
+<meta property="og:description" content="AI videa, Meta a Google Ads, přednášky o AI marketingu a vzdělávací Patreon. Teecee a Maty." />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="cs_CZ" />
+<meta name="theme-color" content="#f4f6f9" />
+<meta name="color-scheme" content="light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&display=swap" />
 <style>
-/* Layout: hero split, kinetic band, pinned three-layer sequence, the two people, join.
-   One clean face (Geist); motion works through weight, letters and scroll.
-   Blue = Teecee (how it was made), green = Maty (why it works). Light paper page, dark artwork only as objects. */
+/* Layout: Luke-style long-scroll sales page in the EFEKTIVE look.
+   Paper with thin grid lines, blue and green glowing orbs, dark artwork only as objects.
+   Order: hero, proof, services bento, chain, Patreon (pinned layers), lectures, process, people, FAQ, contact. */
 :root {
-  --paper: #f2f4f7;
+  --paper: #f4f6f9;
+  --card: #ffffff;
   --ink: #0a0d14;
   --ink-2: #3a4250;
-  --muted: #6b7484;
-  --line: #d6dce4;
+  --muted: #687182;
+  --line: #dbe1e9;
+  --grid: rgba(31, 77, 255, 0.055);
   --blue: #1f4dff;
+  --blue-2: #5b82ff;
+  --blue-soft: #e3e9ff;
   --green: #13b97a;
   --green-ink: #0a7a4f;
+  --green-soft: #daf5e9;
+  --red: #d42a1e;
   --night: #070a11;
 
   --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
@@ -40,10 +47,20 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; background: var(--paper); overflow-x: clip; }
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  background: var(--paper);
+  overflow-x: clip;
+  scroll-padding-top: 76px;
+}
 body {
   margin: 0;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 44px 44px;
   color: var(--ink);
   font: 400 1rem/1.55 var(--sans);
   -webkit-font-smoothing: antialiased;
@@ -53,91 +70,106 @@ body::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 60;
   pointer-events: none;
-  opacity: 0.045;
+  opacity: 0.04;
   background-image: var(--grain);
   background-size: 180px;
 }
 a { color: inherit; }
+img, canvas, svg { display: block; max-width: 100%; }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: var(--gutter); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ---------- Type ---------- */
 .display {
   margin: 0;
-  font-family: var(--sans);
   font-weight: 650;
-  letter-spacing: -0.055em;
-  line-height: 0.95;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+  text-wrap: balance;
 }
-.note { display: grid; gap: 8px; justify-items: start; }
-.tip { margin: 0; max-width: 46ch; font: 500 0.72rem/1.35 var(--sans); letter-spacing: -0.005em; color: #d42a1e; text-wrap: pretty; }
-@media (prefers-reduced-motion: no-preference) { .note { animation: fade 800ms var(--ease-out) 600ms both; } }
-.btn-wrap { display: grid; gap: 14px; justify-items: start; }
-.url-row {
-  display: flex;
+.h2 { font-size: clamp(2.2rem, 9.6vw, 4.4rem); }
+.h3 { margin: 0; font-weight: 650; font-size: 1.28rem; letter-spacing: -0.03em; line-height: 1.15; }
+.lede { margin: 0; max-width: 38ch; font-size: 1.06rem; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.lede b, .body b { color: var(--ink); font-weight: 650; }
+.body { margin: 0; color: var(--ink-2); font-size: 0.98rem; line-height: 1.55; text-wrap: pretty; }
+.eyebrow {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  max-width: 100%;
-  padding: 5px 5px 5px 14px;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.7);
+  font: 500 0.78rem/1 var(--mono);
+  color: var(--ink-2);
+  justify-self: start;
 }
-.url { font: 500 0.74rem/1.3 var(--mono); letter-spacing: -0.01em; color: var(--ink-2); user-select: all; -webkit-user-select: all; overflow-wrap: anywhere; min-width: 0; }
-.copy {
-  flex: none;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
+.eyebrow i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+.meta { font: 500 0.76rem/1.35 var(--mono); color: var(--muted); }
+.grad {
+  background: linear-gradient(100deg, var(--blue) 10%, var(--blue-2) 55%, var(--green) 110%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sec { padding-block: 72px 24px; }
+.sec-head { display: grid; gap: 16px; margin-bottom: 32px; }
+
+/* ---------- Logo pill ---------- */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 13px;
   border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-  font: 600 0.82rem/1 var(--sans);
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: transform 100ms var(--ease-out), background 160ms var(--ease-out), color 160ms;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px -12px rgba(20, 40, 120, 0.4);
+  font-weight: 750;
+  font-size: 0.98rem;
+  letter-spacing: -0.03em;
+  text-decoration: none;
 }
-.copy svg { width: 16px; height: 16px; }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.copy:active { transform: scale(0.96); }
-.copy.done { background: var(--green); color: #fff; }
-@media (hover: hover) and (pointer: fine) { .copy:hover { background: var(--line); } .copy.done:hover { background: var(--green); } }
-.lede { margin: 0; max-width: 34ch; font-size: 1.06rem; line-height: 1.5; color: var(--ink-2); text-wrap: pretty; }
-.meta { font: 500 0.76rem/1.3 var(--mono); letter-spacing: 0.02em; color: var(--muted); }
+.logo .e { color: var(--blue); }
+.logo .cz { color: var(--green); }
 
 /* ---------- Header ---------- */
-.top { position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 20; }
-.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
-.mark { font-weight: 800; font-size: 0.92rem; letter-spacing: 0.08em; text-decoration: none; }
-.duo { display: flex; gap: 6px; }
-.duo i { width: 9px; height: 9px; border-radius: 50%; display: block; }
-.duo i:first-child { background: var(--blue); }
-.duo i:last-child { background: var(--green); }
-@media (prefers-reduced-motion: no-preference) {
-  .top .wrap { animation: fade 900ms var(--ease-out) 100ms both; }
+.top {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 40;
+  background: rgba(244, 246, 249, 0.78);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid transparent;
+  transition: border-color 200ms;
 }
+.top.scrolled { border-bottom-color: var(--line); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.nav { display: none; gap: 26px; }
+.nav a { text-decoration: none; font-size: 0.94rem; color: var(--ink-2); }
+.top .btn { min-height: 42px; padding: 0 6px 0 16px; font-size: 0.9rem; }
+.top .btn .arr { width: 30px; height: 30px; }
+@media (prefers-reduced-transparency: reduce) { .top { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 
-/* ---------- Button ---------- */
+/* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 12px;
   min-height: 54px;
-  padding: 0 9px 0 24px;
+  padding: 0 8px 0 22px;
   border-radius: 999px;
+  border: 0;
   background: var(--ink);
   color: #fff;
   font: 600 1rem/1 var(--sans);
   letter-spacing: -0.01em;
   text-decoration: none;
   white-space: nowrap;
-  justify-self: start;
+  cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -148,203 +180,346 @@ a { color: inherit; }
 .btn .arr {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--blue);
   color: #fff;
-  overflow: hidden;
+  flex: none;
   transition: transform 300ms var(--ease-out);
 }
 .btn svg { width: 17px; height: 17px; }
 .btn:active { transform: translate(var(--mx, 0px), var(--my, 0px)) scale(0.97); transition-duration: 100ms; }
+.btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); padding: 0 20px; }
+.btn.light { background: #fff; color: var(--ink); }
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--blue);
+  text-decoration: none;
+}
+.link svg { width: 15px; height: 15px; transition: transform 220ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) {
   .btn:hover { background: #1b2130; }
   .btn:hover .arr { transform: rotate(-45deg); }
+  .btn.ghost:hover, .btn.light:hover { background: #eef1f6; }
+  .nav a:hover { color: var(--ink); }
+  .link:hover svg { transform: translateX(3px); }
 }
 
 /* ---------- Hero ---------- */
-.hero { padding-block: 92px 40px; overflow: clip; }
-.hero .wrap { display: grid; gap: 34px; }
+.hero { position: relative; isolation: isolate; padding-block: 36px 40px; overflow: clip; }
+.orb {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -1;
+}
+.orb.b { background: radial-gradient(circle, rgba(31, 77, 255, 0.55), rgba(31, 77, 255, 0) 70%); top: -120px; right: -160px; }
+.orb.g { background: radial-gradient(circle, rgba(19, 185, 122, 0.5), rgba(19, 185, 122, 0) 70%); top: 260px; left: -200px; }
+.hero .wrap { display: grid; gap: 40px; }
 .hero-copy { display: grid; gap: 22px; align-content: start; }
-.hero .display { font-size: clamp(3.1rem, 15.4vw, 7rem); }
-.hero .line { display: block; white-space: nowrap; }
-.hero .ch { display: inline-block; }
+.hero h1 { font-size: clamp(2.9rem, 13.6vw, 6.4rem); }
+.hero h1 .line { display: block; }
+.hero h1 .word { display: inline-block; white-space: nowrap; }
+.hero h1 .ch { display: inline-block; }
+.hero h1 .hl { color: var(--blue); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tip { margin: 0; max-width: 44ch; font: 500 0.74rem/1.4 var(--sans); color: var(--red); text-wrap: pretty; }
 
-.reel { position: relative; width: min(100%, 290px); margin-inline: auto; display: grid; grid-template-columns: 1fr 1fr; }
+.reel { position: relative; width: min(100%, 280px); margin-inline: auto; display: grid; grid-template-columns: 1fr 1fr; }
 .half { position: relative; aspect-ratio: 9 / 32; transform: translateX(var(--x)) rotate(var(--rot)); }
 .half.l { --x: -10px; --rot: -2.4deg; }
 .half.r { --x: 10px; --rot: 2.4deg; }
-.frame {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: var(--night);
-  box-shadow: 0 34px 60px -30px rgba(10, 20, 60, 0.5), 0 2px 6px rgba(10, 20, 60, 0.12);
-}
+.frame { position: absolute; inset: 0; overflow: hidden; background: var(--night); box-shadow: 0 34px 60px -30px rgba(10, 20, 60, 0.5), 0 2px 6px rgba(10, 20, 60, 0.12); }
 .half.l .frame { border-radius: var(--r) 0 0 var(--r); }
 .half.r .frame { border-radius: 0 var(--r) var(--r) 0; }
-.frame canvas { position: absolute; top: 0; height: 100%; width: 200%; display: block; }
+.frame canvas { position: absolute; top: 0; height: 100%; width: 200%; max-width: none; }
 .half.l canvas { left: 0; }
 .half.r canvas { left: -100%; }
-.cut {
-  position: absolute;
-  left: 50%;
-  top: -4%;
-  width: 2px;
-  height: 108%;
-  margin-left: -1px;
-  background: #fff;
-  border-radius: 2px;
-  box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.8);
-  transform-origin: top;
-  opacity: 0;
-  pointer-events: none;
-}
-.cap { position: absolute; top: calc(100% + 18px); left: 0; right: 0; display: grid; gap: 2px; }
+.cut { position: absolute; left: 50%; top: -4%; width: 2px; height: 108%; margin-left: -1px; background: #fff; border-radius: 2px; box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.8); transform-origin: top; opacity: 0; pointer-events: none; }
+.cap { position: absolute; top: calc(100% + 16px); left: 0; right: 0; display: grid; gap: 2px; }
 .half.r .cap { text-align: right; }
-.cap b { font-weight: 600; font-size: 1rem; letter-spacing: -0.02em; }
-.cap .who { font: 500 0.76rem/1.2 var(--mono); }
+.cap b { font-weight: 600; font-size: 0.98rem; letter-spacing: -0.02em; }
+.cap .who { font: 500 0.74rem/1.2 var(--mono); }
 .half.l .who { color: var(--blue); }
 .half.r .who { color: var(--green-ink); }
-.reel-space { height: 64px; }
+.reel-space { height: 60px; }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Letters arrive one by one, thin and blurred, settling heavy and sharp. */
-  .hero .ch {
-    animation: letter 1000ms var(--ease-out) both;
-    animation-delay: calc(120ms + var(--c) * 32ms);
-  }
-  .hero .btn-wrap { animation: fade 900ms var(--ease-out) 760ms both; }
-  /* The reel arrives whole, gets cut, then the halves part and keep floating. */
+  .hero h1 .ch { animation: letter 1000ms var(--ease-out) both; animation-delay: calc(140ms + var(--c) * 26ms); }
+  .hero .eyebrow { animation: fade 800ms var(--ease-out) 60ms both; }
+  .hero .lede { animation: fade 900ms var(--ease-out) 620ms both; }
+  .hero .ctas, .hero .tip { animation: fade 900ms var(--ease-out) 740ms both; }
   .reel { animation: fade 900ms var(--ease-out) 300ms both; }
   .cut { animation: cut 1500ms var(--ease-io) 900ms both; }
   .half { animation: part 1100ms var(--ease-out) 1500ms both, float 6s var(--ease-io) 2600ms infinite alternate; }
   .half.r { animation-delay: 1500ms, 2900ms; }
   .cap { animation: fade 800ms var(--ease-out) 1900ms both; }
-
-  @supports (animation-timeline: scroll()) {
-    .hero .line { animation: drift linear both; animation-timeline: scroll(root); animation-range: 0 80vh; }
-    .hero .line + .line { animation-name: drift-r; }
-  }
+  .orb.b { animation: drift-b 14s var(--ease-io) infinite alternate; }
+  .orb.g { animation: drift-g 16s var(--ease-io) infinite alternate; }
 }
 @keyframes letter {
   from { opacity: 0; transform: translateY(0.45em) rotate(4deg); filter: blur(8px); font-weight: 200; }
   to { opacity: 1; transform: none; filter: blur(0); font-weight: 650; }
 }
 @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes cut {
-  0% { opacity: 0; transform: scaleY(0); }
-  15% { opacity: 1; }
-  55% { opacity: 1; transform: scaleY(1); }
-  100% { opacity: 0; transform: scaleY(1); }
-}
+@keyframes cut { 0% { opacity: 0; transform: scaleY(0); } 15% { opacity: 1; } 55% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(1); } }
 @keyframes part { from { transform: none; } to { transform: translateX(var(--x)) rotate(var(--rot)); } }
 @keyframes float {
   from { transform: translateX(var(--x)) rotate(var(--rot)) translateY(0); }
   to { transform: translateX(var(--x)) rotate(calc(var(--rot) * 1.4)) translateY(-8px); }
 }
-@keyframes drift { to { transform: translateX(-14vw); opacity: 0.15; } }
-@keyframes drift-r { to { transform: translateX(14vw); opacity: 0.15; } }
+@keyframes drift-b { to { transform: translate(-60px, 40px) scale(1.1); } }
+@keyframes drift-g { to { transform: translate(70px, -30px) scale(1.15); } }
 
-/* ---------- Kinetic band ---------- */
-.band { padding-block: 28px; overflow: clip; border-block: 1px solid var(--line); }
-.band-track { display: flex; gap: 0;  width: max-content; font-weight: 650; font-size: clamp(2.2rem, 10vw, 4.6rem); letter-spacing: -0.05em; line-height: 1; white-space: nowrap; }
-.band-track span { padding-right: 0.3em; }
-.band-track span:nth-child(4n+1) { color: var(--blue); }
-.band-track span:nth-child(4n+3) { color: var(--green); }
-.band-track .o { color: transparent !important; -webkit-text-stroke: 1.2px var(--ink); }
+/* ---------- Proof strip ---------- */
+.proof { padding-block: 8px 8px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.stat { background: var(--card); padding: 18px 16px; display: grid; gap: 4px; align-content: start; }
+.stat b { font-weight: 650; font-size: 1.6rem; letter-spacing: -0.05em; line-height: 1.05; }
+.stat:nth-child(1) b { color: var(--blue); }
+.stat:nth-child(2) b { color: var(--green-ink); }
+.stat span { font-size: 0.86rem; color: var(--ink-2); line-height: 1.35; }
+.clients { margin-top: 26px; display: grid; gap: 12px; }
+.marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+.marquee-track { display: flex; width: max-content; gap: 40px; }
+.marquee-track span { font-weight: 650; font-size: 1.15rem; letter-spacing: -0.03em; color: #8a93a4; white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) {
-  .band-track { animation: loop 22s linear infinite; }
-  .band:hover .band-track { animation-play-state: paused; }
+  .marquee-track { animation: loop 32s linear infinite; }
 }
-@keyframes loop { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes loop { to { transform: translateX(calc(-50% - 20px)); } }
 
-/* ---------- Layers (pinned sequence) ---------- */
-.layers { position: relative; overflow-x: clip; view-timeline-name: --layers; }
-.layers-pin { padding-block: 64px 48px; }
+/* ---------- Services bento ---------- */
+.bento { display: grid; gap: 14px; }
+.tile {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 20px;
+  border-radius: var(--r);
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(10, 20, 50, 0.03), 0 20px 40px -32px rgba(10, 20, 60, 0.35);
+  overflow: hidden;
+  transition: transform 300ms var(--ease-out), box-shadow 300ms var(--ease-out);
+}
+.tile .num { font: 500 0.74rem/1 var(--mono); color: var(--muted); }
+.tile .badge { position: absolute; top: 18px; right: 18px; padding: 5px 10px; border-radius: 999px; font: 500 0.72rem/1 var(--mono); background: var(--green-soft); color: var(--green-ink); }
+.viz { position: relative; height: 170px; border-radius: 12px; overflow: hidden; background: var(--night); margin-bottom: 6px; }
+.viz canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover { transform: translateY(-4px); box-shadow: 0 1px 0 rgba(10, 20, 50, 0.03), 0 30px 50px -30px rgba(10, 20, 60, 0.45); }
+}
+/* Patreon viz: split frame */
+.viz.split::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: rgba(255,255,255,0.85); box-shadow: 0 0 14px rgba(255,255,255,0.7); }
+.viz .tag { position: absolute; bottom: 10px; z-index: 2; padding: 5px 9px; border-radius: 999px; font: 500 0.7rem/1 var(--mono); color: #fff; background: rgba(255,255,255,0.12); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.viz .tag.l { left: 10px; }
+.viz .tag.r { right: 10px; }
+/* Ads viz */
+.viz.ads { background: linear-gradient(180deg, #0c1428, #070a11); }
+.viz.ads .bars { position: absolute; left: 16px; right: 16px; bottom: 16px; top: 40px; display: flex; align-items: flex-end; gap: 8px; }
+.viz.ads .bars i { flex: 1; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--green), rgba(19,185,122,0.25)); height: var(--h); transform-origin: bottom; }
+.viz.ads .bars i:nth-child(odd) { background: linear-gradient(180deg, var(--blue-2), rgba(31,77,255,0.25)); }
+.viz.ads svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.viz.ads path { fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 400; stroke-dashoffset: 0; }
+.viz.ads .chips { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; }
+.viz.ads .chips span { padding: 5px 9px; border-radius: 999px; font: 500 0.7rem/1 var(--mono); color: #cfd8ea; background: rgba(255,255,255,0.08); }
+/* Lecture viz */
+.viz.slide { background: #fff; border: 1px solid var(--line); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 22px 22px; }
+.viz.slide .s-orb { position: absolute; width: 140px; height: 140px; border-radius: 50%; filter: blur(30px); }
+.viz.slide .s-orb.b { background: rgba(31,77,255,0.35); right: -30px; top: -30px; }
+.viz.slide .s-orb.g { background: rgba(19,185,122,0.3); left: -40px; bottom: -50px; }
+.viz.slide .s-t { position: absolute; left: 16px; top: 18px; right: 16px; font-weight: 700; font-size: 1.5rem; letter-spacing: -0.05em; line-height: 1; }
+.viz.slide .s-p { position: absolute; left: 16px; bottom: 14px; }
+.viz.slide .s-p .logo { font-size: 0.78rem; padding: 5px 10px; box-shadow: none; }
+.viz.slide .s-l { position: absolute; left: 16px; top: 76px; display: grid; gap: 7px; }
+.viz.slide .s-l i { display: block; height: 6px; border-radius: 6px; background: #d5dcea; width: var(--w); }
+/* Captions viz */
+.viz.caps { display: grid; place-items: center; background: radial-gradient(circle at 30% 20%, #1b2a55, #070a11 70%); }
+.cap-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 0 14px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.03em; text-transform: uppercase; color: #fff; }
+.cap-line span { padding: 2px 6px; border-radius: 6px; transition: background 180ms, color 180ms, transform 260ms var(--ease-out); }
+.cap-line span.on { background: #fff; color: var(--night); transform: rotate(-3deg) scale(1.08); }
+/* Edit viz */
+.viz.edit { background: #0b0f1a; }
+.viz.edit .rows { position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); display: grid; gap: 8px; }
+.viz.edit .row { display: flex; gap: 4px; }
+.viz.edit .row i { height: 20px; border-radius: 5px; flex: var(--f); background: rgba(91,130,255,0.55); }
+.viz.edit .row:nth-child(2) i { background: rgba(19,185,122,0.5); }
+.viz.edit .row:nth-child(3) i { background: rgba(255,255,255,0.18); height: 12px; }
+.viz.edit .head { position: absolute; top: 18px; bottom: 18px; width: 2px; background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.8); left: 12px; }
+@media (prefers-reduced-motion: no-preference) {
+  .viz.edit .head { animation: play 4.5s linear infinite; }
+  .viz.ads .bars i { animation: grow 2.6s var(--ease-out) infinite alternate; animation-delay: calc(var(--i) * 120ms); }
+  .viz.ads path { animation: draw 2.6s var(--ease-out) infinite alternate; }
+}
+@keyframes play { to { left: calc(100% - 14px); } }
+@keyframes grow { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
+@keyframes draw { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+/* Web viz */
+.viz.web { background: linear-gradient(160deg, #e9eefb, #f7f9fc); border: 1px solid var(--line); display: grid; place-items: center; }
+.phone { width: 92px; height: 150px; border-radius: 18px; background: #fff; border: 1px solid var(--line); box-shadow: 0 20px 30px -18px rgba(10,20,60,0.45); padding: 14px 9px; display: grid; gap: 6px; align-content: start; transform: rotate(-6deg); }
+.phone i { display: block; height: 6px; border-radius: 6px; background: #dfe5f0; width: var(--w); }
+.phone i.h { height: 12px; background: var(--ink); }
+.phone i.c { height: 14px; background: var(--blue); border-radius: 999px; width: 70%; margin-top: 6px; }
+
+/* ---------- Chain ---------- */
+.chain { position: relative; display: grid; gap: 0; margin-top: 8px; }
+.chain::before { content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px; background: var(--line); border-radius: 2px; }
+.chain .fill { position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(var(--blue), var(--green)); border-radius: 2px; transform-origin: top; transform: scaleY(var(--p, 1)); }
+.link-item { position: relative; display: grid; grid-template-columns: 32px 1fr; gap: 6px 16px; padding-block: 16px; }
+.link-item .dot { width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--line); display: grid; place-items: center; font: 500 0.72rem/1 var(--mono); color: var(--muted); z-index: 1; transition: border-color 300ms, color 300ms, background 300ms; }
+.link-item.on .dot { border-color: var(--blue); color: #fff; background: var(--blue); }
+.link-item:nth-child(n+5).on .dot { border-color: var(--green); background: var(--green); }
+.link-item .txt { display: grid; gap: 4px; }
+.link-item .txt p { margin: 0; color: var(--ink-2); font-size: 0.96rem; }
+.link-item .txt p em { font-style: normal; color: var(--muted); }
+
+/* ---------- Patreon ---------- */
+.patreon { position: relative; overflow-x: clip; }
+.layers-pin { padding-block: 64px 32px; }
 .layers .wrap { display: grid; gap: 22px; }
-.layers h2 { font-size: clamp(2.4rem, 11vw, 4.4rem); max-width: 11ch; text-wrap: balance; }
 .stage { display: grid; }
-.stack { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 0.9; margin: 8px auto 0; perspective: 1200px; }
-.scene { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; transform: rotateX(54deg) rotateZ(-36deg) scale(0.74); }
+.stack { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 0.9; margin: 4px auto 0; perspective: 1200px; }
+.scene { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(54deg) rotateZ(-36deg) scale(0.72); }
 .layers h2, .legend { position: relative; z-index: 3; }
-.sparks { position: absolute; left: -20%; top: -30%; width: 140%; height: 160%; pointer-events: none; z-index: 2; }
+.sparks { position: absolute; left: -20%; top: -30%; width: 140%; max-width: none; height: 160%; pointer-events: none; z-index: 2; }
 .plate { position: absolute; inset: 0; border-radius: var(--r); transform: translateZ(calc(var(--n) * var(--step))); }
-.plate canvas { width: 100%; height: 100%; display: block; border-radius: var(--r); }
+.plate canvas { width: 100%; height: 100%; border-radius: var(--r); }
 .plate.b canvas { box-shadow: inset 0 0 0 1.5px rgba(31, 77, 255, 0.6); }
 .plate.g canvas { box-shadow: inset 0 0 0 1.5px rgba(19, 185, 122, 0.65); }
 .plate.base canvas { box-shadow: 0 40px 60px -20px rgba(10, 20, 60, 0.45); }
 .legend { list-style: none; margin: 0; padding: 0; display: grid; }
 .legend li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 14px; }
 .legend li + li { border-top: 1px solid var(--line); }
-.legend b { font-weight: 600; font-size: 1.16rem; letter-spacing: -0.025em; }
+.legend b { font-weight: 600; font-size: 1.12rem; letter-spacing: -0.025em; }
 .legend .who { font: 500 0.78rem/1 var(--mono); }
 .legend .who.b { color: var(--blue); }
 .legend .who.g { color: var(--green-ink); }
-
 @media (prefers-reduced-motion: no-preference) {
-  .layers.js-pin { height: 240vh; }
-  .layers.js-pin .layers-pin { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; padding-block: 24px; }
+  .layers.js-pin { height: 230vh; }
+  .layers.js-pin .layers-pin { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; padding-block: 72px 24px; }
   .layers.js-pin .plate, .layers.js-pin .scene, .layers.js-pin .legend li { will-change: transform; }
 }
+.get { padding-block: 32px 24px; }
+.get-card {
+  display: grid;
+  gap: 22px;
+  padding: 24px 20px;
+  border-radius: calc(var(--r) + 6px);
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 60px -40px rgba(10, 20, 60, 0.4);
+}
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; color: var(--ink-2); }
+.checks li b { color: var(--ink); font-weight: 600; }
+.checks svg { width: 22px; height: 22px; margin-top: 1px; }
+.patreon-cta { display: grid; gap: 10px; justify-items: start; }
+.url-row { display: flex; align-items: center; gap: 4px; max-width: 100%; padding: 5px 5px 5px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; }
+.url { font: 500 0.74rem/1.3 var(--mono); letter-spacing: -0.01em; color: var(--ink-2); user-select: all; -webkit-user-select: all; overflow-wrap: anywhere; min-width: 0; }
+.copy { flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: var(--paper); color: var(--ink); cursor: pointer; touch-action: manipulation; transition: transform 100ms var(--ease-out), background 160ms var(--ease-out), color 160ms; }
+.copy svg { width: 16px; height: 16px; }
+.copy:active { transform: scale(0.96); }
+.copy.done { background: var(--green); color: #fff; }
+
+/* ---------- Lectures ---------- */
+.lect { display: grid; gap: 14px; }
+.lect-card { display: grid; gap: 16px; padding: 22px 20px; border-radius: var(--r); border: 1px solid var(--line); background: var(--card); }
+.lect-card.dark { background: var(--night); border-color: var(--night); color: #fff; position: relative; overflow: hidden; isolation: isolate; }
+.lect-card.dark::before { content: ""; position: absolute; width: 300px; height: 300px; right: -120px; top: -140px; border-radius: 50%; background: radial-gradient(circle, rgba(31,77,255,0.6), rgba(31,77,255,0) 70%); filter: blur(20px); z-index: -1; }
+.lect-card.dark::after { content: ""; position: absolute; width: 260px; height: 260px; left: -120px; bottom: -140px; border-radius: 50%; background: radial-gradient(circle, rgba(19,185,122,0.5), rgba(19,185,122,0) 70%); filter: blur(20px); z-index: -1; }
+.lect-card.dark .body, .lect-card.dark .checks li { color: #c9d0dc; }
+.lect-card.dark .checks li b { color: #fff; }
+.lect-card .kicker { font: 500 0.76rem/1 var(--mono); color: var(--muted); }
+.lect-card.dark .kicker { color: #9aa3b2; }
+
+/* ---------- Process ---------- */
+.steps { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; counter-reset: s; }
+.step { background: var(--card); padding: 20px; display: grid; gap: 8px; align-content: start; }
+.step .n { font: 500 0.78rem/1 var(--mono); color: var(--blue); }
+.step:nth-child(4) .n { color: var(--green-ink); }
 
 /* ---------- People ---------- */
-.people { padding-block: 72px 24px; overflow-x: clip; }
 .people .wrap { display: grid; }
 .person { display: grid; gap: 10px; padding-block: 22px; border-top: 1px solid var(--line); }
-.person .name { font-size: clamp(3.8rem, 20vw, 9rem); }
+.person .name { font-size: clamp(3.8rem, 20vw, 8.6rem); }
 .person.t .name { color: var(--blue); }
 .person.m .name { color: var(--green); }
 .person p { margin: 0; max-width: 36ch; color: var(--ink-2); }
 .person p b { color: var(--ink); font-weight: 600; }
+.brandline { margin: 18px 0 0; color: var(--ink-2); }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .person .name { animation: weigh linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
-    .person p { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
   }
 }
-@keyframes weigh {
-  from { font-weight: 100; letter-spacing: 0.02em; transform: translateX(-4%); }
-  to { font-weight: 650; letter-spacing: -0.055em; transform: none; }
-}
-@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes weigh { from { font-weight: 100; letter-spacing: 0.02em; } to { font-weight: 650; letter-spacing: -0.05em; } }
 
-/* ---------- Join ---------- */
-.join { padding-block: 56px 72px; }
-.join-card {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  border-radius: calc(var(--r) + 8px);
-  background: var(--night);
+/* ---------- FAQ ---------- */
+.faq { display: grid; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 0; cursor: pointer; font-weight: 600; font-size: 1.06rem; letter-spacing: -0.02em; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary i { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; transition: transform 300ms var(--ease-out), background 200ms; }
+.faq summary i svg { width: 14px; height: 14px; }
+.faq details[open] summary i { transform: rotate(45deg); background: var(--blue-soft); }
+.faq details p { margin: 0 0 18px; max-width: 60ch; color: var(--ink-2); }
+
+/* ---------- Contact ---------- */
+.contact-card { position: relative; overflow: hidden; isolation: isolate; border-radius: calc(var(--r) + 8px); background: var(--night); color: #fff; padding: 28px 20px 24px; display: grid; gap: 26px; }
+.contact-card > canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
+.contact-card::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(7,10,17,0.55), rgba(7,10,17,0.94) 40%); }
+.contact-card .h2 { max-width: 12ch; }
+.contact-card .lede { color: #c9d0dc; }
+form { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field label, .field legend { font-size: 0.86rem; font-weight: 500; color: #dfe4ec; }
+.field .opt { color: #8e98aa; font-weight: 400; }
+.field input, .field textarea {
+  width: 100%;
+  font: 400 16px/1.4 var(--sans);
   color: #fff;
-  padding: 170px 24px 28px;
-  display: grid;
-  gap: 24px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 12px;
+  padding: 13px 14px;
+  outline: none;
+  transition: border-color 160ms, background 160ms;
 }
-.join-card canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
-.join-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(to top, rgba(7, 10, 17, 0.95) 36%, rgba(7, 10, 17, 0.05));
-}
-.join-card .display { font-size: clamp(2.6rem, 12vw, 5rem); max-width: 13ch; text-wrap: balance; }
-.join-card .btn { background: #fff; color: var(--ink); }
-@media (hover: hover) and (pointer: fine) { .join-card .btn:hover { background: #e8ecf2; } }
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .join-card { animation: open linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
-  }
-}
-@keyframes open {
-  from { transform: scale(0.9); border-radius: 60px; }
-  to { transform: none; border-radius: calc(var(--r) + 8px); }
-}
+.field textarea { min-height: 96px; resize: vertical; }
+.field input::placeholder, .field textarea::placeholder { color: #8e98aa; }
+.field input:focus, .field textarea:focus { border-color: var(--blue-2); background: rgba(255,255,255,0.09); }
+.field .err { display: none; font-size: 0.82rem; color: #ff8a80; }
+.field.bad .err { display: block; }
+.field.bad input { border-color: #ff8a80; }
+fieldset.field { border: 0; padding: 0; margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { cursor: pointer; }
+.chips input { position: absolute; opacity: 0; pointer-events: none; }
+.chips span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); font-size: 0.9rem; color: #dfe4ec; transition: background 160ms, border-color 160ms, color 160ms; user-select: none; -webkit-user-select: none; }
+.chips input:checked + span { background: #fff; color: var(--night); border-color: #fff; }
+.chips input:focus-visible + span { outline: 2px solid var(--blue-2); outline-offset: 2px; }
+.form-foot { display: grid; gap: 10px; justify-items: start; }
+.form-foot .meta { color: #9aa3b2; }
+.form-status { font-size: 0.9rem; color: #9fe8c6; min-height: 1.2em; }
+.next { display: grid; gap: 10px; }
+.next div { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; color: #c9d0dc; font-size: 0.95rem; }
+.next div span { font: 500 0.76rem/1.6 var(--mono); color: var(--blue-2); }
+.mail { color: #fff; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.3); }
 
-footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
+footer { padding-block: 40px 120px; border-top: 1px solid var(--line); margin-top: 56px; }
+footer .wrap { display: grid; gap: 22px; justify-items: start; }
+.foot-nav { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.foot-nav a { text-decoration: none; color: var(--ink-2); font-size: 0.94rem; }
 
 /* ---------- Floating CTA (mobile) ---------- */
 .dock {
@@ -352,8 +527,8 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
   left: 12px;
   right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  z-index: 30;
-  padding: 8px 8px 8px 20px;
+  z-index: 50;
+  padding: 8px 8px 8px 16px;
   border-radius: 999px;
   background: rgba(10, 13, 20, 0.86);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
@@ -362,66 +537,101 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   transform: translateY(calc(100% + 40px));
   transition: transform 560ms var(--ease-out);
 }
 .dock.show { transform: none; }
-.dock .btn { background: #fff; color: var(--ink); min-height: 44px; padding: 0 6px 0 18px; font-size: 0.95rem; }
+.dock .d-txt { color: #fff; font-size: 0.86rem; font-weight: 600; letter-spacing: -0.01em; }
+.dock .btn { background: #fff; color: var(--ink); min-height: 44px; padding: 0 6px 0 16px; font-size: 0.92rem; }
 .dock .btn .arr { width: 32px; height: 32px; }
 @media (prefers-reduced-transparency: reduce) { .dock { background: var(--ink); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* ---------- Reveal on scroll ---------- */
+.js .rv { opacity: 0; transform: translateY(22px); transition: opacity 800ms var(--ease-out), transform 800ms var(--ease-out); transition-delay: calc(var(--d, 0) * 80ms); }
+.js .rv.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
+  .js .rv { opacity: 1; transform: none; transition: none; }
   .dock { transition: opacity 200ms ease; transform: none; opacity: 0; pointer-events: none; }
   .dock.show { opacity: 1; pointer-events: auto; }
 }
 
 /* ---------- Wider screens ---------- */
-@media (min-width: 860px) {
+@media (min-width: 760px) {
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .bento { grid-template-columns: repeat(6, 1fr); }
+  .tile.patreon-t { grid-column: span 4; }
+  .tile.ai-t { grid-column: span 2; }
+  .tile.ads-t, .tile.lect-t, .tile.caps-t { grid-column: span 2; }
+  .tile.edit-t, .tile.web-t { grid-column: span 3; }
+  .tile.patreon-t .viz { height: 230px; }
+  .lect { grid-template-columns: 1fr 1fr; }
+  .steps { grid-template-columns: repeat(4, 1fr); }
+  .get-card { grid-template-columns: 1.2fr 1fr; align-items: center; padding: 36px; }
+  .chain { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .chain::before, .chain .fill { left: 16px; right: 16px; top: 15px; bottom: auto; width: auto; height: 2px; }
+  .chain .fill { transform-origin: left; transform: scaleX(var(--p, 1)); }
+  .link-item { grid-template-columns: 1fr; padding-block: 0; }
+}
+@media (min-width: 960px) {
   :root { --gutter: 40px; --step: 66px; }
-  .hero { padding-block: 120px 96px; }
-  .hero .wrap { grid-template-columns: 1.55fr 1fr; align-items: center; gap: 40px; }
-  .hero .display { font-size: clamp(4.6rem, 7.8vw, 7.6rem); }
-  .reel { width: min(100%, 330px); }
+  .nav { display: flex; }
+  .hero { padding-block: 72px 80px; }
+  .hero .wrap { grid-template-columns: 1.5fr 1fr; align-items: center; gap: 48px; }
+  .hero h1 { font-size: clamp(4.4rem, 7.2vw, 6.8rem); }
+  .reel { width: min(100%, 320px); }
+  .sec { padding-block: 112px 24px; }
+  .sec-head { grid-template-columns: 1.1fr 1fr; align-items: end; gap: 40px; }
   .layers .wrap { grid-template-columns: 1fr 1.1fr; column-gap: 56px; align-items: center; }
   .stage { grid-column: 2; grid-row: 1 / span 2; }
   .stack { width: 100%; max-width: 460px; }
   .legend { grid-row: 2; }
   .people .wrap { grid-template-columns: 1fr 1fr; column-gap: 40px; }
-  .join-card { padding: 140px 56px 52px; grid-template-columns: 1fr auto; align-items: end; }
+  .people .sec-head, .people .brandline { grid-column: 1 / -1; }
+  .contact-card { grid-template-columns: 1fr 1.1fr; padding: 56px; gap: 48px; align-items: start; }
   .dock { display: none; }
-  footer { padding-block: 26px 40px; }
+  footer { padding-block: 40px 48px; }
+  footer .wrap { grid-template-columns: auto 1fr auto; align-items: center; }
+  .foot-nav { justify-content: center; }
 }
 </style>
 </head>
 <body>
-<header class="top">
+
+<header class="top" id="top-bar">
   <div class="wrap">
-    <a class="mark" href="#top" aria-label="EFEKTIVE, na začátek">EFEKTIVE</a>
-    <span class="duo" aria-hidden="true"><i></i><i></i></span>
+    <a class="logo" href="#top" aria-label="EFEKTIVE, na začátek"><span class="e">efektive</span><span class="cz">.cz</span></a>
+    <nav class="nav" aria-label="Hlavní">
+      <a href="#co-delame">Co děláme</a>
+      <a href="#patreon">Patreon</a>
+      <a href="#prednasky">Přednášky</a>
+      <a href="#o-nas">O nás</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+    <a class="btn" href="#kontakt">Napište nám<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
   </div>
 </header>
 
 <main id="top">
+
+  <!-- Hero -->
   <section class="hero" aria-labelledby="hero-title">
+    <span class="orb b" aria-hidden="true"></span>
+    <span class="orb g" aria-hidden="true"></span>
     <div class="wrap">
       <div class="hero-copy">
-        </div>
-        <h1 class="display" id="hero-title" aria-label="Jedno video. Dva pohledy.">
-          <span class="line" aria-hidden="true">Jedno video.</span>
-          <span class="line" aria-hidden="true">Dva pohledy.</span>
+        <span class="eyebrow"><i aria-hidden="true"></i>AI marketing a vzdělávání</span>
+        <h1 class="display" id="hero-title" aria-label="AI videa, která prodávají. A naučíme to i vás.">
+          <span class="line" aria-hidden="true">AI videa, která</span>
+          <span class="line" aria-hidden="true">prodávají.</span>
+          <span class="line grad-line" aria-hidden="true">A naučíme to i vás.</span>
         </h1>
-        <div class="note">
-  <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Přidej se přes prohlížeč, vyjde tě to levněji.</p>
-        <div class="url-row">
-            <span class="url" id="patreon-url">https://www.patreon.com/c/EFEKTIVE</span>
-          <button type="button" class="copy" id="copy-url" aria-label="Kopírovat odkaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="sr" id="copy-status" aria-live="polite"></span>
+        <p class="lede">Děláme <b>AI videa a reklamy na Meta a Google</b>, které přivádějí zákazníky. A na Patreonu, ve školách i ve firmách ukazujeme, <b>jak to celé funguje.</b></p>
+        <div class="ctas">
+          <a class="btn magnetic" id="hero-cta" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">Přidat se na Patreon<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <a class="btn ghost" href="#kontakt">Chci spolupráci</a>
         </div>
-        <div class="btn-wrap">
-          <a class="btn magnetic" id="hero-cta" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">
-            Přidej se na Patreonu
-            <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-          </a>
-        </div>
+        <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Přes prohlížeč vás vyjde levněji.</p>
       </div>
       <figure class="reel" style="margin-block:0" aria-label="Jedno video rozdělené na dva pohledy">
         <div class="half l">
@@ -438,100 +648,385 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
     </div>
   </section>
 
-  <div class="band" aria-hidden="true">
-    <div class="band-track">
-      <span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span><span>Jak to vzniklo</span><span class="o">/</span><span>Proč to funguje</span><span class="o">/</span>
-    </div>
-  </div>
-
-  <section class="layers" aria-labelledby="layers-title">
-    <div class="layers-pin">
-      <div class="wrap">
-        <h2 class="display" id="layers-title">Co je pod každým videem</h2>
-        <div class="stage">
-          <figure class="stack" aria-hidden="true">
-            <div class="scene">
-              <div class="plate base" style="--n:0"><canvas data-layer="video"></canvas></div>
-              <div class="plate b" style="--n:1"><canvas data-layer="teecee"></canvas></div>
-              <div class="plate g" style="--n:2"><canvas data-layer="maty"></canvas></div>
-            </div>
-          </figure>
+  <!-- Proof -->
+  <section class="proof" aria-label="Co za námi je">
+    <div class="wrap">
+      <div class="stats rv">
+        <div class="stat"><b>Desítky</b><span>klientů, pro které tvoříme videa a reklamy</span></div>
+        <div class="stat"><b>2 pohledy</b><span>na každé video: tvorba a marketing</span></div>
+        <div class="stat"><b>Přednášíme</b><span>o AI marketingu na střední škole</span></div>
+        <div class="stat"><b>Vlastní appka</b><span>na AI titulky, právě v betě</span></div>
+      </div>
+      <div class="clients rv" style="--d:1">
+        <span class="meta">Pracovali jsme pro</span>
+        <div class="marquee" aria-label="Best Account, BU1 Sport, Vinotéka U Sudu, REIZER, Rio Estate, Basket Opava 2010">
+          <div class="marquee-track" aria-hidden="true">
+            <span>Best Account</span><span>BU1 Sport</span><span>Vinotéka U Sudu</span><span>REIZER</span><span>Rio Estate</span><span>Basket Opava 2010</span>
+            <span>Best Account</span><span>BU1 Sport</span><span>Vinotéka U Sudu</span><span>REIZER</span><span>Rio Estate</span><span>Basket Opava 2010</span>
+          </div>
         </div>
-        <ul class="legend">
-          <li><b>Marketing a konverze</b><span class="who g">Maty</span></li>
-          <li><b>AI workflow a střih</b><span class="who b">Teecee</span></li>
-        </ul>
       </div>
     </div>
   </section>
 
-  <section class="people" aria-label="Kdo za tím stojí">
+  <!-- Services -->
+  <section class="sec" id="co-delame" aria-labelledby="sluzby-title">
     <div class="wrap">
-      <article class="person t">
-        <h2 class="display name">Teecee</h2>
-        <p><b>AI tvorba a střih.</b> Tvoří AI videa na Instagramu a ke každému ukáže, jak vzniklo.</p>
-      </article>
-      <article class="person m">
-        <h2 class="display name">Maty</h2>
-        <p><b>Marketing.</b> Ke každému videu vysvětlí, proč funguje a co převádí.</p>
-      </article>
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="sluzby-title">Od nápadu až po reklamu, která prodává.</h2>
+        <p class="lede rv" style="--d:1">Video umíme vymyslet, vytvořit s AI, sestříhat a pustit do reklamy. A všechno, co děláme, učíme i ostatní.</p>
+      </div>
+      <div class="bento">
+        <article class="tile patreon-t rv">
+          <div class="viz split"><canvas id="t-patreon" aria-hidden="true"></canvas><span class="tag l">Teecee</span><span class="tag r">Maty</span></div>
+          <span class="num">01</span>
+          <h3 class="h3">Vzdělávací Patreon</h3>
+          <p class="body">Ke každému videu z Instagramu tutoriál: <b>jak vzniklo s AI</b> a <b>proč prodává.</b></p>
+          <a class="link" href="#patreon">Jak to funguje<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </article>
+        <article class="tile ai-t rv" style="--d:1">
+          <div class="viz"><canvas id="t-ai" aria-hidden="true"></canvas></div>
+          <span class="num">02</span>
+          <h3 class="h3">AI videa a spoty</h3>
+          <p class="body">Reklamní spoty, produktová videa a obsah na sítě. Vytvořené s umělou inteligencí a dotažené ve střihu.</p>
+        </article>
+        <article class="tile ads-t rv">
+          <div class="viz ads" aria-hidden="true">
+            <div class="chips"><span>Meta</span><span>Google</span></div>
+            <div class="bars"><i style="--h:30%;--i:0"></i><i style="--h:42%;--i:1"></i><i style="--h:38%;--i:2"></i><i style="--h:55%;--i:3"></i><i style="--h:64%;--i:4"></i><i style="--h:72%;--i:5"></i><i style="--h:88%;--i:6"></i></div>
+            <svg viewBox="0 0 300 170" preserveAspectRatio="none"><path d="M16 140 C 70 132, 90 118, 130 108 S 200 70, 230 58 S 270 30, 286 22"/></svg>
+          </div>
+          <span class="num">03</span>
+          <h3 class="h3">Meta a Google Ads</h3>
+          <p class="body">Kampaně, které přivádějí poptávky a zákazníky. Ne jen lajky.</p>
+        </article>
+        <article class="tile lect-t rv" style="--d:1">
+          <div class="viz slide" aria-hidden="true">
+            <span class="s-orb b"></span><span class="s-orb g"></span>
+            <span class="s-t">AI marketing<br>v praxi</span>
+            <span class="s-l"><i style="--w:120px"></i><i style="--w:90px"></i><i style="--w:104px"></i></span>
+            <span class="s-p"><span class="logo"><span class="e">efektive</span><span class="cz">.cz</span></span></span>
+          </div>
+          <span class="num">04</span>
+          <h3 class="h3">Přednášky o AI</h3>
+          <p class="body">Přednášíme na střední škole. Stejnou přednášku připravíme pro váš tým.</p>
+          <a class="link" href="#prednasky">Chci přednášku<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </article>
+        <article class="tile caps-t rv" style="--d:2">
+          <span class="badge">Beta</span>
+          <div class="viz caps" aria-hidden="true"><div class="cap-line" id="cap-line"><span>Titulky</span><span>které</span><span>chytí</span><span>pozornost</span></div></div>
+          <span class="num">05</span>
+          <h3 class="h3">AI aplikace na titulky</h3>
+          <p class="body">Vyvíjíme vlastní appku na automatické titulky do videí. Ve více jazycích a s pohybem, který drží pozornost.</p>
+        </article>
+        <article class="tile edit-t rv">
+          <div class="viz edit" aria-hidden="true">
+            <div class="rows">
+              <div class="row"><i style="--f:3"></i><i style="--f:2"></i><i style="--f:4"></i><i style="--f:1.5"></i><i style="--f:3"></i></div>
+              <div class="row"><i style="--f:2"></i><i style="--f:5"></i><i style="--f:2.5"></i><i style="--f:3"></i></div>
+              <div class="row"><i style="--f:6"></i><i style="--f:4"></i><i style="--f:5"></i></div>
+            </div>
+            <span class="head"></span>
+          </div>
+          <span class="num">06</span>
+          <h3 class="h3">Střih a editace videí</h3>
+          <p class="body">Reels, vlogy i dlouhá videa. Střih, u kterého lidi neodscrollují.</p>
+        </article>
+        <article class="tile web-t rv" style="--d:1">
+          <div class="viz web" aria-hidden="true">
+            <div class="phone"><i class="h" style="--w:80%"></i><i class="h" style="--w:60%"></i><i style="--w:90%"></i><i style="--w:70%"></i><i class="c"></i></div>
+          </div>
+          <span class="num">07</span>
+          <h3 class="h3">Weby a landing pages</h3>
+          <p class="body">Rychlé weby stavěné hlavně pro mobil. Třeba přesně jako tenhle.</p>
+        </article>
+      </div>
     </div>
   </section>
 
-  <section class="join" aria-labelledby="join-title">
+  <!-- Chain -->
+  <section class="sec" aria-labelledby="chain-title">
     <div class="wrap">
-      <div class="join-card">
-        <canvas id="join-art" aria-hidden="true"></canvas>
-        <h2 class="display" id="join-title">Každé video rozebrané do detailu</h2>
-        <a class="btn magnetic" id="join-cta" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">
-          Přidej se na Patreonu
-          <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-        </a>
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="chain-title">Video samo nic neprodá.</h2>
+        <p class="lede rv" style="--d:1">Prodává až celý řetězec. Stačí jeden slabý článek a zbytek přijde vniveč. Proto se díváme na všechny.</p>
+      </div>
+      <div class="chain" id="chain">
+        <span class="fill" aria-hidden="true"></span>
+        <div class="link-item"><span class="dot">01</span><div class="txt"><h3 class="h3">Háček</h3><p><em>Když chybí:</em> lidi odscrollují dřív, než zjistí, o co jde.</p></div></div>
+        <div class="link-item"><span class="dot">02</span><div class="txt"><h3 class="h3">Video</h3><p><em>Když chybí:</em> koukají, ale nic si nezapamatují.</p></div></div>
+        <div class="link-item"><span class="dot">03</span><div class="txt"><h3 class="h3">Reklama</h3><p><em>Když chybí:</em> skvělé video uvidí jen pár lidí.</p></div></div>
+        <div class="link-item"><span class="dot">04</span><div class="txt"><h3 class="h3">Web</h3><p><em>Když chybí:</em> klikají, ale nekupují ani nepoptávají.</p></div></div>
+        <div class="link-item"><span class="dot">05</span><div class="txt"><h3 class="h3">Měření</h3><p><em>Když chybí:</em> nevíte, co funguje a za co platíte zbytečně.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Patreon -->
+  <section class="patreon" id="patreon" aria-labelledby="patreon-title">
+    <div class="layers">
+      <div class="layers-pin">
+        <div class="wrap">
+          <h2 class="display h2" id="patreon-title">Jedno video. <span class="grad">Dva pohledy.</span></h2>
+          <div class="stage">
+            <figure class="stack" style="margin-block:0" aria-hidden="true">
+              <div class="scene">
+                <div class="plate base" style="--n:0"><canvas data-layer="video"></canvas></div>
+                <div class="plate b" style="--n:1"><canvas data-layer="teecee"></canvas></div>
+                <div class="plate g" style="--n:2"><canvas data-layer="maty"></canvas></div>
+              </div>
+            </figure>
+          </div>
+          <ul class="legend">
+            <li><b>Marketing a konverze</b><span class="who g">Maty</span></li>
+            <li><b>AI workflow a střih</b><span class="who b">Teecee</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="get">
+      <div class="wrap">
+        <div class="get-card rv">
+          <div style="display:grid;gap:16px">
+            <h3 class="display" style="font-size:clamp(1.8rem,7vw,2.6rem)">Co na Patreonu dostanete</h3>
+            <ul class="checks">
+              <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#e3e9ff"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#1f4dff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Přesné prompty a nastavení</b>, se kterými video vzniklo.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#e3e9ff"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#1f4dff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Použité AI modely a podklady</b>, ať to zvládnete taky.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#e3e9ff"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#1f4dff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Postup střihu</b> od surového záběru po hotové video.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#daf5e9"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#0a7a4f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Marketingový rozbor od Matyho:</b> proč video funguje a co převádí.</span></li>
+            </ul>
+          </div>
+          <div class="patreon-cta">
+            <a class="btn magnetic" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">Přidat se na Patreon<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+            <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Zkopírujte si odkaz a otevřete ho v prohlížeči.</p>
+            <div class="url-row">
+              <span class="url" id="patreon-url">https://www.patreon.com/c/EFEKTIVE</span>
+              <button type="button" class="copy" id="copy-url" aria-label="Kopírovat odkaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="sr" id="copy-status" aria-live="polite"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lectures -->
+  <section class="sec" id="prednasky" aria-labelledby="prednasky-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="prednasky-title">Chcete přednášku o AI marketingu pro svou firmu?</h2>
+        <p class="lede rv" style="--d:1">Přednášíme studentům na střední škole. Pro firmy přednášku upravíme na váš obor a na to, co váš tým opravdu potřebuje.</p>
+      </div>
+      <div class="lect">
+        <div class="lect-card dark rv">
+          <span class="kicker">Pro firmy</span>
+          <h3 class="h3" style="font-size:1.5rem">Žádná teorie. Ukážeme, jak to děláme my.</h3>
+          <ul class="checks">
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="rgba(91,130,255,.25)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#9fb5ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Jak AI zrychlí tvorbu obsahu</b> ve vaší firmě.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="rgba(91,130,255,.25)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#9fb5ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Jak z videa udělat reklamu</b>, která přivede zákazníky.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="rgba(91,130,255,.25)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#9fb5ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Ukázky z naší práce</b>, ne obrázky z internetu.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="rgba(19,185,122,.25)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#7ee0b6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Otázky na míru</b> vašemu týmu.</span></li>
+          </ul>
+          <a class="btn light magnetic" href="#kontakt" data-topic="Přednáška" style="justify-self:start">Domluvit přednášku<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+        </div>
+        <div class="lect-card rv" style="--d:1">
+          <span class="kicker">Pro školy</span>
+          <h3 class="h3" style="font-size:1.5rem">AI marketing srozumitelně pro studenty.</h3>
+          <ul class="checks">
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#e3e9ff"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#1f4dff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Jak AI mění marketing</b> a práci, která studenty čeká.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#e3e9ff"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#1f4dff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Jak vzniká AI video</b> od nápadu po výsledek.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#daf5e9"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#0a7a4f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Inspirace na vlastní projekty</b> a první kroky.</span></li>
+          </ul>
+          <a class="link" href="#kontakt" data-topic="Přednáška">Poptat přednášku pro školu<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process -->
+  <section class="sec" id="spoluprace" aria-labelledby="proces-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="proces-title">Jak spolupráce probíhá.</h2>
+        <p class="lede rv" style="--d:1">Videa, reklamy i weby děláme ve čtyřech krocích. Na začátku vás to nestojí nic.</p>
+      </div>
+      <div class="steps rv">
+        <div class="step"><span class="n">01</span><h3 class="h3">Krátký hovor</h3><p class="body">Zjistíme, co prodáváte, komu a co vás teď nejvíc brzdí. Nezávazně a zdarma.</p></div>
+        <div class="step"><span class="n">02</span><h3 class="h3">Konkrétní návrh</h3><p class="body">Řekneme vám přesně, jaká videa, reklamy nebo web dávají smysl. Nebo upřímně, že to nedává.</p></div>
+        <div class="step"><span class="n">03</span><h3 class="h3">Tvoříme</h3><p class="body">Vytvoříme videa s AI, sestříháme je, spustíme kampaně a postavíme web.</p></div>
+        <div class="step"><span class="n">04</span><h3 class="h3">Měříme a zlepšujeme</h3><p class="body">Sledujeme, co přivádí zákazníky, a posilujeme to. Co nefunguje, vyhodíme.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- People -->
+  <section class="sec people" id="o-nas" aria-labelledby="o-nas-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="o-nas-title">Kdo za tím stojí.</h2>
+      </div>
+      <article class="person t">
+        <h3 class="display name">Teecee</h3>
+        <p><b>AI tvorba a střih.</b> Tvoří AI videa na Instagramu a ke každému ukáže, jak vzniklo.</p>
+      </article>
+      <article class="person m">
+        <h3 class="display name">Maty</h3>
+        <p><b>Marketing.</b> Ke každému videu vysvětlí, proč funguje a co převádí.</p>
+      </article>
+      <p class="brandline rv">Spolu jedeme pod značkou <b style="color:var(--ink)">EFEKTIVE</b>.</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="sec" id="faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="faq-title">Časté otázky.</h2>
+      </div>
+      <div class="faq rv">
+        <details>
+          <summary>Proč je Patreon v prohlížeči levnější než v aplikaci?<i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i></summary>
+          <p>Apple si z plateb v aplikaci na iPhonu bere 30 % a Patreon to promítá do ceny. Na webu tenhle poplatek není. Stačí zkopírovat odkaz a otevřít ho v prohlížeči.</p>
+        </details>
+        <details>
+          <summary>Pro koho je Patreon?<i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i></summary>
+          <p>Pro tvůrce, marketéry i podnikatele, kteří chtějí dělat AI videa sami a rozumět tomu, proč některá prodávají a jiná ne.</p>
+        </details>
+        <details>
+          <summary>Děláte přednášky i pro menší firmy?<i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i></summary>
+          <p>Ano. Přednášku přizpůsobíme velikosti týmu i oboru. Napište nám, kolik vás bude a co vás zajímá.</p>
+        </details>
+        <details>
+          <summary>Postaráte se o video i reklamu najednou?<i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i></summary>
+          <p>Ano, to je naše silná stránka. Video vytvoříme, sestříháme a rovnou ho pustíme do kampaní na Meta a Google. Když chcete, postavíme k tomu i web.</p>
+        </details>
+        <details>
+          <summary>Kdy bude appka na titulky venku?<i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i></summary>
+          <p>Teď ji testujeme v betě. Novinky o ní dáváme na Patreon jako první.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="sec" id="kontakt" aria-labelledby="kontakt-title">
+    <div class="wrap">
+      <div class="contact-card">
+        <canvas id="contact-art" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:18px;align-content:start">
+          <h2 class="display h2" id="kontakt-title">Domluvme si krátký hovor.</h2>
+          <p class="lede">Napište, s čím chcete pomoct. Ozveme se a domluvíme se, jestli si sedneme.</p>
+          <div class="next">
+            <div><span>01</span>Ozveme se vám zpátky.</div>
+            <div><span>02</span>Krátký hovor o tom, co prodáváte a komu.</div>
+            <div><span>03</span>Konkrétní plán. Nebo upřímné ne.</div>
+          </div>
+          <p class="meta" style="color:#9aa3b2">Raději e-mail? <a class="mail" href="mailto:info@efektive.cz">info@efektive.cz</a></p>
+        </div>
+        <form id="lead" novalidate>
+          <div class="field" id="f-name">
+            <label for="name">Jméno</label>
+            <input id="name" name="name" type="text" autocomplete="name" placeholder="Jan Novák" required />
+            <span class="err">Napište nám prosím, jak vám máme říkat.</span>
+          </div>
+          <div class="field" id="f-phone">
+            <label for="phone">Telefon nebo e-mail</label>
+            <input id="phone" name="phone" type="text" autocomplete="tel" placeholder="+420 … nebo vas@email.cz" required />
+            <span class="err">Bez kontaktu se vám nemáme jak ozvat.</span>
+          </div>
+          <fieldset class="field">
+            <legend>S čím chcete pomoct?</legend>
+            <div class="chips">
+              <label><input type="checkbox" name="topic" value="AI videa" /><span>AI videa</span></label>
+              <label><input type="checkbox" name="topic" value="Meta a Google Ads" /><span>Meta a Google Ads</span></label>
+              <label><input type="checkbox" name="topic" value="Přednáška" /><span>Přednáška</span></label>
+              <label><input type="checkbox" name="topic" value="Střih videí" /><span>Střih videí</span></label>
+              <label><input type="checkbox" name="topic" value="Web" /><span>Web</span></label>
+              <label><input type="checkbox" name="topic" value="Něco jiného" /><span>Něco jiného</span></label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="msg">Co vás teď nejvíc trápí? <span class="opt">(nepovinné)</span></label>
+            <textarea id="msg" name="msg" placeholder="Třeba: máme videa, ale nepřivádějí zákazníky."></textarea>
+          </div>
+          <div class="form-foot">
+            <button class="btn light magnetic" type="submit" id="join-cta">Odeslat nezávazně<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+            <span class="meta">Otevře se vám předvyplněný e-mail. Stačí ho odeslat.</span>
+            <span class="form-status" id="form-status" aria-live="polite"></span>
+          </div>
+        </form>
       </div>
     </div>
   </section>
 </main>
 
 <footer>
-  <div class="wrap"><span class="meta">Teecee a Maty</span></div>
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="EFEKTIVE, na začátek"><span class="e">efektive</span><span class="cz">.cz</span></a>
+    <nav class="foot-nav" aria-label="Patička">
+      <a href="#co-delame">Co děláme</a>
+      <a href="#patreon">Patreon</a>
+      <a href="#prednasky">Přednášky</a>
+      <a href="#o-nas">O nás</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+    <span class="meta">© 2026 EFEKTIVE. Teecee a Maty.</span>
+  </div>
 </footer>
 
 <div class="dock" id="dock" aria-hidden="true">
-  <span class="duo" aria-hidden="true"><i></i><i></i></span>
-  <a class="btn" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener" tabindex="-1">
-    Přidej se na Patreonu
-    <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-  </a>
+  <span class="d-txt">Vzdělávací Patreon</span>
+  <a class="btn" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener" tabindex="-1">Přidat se<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
 </div>
 
 <script>
+document.documentElement.classList.add("js");
 (() => {
+  const CONTACT_EMAIL = "info@efektive.cz";
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
   const BLUE = [80, 120, 255];
   const GREEN = [40, 220, 150];
+  const clamp = (v) => Math.min(1, Math.max(0, v));
+  const ease = (t) => t * t * (3 - 2 * t);
 
-  // Split the hero headline into letters for the staggered entrance.
+  // Header border once scrolled.
+  const bar = document.getElementById("top-bar");
+  new IntersectionObserver(([e]) => bar.classList.toggle("scrolled", !e.isIntersecting)).observe(document.querySelector(".hero .eyebrow"));
+
+  // Hero headline: letters arrive one by one.
   let c = 0;
-  document.querySelectorAll(".hero .line").forEach((line) => {
-    const text = line.textContent;
+  document.querySelectorAll(".hero h1 .line").forEach((line) => {
+    const grad = line.classList.contains("grad-line");
+    const words = line.textContent.split(" ");
     line.textContent = "";
-    for (const chr of text) {
-      const s = document.createElement("span");
-      s.className = "ch";
-      s.style.setProperty("--c", c++);
-      s.textContent = chr === " " ? " " : chr;
-      line.appendChild(s);
-    }
+    words.forEach((word, wi) => {
+      const w = document.createElement("span");
+      w.className = "word";
+      for (const chr of word) {
+        const sp = document.createElement("span");
+        sp.className = "ch" + (grad ? " hl" : "");
+        sp.style.setProperty("--c", c++);
+        sp.textContent = chr;
+        w.appendChild(sp);
+      }
+      line.appendChild(w);
+      if (wi < words.length - 1) { line.appendChild(document.createTextNode(" ")); c++; }
+    });
   });
 
-  // Copy the Patreon link; fall back to selecting it if the clipboard is refused.
+  // Reveal on scroll.
+  const rio = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); rio.unobserve(e.target); } });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".rv").forEach((el) => rio.observe(el));
+
+  // Copy Patreon link.
   const copyBtn = document.getElementById("copy-url");
   const urlEl = document.getElementById("patreon-url");
+  const status = document.getElementById("copy-status");
+  const ICON = copyBtn.innerHTML;
   copyBtn.addEventListener("click", () => {
-    const status = document.getElementById("copy-status");
-    const ICON = copyBtn.innerHTML;
     const done = () => {
       copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
       copyBtn.classList.add("done");
@@ -541,23 +1036,58 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
     const select = () => {
       const r = document.createRange(); r.selectNodeContents(urlEl);
       const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-      status.textContent = "Odkaz označen, zkopíruj ho";
+      status.textContent = "Odkaz označen, zkopírujte ho";
     };
     try { navigator.clipboard.writeText(urlEl.textContent).then(done, select); } catch (e) { select(); }
   });
 
-  // Magnetic buttons: follow the pointer a little, spring back on leave.
+  // Magnetic buttons on desktop.
   if (fine && !reduce) {
     document.querySelectorAll(".magnetic").forEach((el) => {
       el.addEventListener("pointermove", (e) => {
         const b = el.getBoundingClientRect();
-        el.style.setProperty("--mx", `${(e.clientX - b.left - b.width / 2) * 0.18}px`);
-        el.style.setProperty("--my", `${(e.clientY - b.top - b.height / 2) * 0.3}px`);
+        el.style.setProperty("--mx", `${(e.clientX - b.left - b.width / 2) * 0.16}px`);
+        el.style.setProperty("--my", `${(e.clientY - b.top - b.height / 2) * 0.28}px`);
       });
       el.addEventListener("pointerleave", () => { el.style.setProperty("--mx", "0px"); el.style.setProperty("--my", "0px"); });
     });
   }
 
+  // Links that preselect a topic in the form.
+  document.querySelectorAll("[data-topic]").forEach((a) => a.addEventListener("click", () => {
+    const box = document.querySelector(`#lead input[value="${a.dataset.topic}"]`);
+    if (box) box.checked = true;
+  }));
+
+  // Contact form: validate, then open a prefilled e-mail.
+  const form = document.getElementById("lead");
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = form.name.value.trim(), contact = form.phone.value.trim();
+    document.getElementById("f-name").classList.toggle("bad", !name);
+    document.getElementById("f-phone").classList.toggle("bad", !contact);
+    if (!name) { form.name.focus(); return; }
+    if (!contact) { form.phone.focus(); return; }
+    const topics = [...form.querySelectorAll('input[name="topic"]:checked')].map((i) => i.value).join(", ") || "neuvedeno";
+    const body = `Jméno: ${name}\nKontakt: ${contact}\nS čím: ${topics}\n\n${form.msg.value.trim()}`;
+    const href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Poptávka z webu: " + topics)}&body=${encodeURIComponent(body)}`;
+    window.location.href = href;
+    document.getElementById("form-status").textContent = "Otevřeli jsme vám e-mail. Pokud se nic nestalo, napište nám na " + CONTACT_EMAIL + ".";
+  });
+
+  // Caption demo: highlighted word steps through the line, like our app's "negativ" style.
+  const capWords = [...document.querySelectorAll("#cap-line span")];
+  if (capWords.length) {
+    let i = 0;
+    capWords[0].classList.add("on");
+    if (!reduce) setInterval(() => {
+      capWords[i].classList.remove("on");
+      i = (i + 1) % capWords.length;
+      capWords[i].classList.add("on");
+    }, 650);
+  }
+
+  // ---------- Canvas helpers ----------
   function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
   function fit(cv) {
     const r = cv.getBoundingClientRect();
@@ -566,7 +1096,6 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
     return [w, h];
   }
   const rgba = (col, a) => `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-
   const grain = document.createElement("canvas");
   grain.width = grain.height = 160;
   (() => {
@@ -575,7 +1104,6 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
     g.putImageData(img, 0, 0);
     document.documentElement.style.setProperty("--grain", `url(${grain.toDataURL()})`);
   })();
-
   function base(ctx, w, h, glows) {
     const bg = ctx.createLinearGradient(0, 0, 0, h);
     bg.addColorStop(0, "#0d1322"); bg.addColorStop(1, "#05070c");
@@ -587,7 +1115,7 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
     }
   }
   function city(ctx, w, h, r) {
-    const u = w / 360; let x = -6 * u;
+    const u = Math.max(w, h * 0.56) / 360; let x = -6 * u;
     while (x < w) {
       const bw = (14 + r() * 40) * u, bh = h * (0.1 + r() * 0.28);
       ctx.fillStyle = "rgba(3,5,9,0.95)"; ctx.fillRect(x, h - bh, bw, bh);
@@ -656,7 +1184,9 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
     }
   }
 
+  // Animated night scene, only drawn while on screen.
   function scene(canvas, seed, opts = {}) {
+    if (!canvas) return;
     const ctx = canvas.getContext("2d"), pts = makeParticles(rng(seed + 1), opts.count || 60);
     let raf = 0, visible = true;
     function frame(t) {
@@ -674,8 +1204,11 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
   }
   scene(document.getElementById("reel-l"), 3, { count: 70 });
   scene(document.getElementById("reel-r"), 3, { count: 70 });
-  scene(document.getElementById("join-art"), 19, { count: 40, cx: 0.78, cy: 0.25, glows: [[0.75, 0.2, BLUE, 0.5], [0.2, 0.1, GREEN, 0.3]] });
+  scene(document.getElementById("t-patreon"), 3, { count: 50, cx: 0.5, cy: 0.3 });
+  scene(document.getElementById("t-ai"), 27, { count: 40, cx: 0.7, cy: 0.25, glows: [[0.7, 0.2, BLUE, 0.5], [0.1, 0.7, GREEN, 0.3]] });
+  scene(document.getElementById("contact-art"), 19, { count: 40, cx: 0.78, cy: 0.2, glows: [[0.75, 0.15, BLUE, 0.5], [0.2, 0.05, GREEN, 0.3]] });
 
+  // Layer plates for the Patreon section.
   function plate(canvas) {
     const ctx = canvas.getContext("2d"), [w, h] = fit(canvas), r = rng(91), kind = canvas.dataset.layer;
     ctx.clearRect(0, 0, w, h);
@@ -693,33 +1226,56 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
   let rt;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawPlates, 150); }, { passive: true });
 
+  // Smoothed scroll progress for a section: follows the finger softly, so jerky touch scroll never shakes.
+  function smoothProgress(el, onUpdate, { start = 0, pin = false } = {}) {
+    let p = 0, target = 0, raf = 0, active = false;
+    const read = () => {
+      const r = el.getBoundingClientRect();
+      if (pin) {
+        const total = r.height - window.innerHeight;
+        target = total > 0 ? clamp(-r.top / total) : 0;
+      } else {
+        const vh = window.innerHeight;
+        target = clamp((vh * (1 - start) - r.top) / (r.height + vh * 0.2));
+      }
+    };
+    const loop = () => {
+      read();
+      p += (target - p) * 0.12;
+      if (Math.abs(target - p) < 0.0005) p = target;
+      onUpdate(p);
+      raf = active ? requestAnimationFrame(loop) : 0;
+    };
+    new IntersectionObserver(([e]) => { active = e.isIntersecting; if (active && !raf) raf = requestAnimationFrame(loop); }).observe(el);
+    read(); p = target; onUpdate(p);
+  }
 
-  // Layers: pinned section driven by a smoothed scroll value, so jerky touch scrolling never shakes the scene.
+  // Chain: line fills and links light up as you scroll.
+  const chain = document.getElementById("chain");
+  const chainItems = [...chain.querySelectorAll(".link-item")];
+  if (reduce) { chain.style.setProperty("--p", 1); chainItems.forEach((li) => li.classList.add("on")); }
+  else smoothProgress(chain, (p) => {
+    const v = clamp(p * 1.25);
+    chain.style.setProperty("--p", v.toFixed(4));
+    chainItems.forEach((li, i) => li.classList.toggle("on", v >= (i + 0.2) / chainItems.length));
+  }, { start: 0.2 });
+
+  // Patreon layers: pinned, open on scroll, sparks fly out and back.
   (() => {
     const sec = document.querySelector(".layers");
     if (!sec || reduce) return;
     sec.classList.add("js-pin");
-    const scene = sec.querySelector(".scene");
+    const sceneEl = sec.querySelector(".scene");
     const plates = [...sec.querySelectorAll(".plate")];
     const items = [...sec.querySelectorAll(".legend li")];
     const ranges = [[0.34, 0.5], [0.12, 0.28]];
-    // Sparks: their position is a pure function of scroll progress, so scrolling back up pulls them back inside.
     const cv = document.createElement("canvas");
     cv.className = "sparks";
     cv.setAttribute("aria-hidden", "true");
     sec.querySelector(".stack").appendChild(cv);
     const sctx = cv.getContext("2d");
     const R = rng(77);
-    const sparks = Array.from({ length: 70 }, () => ({
-      a: R() * Math.PI * 2,
-      d: 0.3 + R() * 0.7,
-      s: 0.8 + R() * 2.4,
-      k: R() * 0.45,
-      ph: R() * Math.PI * 2,
-      g: R() < 0.5,
-      star: R() < 0.3,
-      lift: 0.1 + R() * 0.25,
-    }));
+    const sparks = Array.from({ length: 70 }, () => ({ a: R() * Math.PI * 2, d: 0.3 + R() * 0.7, s: 0.8 + R() * 2.4, k: R() * 0.45, ph: R() * Math.PI * 2, g: R() < 0.5, star: R() < 0.3, lift: 0.1 + R() * 0.25 }));
     const drawSparks = (spread, now) => {
       const [w, h] = fit(cv);
       sctx.clearRect(0, 0, w, h);
@@ -734,9 +1290,8 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
         const tw = 0.55 + 0.45 * Math.sin(now * 0.004 + q.ph * 3);
         const alpha = local * tw;
         const size = q.s * DPR * (0.6 + 0.4 * local);
-        const col = q.g ? GREEN : BLUE;
         const glow = sctx.createRadialGradient(x, y, 0, x, y, size * 5);
-        glow.addColorStop(0, rgba(col, 0.55 * alpha));
+        glow.addColorStop(0, rgba(q.g ? GREEN : BLUE, 0.55 * alpha));
         glow.addColorStop(1, "rgba(0,0,0,0)");
         sctx.fillStyle = glow;
         sctx.fillRect(x - size * 5, y - size * 5, size * 10, size * 10);
@@ -747,28 +1302,15 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
           sctx.moveTo(x, y - L); sctx.lineTo(x + size * 0.5, y); sctx.lineTo(x, y + L); sctx.lineTo(x - size * 0.5, y); sctx.closePath();
           sctx.moveTo(x - L, y); sctx.lineTo(x, y + size * 0.5); sctx.lineTo(x + L, y); sctx.lineTo(x, y - size * 0.5); sctx.closePath();
           sctx.fill();
-        } else {
-          sctx.beginPath(); sctx.arc(x, y, size * 0.7, 0, Math.PI * 2); sctx.fill();
-        }
+        } else { sctx.beginPath(); sctx.arc(x, y, size * 0.7, 0, Math.PI * 2); sctx.fill(); }
       }
     };
-    const clamp = (v) => Math.min(1, Math.max(0, v));
-    const ease = (t) => t * t * (3 - 2 * t);
-    let p = 0, target = 0, raf = 0, active = false;
-    const read = () => {
-      const r = sec.getBoundingClientRect();
-      const total = r.height - window.innerHeight;
-      target = total > 0 ? clamp(-r.top / total) : 0;
-    };
-    const apply = () => {
-      const step = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--step")) || 52;
+    const step = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--step")) || 52;
+    smoothProgress(sec, (p) => {
       const spread = ease(clamp(p / 0.5));
-      plates.forEach((pl) => {
-        const n = +getComputedStyle(pl).getPropertyValue("--n") || 0;
-        pl.style.transform = `translate3d(0,0,${(n * step * spread).toFixed(2)}px)`;
-      });
-      const zoom = 0.72 + 0.1 * Math.sin(Math.PI * p);
-      scene.style.transform = `rotateX(54deg) rotateZ(-36deg) scale(${zoom.toFixed(4)})`;
+      const st = step();
+      plates.forEach((pl) => { const n = +pl.style.getPropertyValue("--n") || 0; pl.style.transform = `translate3d(0,0,${(n * st * spread).toFixed(2)}px)`; });
+      sceneEl.style.transform = `rotateX(54deg) rotateZ(-36deg) scale(${(0.72 + 0.1 * Math.sin(Math.PI * p)).toFixed(4)})`;
       drawSparks(spread, performance.now());
       items.forEach((li, i) => {
         const [a, b] = ranges[i] || [0, 0.1];
@@ -776,31 +1318,20 @@ footer { padding-block: 24px 120px; border-top: 1px solid var(--line); }
         li.style.opacity = (0.2 + 0.8 * k).toFixed(3);
         li.style.transform = `translate3d(${(-10 * (1 - k)).toFixed(2)}px,0,0)`;
       });
-    };
-    const loop = () => {
-      read();
-      p += (target - p) * 0.12;
-      if (Math.abs(target - p) < 0.0005) p = target;
-      apply();
-      raf = active ? requestAnimationFrame(loop) : 0;
-    };
-    new IntersectionObserver(([e]) => {
-      active = e.isIntersecting;
-      if (active && !raf) raf = requestAnimationFrame(loop);
-    }).observe(sec);
-    read(); p = target; apply();
+    }, { pin: true });
   })();
 
+  // Mobile dock: after the hero button scrolls away, hidden again at the contact form.
   const dock = document.getElementById("dock");
-  let heroGone = false, joinIn = false;
+  let heroGone = false, contactIn = false;
   const sync = () => {
-    const show = heroGone && !joinIn;
+    const show = heroGone && !contactIn;
     dock.classList.toggle("show", show);
     dock.setAttribute("aria-hidden", show ? "false" : "true");
     dock.querySelector("a").tabIndex = show ? 0 : -1;
   };
   new IntersectionObserver(([e]) => { heroGone = !e.isIntersecting && e.boundingClientRect.top < 0; sync(); }).observe(document.getElementById("hero-cta"));
-  new IntersectionObserver(([e]) => { joinIn = e.isIntersecting; sync(); }).observe(document.getElementById("join-cta"));
+  new IntersectionObserver(([e]) => { contactIn = e.isIntersecting; sync(); }, { rootMargin: "0px 0px -30% 0px" }).observe(document.getElementById("kontakt"));
 })();
 </script>
 </body>
