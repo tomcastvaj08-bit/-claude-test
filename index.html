@@ -410,16 +410,22 @@ img, canvas, svg { display: block; max-width: 100%; }
   .bub-vid img { animation: kb 9s ease-in-out infinite alternate; }
 }
 @keyframes kb { from { transform: scale(1.04) translate(0, 0); } to { transform: scale(1.14) translate(-3%, -2%); } }
+/* Braeden's stickers: crops of one collage (views graph + retention chart). */
 .stk {
   position: absolute;
-  width: 128px;
-  border-radius: 12px;
+  z-index: 3;
   background-repeat: no-repeat;
-  box-shadow: 0 14px 30px -14px rgba(10, 20, 60, 0.6);
+  filter: drop-shadow(0 12px 16px rgba(10, 20, 60, 0.35));
   pointer-events: none;
 }
-.stk.a { height: 82px; right: -96px; top: 6px; transform: rotate(7deg); }
-.stk.b { height: 84px; left: -98px; bottom: 34px; transform: rotate(-7deg); }
+.stk.a { width: 132px; aspect-ratio: 1.065; background-size: 188.7% auto; background-position: 57.4% 4.2%; right: -112px; top: 30%; transform: rotate(6deg); }
+.stk.b { width: 156px; aspect-ratio: 1.214; background-size: 147% auto; background-position: 50% 87.6%; left: -134px; bottom: 6px; transform: rotate(-5deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .stk.a { animation: bob 4.6s ease-in-out infinite alternate; }
+  .stk.b { animation: bob2 5.2s ease-in-out infinite alternate; }
+}
+@keyframes bob { from { transform: rotate(6deg) translateY(0); } to { transform: rotate(2deg) translateY(-8px); } }
+@keyframes bob2 { from { transform: rotate(-5deg) translateY(0); } to { transform: rotate(-1deg) translateY(-6px); } }
 .arena.static { height: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 56px 20px; padding: 48px var(--gutter) 72px; -webkit-mask-image: none; mask-image: none; }
 .arena.static .bub { position: relative; transform: none !important; }
 .arena.static .arena-hint, .arena.static .stk { display: none; }
@@ -429,9 +435,8 @@ img, canvas, svg { display: block; max-width: 100%; }
   .bub-name { font-size: 0.9rem; }
   .bub-meta { font-size: 0.6rem; }
   .bub-av { width: 54px; height: 54px; top: -27px; margin-left: -27px; }
-  .stk { width: 104px; }
-  .stk.a { height: 66px; right: -74px; }
-  .stk.b { height: 68px; left: -76px; }
+  .stk.a { width: 98px; right: -82px; }
+  .stk.b { width: 116px; left: -100px; }
 }
 
 @media (min-width: 1024px) {
@@ -1548,7 +1553,7 @@ document.documentElement.classList.add("js");
       el.className = "bub " + c.fmt;
       const thumb = c.fmt === "short" ? `https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg` : `https://i.ytimg.com/vi/${c.yt}/mqdefault.jpg`;
       el.innerHTML = `
-        ${c.stickers ? `<span class="stk a" style="background-image:url('${c.stickers}');background-size:100% auto;background-position:50% 3%"></span><span class="stk b" style="background-image:url('${c.stickers}');background-size:100% auto;background-position:50% 88%"></span>` : ""}
+        ${c.stickers ? `<span class="stk a" style="background-image:url('${c.stickers}')"></span><span class="stk b" style="background-image:url('${c.stickers}')"></span>` : ""}
         <button type="button" class="bub-av" aria-label="Chytit ${c.name}"><img src="${c.av}" alt="${c.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>
         <span class="bub-name">${c.name}</span>
         <span class="bub-meta">${c.meta}</span>
