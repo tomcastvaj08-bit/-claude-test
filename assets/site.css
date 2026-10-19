@@ -949,6 +949,12 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 .vm-ext svg { width: 18px; height: 18px; }
 .vm-ext[hidden] { display: none; }
 .xavs img { font-size: 0; color: transparent; background: #e8ecf3; }
+/* Logo scrolls away; the Patreon / Portfolio / Klienti switch stays pinned on the strip. */
+.top .logo { transition: transform 450ms var(--ease-out), opacity 300ms ease; }
+.top .switch { transition: transform 550ms var(--ease-out); }
+.top.away .logo { transform: translateY(-64px); opacity: 0; pointer-events: none; }
+.top.away .switch { transform: translateX(var(--sx, 0px)); }
+@media (prefers-reduced-motion: reduce) { .top .logo, .top .switch { transition: none; } }
 .person .role { font-weight: 600; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--ink); }
 @media (min-width: 1024px) {
   .stk.a { width: 156px; right: -128px; }

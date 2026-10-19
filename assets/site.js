@@ -13,6 +13,30 @@ document.documentElement.classList.add("js");
   const bar = document.getElementById("top-bar");
   const eyebrow = document.querySelector(".hero .eyebrow");
   if (bar && eyebrow) new IntersectionObserver(([e]) => bar.classList.toggle("scrolled", !e.isIntersecting)).observe(eyebrow);
+  // Once you scroll, the logo slides away and the site switch glides to the middle of the strip.
+  const sw = bar && bar.querySelector(".switch");
+  if (sw) {
+    let away = null;
+    const center = () => {
+      const was = bar.classList.contains("away");
+      bar.classList.remove("away");
+      sw.style.transition = "none";
+      const r = sw.getBoundingClientRect();
+      bar.style.setProperty("--sx", (window.innerWidth / 2 - (r.left + r.width / 2)).toFixed(1) + "px");
+      bar.classList.toggle("away", was);
+      void sw.offsetWidth;
+      sw.style.transition = "";
+    };
+    const onScroll = () => {
+      const a = window.scrollY > 24;
+      if (a !== away) { away = a; bar.classList.toggle("away", a); }
+    };
+    center();
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", center, { passive: true });
+    if (document.fonts) document.fonts.ready.then(center);
+  }
 
   // Hero headline: letters arrive one by one.
   let c = 0;
