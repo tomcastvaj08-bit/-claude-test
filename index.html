@@ -232,6 +232,8 @@ img, canvas, svg { display: block; max-width: 100%; }
 .hero h1 .ch { display: inline-block; }
 .hero h1 .hl { color: var(--blue); }
 .ctas { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.hero-join { display: grid; gap: 10px; justify-items: start; }
+.hero-more { display: grid; gap: 10px; justify-items: start; padding-top: 6px; }
 .tip { margin: 0; max-width: 44ch; font: 500 0.74rem/1.4 var(--sans); color: var(--red); text-wrap: pretty; }
 
 .reel { position: relative; width: min(100%, 280px); margin-inline: auto; display: grid; grid-template-columns: 1fr 1fr; }
@@ -256,8 +258,8 @@ img, canvas, svg { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: no-preference) {
   .hero h1 .ch { animation: letter 1000ms var(--ease-out) both; animation-delay: calc(140ms + var(--c) * 26ms); }
   .hero .eyebrow { animation: fade 800ms var(--ease-out) 60ms both; }
-  .hero .lede { animation: fade 900ms var(--ease-out) 620ms both; }
-  .hero .ctas, .hero .tip { animation: fade 900ms var(--ease-out) 740ms both; }
+  .hero-join { animation: fade 900ms var(--ease-out) 620ms both; }
+  .hero-more { animation: fade 900ms var(--ease-out) 820ms both; }
   .reel { animation: fade 900ms var(--ease-out) 300ms both; }
   .cut { animation: cut 1500ms var(--ease-io) 900ms both; }
   .half { animation: part 1100ms var(--ease-out) 1500ms both, float 6s var(--ease-io) 2600ms infinite alternate; }
@@ -296,6 +298,168 @@ img, canvas, svg { display: block; max-width: 100%; }
   .marquee-track { animation: loop 32s linear infinite; }
 }
 @keyframes loop { to { transform: translateX(calc(-50% - 20px)); } }
+
+
+/* ---------- Clients arena ---------- */
+.clients-sec { padding-bottom: 0; }
+.arena {
+  position: relative;
+  height: clamp(560px, 88svh, 800px);
+  overflow: hidden;
+  touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+.arena-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(10, 13, 20, 0.86);
+  color: #fff;
+  font: 500 0.78rem/1 var(--sans);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 400ms;
+}
+.arena-hint svg { width: 16px; height: 16px; }
+.arena.touched .arena-hint { opacity: 0; }
+.bub {
+  --bw: 210px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--bw);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 36px 10px 10px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 24px 50px -30px rgba(10, 20, 60, 0.45), 0 2px 6px rgba(10, 20, 60, 0.06);
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+  transition: box-shadow 200ms;
+}
+.bub.short { --bw: 150px; }
+.bub.grab { box-shadow: 0 40px 70px -30px rgba(10, 20, 60, 0.6), 0 2px 6px rgba(10, 20, 60, 0.08); }
+.bub-av {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  margin-left: -32px;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: #fff;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: 0 10px 24px -10px rgba(10, 20, 60, 0.5), 0 0 0 1px var(--line);
+}
+.bub-av::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px dashed rgba(31, 77, 255, 0.45); opacity: 0; transition: opacity 200ms; }
+.bub.grab .bub-av { cursor: grabbing; }
+.bub.grab .bub-av::after { opacity: 1; }
+.bub-av img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; font-size: 0; color: transparent; }
+.bub-name { font-weight: 650; font-size: 0.98rem; letter-spacing: -0.02em; text-align: center; line-height: 1.15; }
+.bub-meta { font: 500 0.68rem/1.3 var(--mono); color: var(--muted); text-align: center; margin-bottom: 6px; }
+.bub-vid {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b0f1a;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.bub.short .bub-vid { aspect-ratio: 9 / 16; }
+.bub-vid img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; transform: scale(1.04); }
+.bub-vid .play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+  transition: transform 200ms var(--ease-out);
+}
+.bub-vid .play svg { width: 16px; height: 16px; margin-left: 2px; }
+.bub-vid .fmt { position: absolute; top: 6px; left: 6px; padding: 3px 7px; border-radius: 999px; font: 500 0.62rem/1 var(--mono); color: #fff; background: rgba(0, 0, 0, 0.45); }
+.bub-vid:active .play { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) { .bub-vid:hover .play { transform: scale(1.1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .bub-vid img { animation: kb 9s ease-in-out infinite alternate; }
+}
+@keyframes kb { from { transform: scale(1.04) translate(0, 0); } to { transform: scale(1.14) translate(-3%, -2%); } }
+.stk {
+  position: absolute;
+  width: 128px;
+  border-radius: 12px;
+  background-repeat: no-repeat;
+  box-shadow: 0 14px 30px -14px rgba(10, 20, 60, 0.6);
+  pointer-events: none;
+}
+.stk.a { height: 82px; right: -96px; top: 6px; transform: rotate(7deg); }
+.stk.b { height: 84px; left: -98px; bottom: 34px; transform: rotate(-7deg); }
+.arena.static { height: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 56px 20px; padding: 48px var(--gutter) 72px; -webkit-mask-image: none; mask-image: none; }
+.arena.static .bub { position: relative; transform: none !important; }
+.arena.static .arena-hint, .arena.static .stk { display: none; }
+@media (max-width: 600px) {
+  .bub { --bw: 160px; padding: 30px 8px 8px; border-radius: 20px; }
+  .bub.short { --bw: 114px; }
+  .bub-name { font-size: 0.9rem; }
+  .bub-meta { font-size: 0.6rem; }
+  .bub-av { width: 54px; height: 54px; top: -27px; margin-left: -27px; }
+  .stk { width: 104px; }
+  .stk.a { height: 66px; right: -74px; }
+  .stk.b { height: 68px; left: -76px; }
+}
+
+@media (min-width: 1024px) {
+  .bub { --bw: 250px; }
+  .bub.short { --bw: 168px; }
+  .bub-av { width: 72px; height: 72px; top: -36px; margin-left: -36px; }
+  .bub { padding-top: 42px; }
+}
+
+/* ---------- Video modal ---------- */
+.vmodal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+.vmodal[hidden] { display: none !important; }
+.vm-back { position: absolute; inset: 0; background: rgba(6, 9, 16, 0.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.vm-box { position: relative; width: min(100%, 960px); display: grid; gap: 10px; }
+.vm-box.short { width: min(100%, 380px); }
+.vm-top { display: flex; align-items: center; justify-content: space-between; color: #fff; }
+.vm-top b { font-weight: 600; letter-spacing: -0.02em; }
+.vm-close { width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255, 255, 255, 0.14); color: #fff; cursor: pointer; }
+.vm-close svg { width: 18px; height: 18px; }
+.vm-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.8); }
+.vm-box.short .vm-frame { aspect-ratio: 9 / 16; max-height: 78svh; width: auto; margin-inline: auto; }
+.vm-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .vmodal:not([hidden]) .vm-box { animation: pop 420ms var(--ease-out) both; }
+  .vmodal:not([hidden]) .vm-back { animation: fadein 300ms ease both; }
+}
+@keyframes pop { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- Services bento ---------- */
 .bento { display: grid; gap: 14px; }
@@ -456,7 +620,25 @@ img, canvas, svg { display: block; max-width: 100%; }
 .person.m .name { color: var(--green); }
 .person p { margin: 0; max-width: 36ch; color: var(--ink-2); }
 .person p b { color: var(--ink); font-weight: 600; }
-.brandline { margin: 18px 0 0; color: var(--ink-2); }
+.brand { margin: 28px 0 0; display: grid; gap: 14px; justify-items: center; text-align: center; }
+.brand-paper {
+  width: min(100%, 460px);
+  aspect-ratio: 1;
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px -40px rgba(10, 20, 60, 0.45), 0 0 0 1px var(--line);
+}
+.brand-paper img { width: 100%; height: 100%; object-fit: cover; }
+.brand figcaption { display: grid; gap: 6px; }
+.brand figcaption b { font-size: clamp(1.2rem, 4.6vw, 1.6rem); letter-spacing: -0.03em; font-weight: 650; }
+.eyebrow-s { font: 500 0.72rem/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  .js .brand.rv .brand-paper { transform: scale(0.82) rotate(-6deg); opacity: 0; transition: transform 1100ms var(--ease-out), opacity 700ms ease; }
+  .js .brand.rv.in .brand-paper { transform: none; opacity: 1; }
+  .js .brand.rv.in .brand-paper img { animation: tearin 1400ms var(--ease-out) both; }
+}
+@keyframes tearin { from { transform: scale(1.25); filter: blur(6px); } to { transform: none; filter: none; } }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .person .name { animation: weigh linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
@@ -587,7 +769,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   .stack { width: 100%; max-width: 460px; }
   .legend { grid-row: 2; }
   .people .wrap { grid-template-columns: 1fr 1fr; column-gap: 40px; }
-  .people .sec-head, .people .brandline { grid-column: 1 / -1; }
+  .people .sec-head, .people .brand { grid-column: 1 / -1; }
   .contact-card { grid-template-columns: 1fr 1.1fr; padding: 56px; gap: 48px; align-items: start; }
   .dock { display: none; }
   footer { padding-block: 40px 48px; }
@@ -602,6 +784,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   <div class="wrap">
     <a class="logo" href="#top" aria-label="EFEKTIVE, na začátek"><span class="e">efektive</span><span class="cz">.cz</span></a>
     <nav class="nav" aria-label="Hlavní">
+      <a href="#klienti">Klienti</a>
       <a href="#co-delame">Co děláme</a>
       <a href="#patreon">Patreon</a>
       <a href="#prednasky">Přednášky</a>
@@ -626,12 +809,18 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
           <span class="line" aria-hidden="true">prodávají.</span>
           <span class="line grad-line" aria-hidden="true">A naučíme to i vás.</span>
         </h1>
-        <p class="lede">Děláme <b>AI videa a reklamy na Meta a Google</b>, které přivádějí zákazníky. A na Patreonu, ve školách i ve firmách ukazujeme, <b>jak to celé funguje.</b></p>
-        <div class="ctas">
+        <div class="hero-join">
+          <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Zkopírujte si odkaz a otevřete ho v prohlížeči, vyjde vás to levněji.</p>
+          <div class="url-row">
+            <span class="url">https://www.patreon.com/c/EFEKTIVE</span>
+            <button type="button" class="copy" aria-label="Kopírovat odkaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="sr copy-status" aria-live="polite"></span>
+          </div>
           <a class="btn magnetic" id="hero-cta" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">Přidat se na Patreon<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
-          <a class="btn ghost" href="#kontakt">Chci spolupráci</a>
         </div>
-        <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Přes prohlížeč vás vyjde levněji.</p>
+        <div class="hero-more">
+          <p class="lede">Děláme <b>AI videa a reklamy na Meta a Google</b>, které přivádějí zákazníky. A na Patreonu, ve školách i ve firmách ukazujeme, <b>jak to celé funguje.</b></p>
+          <a class="link" href="#kontakt">Chci spolupráci<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </div>
       </div>
       <figure class="reel" style="margin-block:0" aria-label="Jedno video rozdělené na dva pohledy">
         <div class="half l">
@@ -657,15 +846,19 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
         <div class="stat"><b>Přednášíme</b><span>o AI marketingu na střední škole</span></div>
         <div class="stat"><b>Vlastní appka</b><span>na AI titulky, právě v betě</span></div>
       </div>
-      <div class="clients rv" style="--d:1">
-        <span class="meta">Pracovali jsme pro</span>
-        <div class="marquee" aria-label="Best Account, BU1 Sport, Vinotéka U Sudu, REIZER, Rio Estate, Basket Opava 2010">
-          <div class="marquee-track" aria-hidden="true">
-            <span>Best Account</span><span>BU1 Sport</span><span>Vinotéka U Sudu</span><span>REIZER</span><span>Rio Estate</span><span>Basket Opava 2010</span>
-            <span>Best Account</span><span>BU1 Sport</span><span>Vinotéka U Sudu</span><span>REIZER</span><span>Rio Estate</span><span>Basket Opava 2010</span>
-          </div>
-        </div>
+    </div>
+  </section>
+
+  <!-- Clients -->
+  <section class="sec clients-sec" id="klienti" aria-labelledby="klienti-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="display h2 rv" id="klienti-title">Klienti a reference.</h2>
+        <p class="lede rv" style="--d:1">Tvoříme pro youtubery, tvůrce i firmy. <b>Chyťte kohokoli za profilovku a hoďte s ním.</b> Kliknutím na video ho pustíte celé.</p>
       </div>
+    </div>
+    <div class="arena" id="arena" aria-label="Klienti a ukázky videí">
+      <span class="arena-hint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5v-2a1.5 1.5 0 0 1 3 0V12M14 10.5a1.5 1.5 0 0 1 3 0V12M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7l-2.6-4a1.5 1.5 0 0 1 2.5-1.6L8 15"/></svg>Chyťte profilovku a hoďte s ní</span>
     </div>
   </section>
 
@@ -799,9 +992,9 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
           <div class="patreon-cta">
             <a class="btn magnetic" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">Přidat se na Patreon<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
             <p class="tip">V aplikaci Patreon na iPhonu je členství dražší kvůli 30% poplatku Applu. Zkopírujte si odkaz a otevřete ho v prohlížeči.</p>
-            <div class="url-row">
-              <span class="url" id="patreon-url">https://www.patreon.com/c/EFEKTIVE</span>
-              <button type="button" class="copy" id="copy-url" aria-label="Kopírovat odkaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="sr" id="copy-status" aria-live="polite"></span>
+<div class="url-row">
+              <span class="url">https://www.patreon.com/c/EFEKTIVE</span>
+              <button type="button" class="copy" aria-label="Kopírovat odkaz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><span class="sr copy-status" aria-live="polite"></span>
             </div>
           </div>
         </div>
@@ -872,7 +1065,10 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
         <h3 class="display name">Maty</h3>
         <p><b>Marketing.</b> Ke každému videu vysvětlí, proč funguje a co převádí.</p>
       </article>
-      <p class="brandline rv">Spolu jedeme pod značkou <b style="color:var(--ink)">EFEKTIVE</b>.</p>
+      <figure class="brand rv">
+        <div class="brand-paper"><img src="https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/200000736-2e4f22e4f4/700/IMG_4381.webp?ph=a620bd5331" alt="Logo EFEKTIVE na roztrženém papíře" width="700" height="700" loading="lazy" decoding="async"></div>
+        <figcaption><span class="eyebrow-s">Naše značka</span><b>Spolu jedeme pod značkou EFEKTIVE.</b></figcaption>
+      </figure>
     </div>
   </section>
 
@@ -963,6 +1159,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   <div class="wrap">
     <a class="logo" href="#top" aria-label="EFEKTIVE, na začátek"><span class="e">efektive</span><span class="cz">.cz</span></a>
     <nav class="foot-nav" aria-label="Patička">
+      <a href="#klienti">Klienti</a>
       <a href="#co-delame">Co děláme</a>
       <a href="#patreon">Patreon</a>
       <a href="#prednasky">Přednášky</a>
@@ -972,6 +1169,14 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
     <span class="meta">© 2026 EFEKTIVE. Teecee a Maty.</span>
   </div>
 </footer>
+
+<div class="vmodal" id="vmodal" hidden>
+  <div class="vm-back" data-close></div>
+  <div class="vm-box" role="dialog" aria-modal="true" aria-labelledby="vm-title">
+    <div class="vm-top"><b id="vm-title">Ukázka</b><button type="button" class="vm-close" data-close aria-label="Zavřít video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="vm-frame" id="vm-frame"></div>
+  </div>
+</div>
 
 <div class="dock" id="dock" aria-hidden="true">
   <span class="d-txt">Vzdělávací Patreon</span>
@@ -1021,24 +1226,23 @@ document.documentElement.classList.add("js");
   }, { rootMargin: "0px 0px -8% 0px" });
   document.querySelectorAll(".rv").forEach((el) => rio.observe(el));
 
-  // Copy Patreon link.
-  const copyBtn = document.getElementById("copy-url");
-  const urlEl = document.getElementById("patreon-url");
-  const status = document.getElementById("copy-status");
-  const ICON = copyBtn.innerHTML;
-  copyBtn.addEventListener("click", () => {
-    const done = () => {
-      copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-      copyBtn.classList.add("done");
-      status.textContent = "Odkaz zkopírován";
-      setTimeout(() => { copyBtn.innerHTML = ICON; copyBtn.classList.remove("done"); status.textContent = ""; }, 1800);
-    };
-    const select = () => {
-      const r = document.createRange(); r.selectNodeContents(urlEl);
-      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-      status.textContent = "Odkaz označen, zkopírujte ho";
-    };
-    try { navigator.clipboard.writeText(urlEl.textContent).then(done, select); } catch (e) { select(); }
+  // Copy Patreon link (every link row on the page).
+  const OK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  document.querySelectorAll(".url-row").forEach((row) => {
+    const btn = row.querySelector(".copy"), urlEl = row.querySelector(".url"), status = row.querySelector(".copy-status");
+    const ICON = btn.innerHTML;
+    btn.addEventListener("click", () => {
+      const done = () => {
+        btn.innerHTML = OK_ICON; btn.classList.add("done"); status.textContent = "Odkaz zkopírován";
+        setTimeout(() => { btn.innerHTML = ICON; btn.classList.remove("done"); status.textContent = ""; }, 1800);
+      };
+      const select = () => {
+        const r = document.createRange(); r.selectNodeContents(urlEl);
+        const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        status.textContent = "Odkaz označen, zkopírujte ho";
+      };
+      try { navigator.clipboard.writeText(urlEl.textContent).then(done, select); } catch (e) { select(); }
+    });
   });
 
   // Magnetic buttons on desktop.
@@ -1320,6 +1524,195 @@ document.documentElement.classList.add("js");
       });
     }, { pin: true });
   })();
+
+
+  // ---------- Clients: floating, draggable bubbles with video previews ----------
+  (() => {
+    const arena = document.getElementById("arena");
+    if (!arena) return;
+    const W = "https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/";
+    const CLIENTS = [
+      { name: "Tary", meta: "YouTube · 1,71 mil. odběratelů", av: W + "200000643-b91c8b91ca/450/IMG_4132-8.webp?ph=a620bd5331", yt: "tfkOIZw8mFs", fmt: "long" },
+      { name: "Braeden", meta: "Creator · 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short", stickers: W + "200000729-720087200a/Still%202026-04-19%20102422_1.2.2.webp?ph=a620bd5331" },
+      { name: "Harv Connell", meta: "Creator · anglický obsah", av: W + "200000651-0ee870ee89/450/IMG_4139-1.webp?ph=a620bd5331", yt: "FDjJKW3DEwo", fmt: "long" },
+      { name: "Tripaři na stopu", meta: "YouTube · 14,8 tis. odběratelů", av: W + "200000784-e4e7de4e7f/channels4_profile.webp?ph=a620bd5331", yt: "lVVK-LZpWqM", fmt: "long" },
+      { name: "The Long Investor", meta: "YouTube · investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "242UOUEXEUM", fmt: "long" },
+      { name: "Martin Cuper", meta: "YouTube · 14 tis. odběratelů", av: "https://yt3.ggpht.com/86qQEg0uDj2fgggL7u_ETSF7qt7uO0BWpM7M5Mv4vFw-FDSoSau4fMY7SYVkE9Qb-1MfBDyj3A=s176-c-k-c0x00ffffff-no-rj-mo", yt: "1EaEE05Gm8o", fmt: "long" },
+      { name: "Martin Ščerba", meta: "Realitní makléř", av: "https://yt3.googleusercontent.com/ytc/AIdro_lwP6DD_iC8yewx2N9AgStZsooaErvoGe1T-4oEvEpIPEf5=s176-c-k-c0x00ffffff-no-rj", yt: "5dFCuA4GWiY", fmt: "long" },
+    ];
+    const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
+
+    // Build the cards.
+    const bodies = CLIENTS.map((c) => {
+      const el = document.createElement("div");
+      el.className = "bub " + c.fmt;
+      const thumb = c.fmt === "short" ? `https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg` : `https://i.ytimg.com/vi/${c.yt}/mqdefault.jpg`;
+      el.innerHTML = `
+        ${c.stickers ? `<span class="stk a" style="background-image:url('${c.stickers}');background-size:100% auto;background-position:50% 3%"></span><span class="stk b" style="background-image:url('${c.stickers}');background-size:100% auto;background-position:50% 88%"></span>` : ""}
+        <button type="button" class="bub-av" aria-label="Chytit ${c.name}"><img src="${c.av}" alt="${c.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>
+        <span class="bub-name">${c.name}</span>
+        <span class="bub-meta">${c.meta}</span>
+        <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async"><span class="fmt">${c.fmt === "short" ? "Short" : "Long form"}</span><span class="play">${PLAY}</span></button>`;
+      arena.appendChild(el);
+      el.querySelector(".bub-vid").addEventListener("click", () => openVideo(c));
+      return { c, el, x: 0, y: 0, vx: 0, vy: 0, wind: 0, ph: Math.random() * Math.PI * 2, w: 0, h: 0, r: 0, drag: null, s: 1 };
+    });
+
+    if (reduce) { arena.classList.add("static"); return; }
+
+    let AW = 0, AH = 0;
+    const measure = () => {
+      AW = arena.clientWidth; AH = arena.clientHeight;
+      if (bodies[0].home !== undefined) requestAnimationFrame(() => bodies.forEach((b) => (b.home = laneY(b.lane))));
+      const small = AW < 600;
+      bodies.forEach((b) => {
+        b.w = b.el.offsetWidth; b.h = b.el.offsetHeight;
+        b.r = (b.w + b.h) / 4;
+        b.wind = (small ? 16 : 26) + Math.random() * (small ? 14 : 22);
+      });
+    };
+    measure();
+    // Each card floats in its own lane, so they spread over the whole area.
+    const n = bodies.length;
+    let lanes = 2;
+    const laneY = (k) => {
+      const maxH = Math.max(...bodies.map((b) => b.h)) + 40;
+      lanes = Math.max(1, Math.min(3, Math.floor((AH - 40) / (maxH * 0.78))));
+      return 40 + (AH - 40) * ((k % lanes) + 0.5) / lanes;
+    };
+    const order = bodies.map((_, i) => i).sort(() => Math.random() - 0.5);
+    order.forEach((idx, i) => {
+      const b = bodies[idx];
+      b.lane = i;
+      b.home = laneY(i);
+      b.x = -AW * 0.45 + (i + 0.2 + Math.random() * 0.5) * (AW * 1.4 / n);
+      b.y = b.home;
+      b.vx = b.wind; b.vy = 0;
+    });
+
+    const place = (b) => {
+      b.el.style.transform = `translate3d(${(b.x - b.w / 2).toFixed(1)}px, ${(b.y - b.h / 2).toFixed(1)}px, 0) scale(${b.s.toFixed(3)})`;
+    };
+    let zTop = 10;
+
+    // Dragging by the profile picture.
+    bodies.forEach((b) => {
+      const handle = b.el.querySelector(".bub-av");
+      handle.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        handle.setPointerCapture(e.pointerId);
+        const r = arena.getBoundingClientRect();
+        const px = e.clientX - r.left, py = e.clientY - r.top;
+        b.drag = { id: e.pointerId, ox: b.x - px, oy: b.y - py, hist: [{ x: b.x, y: b.y, t: performance.now() }] };
+        b.el.classList.add("grab");
+        b.el.style.zIndex = ++zTop;
+        arena.classList.add("touched");
+      });
+      handle.addEventListener("pointermove", (e) => {
+        if (!b.drag || b.drag.id !== e.pointerId) return;
+        const r = arena.getBoundingClientRect();
+        b.x = e.clientX - r.left + b.drag.ox;
+        b.y = Math.min(AH - b.h / 2 + 30, Math.max(b.h / 2 - 30, e.clientY - r.top + b.drag.oy));
+        const now = performance.now();
+        b.drag.hist.push({ x: b.x, y: b.y, t: now });
+        while (b.drag.hist.length > 2 && now - b.drag.hist[0].t > 90) b.drag.hist.shift();
+      });
+      const end = (e) => {
+        if (!b.drag || b.drag.id !== e.pointerId) return;
+        const h = b.drag.hist, a = h[0], z = h[h.length - 1], dt = Math.max(16, z.t - a.t) / 1000;
+        b.vx = Math.max(-1600, Math.min(1600, (z.x - a.x) / dt));
+        b.vy = Math.max(-1600, Math.min(1600, (z.y - a.y) / dt));
+        b.drag = null;
+        b.el.classList.remove("grab");
+      };
+      handle.addEventListener("pointerup", end);
+      handle.addEventListener("pointercancel", end);
+    });
+
+    let raf = 0, last = 0, visible = false;
+    const step = (now) => {
+      const dt = Math.min(0.033, (now - (last || now)) / 1000);
+      last = now;
+      const t = now / 1000;
+      for (const b of bodies) {
+        b.s += ((b.drag ? 1.06 : 1) - b.s) * 0.2;
+        if (b.drag) { b.vx = 0; b.vy = 0; continue; }
+        // Ease back toward the gentle left-to-right drift.
+        const tx = b.wind, ty = (b.home - b.y) * 0.35 + Math.sin(t * 0.7 + b.ph) * 14;
+        const k = Math.min(1, dt * 0.9);
+        b.vx += (tx - b.vx) * k;
+        b.vy += (ty - b.vy) * k;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        const top = b.h / 2 + 40, bottom = AH - b.h / 2 - 8;
+        if (b.y < top) { b.y = top; b.vy = Math.abs(b.vy) * 0.7; }
+        if (b.y > bottom) { b.y = bottom; b.vy = -Math.abs(b.vy) * 0.7; }
+        // Leave on the right, come back on the left at a random height.
+        if (b.x - b.w / 2 > AW + 40) {
+          b.x = -b.w / 2 - 40 - Math.random() * AW * 0.5;
+          b.home = laneY(b.lane);
+          b.y = Math.min(bottom, Math.max(top, b.home));
+          b.vx = b.wind; b.vy = 0;
+        }
+        if (b.x + b.w / 2 < -AW * 0.9) { b.x = -b.w / 2 - 20; b.vx = b.wind; }
+      }
+      // Cards bump into each other like boxes; a dragged card shoves everything out of the way.
+      const GAP = 8;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const A = bodies[i], B = bodies[j];
+        const dx = B.x - A.x, dy = B.y - A.y;
+        const ox = (A.w + B.w) / 2 + GAP - Math.abs(dx);
+        const oy = (A.h + B.h + 64) / 2 + GAP - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) continue;
+        let nx = 0, ny = 0, over;
+        if (ox < oy) { nx = Math.sign(dx) || 1; over = ox; } else { ny = Math.sign(dy) || 1; over = oy; }
+        const ia = A.drag ? 0 : 1, ib = B.drag ? 0 : 1, sum = ia + ib || 1;
+        A.x -= nx * over * (ia / sum); A.y -= ny * over * (ia / sum);
+        B.x += nx * over * (ib / sum); B.y += ny * over * (ib / sum);
+        const rv = (B.vx - A.vx) * nx + (B.vy - A.vy) * ny;
+        if (rv < 0) {
+          const imp = -1.7 * rv / sum;
+          A.vx -= imp * nx * ia; A.vy -= imp * ny * ia;
+          B.vx += imp * nx * ib; B.vy += imp * ny * ib;
+        }
+        if (A.drag && !B.drag) { B.vx += nx * 80; B.vy += ny * 80; }
+        if (B.drag && !A.drag) { A.vx -= nx * 80; A.vy -= ny * 80; }
+      }
+      bodies.forEach(place);
+      raf = visible ? requestAnimationFrame(step) : 0;
+    };
+    bodies.forEach(place);
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible && !raf) { last = 0; raf = requestAnimationFrame(step); }
+    }).observe(arena);
+    let rz;
+    window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(measure, 150); }, { passive: true });
+  })();
+
+  // ---------- Video modal ----------
+  const vmodal = document.getElementById("vmodal");
+  const vframe = document.getElementById("vm-frame");
+  const vbox = vmodal.querySelector(".vm-box");
+  let lastFocus = null;
+  function openVideo(c) {
+    lastFocus = document.activeElement;
+    vbox.classList.toggle("short", c.fmt === "short");
+    document.getElementById("vm-title").textContent = c.name;
+    vframe.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${c.yt}?autoplay=1&playsinline=1&rel=0&modestbranding=1" title="Video: ${c.name}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+    vmodal.hidden = false;
+    document.documentElement.style.overflow = "hidden";
+    vmodal.querySelector(".vm-close").focus();
+  }
+  function closeVideo() {
+    if (vmodal.hidden) return;
+    vmodal.hidden = true;
+    vframe.innerHTML = "";
+    document.documentElement.style.overflow = "";
+    if (lastFocus) lastFocus.focus();
+  }
+  vmodal.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeVideo));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeVideo(); });
 
   // Mobile dock: after the hero button scrolls away, hidden again at the contact form.
   const dock = document.getElementById("dock");
