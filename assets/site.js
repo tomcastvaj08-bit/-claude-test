@@ -373,11 +373,13 @@ document.documentElement.classList.add("js");
     const W = "https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/";
     const CLIENTS = [
       { name: "Tary", meta: "YouTube · 1,71 mil. odběratelů", av: W + "200000643-b91c8b91ca/450/IMG_4132-8.webp?ph=a620bd5331", yt: "tfkOIZw8mFs", fmt: "long" },
-      { name: "Braeden", meta: "Creator · 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short", stickers: true },
+      { name: "Braeden", meta: "Creator · 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short", sticker: true },
       { name: "Harv Connell", meta: "Creator · anglický obsah", av: W + "200000651-0ee870ee89/450/IMG_4139-1.webp?ph=a620bd5331", yt: "Wi_21EqgjBM", fmt: "long" },
-      { name: "Tripaři na stopu", meta: "YouTube · 14,8 tis. odběratelů", av: W + "200000784-e4e7de4e7f/channels4_profile.webp?ph=a620bd5331", yt: "lVVK-LZpWqM", fmt: "long" },
-      { name: "The Long Investor", meta: "YouTube · investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "242UOUEXEUM", fmt: "long" },
+      { name: "Tripaři na stopu", meta: "YouTube · 14,8 tis. odběratelů", av: W + "200000784-e4e7de4e7f/channels4_profile.webp?ph=a620bd5331", yt: "-xpR4gBzmLI", fmt: "long" },
+      { name: "The Long Investor", meta: "YouTube · investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "pbCkKZnR2Jc", start: 392, fmt: "long" },
       { name: "Martin Cuper", meta: "YouTube · 14 tis. odběratelů", av: "https://yt3.ggpht.com/86qQEg0uDj2fgggL7u_ETSF7qt7uO0BWpM7M5Mv4vFw-FDSoSau4fMY7SYVkE9Qb-1MfBDyj3A=s176-c-k-c0x00ffffff-no-rj-mo", yt: "5dnivJD0Oyk", fmt: "long" },
+      { name: "Resono", meta: "Reels pro Resono", mono: "RESONO", monoBg: "#14102a", drive: "1-FsfrVsF7aNBvXMyiU_J5Pcrv_PAgjwF", fmt: "short" },
+      { name: "BU1", meta: "@goalkeepingforever", link: "https://www.instagram.com/goalkeepingforever/", mono: "BU1", monoBg: "#0a0d14", drive: "1OZKusW-0BLBOmV4JDden-HW7RJEolTOqU", fmt: "short" },
     ];
     const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
 
@@ -385,15 +387,17 @@ document.documentElement.classList.add("js");
     const bodies = CLIENTS.map((c) => {
       const el = document.createElement("div");
       el.className = "bub " + c.fmt;
-      const thumb = c.fmt === "short" ? `https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg` : `https://i.ytimg.com/vi/${c.yt}/mqdefault.jpg`;
+      const thumb = c.drive ? `https://drive.google.com/thumbnail?id=${c.drive}&sz=w600` : c.fmt === "short" ? `https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg` : `https://i.ytimg.com/vi/${c.yt}/mqdefault.jpg`;
+      const avatar = c.mono ? `<span class="mono" style="--mono-bg:${c.monoBg};${c.mono.length > 4 ? "font-size:0.62rem" : ""}">${c.mono}</span>` : `<img src="${c.av}" alt="${c.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+      const meta = c.link ? `<a class="bub-meta" href="${c.link}" target="_blank" rel="noopener">${c.meta}</a>` : `<span class="bub-meta">${c.meta}</span>`;
       el.innerHTML = `
-        ${c.stickers ? `<img class="stk a" src="assets/braeden-views.webp" alt="" width="560" height="384" loading="lazy" decoding="async"><img class="stk b" src="assets/braeden-retention.webp" alt="" width="600" height="414" loading="lazy" decoding="async">` : ""}
-        <button type="button" class="bub-av" aria-label="Chytit ${c.name}"><img src="${c.av}" alt="${c.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>
+        ${c.sticker ? `<img class="stk big" src="assets/braeden-collage.webp" alt="Braeden: 62 mil. zhlédnutí, 21,3 mil. u jednoho videa, retence 60 %" width="520" height="959" loading="lazy" decoding="async">` : ""}
+        <button type="button" class="bub-av" aria-label="Chytit ${c.name}">${avatar}</button>
         <span class="bub-name">${c.name}</span>
-        <span class="bub-meta">${c.meta}</span>
-        <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async"><span class="fmt">${c.fmt === "short" ? "Short" : "Long form"}</span><span class="play">${PLAY}</span></button>`;
+        ${meta}
+        <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('noimg')"><span class="fmt">${c.fmt === "short" ? "Short" : "Long form"}</span><span class="play">${PLAY}</span></button>`;
       arena.appendChild(el);
-      el.querySelector(".bub-vid").addEventListener("click", () => openVideo({ title: c.name, yt: c.yt, fmt: c.fmt }));
+      el.querySelector(".bub-vid").addEventListener("click", () => openVideo({ title: c.name, yt: c.yt, start: c.start, drive: c.drive, fmt: c.fmt }));
       return { c, el, x: 0, y: 0, vx: 0, vy: 0, wind: 0, ph: Math.random() * Math.PI * 2, w: 0, h: 0, r: 0, drag: null, s: 1 };
     });
 
@@ -406,6 +410,8 @@ document.documentElement.classList.add("js");
       const small = AW < 600;
       bodies.forEach((b) => {
         b.w = b.el.offsetWidth; b.h = b.el.offsetHeight;
+        const big = b.el.querySelector(".stk.big");
+        b.extra = big ? Math.max(0, big.offsetHeight - 30) : 0;
         b.r = (b.w + b.h) / 4;
         b.wind = (small ? 16 : 26) + Math.random() * (small ? 14 : 22);
       });
@@ -483,7 +489,7 @@ document.documentElement.classList.add("js");
         b.vy += (ty - b.vy) * k;
         b.x += b.vx * dt;
         b.y += b.vy * dt;
-        const top = b.h / 2 + 40, bottom = AH - b.h / 2 - 8;
+        const top = b.h / 2 + 40, bottom = Math.max(top, AH - b.h / 2 - 8 - b.extra * 0.8);
         if (b.y < top) { b.y = top; b.vy = Math.abs(b.vy) * 0.7; }
         if (b.y > bottom) { b.y = bottom; b.vy = -Math.abs(b.vy) * 0.7; }
         // Leave on the right, come back on the left at a random height.
@@ -539,10 +545,12 @@ document.documentElement.classList.add("js");
     lastFocus = document.activeElement;
     vbox.classList.toggle("short", v.fmt === "short");
     vbox.classList.toggle("ig", !!v.ig);
+    vbox.classList.toggle("drive", !!v.drive);
     document.getElementById("vm-title").textContent = v.title;
     const src = v.ig
       ? `https://www.instagram.com/reel/${v.ig}/embed/`
-      : `https://www.youtube-nocookie.com/embed/${v.yt}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+      : v.drive ? `https://drive.google.com/file/d/${v.drive}/preview`
+      : `https://www.youtube-nocookie.com/embed/${v.yt}?autoplay=1&playsinline=1&rel=0&modestbranding=1${v.start ? "&start=" + v.start : ""}`;
     vframe.innerHTML = `<iframe src="${src}" title="Video: ${v.title}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe>`;
     vext.hidden = !v.ig;
     if (v.ig) vext.href = `https://www.instagram.com/reel/${v.ig}/`;
