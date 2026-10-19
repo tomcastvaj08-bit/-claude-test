@@ -949,6 +949,10 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 .vm-ext svg { width: 18px; height: 18px; }
 .vm-ext[hidden] { display: none; }
 .xavs img { font-size: 0; color: transparent; background: #e8ecf3; }
+@media (min-width: 1024px) {
+  .stk.a { width: 156px; right: -128px; }
+  .stk.b { width: 170px; left: -140px; }
+}
 @media (min-width: 960px) {
   .p-portfolio .hero.simple { padding-block: 48px 0; }
   .p-portfolio .hero.simple h1 { font-size: clamp(3.6rem, 5.6vw, 5.4rem); }
