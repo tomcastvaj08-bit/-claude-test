@@ -379,6 +379,7 @@ document.documentElement.classList.add("js");
       { name: "The Long Investor", meta: "YouTube · investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "pbCkKZnR2Jc", start: 392, fmt: "long" },
       { name: "Martin Cuper", meta: "YouTube · 14 tis. odběratelů", av: "https://yt3.ggpht.com/86qQEg0uDj2fgggL7u_ETSF7qt7uO0BWpM7M5Mv4vFw-FDSoSau4fMY7SYVkE9Qb-1MfBDyj3A=s176-c-k-c0x00ffffff-no-rj-mo", yt: "5dnivJD0Oyk", fmt: "long" },
       { name: "Resono", meta: "Reels pro Resono", mono: "RESONO", monoBg: "#14102a", drive: "1-FsfrVsF7aNBvXMyiU_J5Pcrv_PAgjwF", fmt: "short" },
+      { name: "Best Account", meta: "Účetní kancelář", av: "assets/clients/bestaccount-logo.webp", file: "assets/clients/bestaccount.mp4", poster: "assets/clients/bestaccount.jpg", fmt: "short" },
       { name: "BU1", meta: "@goalkeepingforever", link: "https://www.instagram.com/goalkeepingforever/", mono: "BU1", monoBg: "#0a0d14", drive: "1OZKusW-0BLBOmV4JDden-HW7RJEolTOqU", fmt: "short" },
     ];
     const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
@@ -387,7 +388,7 @@ document.documentElement.classList.add("js");
     const bodies = CLIENTS.map((c) => {
       const el = document.createElement("div");
       el.className = "bub " + c.fmt;
-      const thumb = c.drive ? `https://drive.google.com/thumbnail?id=${c.drive}&sz=w600` : c.fmt === "short" ? `https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg` : `https://i.ytimg.com/vi/${c.yt}/mqdefault.jpg`;
+      const thumb = c.poster ? c.poster : c.drive ? `https://drive.google.com/thumbnail?id=${c.drive}&sz=w600` : c.fmt === "short" ? `https://i.ytimg.com/vi/${c.yt}/hqdefault.jpg` : `https://i.ytimg.com/vi/${c.yt}/mqdefault.jpg`;
       const avatar = c.mono ? `<span class="mono" style="--mono-bg:${c.monoBg};${c.mono.length > 4 ? "font-size:0.62rem" : ""}">${c.mono}</span>` : `<img src="${c.av}" alt="${c.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
       const meta = c.link ? `<a class="bub-meta" href="${c.link}" target="_blank" rel="noopener">${c.meta}</a>` : `<span class="bub-meta">${c.meta}</span>`;
       el.innerHTML = `
@@ -397,7 +398,7 @@ document.documentElement.classList.add("js");
         ${meta}
         <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('noimg')"><span class="fmt">${c.fmt === "short" ? "Short" : "Long form"}</span><span class="play">${PLAY}</span></button>`;
       arena.appendChild(el);
-      el.querySelector(".bub-vid").addEventListener("click", () => openVideo({ title: c.name, yt: c.yt, start: c.start, drive: c.drive, fmt: c.fmt }));
+      el.querySelector(".bub-vid").addEventListener("click", () => openVideo({ title: c.name, yt: c.yt, start: c.start, drive: c.drive, file: c.file, poster: c.poster, fmt: c.fmt }));
       return { c, el, x: 0, y: 0, vx: 0, vy: 0, wind: 0, ph: Math.random() * Math.PI * 2, w: 0, h: 0, r: 0, drag: null, s: 1 };
     });
 
@@ -545,13 +546,13 @@ document.documentElement.classList.add("js");
     lastFocus = document.activeElement;
     vbox.classList.toggle("short", v.fmt === "short");
     vbox.classList.toggle("ig", !!v.ig);
-    vbox.classList.toggle("drive", !!v.drive);
+    vbox.classList.toggle("drive", !!(v.drive || v.file));
     document.getElementById("vm-title").textContent = v.title;
     const src = v.ig
       ? `https://www.instagram.com/reel/${v.ig}/embed/`
       : v.drive ? `https://drive.google.com/file/d/${v.drive}/preview`
       : `https://www.youtube-nocookie.com/embed/${v.yt}?autoplay=1&playsinline=1&rel=0&modestbranding=1${v.start ? "&start=" + v.start : ""}`;
-    vframe.innerHTML = `<iframe src="${src}" title="Video: ${v.title}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe>`;
+    vframe.innerHTML = v.file ? `<video src="${v.file}" poster="${v.poster || ""}" controls autoplay playsinline></video>` : `<iframe src="${src}" title="Video: ${v.title}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write" allowfullscreen></iframe>`;
     vext.hidden = !v.ig;
     if (v.ig) vext.href = `https://www.instagram.com/reel/${v.ig}/`;
     vmodal.hidden = false;
