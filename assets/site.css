@@ -975,6 +975,7 @@ video.bub-live { object-fit: cover; }
 .bub.short iframe.bub-live { inset: -6%; width: 112%; height: 112%; }
 .bub-vid.is-live .bub-live { opacity: 1; }
 .bub-vid .fmt, .bub-vid .play { z-index: 2; }
-.bub-vid.is-live .play { opacity: 0.88; transform: scale(0.86); }
 .bub-vid.is-live .fmt::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #ff3b30; vertical-align: 1px; animation: livedot 1.4s ease-in-out infinite; }
 @keyframes livedot { 50% { opacity: 0.3; } }
+
+.bub-vid .play { display: none; }

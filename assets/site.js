@@ -404,19 +404,32 @@ document.documentElement.classList.add("js");
 
     if (reduce) { arena.classList.add("static"); return; }
 
-    // Live previews: a muted clip starts as soon as a card is on screen and is torn down when it leaves,
-    // so only a handful of players exist at once. Skipped for reduced motion (above) and Data Saver.
-    (() => {
+    // Live previews. A muted clip plays in every card that is on screen or about to drift in.
+    // Players are created ahead of time (cards travel left to right, so the ones just off the left edge
+    // are warmed up first) and removed once a card is well out of view, so only a few exist at once.
+    // The thumbnail stays on top until the player reports that it is actually playing, then cross-fades.
+    // Skipped for reduced motion (above) and Data Saver.
+    const preview = (() => {
       const conn = navigator.connection;
-      if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) return;
-      const MAX_LIVE = window.matchMedia("(min-width: 900px)").matches ? 5 : 3;
-      const live = new Set(), seen = new Set(), timers = new Map();
-      const ytSrc = (c) => {
+      if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) return null;
+      const MAX_LIVE = window.matchMedia("(min-width: 900px)").matches ? 7 : 4;
+      const live = new Set();
+      let near = false, seq = 0;
+      const ytSrc = (c, id) => {
         const start = c.start || (c.fmt === "long" ? 30 : 0);
-        const q = new URLSearchParams({ autoplay: "1", mute: "1", controls: "0", loop: "1", playlist: c.yt, playsinline: "1", modestbranding: "1", rel: "0", iv_load_policy: "3", disablekb: "1", fs: "0" });
+        const q = new URLSearchParams({ autoplay: "1", mute: "1", controls: "0", loop: "1", playlist: c.yt, playsinline: "1", modestbranding: "1", rel: "0", iv_load_policy: "3", disablekb: "1", fs: "0", enablejsapi: "1", origin: location.origin, widget_referrer: location.href });
         if (start) q.set("start", String(start));
         return `https://www.youtube-nocookie.com/embed/${c.yt}?${q}`;
       };
+      const show = (b, m) => { if (b.live === m) b.el.querySelector(".bub-vid").classList.add("is-live"); };
+      // YouTube tells us when playback really starts (playerState 1); fade in only then.
+      window.addEventListener("message", (e) => {
+        if (!/^https:\/\/www\.youtube(-nocookie)?\.com$/.test(e.origin)) return;
+        let d = e.data;
+        try { if (typeof d === "string") d = JSON.parse(d); } catch (err) { return; }
+        if (!d || !d.info || d.info.playerState !== 1) return;
+        for (const b of live) if (b.live && b.live.contentWindow === e.source) show(b, b.live);
+      });
       const mount = (b) => {
         if (b.live || live.size >= MAX_LIVE) return;
         const c = b.c, box = b.el.querySelector(".bub-vid");
@@ -426,15 +439,19 @@ document.documentElement.classList.add("js");
           Object.assign(m, { src: c.file, muted: true, loop: true, playsInline: true, autoplay: true, preload: "auto" });
           m.setAttribute("muted", "");
           m.setAttribute("playsinline", "");
-          m.addEventListener("playing", () => box.classList.add("is-live"), { once: true });
+          m.addEventListener("playing", () => show(b, m), { once: true });
         } else if (c.yt) {
+          const id = "yt" + ++seq;
           m = document.createElement("iframe");
-          m.src = ytSrc(c);
+          m.id = id;
+          m.src = ytSrc(c, id);
           m.allow = "autoplay; encrypted-media; picture-in-picture";
           m.referrerPolicy = "strict-origin-when-cross-origin";
-          m.loading = "eager";
-          // YouTube needs a moment after load before frames appear; wait so the thumbnail never flashes black.
-          m.addEventListener("load", () => setTimeout(() => b.live === m && box.classList.add("is-live"), 1200), { once: true });
+          m.addEventListener("load", () => {
+            // Subscribe to state events; keep a fallback in case the API message never arrives.
+            try { m.contentWindow.postMessage(JSON.stringify({ event: "listening", id, channel: "widget" }), "*"); } catch (err) {}
+            setTimeout(() => show(b, m), 2600);
+          }, { once: true });
         } else return;
         m.className = "bub-live";
         m.tabIndex = -1;
@@ -452,26 +469,25 @@ document.documentElement.classList.add("js");
         live.delete(b);
         setTimeout(() => m.remove(), 450);
       };
-      const fill = () => { for (const b of seen) { if (live.size >= MAX_LIVE) break; mount(b); } };
-      const byEl = new Map(bodies.map((b) => [b.el, b]));
-      const io = new IntersectionObserver((entries) => {
-        for (const e of entries) {
-          const b = byEl.get(e.target);
-          clearTimeout(timers.get(b));
-          if (e.isIntersecting) { seen.add(b); mount(b); }
-          else {
-            seen.delete(b);
-            // Small grace period: cards drift across the edge and get thrown around; don't reload players for that.
-            timers.set(b, setTimeout(() => { unmount(b); fill(); }, 1500));
-          }
-        }
-      }, { threshold: 0.35 });
-      bodies.forEach((b) => io.observe(b.el));
-      // Pause everything while the tab is hidden.
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) [...live].forEach(unmount);
-        else fill();
-      });
+      // Horizontal position decides: on screen first, then the ones about to enter from the left.
+      const score = (b) => {
+        const l = b.x - b.w / 2, r = b.x + b.w / 2;
+        if (r > 0 && l < AW) return 0;                 // visible
+        if (r <= 0 && r > -AW * 0.6) return 1 - r / AW; // arriving soon (closer = better)
+        return Infinity;                               // far away or already gone off the right
+      };
+      const tick = () => {
+        if (!near || document.hidden) { [...live].forEach(unmount); return; }
+        const ranked = bodies.map((b) => [score(b), b]).filter(([s]) => s !== Infinity).sort((a, z) => a[0] - z[0]);
+        const keep = new Set(ranked.slice(0, MAX_LIVE).map(([, b]) => b));
+        for (const b of [...live]) if (!keep.has(b) && score(b) === Infinity) unmount(b);
+        for (const b of keep) mount(b);
+      };
+      // Start warming up players well before the section scrolls into view.
+      new IntersectionObserver(([e]) => { near = e.isIntersecting; tick(); }, { rootMargin: "900px 0px" }).observe(arena);
+      setInterval(tick, 400);
+      document.addEventListener("visibilitychange", tick);
+      return { tick };
     })();
 
     let AW = 0, AH = 0;
