@@ -373,14 +373,14 @@ document.documentElement.classList.add("js");
     const W = "https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/";
     const CLIENTS = [
       { name: "Tary", meta: "YouTube · 1,71 mil. odběratelů", av: W + "200000643-b91c8b91ca/450/IMG_4132-8.webp?ph=a620bd5331", yt: "tfkOIZw8mFs", fmt: "long" },
-      { name: "Braeden", meta: "Creator · 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short", sticker: true },
+      { name: "Braeden", meta: "Creator · 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short" },
       { name: "Harv Connell", meta: "Creator · anglický obsah", av: W + "200000651-0ee870ee89/450/IMG_4139-1.webp?ph=a620bd5331", yt: "Wi_21EqgjBM", fmt: "long" },
       { name: "Tripaři na stopu", meta: "YouTube · 14,8 tis. odběratelů", av: W + "200000784-e4e7de4e7f/channels4_profile.webp?ph=a620bd5331", yt: "-xpR4gBzmLI", fmt: "long" },
       { name: "The Long Investor", meta: "YouTube · investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "pbCkKZnR2Jc", start: 392, fmt: "long" },
       { name: "Martin Cuper", meta: "YouTube · 14 tis. odběratelů", av: "https://yt3.ggpht.com/86qQEg0uDj2fgggL7u_ETSF7qt7uO0BWpM7M5Mv4vFw-FDSoSau4fMY7SYVkE9Qb-1MfBDyj3A=s176-c-k-c0x00ffffff-no-rj-mo", yt: "5dnivJD0Oyk", fmt: "long" },
-      { name: "Resono", meta: "Reels pro Resono", mono: "RESONO", monoBg: "#14102a", drive: "1-FsfrVsF7aNBvXMyiU_J5Pcrv_PAgjwF", fmt: "short" },
+      { name: "Resono", meta: "Vizuály na projekci pro akci", mono: "RESONO", monoBg: "#14102a", drive: "19d_0c64bX_R6AqVhS8oA3-0qVLIFajpq", fmt: "long", label: "Vizuály" },
       { name: "Best Account", meta: "Účetní kancelář", av: "assets/clients/bestaccount-logo.webp", file: "assets/clients/bestaccount.mp4", poster: "assets/clients/bestaccount.jpg", fmt: "short" },
-      { name: "BU1", meta: "@goalkeepingforever", link: "https://www.instagram.com/goalkeepingforever/", mono: "BU1", monoBg: "#0a0d14", drive: "1OZKusW-0BLBOmV4JDden-HW7RJEolTOqU", fmt: "short" },
+      { name: "BU1", meta: "@goalkeepingforever", link: "https://www.instagram.com/goalkeepingforever/", mono: "BU1", monoBg: "#0a0d14", drive: "1OZKusW-0BLBOmV4JDdenHW7RJEolTOqU", fmt: "short" },
     ];
     const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
 
@@ -396,13 +396,83 @@ document.documentElement.classList.add("js");
         <button type="button" class="bub-av" aria-label="Chytit ${c.name}">${avatar}</button>
         <span class="bub-name">${c.name}</span>
         ${meta}
-        <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('noimg')"><span class="fmt">${c.fmt === "short" ? "Short" : "Long form"}</span><span class="play">${PLAY}</span></button>`;
+        <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('noimg')"><span class="fmt">${c.label || (c.fmt === "short" ? "Short" : "Long form")}</span><span class="play">${PLAY}</span></button>`;
       arena.appendChild(el);
       el.querySelector(".bub-vid").addEventListener("click", () => openVideo({ title: c.name, yt: c.yt, start: c.start, drive: c.drive, file: c.file, poster: c.poster, fmt: c.fmt }));
       return { c, el, x: 0, y: 0, vx: 0, vy: 0, wind: 0, ph: Math.random() * Math.PI * 2, w: 0, h: 0, r: 0, drag: null, s: 1 };
     });
 
     if (reduce) { arena.classList.add("static"); return; }
+
+    // Live previews: a muted clip starts as soon as a card is on screen and is torn down when it leaves,
+    // so only a handful of players exist at once. Skipped for reduced motion (above) and Data Saver.
+    (() => {
+      const conn = navigator.connection;
+      if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) return;
+      const MAX_LIVE = window.matchMedia("(min-width: 900px)").matches ? 5 : 3;
+      const live = new Set(), seen = new Set(), timers = new Map();
+      const ytSrc = (c) => {
+        const start = c.start || (c.fmt === "long" ? 30 : 0);
+        const q = new URLSearchParams({ autoplay: "1", mute: "1", controls: "0", loop: "1", playlist: c.yt, playsinline: "1", modestbranding: "1", rel: "0", iv_load_policy: "3", disablekb: "1", fs: "0" });
+        if (start) q.set("start", String(start));
+        return `https://www.youtube-nocookie.com/embed/${c.yt}?${q}`;
+      };
+      const mount = (b) => {
+        if (b.live || live.size >= MAX_LIVE) return;
+        const c = b.c, box = b.el.querySelector(".bub-vid");
+        let m;
+        if (c.file) {
+          m = document.createElement("video");
+          Object.assign(m, { src: c.file, muted: true, loop: true, playsInline: true, autoplay: true, preload: "auto" });
+          m.setAttribute("muted", "");
+          m.setAttribute("playsinline", "");
+          m.addEventListener("playing", () => box.classList.add("is-live"), { once: true });
+        } else if (c.yt) {
+          m = document.createElement("iframe");
+          m.src = ytSrc(c);
+          m.allow = "autoplay; encrypted-media; picture-in-picture";
+          m.referrerPolicy = "strict-origin-when-cross-origin";
+          m.loading = "eager";
+          // YouTube needs a moment after load before frames appear; wait so the thumbnail never flashes black.
+          m.addEventListener("load", () => setTimeout(() => b.live === m && box.classList.add("is-live"), 1200), { once: true });
+        } else return;
+        m.className = "bub-live";
+        m.tabIndex = -1;
+        m.setAttribute("aria-hidden", "true");
+        box.insertBefore(m, box.querySelector(".fmt"));
+        if (c.file) m.play().catch(() => {});
+        b.live = m;
+        live.add(b);
+      };
+      const unmount = (b) => {
+        if (!b.live) return;
+        b.el.querySelector(".bub-vid").classList.remove("is-live");
+        const m = b.live;
+        b.live = null;
+        live.delete(b);
+        setTimeout(() => m.remove(), 450);
+      };
+      const fill = () => { for (const b of seen) { if (live.size >= MAX_LIVE) break; mount(b); } };
+      const byEl = new Map(bodies.map((b) => [b.el, b]));
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          const b = byEl.get(e.target);
+          clearTimeout(timers.get(b));
+          if (e.isIntersecting) { seen.add(b); mount(b); }
+          else {
+            seen.delete(b);
+            // Small grace period: cards drift across the edge and get thrown around; don't reload players for that.
+            timers.set(b, setTimeout(() => { unmount(b); fill(); }, 1500));
+          }
+        }
+      }, { threshold: 0.35 });
+      bodies.forEach((b) => io.observe(b.el));
+      // Pause everything while the tab is hidden.
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) [...live].forEach(unmount);
+        else fill();
+      });
+    })();
 
     let AW = 0, AH = 0;
     const measure = () => {
@@ -546,7 +616,7 @@ document.documentElement.classList.add("js");
     lastFocus = document.activeElement;
     vbox.classList.toggle("short", v.fmt === "short");
     vbox.classList.toggle("ig", !!v.ig);
-    vbox.classList.toggle("drive", !!(v.drive || v.file));
+    vbox.classList.toggle("drive", !!(v.drive || v.file) && v.fmt === "short");
     document.getElementById("vm-title").textContent = v.title;
     const src = v.ig
       ? `https://www.instagram.com/reel/${v.ig}/embed/`
