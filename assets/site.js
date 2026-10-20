@@ -412,7 +412,6 @@ document.documentElement.classList.add("js");
     const preview = (() => {
       const conn = navigator.connection;
       if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ""))) return null;
-      const MAX_LIVE = window.matchMedia("(min-width: 900px)").matches ? 7 : 4;
       const live = new Set();
       let near = false, seq = 0;
       const ytSrc = (c, id) => {
@@ -435,7 +434,7 @@ document.documentElement.classList.add("js");
         }
       });
       const mount = (b) => {
-        if (b.live || live.size >= MAX_LIVE) return;
+        if (b.live) return;
         const c = b.c, box = b.el.querySelector(".bub-vid");
         let m;
         if (c.file) {
@@ -454,7 +453,7 @@ document.documentElement.classList.add("js");
           m.addEventListener("load", () => {
             // Subscribe to state events; keep a fallback in case the API message never arrives.
             try { m.contentWindow.postMessage(JSON.stringify({ event: "listening", id, channel: "widget" }), "*"); } catch (err) {}
-            setTimeout(() => show(b, m), 9000);
+            // No timed fallback: a player that never reports "playing" simply keeps its thumbnail.
           }, { once: true });
         } else return;
         m.className = "bub-live";
@@ -473,25 +472,37 @@ document.documentElement.classList.add("js");
         live.delete(b);
         setTimeout(() => m.remove(), 450);
       };
-      // Horizontal position decides: on screen first, then the ones about to enter from the left.
-      const score = (b) => {
-        const l = b.x - b.w / 2, r = b.x + b.w / 2;
-        if (r > 0 && l < AW) return 0;                 // visible
-        if (r <= 0 && r > -AW * 0.6) return 1 - r / AW; // arriving soon (closer = better)
-        return Infinity;                               // far away or already gone off the right
+      // Players are created once, one at a time while the browser is idle, and then kept running.
+      // Creating a YouTube player is the expensive part (it is what made the cards stutter at the left edge),
+      // so it never happens again while the cards are moving. Everything is torn down only after the
+      // section has been far off screen for a while, or the tab is hidden.
+      const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+      let queue = [], pumping = false, farTimer = 0;
+      const pump = () => {
+        if (!near || document.hidden || !queue.length) { pumping = false; return; }
+        pumping = true;
+        idle(() => { const b = queue.shift(); if (b) mount(b); setTimeout(pump, 700); }, { timeout: 1500 });
       };
-      const tick = () => {
-        if (!near || document.hidden) { [...live].forEach(unmount); return; }
-        const ranked = bodies.map((b) => [score(b), b]).filter(([s]) => s !== Infinity).sort((a, z) => a[0] - z[0]);
-        const keep = new Set(ranked.slice(0, MAX_LIVE).map(([, b]) => b));
-        for (const b of [...live]) if (!keep.has(b) && score(b) === Infinity) unmount(b);
-        for (const b of keep) mount(b);
+      const start = () => {
+        clearTimeout(farTimer);
+        // Cards on screen first, then the ones about to drift in from the left, then the rest.
+        const rank = (b) => {
+          const l = b.x - b.w / 2, r = b.x + b.w / 2;
+          if (r > 0 && l < AW) return 0;
+          if (r <= 0) return 1 - r / AW;
+          return 10;
+        };
+        queue = bodies.filter((b) => !b.live && (b.c.yt || b.c.file)).sort((a, z) => rank(a) - rank(z));
+        if (!pumping) pump();
       };
-      // Start warming up players well before the section scrolls into view.
-      new IntersectionObserver(([e]) => { near = e.isIntersecting; tick(); }, { rootMargin: "900px 0px" }).observe(arena);
-      setInterval(tick, 400);
-      document.addEventListener("visibilitychange", tick);
-      return { tick };
+      const stop = () => { queue = []; [...live].forEach(unmount); };
+      new IntersectionObserver(([e]) => {
+        near = e.isIntersecting;
+        if (near) start();
+        else { clearTimeout(farTimer); farTimer = setTimeout(stop, 5000); }
+      }, { rootMargin: "900px 0px" }).observe(arena);
+      document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); else if (near) start(); });
+      return { start, stop };
     })();
 
     let AW = 0, AH = 0;
