@@ -413,7 +413,14 @@ async function main() {
     sceneStarts: scenes.map((s) => ({ template: s.def.template, cue: s.def.cue, start: +s.start.toFixed(3), end: +s.end.toFixed(3) })),
     estimated: !!voice.estimated,
     sfx: sfx.sort((a, b) => a.at - b.at),
+    // hard cuts inside the hook (gag clip edit) – the renderer keeps the shutter from blending across them
+    cuts: hook.cuts ?? [],
   };
+  // ?only=hook: just the hook + the first beat of the graphics landing (to judge the hook on its own)
+  if (q.get("only") === "hook") {
+    const d = (hook.end ?? B) + 0.8;
+    window.__meta = { ...window.__meta, duration: d, sfx: window.__meta.sfx.filter((e) => e.at < d) };
+  }
   // ---------- optional cold open (character pre-scene) BEFORE the hook: ?cold=<id> or ep.coldOpen.
   // ?only=cold renders just the pre-scene + the first second of the hook (to judge the hand-off).
   const coldId = q.get("cold") ?? ep.coldOpen ?? null;

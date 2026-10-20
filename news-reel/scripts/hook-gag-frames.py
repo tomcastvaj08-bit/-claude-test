@@ -19,8 +19,12 @@ tmp = out + "_src"; shutil.rmtree(tmp, ignore_errors=True); os.makedirs(tmp)
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(a.start), "-t", str(a.end - a.start), "-i", a.src,
                 "-vf", "fps=24,scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080", "-q:v", "3", os.path.join(tmp, "s%04d.jpg")], check=True)
 src = sorted(os.listdir(tmp)); n = len(src)
+# on twos, but the hold phase restarts at every hard cut of the edit (no frame of the previous shot leaks over)
+idx_p0 = os.path.join(root, "index.json")
+cutf = sorted({0} | {round(c * 24) for c in json.load(open(idx_p0)).get(a.id, {}).get("cuts", [])})
 for i in range(n):
-    j = (i // 2) * 2 if a.twos else i
+    s0 = max(c for c in cutf if c <= i)
+    j = s0 + ((i - s0) // 2) * 2 if a.twos else i
     shutil.copy(os.path.join(tmp, src[min(j, n - 1)]), os.path.join(out, f"f{i + 1:04d}.jpg"))
 shutil.rmtree(tmp)
 idx_p = os.path.join(root, "index.json"); idx = json.load(open(idx_p))

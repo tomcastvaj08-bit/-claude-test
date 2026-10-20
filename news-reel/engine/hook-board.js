@@ -594,7 +594,7 @@ export function buildBoardHook(root, ep, cfg) {
       { name: "hook_impact", at: O + L - 0.04, gain: -11, lp: 180 },
       { name: "reveal_shimmer", at: O + L - 0.2, gain: -13 },
     ];
-    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out,
+    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out, cuts: GAG.cuts ?? [],
       cues: { impact: clipEnd, whoosh: O, ticks: [], riser: [0, clipEnd] }, sfx: sfxG };
   }
   if (SHORT) {

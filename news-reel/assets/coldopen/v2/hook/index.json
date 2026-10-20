@@ -109,12 +109,12 @@
   "lineAt": 3.35
  },
  "coffee_ms": {
-  "frames": 0,
+  "frames": 102,
   "fps": 24,
-  "hold": 3.58,
+  "hold": 3.71,
   "voice": "../../coldopen/voice/hook_coffee",
   "line": 4.43,
-  "lineAt": 0,
+  "lineAt": 3.82,
   "voiceGain": -3,
   "markRect": [
    -31,
@@ -122,6 +122,138 @@
    112,
    0
   ],
-  "sfx": []
+  "sfx": [
+   {
+    "name": "whistle",
+    "at": 0.0,
+    "gain": -18,
+    "dur": 1.6,
+    "fo": 0.25
+   },
+   {
+    "name": "steps_wood",
+    "at": 0.05,
+    "gain": -1,
+    "dur": 1.6,
+    "fo": 0.2
+   },
+   {
+    "name": "d_whoosh_s",
+    "at": 0.871,
+    "gain": -15,
+    "dur": 0.5
+   },
+   {
+    "name": "d_whoosh_s",
+    "at": 1.294,
+    "gain": -17,
+    "dur": 0.5
+   },
+   {
+    "name": "trip_snag",
+    "at": 1.66,
+    "gain": 3,
+    "dur": 1.0
+   },
+   {
+    "name": "d_hit",
+    "at": 1.716,
+    "gain": -10,
+    "dur": 0.6
+   },
+   {
+    "name": "music_gag",
+    "at": 0,
+    "ss": 0.04,
+    "gain": -14,
+    "dur": 1.92,
+    "fo": 0.04
+   },
+   {
+    "name": "music_gag",
+    "at": 1.9,
+    "ss": 1.94,
+    "gain": -16,
+    "dur": 1.86,
+    "fi": 0.03,
+    "fo": 0.03,
+    "lp": 500
+   },
+   {
+    "name": "music_gag",
+    "at": 3.74,
+    "ss": 3.78,
+    "gain": -11,
+    "dur": 3.2,
+    "fi": 0.02,
+    "fo": 1.0
+   },
+   {
+    "name": "slowmo_bed",
+    "at": 1.86,
+    "gain": -18,
+    "dur": 1.9,
+    "fi": 0.04,
+    "fo": 0.08
+   },
+   {
+    "name": "slowmo_pour",
+    "at": 1.92,
+    "gain": 10,
+    "dur": 0.8,
+    "fo": 0.2
+   },
+   {
+    "name": "whip_air",
+    "at": 3.12,
+    "gain": -17,
+    "dur": 1.0
+   },
+   {
+    "name": "d_riser",
+    "at": 2.9,
+    "gain": -11,
+    "dur": 0.9,
+    "fo": 0.005
+   },
+   {
+    "name": "coffee_splat",
+    "at": 3.75,
+    "gain": 6,
+    "dur": 2.0,
+    "fo": 0.5
+   },
+   {
+    "name": "d_hit",
+    "at": 3.8,
+    "gain": -5,
+    "dur": 1.0
+   },
+   {
+    "name": "d_sub",
+    "at": 3.8,
+    "gain": -6,
+    "dur": 1.1
+   },
+   {
+    "name": "hook_impact",
+    "at": 3.8,
+    "gain": -8,
+    "lp": 220
+   }
+  ],
+  "src": "edited.mp4",
+  "start": 0.0,
+  "end": 4.24,
+  "twos": true,
+  "cuts": [
+   1.131,
+   1.554,
+   1.9,
+   2.6,
+   3.2,
+   3.74
+  ],
+  "edit": "Seedance 2.5 multishot 0a7fadf3 (720p): wide 0.15-1.62 x1.3 | plant 1.62-2.17 x1.3 | shoe 2.17-2.62 x1.3 | [shot 2.62-3.54 dropped: stain already on the calendar + comic text] | mug slow-mo 3.55-4.25 | face slow-mo 4.28-4.88 | drop 5.0-5.54 | calendar 5.54-6.04; upscaled to 1080p"
  }
 }

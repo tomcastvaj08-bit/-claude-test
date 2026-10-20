@@ -39,7 +39,8 @@ const coldOnly = args.includes("--cold-only");
     execFileSync("python3", [join(ROOT, "scripts", "hook-gag-frames.py"), id, join(gagDir, id, g.src), "--start", String(g.start ?? 0), "--end", String(g.end), ...(g.twos ? ["--twos"] : [])], { stdio: "inherit" });
   }
 }
-const build = coldId && coldOnly ? join(epBuild, `cold-${coldId}`) : epBuild;
+const hookOnly = args.includes("--hook-only");
+const build = coldId && coldOnly ? join(epBuild, `cold-${coldId}`) : hookOnly ? join(epBuild, "hook") : epBuild;
 mkdirSync(build, { recursive: true });
 
 // ---------- static server over news-reel/
@@ -57,7 +58,7 @@ const browser = await chromium.launch({ args: ["--font-render-hinting=none", "--
 const page = await browser.newPage({ viewport: { width: cfg.video.width, height: cfg.video.height }, deviceScaleFactor: 1 });
 page.on("console", (m) => m.type() !== "log" && console.log(`[page ${m.type()}] ${m.text()}`));
 page.on("pageerror", (e) => console.error(`[page error] ${e.message}`));
-const url = `http://127.0.0.1:${port}/engine/index.html?ep=/${relative(ROOT, epDir)}${coldId ? `&cold=${coldId}` : ""}${coldOnly ? "&only=cold" : ""}`;
+const url = `http://127.0.0.1:${port}/engine/index.html?ep=/${relative(ROOT, epDir)}${coldId ? `&cold=${coldId}` : ""}${coldOnly ? "&only=cold" : hookOnly ? "&only=hook" : ""}`;
 await page.goto(url);
 await page.waitForFunction(() => document.body.dataset.ready || document.body.dataset.error, null, { timeout: 30000 });
 const err = await page.evaluate(() => document.body.dataset.error);
