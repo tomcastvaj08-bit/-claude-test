@@ -31,7 +31,9 @@ const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").rep
 // script tokens with cue markers
 const scriptTokens = [];
 const cueAt = {}; // cue -> index into spoken script tokens
-for (const tok of ep.script.split(/\s+/).filter(Boolean)) {
+// audio tags ([confident, relaxed], [deadpan]…) are direction, not speech – drop them, even multi-word ones
+const untag = (s) => s.replace(/(?<!\[)\[[^\[\]]*\](?!\])/g, " ");
+for (const tok of untag(ep.script).split(/\s+/).filter(Boolean)) {
   let t = tok;
   let m;
   while ((m = t.match(/^\[\[([\w-]+)\]\](.*)$/))) {
@@ -50,7 +52,12 @@ try {
 } catch {}
 
 const raw = JSON.parse(readFileSync(resolve(wordsArg), "utf8"));
-const spoken = (raw.words ?? raw).filter((w) => (w.type ?? "word") === "word" && isSpoken(w.text));
+let inTag = false;
+const spoken = (raw.words ?? raw).filter((w) => {
+  const t = w.text, open = t.startsWith("[") || inTag;
+  inTag = open && !t.endsWith("]");
+  return !open && (w.type ?? "word") === "word" && isSpoken(t);
+});
 const fix = (t) => +Math.max(0, (t - lead) / tempo).toFixed(3);
 const words = spoken.map((w) => ({ text: w.text.replace(/…/g, ""), start: fix(w.start), end: fix(w.end) }));
 

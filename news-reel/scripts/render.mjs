@@ -215,7 +215,7 @@ function buildSfxStem(meta) {
 function mixAndMux(silent, meta) {
   const A = cfg.audio;
   // camera move over the finished picture (episode.json "camera": eased zoom keyframes, see camera-post.py)
-  const epCam = JSON.parse(readFileSync(join(epDir, "episode.json"), "utf8")).camera;
+  const epCam = meta.camera;
   if (epCam?.length && !coldOnly) {
     const kf = join(build, "camera.json"), out = join(build, "video_cam.mp4");
     writeFileSync(kf, JSON.stringify(epCam.map((k) => ({ ...k, t: k.t + (meta.coldOpen?.duration ?? 0) }))));

@@ -402,17 +402,36 @@ async function main() {
     }
   };
 
-  // episode-level sound design layers on top of the scenes' own: { name, at, gain, …mix opts } where `at` is
-  // absolute, or relative to a spoken word ({ word: "Fotky", at: -0.05 }, n-th match with `nth`) or a cue
-  for (const { word, nth = 1, cue, at = 0, name, gain = 0, ...o } of ep.sfxExtra ?? []) {
-    let base = 0;
+  // episode-level anchors: { t } absolute, or { word: "Fotky", nth } / { cue } plus an offset `at`
+  const anchor = ({ t, word, nth = 1, cue, at = 0 }) => {
+    if (t != null) return t + at;
     if (word) {
       const m = words.filter((w) => w.text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "").startsWith(word.toLowerCase()));
-      if (!m[nth - 1]) { console.warn(`sfxExtra: word ${word} not found`); continue; }
-      base = abs(m[nth - 1].start);
-    } else if (cue) base = cueTime(cue) ?? 0;
-    addSfx(name, base + at, gain, o);
+      if (!m[nth - 1]) { console.warn(`anchor: word ${word} #${nth} not found`); return null; }
+      return abs(m[nth - 1].start) + at;
+    }
+    return cue ? (cueTime(cue) ?? 0) + at : at;
+  };
+  // sound design layers on top of the scenes' own: { name, gain, …mix opts, until: anchor (sets dur) }
+  for (const { word, nth, cue, at, t, name, gain = 0, until, ...o } of ep.sfxExtra ?? []) {
+    const a = anchor({ t, word, nth, cue, at });
+    if (a == null) continue;
+    if (until) { const u = anchor(until); if (u != null) o.dur = +(u - a).toFixed(3); }
+    addSfx(name, a, gain, o);
   }
+  // camera moves over the finished picture (applied by scripts/camera-post.py): keys anchored like the sfx;
+  // `snap: true` = a 0.14 s eased jump centred on that moment (scene change) instead of a slow move
+  const camera = [];
+  for (const k of ep.camera ?? []) {
+    const a = anchor(k);
+    if (a == null) continue;
+    if (k.snap && camera.length) {
+      const prev = camera.at(-1);
+      if (prev.t > a - 0.08) prev.t = +(a - 0.09).toFixed(3);
+      camera.push({ t: +(a - 0.06).toFixed(3), z: prev.z, ease: "linear" }, { t: +(a + 0.08).toFixed(3), z: k.z, ease: "inOutCubic" });
+    } else camera.push({ t: +a.toFixed(3), z: k.z, ...(k.ease ? { ease: k.ease } : {}) });
+  }
+  camera.sort((p, q) => p.t - q.t);
 
   window.__meta = {
     duration: total,
@@ -429,6 +448,7 @@ async function main() {
     cuts: hook.cuts ?? [],
     // [from, to]: the renderer removes this span from the finished film (picture + mixed sound, short audio crossfade)
     postCut: hook.postCut ?? null,
+    camera,
   };
   // ?only=hook: just the hook + the first beat of the graphics landing (to judge the hook on its own)
   if (q.get("only") === "hook") {

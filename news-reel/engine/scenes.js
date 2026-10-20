@@ -127,8 +127,12 @@ export const templates = {
       ${p.tag ? tag(p.tag) : ""}
       ${letters(p.name ?? "", "lg")}
       ${p.caption ? letters(p.caption, "md muted") : ""}
+      ${p.button ? `<div class="app-get"><b>${esc(p.button)}</b><b class="done">${esc(p.buttonDone ?? p.button)}</b></div>` : ""}
     </div>`));
     const tile = el.querySelector(".tile"), sh = el.querySelector(".tile-shadow"), shine = el.querySelector(".shine");
+    // App Store "Get" pill: pops in on its word, then gets tapped (press + label swap), like downloading the app
+    const get = el.querySelector(".app-get"), tGet = ctx.at(p.buttonAt, 1.4), tTap = tGet + 0.55;
+    if (get) { ctx.sfx("ui_softpop", tGet, -6); ctx.sfx("ui_tap", tTap, -3); ctx.sfx("ui_chime", tTap + 0.12, -12); }
     const k = el.querySelector(".tag"), [name, cap] = el.querySelectorAll(".type");
     ctx.sfx("ui_pop", 0.05);
     ctx.sfx("reveal_shimmer", 0.6, -6);
@@ -143,6 +147,12 @@ export const templates = {
       if (k) rise(k, t, 0.35, { y: 30 });
       revealLetters(name, t, 0.3);
       if (cap) revealLetters(cap, t, ctx.at(p.captionAt, lettersDone(name, 0.3)), { from: 300, to: 550, stagger: 0.02 });
+      if (get) {
+        const a = prog(t, tGet, 0.5), press = Math.sin(Math.PI * prog(t, tTap, 0.22));
+        get.style.opacity = clamp(a * 3);
+        get.style.transform = `scale(${(a > 0 ? ease.outBack(a, 1.6) : 0) * (1 - 0.1 * press)})`;
+        get.classList.toggle("on", t >= tTap + 0.11);
+      }
     };
   },
 

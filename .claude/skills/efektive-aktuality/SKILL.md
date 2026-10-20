@@ -35,6 +35,14 @@ cd news-reel && npm install --silent && node scripts/sfx.mjs
 Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den publikace, YYYY-MM-DD), `newsDate` (z „Novinka ze …“), `number`, `title`, `source` (původní text), `script`, `scenes`, `voice` (id generace pro dohledání).
 
 ### 2. Voiceover text
+**Styl od 20. 10. (zpětná vazba uživatele, platí přednostně):**
+- **Vysvětluj jako dítěti.** Každý pojem, který divák nemusí znát, hned vysvětli 1–2 větami a ukaž ho v grafice. Příklad: „Pro ty pomalejší: karusel je jeden příspěvek, ve kterým máš víc fotek za sebou. Swipneš, další fotka. Swipneš znova, další. Jasný?“ a k tomu telefon s příspěvkem, který se na slova „swipneš“ posouvá (šablona `phone`).
+- **Uveď produkt prakticky.** Co to je, odkud a za kolik, např. „appka přímo od Instagramu, v App Storu úplně zadarmo“. Lidi rádi slyší „zadarmo“. Grafika: ikona appky + tlačítko „Získat“, které se ťukne (šablona `app`, props `button`, `buttonDone`, `buttonAt`).
+- **Jeden vtip na díl.** Drzý, ale ne zlý (např. „Android je na cestě… ale upřímně? Android maj stejně jen divný lidi. Takže jedem dál!“). Zvukově: hudba se na vtip zastaví (`dj_brake`, hudební podklad přes `until`), pod vtipem rostou risery, na „jedem dál“ přijde basový úder a hudba naskočí. Kamera při vtipu skočí blíž a stojí.
+- **Délka:** cíl ~40 s celkem (max 60 s), čím rychlejší, tím lepší. Tempo hlasu 1,15 (`"tempo"` v episode.json).
+- **Anglická slova piš foneticky česky** (karusel, apek), jinak je hlas vysloví anglicky.
+- **Statická scéna nesmí stát.** Na každé scéně je kamerový pohyb (`camera`, viz níže) a na každé změně zvuk (ui_swipe + ui_tap), na klíčových slovech tichý tik (`ui_tick`).
+
 - Česky, tykání, rychle a úderně, 45–70 slov (≈ 18–24 s). Žádné pozdravy, žádné datum (to je v hooku), **nezmiňuj značku EFEKTIVE** – ta je jen v outru.
 - Struktura: co je nového (1 věta s názvem produktu) → co to umí → dostupnost → co z toho mají klienti → „Tak to zkus: …“ (konkrétní akce).
 - Před každý úsek se změnou obrazu dej cue `[[nazev]]`. 5–7 cue = 5–7 scén po 2,5–4,5 s.

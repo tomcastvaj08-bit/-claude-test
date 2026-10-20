@@ -5,7 +5,7 @@
   "newsDate": "2026-10-07",
   "title": "Instagram Edits nově podporuje carousely",
   "source": "🎬 Instagram Edits nově podporuje carousely — Novinka ze 7. října. Co se změnilo: Instagram Edits umožňuje vytvářet carousely kombinující fotografie, videa, texty a efekty. Lze využívat uložené fonty, styly i vlastní samolepky. Funkce je dostupná na iOS, Android následuje. Pro klienty: Rychlejší produkce carouselů a jednodušší kombinování statické grafiky s videem. Vyzkoušet: Vytvořit jeden carousel přímo v Edits a porovnat rychlost práce s dosavadním postupem.",
-  "script": "[[intro]][excited] Instagram Edits umí nově [[boom]]carousely! [[mix]]Fotky, videa, texty i efekty — všechno v jednom příspěvku. [[style]]A navíc tvoje uložené fonty, styly i vlastní samolepky. [[platform]]Zatím na iPhonu, Android je na cestě. [[clients]]Pro klienty to znamená rychlejší carousely [[clients2]]a grafiku s videem bez přepínání appek. [[try]]Tak to zkus: jeden carousel přímo v Edits… a změř si, kolik času ušetříš.",
+  "script": "[[intro]][confident, relaxed, brisk pace] Instagram Edits, appka přímo od Instagramu, v App Storu úplně zadarmo, umí nově [[boom]]karusely! [[explain]]Pro ty pomalejší: karusel je jeden příspěvek, ve kterým máš víc fotek za sebou. Swipneš, další fotka. Swipneš znova, další. Jasný? [[mix]]A teď do něj dáš fotky, videa, texty i efekty — všechno v jednom příspěvku. [[style]]Plus tvoje uložené fonty, styly i vlastní samolepky. [[platform]]Zatím jen na iPhonu. Android je na cestě… [[joke]][deadpan] ale upřímně? Android maj stejně jen divný lidi. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená rychlejší karusely [[clients2]]a grafiku s videem bez přepínání apek. [[try]]Tak to zkus: jeden karusel přímo v Edits… a změř si, kolik času ušetříš.",
   "scenes": [
     {
       "cue": "intro",
@@ -17,7 +17,12 @@
           "#833AB4",
           "#FD1D1D"
         ],
-        "tag": "Instagram · Novinka"
+        "tag": "App Store · zdarma",
+        "caption": "Appka přímo od Instagramu",
+        "captionAt": "appka",
+        "button": "Získat",
+        "buttonDone": "Zdarma ✓",
+        "buttonAt": "zadarmo"
       }
     },
     {
@@ -25,7 +30,7 @@
       "template": "bigtype",
       "transition": "strobe",
       "props": {
-        "word": "Carousely",
+        "word": "Karusely",
         "bg": "blue",
         "meta": [
           "Instagram Edits",
@@ -35,11 +40,46 @@
       }
     },
     {
+      "cue": "explain",
+      "template": "phone",
+      "transition": "whip",
+      "props": {
+        "title": "Co je karusel?",
+        "app": "tvuj.profil",
+        "items": [
+          {
+            "label": "Tohle je karusel",
+            "kind": "photo",
+            "color": "#2f6bed",
+            "at": "karusel"
+          },
+          {
+            "label": "Swipni →",
+            "kind": "photo",
+            "color": "#7fd858",
+            "at": "swipneš"
+          },
+          {
+            "label": "Další fotka",
+            "kind": "video",
+            "color": "#252a35",
+            "at": "znova"
+          },
+          {
+            "label": "Jasný?",
+            "kind": "sparkle",
+            "color": "#e6eaf0",
+            "at": "jasný"
+          }
+        ]
+      }
+    },
+    {
       "cue": "mix",
       "template": "fan",
       "transition": "whip",
       "props": {
-        "title": "Vše v **jednom** příspěvku",
+        "title": "Do jednoho **příspěvku** dáš",
         "items": [
           {
             "title": "01",
@@ -102,7 +142,7 @@
       "props": {
         "kicker": "Kde to jede?",
         "title": "Zatím jen na **iPhonu**",
-        "sub": "Android je na cestě",
+        "sub": "Android je na cestě…",
         "app": "Poznámky",
         "heading": "Instagram Edits",
         "date": "7. října 2026",
@@ -120,11 +160,21 @@
       }
     },
     {
+      "cue": "joke",
+      "template": "words",
+      "transition": "strobe",
+      "props": {
+        "kicker": "Upřímně?",
+        "text": "Android maj stejně jen **divný** lidi.",
+        "size": "lg"
+      }
+    },
+    {
       "cue": "clients",
       "template": "particles",
       "transition": "invert",
       "props": {
-        "text": "Rychlejší **carousely**"
+        "text": "Rychlejší **karusely**"
       }
     },
     {
@@ -145,11 +195,11 @@
         "kicker": "Vyzkoušej",
         "steps": [
           "Otevři **Edits**",
-          "Poskládej **1 carousel**",
+          "Poskládej **1 karusel**",
           "Změř čas vs. dosud"
         ],
         "stepsAt": [
-          "carousel",
+          "karusel",
           "Edits",
           "změř"
         ]
@@ -159,34 +209,95 @@
   "voice": {
     "provider": "elevenlabs-mcp",
     "model": "eleven_v4",
-    "voiceId": "81wovuU8h1mgIHLBNeBy",
-    "voiceName": "Efík – Aktuality maskot",
+    "voiceId": "pq4dsKDG1xJYWPJUNn8d",
+    "voiceName": "Aura – Aktuality vypravěč",
     "flow": "1CWkLCHJJuFlsmj13frG",
-    "generation": "ZNOt73kpJSnk4D696uTD",
-    "note": "phonetic respelling for Czech pronunciation: karusel/karusely, apek; conformed onto rendered timing with scripts/voice-conform.py --loose"
+    "generation": "16gAeqvfKmMafXIvukwG"
   },
   "hookGag": "coffee_ms",
   "sfxExtra": [
     {
+      "t": 7.45,
       "name": "music_bed",
-      "at": 7.45,
       "gain": -16,
-      "dur": 22.6,
       "fi": 1.0,
+      "fo": 0.06,
+      "hp": 60,
+      "until": {
+        "cue": "joke",
+        "at": -0.08
+      }
+    },
+    {
+      "cue": "joke",
+      "at": -0.2,
+      "name": "dj_brake",
+      "gain": -6
+    },
+    {
+      "cue": "clients",
+      "at": -3.0,
+      "name": "riser_noise",
+      "gain": -17,
+      "dur": 3.0,
+      "fi": 0.9,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -2.5,
+      "name": "riser_tonal",
+      "gain": -16,
+      "dur": 2.5,
+      "fi": 0.5,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -13
+    },
+    {
+      "cue": "clients",
+      "at": 0.0,
+      "name": "music_bed",
+      "ss": 6.0,
+      "gain": -16,
+      "dur": 22,
+      "fi": 0.02,
       "fo": 1.6,
       "hp": 60
     },
     {
-      "word": "carousely",
+      "word": "karusely",
       "at": -0.28,
       "name": "swoosh_air",
-      "gain": -14
+      "gain": -13
     },
     {
-      "word": "carousely",
+      "word": "karusely",
       "at": -0.04,
       "name": "bass_drop",
       "gain": -17
+    },
+    {
+      "word": "swipneš",
+      "at": -0.1,
+      "name": "ui_swipe",
+      "gain": -3
+    },
+    {
+      "word": "znova",
+      "at": -0.1,
+      "name": "ui_swipe",
+      "gain": -3
+    },
+    {
+      "word": "jasný",
+      "at": 0.0,
+      "name": "ui_softpop",
+      "gain": -6
     },
     {
       "word": "fotky",
@@ -216,13 +327,13 @@
       "word": "všechno",
       "at": -0.22,
       "name": "swoosh_air",
-      "gain": -16
+      "gain": -14
     },
     {
       "word": "fonty",
-      "at": -0.18,
-      "name": "swoosh_air",
-      "gain": -16
+      "at": 0.02,
+      "name": "ui_softpop",
+      "gain": -8
     },
     {
       "word": "samolepky",
@@ -246,10 +357,10 @@
       "word": "rychlejší",
       "at": -0.18,
       "name": "swoosh_air",
-      "gain": -14
+      "gain": -12
     },
     {
-      "word": "carousely",
+      "word": "karusely",
       "nth": 2,
       "at": 0.05,
       "name": "sparkle",
@@ -262,10 +373,16 @@
       "gain": -14
     },
     {
-      "word": "tak",
-      "at": -0.06,
+      "cue": "try",
+      "at": -0.04,
       "name": "bass_drop",
       "gain": -19
+    },
+    {
+      "word": "zkus",
+      "at": 0.0,
+      "name": "ui_chime",
+      "gain": -13
     },
     {
       "word": "kolik",
@@ -286,6 +403,18 @@
       "gain": -7
     },
     {
+      "cue": "explain",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "explain",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
       "cue": "mix",
       "at": -0.14,
       "name": "ui_swipe",
@@ -322,18 +451,6 @@
       "gain": -7
     },
     {
-      "cue": "clients",
-      "at": -0.14,
-      "name": "ui_swipe",
-      "gain": -4
-    },
-    {
-      "cue": "clients",
-      "at": 0.0,
-      "name": "ui_tap",
-      "gain": -7
-    },
-    {
       "cue": "clients2",
       "at": -0.14,
       "name": "ui_swipe",
@@ -355,12 +472,6 @@
       "cue": "try",
       "at": 0.0,
       "name": "ui_tap",
-      "gain": -7
-    },
-    {
-      "word": "edits",
-      "at": -0.02,
-      "name": "ui_tick",
       "gain": -7
     },
     {
@@ -422,24 +533,6 @@
       "at": -0.02,
       "name": "ui_tick",
       "gain": -7
-    },
-    {
-      "word": "nově",
-      "at": 0.0,
-      "name": "ui_softpop",
-      "gain": -8
-    },
-    {
-      "word": "fonty",
-      "at": 0.02,
-      "name": "ui_softpop",
-      "gain": -8
-    },
-    {
-      "word": "zkus",
-      "at": 0.0,
-      "name": "ui_chime",
-      "gain": -13
     }
   ],
   "camera": [
@@ -448,179 +541,189 @@
       "z": 1.0
     },
     {
-      "t": 9.05,
-      "z": 1.0337,
+      "cue": "boom",
+      "at": -0.1,
+      "z": 1.035,
       "ease": "inOutSine"
     },
     {
-      "t": 9.07,
-      "z": 1.0337,
-      "ease": "linear"
-    },
-    {
-      "t": 9.21,
+      "cue": "boom",
       "z": 1.0,
-      "ease": "inOutCubic"
+      "snap": true
     },
     {
-      "t": 9.4,
-      "z": 1.0675,
+      "cue": "boom",
+      "at": 0.27,
+      "z": 1.07,
       "ease": "outExpo"
     },
     {
-      "t": 9.82,
+      "cue": "explain",
+      "at": -0.12,
       "z": 1.09,
       "ease": "inOutSine"
     },
     {
-      "t": 9.85,
-      "z": 1.09,
-      "ease": "linear"
-    },
-    {
-      "t": 9.99,
+      "cue": "explain",
       "z": 1.0,
-      "ease": "inOutCubic"
+      "snap": true
     },
     {
-      "t": 11.3,
-      "z": 1.0525,
-      "ease": "inOutCubic"
-    },
-    {
-      "t": 11.95,
-      "z": 1.0562,
-      "ease": "linear"
-    },
-    {
-      "t": 12.25,
-      "z": 1.1125,
+      "word": "swipneš",
+      "z": 1.035,
       "ease": "outQuart"
     },
     {
-      "t": 13.25,
-      "z": 1.0225,
-      "ease": "inOutQuad"
+      "word": "znova",
+      "z": 1.07,
+      "ease": "outQuart"
     },
     {
-      "t": 13.33,
-      "z": 1.0225,
+      "word": "jasný",
+      "z": 1.11,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "mix",
+      "at": -0.12,
+      "z": 1.1,
       "ease": "linear"
     },
     {
-      "t": 13.47,
-      "z": 1.09,
+      "cue": "mix",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "efekty",
+      "at": 0.2,
+      "z": 1.05,
       "ease": "inOutCubic"
     },
     {
-      "t": 14.5,
+      "word": "všechno",
+      "z": 1.055,
+      "ease": "linear"
+    },
+    {
+      "word": "všechno",
+      "at": 0.3,
+      "z": 1.11,
+      "ease": "outQuart"
+    },
+    {
+      "cue": "style",
+      "at": -0.15,
+      "z": 1.02,
+      "ease": "inOutQuad"
+    },
+    {
+      "cue": "style",
+      "z": 1.09,
+      "snap": true
+    },
+    {
+      "cue": "style",
+      "at": 1.1,
       "z": 1.0,
       "ease": "outCubic"
     },
     {
-      "t": 16.6,
-      "z": 1.0525,
+      "cue": "platform",
+      "at": -0.15,
+      "z": 1.05,
       "ease": "inOutSine"
     },
     {
-      "t": 16.68,
-      "z": 1.0525,
-      "ease": "linear"
-    },
-    {
-      "t": 16.82,
+      "cue": "platform",
       "z": 1.0,
-      "ease": "inOutCubic"
+      "snap": true
     },
     {
-      "t": 17.85,
-      "z": 1.0675,
+      "word": "android",
+      "at": -0.1,
+      "z": 1.07,
       "ease": "inOutQuad"
     },
     {
-      "t": 18.1,
-      "z": 1.0225,
-      "ease": "outQuart"
-    },
-    {
-      "t": 18.75,
-      "z": 1.045,
-      "ease": "inOutSine"
-    },
-    {
-      "t": 18.78,
-      "z": 1.045,
+      "cue": "joke",
+      "at": -0.12,
+      "z": 1.075,
       "ease": "linear"
     },
     {
-      "t": 18.92,
-      "z": 1.03,
-      "ease": "inOutCubic"
+      "cue": "joke",
+      "z": 1.12,
+      "snap": true
     },
     {
-      "t": 20.7,
-      "z": 1.0975,
-      "ease": "inOutCubic"
-    },
-    {
-      "t": 20.74,
-      "z": 1.0975,
+      "cue": "clients",
+      "at": -0.12,
+      "z": 1.125,
       "ease": "linear"
     },
     {
-      "t": 20.88,
+      "cue": "clients",
       "z": 1.0,
+      "snap": true
+    },
+    {
+      "cue": "clients2",
+      "at": -0.12,
+      "z": 1.1,
       "ease": "inOutCubic"
     },
     {
-      "t": 21.4,
+      "cue": "clients2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "cue": "clients2",
+      "at": 0.6,
       "z": 1.045,
       "ease": "outQuart"
     },
     {
-      "t": 22.55,
-      "z": 1.06,
-      "ease": "linear"
-    },
-    {
-      "t": 22.8,
-      "z": 1.105,
+      "word": "apek",
+      "z": 1.11,
       "ease": "outExpo"
     },
     {
-      "t": 22.96,
+      "cue": "try",
+      "at": -0.12,
       "z": 1.09,
       "ease": "inOutSine"
     },
     {
-      "t": 22.99,
-      "z": 1.09,
-      "ease": "linear"
+      "cue": "try",
+      "z": 1.08,
+      "snap": true
     },
     {
-      "t": 23.13,
-      "z": 1.075,
-      "ease": "inOutCubic"
-    },
-    {
-      "t": 24.3,
+      "cue": "try",
+      "at": 1.2,
       "z": 1.0,
       "ease": "outCubic"
     },
     {
-      "t": 25.7,
-      "z": 1.0375,
+      "word": "změř",
+      "at": -0.2,
+      "z": 1.04,
       "ease": "inOutSine"
     },
     {
-      "t": 25.95,
-      "z": 1.075,
+      "word": "změř",
+      "at": 0.1,
+      "z": 1.08,
       "ease": "outQuart"
     },
     {
-      "t": 27.2,
+      "word": "ušetříš",
+      "at": 0.8,
       "z": 1.0,
       "ease": "inOutQuart"
     }
-  ]
+  ],
+  "tempo": 1.15
 }
