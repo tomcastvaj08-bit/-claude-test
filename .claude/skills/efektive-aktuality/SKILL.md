@@ -42,7 +42,7 @@ Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den pub
 
 ### 3. Voiceover přes ElevenLabs konektor (MCP)
 1. `creative_create_flow` (název „Aktuality #N – téma“).
-2. `creative_generate_speech`: `model_id: "eleven_v4"`, `voice_id: "81wovuU8h1mgIHLBNeBy"` (**Efík – navržený maskot, stálý hlas série od 20. 10.**; pištivý, s přízvukem, viz `news-reel/assets/voice-design/README.md`; stejný hlas má i postavička v hooku. Dřív Karel `wNYzYiprejHCPi4voSeA`), `prompt` = skript BEZ `[[cue]]` značek, `flow_id`. Poll `creative_get_flow_run_status`.
+2. `creative_generate_speech`: `model_id: "eleven_v4"`, `voice_id: "pq4dsKDG1xJYWPJUNn8d"` (**Aura – hluboký zastřený sebevědomý vypravěč, stálý hlas série od 20. 10.**, prompt začni `[confident, relaxed, brisk pace]`; postavička v hooku mluví hlasem Efík `81wovuU8h1mgIHLBNeBy`; viz `news-reel/assets/voice-design/README.md`. Dřív Karel `wNYzYiprejHCPi4voSeA`). Anglická slova piš foneticky česky (karusel, apek), `prompt` = skript BEZ `[[cue]]` značek, `flow_id`. Poll `creative_get_flow_run_status`.
 3. Vyber take (první, pokud uživatel neřekne jinak), stáhni `content_url` (curl) do `build/takes/takeN.mp3`.
 4. `creative_add_flow_asset_node` (generation_id vybraného take) → `creative_transcribe_audio` (`eleven_scribe_v1`, `connect_from` = ten node) → stáhni `words_download_url` do `build/takes/takeN.words.json`.
 5. `node scripts/ingest-voice.mjs episodes/<id> build/takes/takeN.mp3 build/takes/takeN.words.json` → zrychlí (config `tempo` 1.1), spočítá časy cue a slov.
