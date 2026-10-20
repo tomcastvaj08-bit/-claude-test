@@ -232,7 +232,7 @@
       "cue": "joke",
       "at": -0.2,
       "name": "dj_brake",
-      "gain": -6
+      "gain": -9
     },
     {
       "cue": "clients",

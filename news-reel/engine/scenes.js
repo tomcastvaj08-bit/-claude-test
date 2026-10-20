@@ -119,7 +119,7 @@ export const templates = {
   // Product reveal: 3D app tile settles, name types in. props: { name, glyph, gradient:[c1,c2], tag, caption }
   app(el, p, ctx) {
     const [c1, c2] = p.gradient ?? ["#1f4dff", "#13b97a"];
-    el.appendChild(h(`<div class="sc sc-app">
+    el.appendChild(h(`<div class="sc sc-app${p.button ? " has-get" : ""}">
       <div class="tile-wrap">
         <div class="tile-shadow"></div>
         <div class="tile" style="background:linear-gradient(140deg, ${c1}, ${c2})"><span>${esc(p.glyph ?? p.name?.[0] ?? "A")}</span><b class="shine"></b></div>
