@@ -47,6 +47,7 @@ Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den pub
 4. `creative_add_flow_asset_node` (generation_id vybraného take) → `creative_transcribe_audio` (`eleven_scribe_v1`, `connect_from` = ten node) → stáhni `words_download_url` do `build/takes/takeN.words.json`.
 5. `node scripts/ingest-voice.mjs episodes/<id> build/takes/takeN.mp3 build/takes/takeN.words.json` → zrychlí (config `tempo` 1.1), spočítá časy cue a slov.
 (Alternativa s API klíčem: `node scripts/tts.mjs episodes/<id>`.)
+**Výměna hlasu bez nového renderu:** nový take + Scribe → `python3 news-reel/scripts/voice-conform.py episodes/<id> take.mp3 take.words.json --out …` (každé slovo natáhne na čas ve `build/words.json`) → případná úprava zvuku → přepsat `build/voice.mp3` → `render.mjs <ep> --mux-only`. ASMR šepot (20. 10.): `[whispering close into your ear, ASMR, playful]`; úprava zvuku: blízkost (+5 dB @140 Hz), presence (+3 dB @5,5 kHz), de-esser, kompresor 4:1, hlasitější o ~2,5 dB, víc v levém uchu (L 1,0 / P 0,6).
 
 ### 4. Scény (motion design)
 Scéna: `{ "cue", "template", "props" }`, trvá do další cue. Časování prvků přes `at` = číslo (s od začátku scény) | název cue | **slovo ze skriptu** (první slovo ve scéně, které tak začíná). V textech: `**slovo**` = modrá, `__slovo__` = zelená, `~~slovo~~` = obrysové písmo.
