@@ -979,3 +979,10 @@ video.bub-live { object-fit: cover; }
 @keyframes livedot { 50% { opacity: 0.3; } }
 
 .bub-vid .play { display: none; }
+
+.hero.no-reel { padding-bottom: 12px; }
+@media (min-width: 960px) { .hero.no-reel .wrap { grid-template-columns: 1fr; } .hero.no-reel .hero-copy { max-width: 880px; } }
+.clients-peek { padding-top: 8px; }
+.peek-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px 24px; margin-bottom: 4px; }
+.peek-head .h2 { font-size: clamp(2rem, 8vw, 3.6rem); }
+.clients-peek .arena { height: clamp(520px, 78svh, 720px); }
