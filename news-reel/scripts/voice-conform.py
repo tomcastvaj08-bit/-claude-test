@@ -24,8 +24,18 @@ nw = spoken(json.load(open(wj))["words"])
 # --loose: same word count is enough (phonetic respellings like "karusely" for "carousely")
 if (len(ow) != len(nw)) if "--loose" in sys.argv else ([norm(w["text"]) for w in ow] != [norm(w["text"]) for w in nw]):
     sys.exit("word lists differ:\n" + " ".join(w["text"] for w in ow) + "\n" + " ".join(w["text"] for w in nw))
+def onset(f, db=-38):
+    """first 10 ms window above `db` dBFS: Scribe often places the first word late (an audio tag at the start
+    of the prompt swallows its timing), and anchoring there would clip the word's beginning"""
+    import numpy as np
+    x = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", f, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
+                                     capture_output=True, check=True).stdout, np.float32)
+    w = x[: len(x) // 160 * 160].reshape(-1, 160)
+    loud = np.nonzero(20 * np.log10(np.sqrt((w * w).mean(1)) + 1e-9) > db)[0]
+    return max(0.0, loud[0] * 0.01 - 0.02) if len(loud) else 0.0
+ref = sys.argv[sys.argv.index("--ref") + 1] if "--ref" in sys.argv else None  # the voice the video was timed to
 # anchors: (new time, old time); segment i = [anchor i, anchor i+1)
-A = [(max(0, nw[0]["start"] - 0.03), max(0, ow[0]["start"] - 0.03))]
+A = [(min(onset(src), nw[0]["start"]), min(onset(ref), ow[0]["start"]) if ref else max(0, ow[0]["start"] - 0.03))]
 A += [(n["start"], o["start"]) for n, o in zip(nw[1:], ow[1:])]
 A += [(nw[-1]["end"] + 0.15, ow[-1]["end"] + 0.15)]
 tmp = tempfile.mkdtemp()

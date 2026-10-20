@@ -172,7 +172,7 @@
       "at": 7.45,
       "gain": -16,
       "dur": 22.6,
-      "fi": 0.25,
+      "fi": 1.0,
       "fo": 1.6,
       "hp": 60
     },
@@ -272,6 +272,355 @@
       "at": 0.0,
       "name": "stopwatch",
       "gain": -3
+    },
+    {
+      "cue": "boom",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "boom",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "mix",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "mix",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "style",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "style",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "platform",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "platform",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "clients",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "clients",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "clients2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "clients2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "try",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "try",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "word": "edits",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "jednom",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "uložené",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "styly",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "zatím",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "klienty",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "grafiku",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "videem",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "jeden",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "přímo",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "změř",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "nově",
+      "at": 0.0,
+      "name": "ui_softpop",
+      "gain": -8
+    },
+    {
+      "word": "fonty",
+      "at": 0.02,
+      "name": "ui_softpop",
+      "gain": -8
+    },
+    {
+      "word": "zkus",
+      "at": 0.0,
+      "name": "ui_chime",
+      "gain": -13
+    }
+  ],
+  "camera": [
+    {
+      "t": 8.1,
+      "z": 1.0
+    },
+    {
+      "t": 9.05,
+      "z": 1.0337,
+      "ease": "inOutSine"
+    },
+    {
+      "t": 9.07,
+      "z": 1.0337,
+      "ease": "linear"
+    },
+    {
+      "t": 9.21,
+      "z": 1.0,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 9.4,
+      "z": 1.0675,
+      "ease": "outExpo"
+    },
+    {
+      "t": 9.82,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "t": 9.85,
+      "z": 1.09,
+      "ease": "linear"
+    },
+    {
+      "t": 9.99,
+      "z": 1.0,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 11.3,
+      "z": 1.0525,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 11.95,
+      "z": 1.0562,
+      "ease": "linear"
+    },
+    {
+      "t": 12.25,
+      "z": 1.1125,
+      "ease": "outQuart"
+    },
+    {
+      "t": 13.25,
+      "z": 1.0225,
+      "ease": "inOutQuad"
+    },
+    {
+      "t": 13.33,
+      "z": 1.0225,
+      "ease": "linear"
+    },
+    {
+      "t": 13.47,
+      "z": 1.09,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 14.5,
+      "z": 1.0,
+      "ease": "outCubic"
+    },
+    {
+      "t": 16.6,
+      "z": 1.0525,
+      "ease": "inOutSine"
+    },
+    {
+      "t": 16.68,
+      "z": 1.0525,
+      "ease": "linear"
+    },
+    {
+      "t": 16.82,
+      "z": 1.0,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 17.85,
+      "z": 1.0675,
+      "ease": "inOutQuad"
+    },
+    {
+      "t": 18.1,
+      "z": 1.0225,
+      "ease": "outQuart"
+    },
+    {
+      "t": 18.75,
+      "z": 1.045,
+      "ease": "inOutSine"
+    },
+    {
+      "t": 18.78,
+      "z": 1.045,
+      "ease": "linear"
+    },
+    {
+      "t": 18.92,
+      "z": 1.03,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 20.7,
+      "z": 1.0975,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 20.74,
+      "z": 1.0975,
+      "ease": "linear"
+    },
+    {
+      "t": 20.88,
+      "z": 1.0,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 21.4,
+      "z": 1.045,
+      "ease": "outQuart"
+    },
+    {
+      "t": 22.55,
+      "z": 1.06,
+      "ease": "linear"
+    },
+    {
+      "t": 22.8,
+      "z": 1.105,
+      "ease": "outExpo"
+    },
+    {
+      "t": 22.96,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "t": 22.99,
+      "z": 1.09,
+      "ease": "linear"
+    },
+    {
+      "t": 23.13,
+      "z": 1.075,
+      "ease": "inOutCubic"
+    },
+    {
+      "t": 24.3,
+      "z": 1.0,
+      "ease": "outCubic"
+    },
+    {
+      "t": 25.7,
+      "z": 1.0375,
+      "ease": "inOutSine"
+    },
+    {
+      "t": 25.95,
+      "z": 1.075,
+      "ease": "outQuart"
+    },
+    {
+      "t": 27.2,
+      "z": 1.0,
+      "ease": "inOutQuart"
     }
   ]
 }
