@@ -1,27 +1,27 @@
 # Voiceover – Aktualita 01: Instagram Edits a carousely
 
-Celkem asi 21 s, energicky a s úsměvem. Časy jsou přesně podle celého videa: úvodní scénka s novinami (0:00–0:05,7) → kalendář → motion grafika. Tvůj hlas začíná na 0:07,1 hned po přechodu z kalendáře, takže se do časů můžeš trefit. Repliku postavičky v úvodu nenamlouváš. Mluv svižně, ale nespěchej.
+Celkem asi 21 s, energicky a s úsměvem. Časy jsou přesně podle celého videa: scénka s kafem a kalendářem (0:00–0:07,8) → otočka kostky → motion grafika. Tvůj hlas začíná na 0:07,9 hned po otočce, takže se do časů můžeš trefit. Repliku postavičky („Ne! Na sedmičku ne!… Sedmýho… října…“) nenamlouváš. Mluv svižně, ale nespěchej.
 Každý řádek je jeden záběr motion grafiky. Mezi řádky dělej krátkou pauzu (~0,3 s), podle ní se stříhá.
 
-1. `0:07,1 – 0:09,2` **Instagram Edits umí nově… carousely!**
+1. `0:07,9 – 0:10,0` **Instagram Edits umí nově… carousely!**
    *(záběr: ikona aplikace → velký nápis „Carousely“; „carousely“ s důrazem, po „nově“ mikropauza)*
 
-2. `0:09,4 – 0:13,1` **Fotky, videa, texty i efekty – všechno v jednom příspěvku.**
+2. `0:10,2 – 0:13,9` **Fotky, videa, texty i efekty – všechno v jednom příspěvku.**
    *(záběr: čtyři karty se vějířovitě rozjedou; vyjmenovávej rytmicky)*
 
-3. `0:13,1 – 0:16,7` **A navíc tvoje uložené fonty, styly i vlastní samolepky.**
+3. `0:13,9 – 0:17,5` **A navíc tvoje uložené fonty, styly i vlastní samolepky.**
    *(záběr: seznam funkcí vjíždí zleva)*
 
-4. `0:16,7 – 0:19,0` **Zatím na iPhonu, Android je na cestě.**
+4. `0:17,5 – 0:19,8` **Zatím na iPhonu, Android je na cestě.**
    *(záběr: iPhone)*
 
-5. `0:19,1 – 0:21,0` **Pro klienty to znamená rychlejší carousely…**
+5. `0:19,9 – 0:21,8` **Pro klienty to znamená rychlejší carousely…**
    *(záběr: přínos pro klienty)*
 
-6. `0:21,1 – 0:23,4` **…a grafiku s videem bez přepínání appek.**
+6. `0:21,9 – 0:24,2` **…a grafiku s videem bez přepínání appek.**
    *(navazuje na předchozí řádek)*
 
-7. `0:23,4 – 0:27,9` **Tak to zkus: jeden carousel přímo v Edits… a změř si, kolik času ušetříš.**
+7. `0:24,2 – 0:28,7` **Tak to zkus: jeden carousel přímo v Edits… a změř si, kolik času ušetříš.**
    *(záběr: výzva na konci; po „Edits“ krátká pauza, konec klidněji)*
 
 ---
