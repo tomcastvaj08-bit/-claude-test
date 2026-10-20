@@ -162,14 +162,15 @@
     "voiceId": "81wovuU8h1mgIHLBNeBy",
     "voiceName": "Efík – Aktuality maskot",
     "flow": "1CWkLCHJJuFlsmj13frG",
-    "generation": "zQzsEe1vCQM82DxHEPWN"
+    "generation": "ZNOt73kpJSnk4D696uTD",
+    "note": "phonetic respelling for Czech pronunciation: karusel/karusely, apek; conformed onto rendered timing with scripts/voice-conform.py --loose"
   },
   "hookGag": "coffee_ms",
   "sfxExtra": [
     {
       "name": "music_bed",
       "at": 7.45,
-      "gain": -19,
+      "gain": -16,
       "dur": 22.6,
       "fi": 0.25,
       "fo": 1.6,
@@ -179,98 +180,98 @@
       "word": "carousely",
       "at": -0.28,
       "name": "swoosh_air",
-      "gain": -8
+      "gain": -14
     },
     {
       "word": "carousely",
       "at": -0.04,
       "name": "bass_drop",
-      "gain": -6
+      "gain": -17
     },
     {
       "word": "fotky",
       "at": 0.04,
       "name": "cam_shutter",
-      "gain": -4
+      "gain": -13
     },
     {
       "word": "videa",
       "at": 0.0,
       "name": "film_reel",
-      "gain": -9
+      "gain": 1
     },
     {
       "word": "texty",
       "at": 0.0,
       "name": "key_clacks",
-      "gain": -6
+      "gain": -7
     },
     {
       "word": "efekty",
       "at": 0.02,
       "name": "sparkle",
-      "gain": -9
+      "gain": -12
     },
     {
       "word": "všechno",
       "at": -0.22,
       "name": "swoosh_air",
-      "gain": -11
+      "gain": -16
     },
     {
       "word": "fonty",
       "at": -0.18,
       "name": "swoosh_air",
-      "gain": -11
+      "gain": -16
     },
     {
       "word": "samolepky",
       "at": 0.12,
       "name": "sticker_slap",
-      "gain": -4
+      "gain": -11
     },
     {
       "word": "iphonu",
       "at": 0.08,
       "name": "notif_ding",
-      "gain": -7
+      "gain": 0
     },
     {
       "word": "android",
       "at": 0.0,
       "name": "glitch",
-      "gain": -7
+      "gain": -11
     },
     {
       "word": "rychlejší",
       "at": -0.18,
       "name": "swoosh_air",
-      "gain": -9
+      "gain": -14
     },
     {
       "word": "carousely",
       "nth": 2,
       "at": 0.05,
       "name": "sparkle",
-      "gain": -11
+      "gain": -15
     },
     {
       "word": "přepínání",
       "at": 0.0,
       "name": "glitch",
-      "gain": -11
+      "gain": -14
     },
     {
       "word": "tak",
       "at": -0.06,
       "name": "bass_drop",
-      "gain": -8
+      "gain": -19
     },
     {
       "word": "kolik",
       "at": 0.0,
       "name": "stopwatch",
-      "gain": -7
+      "gain": -3
     }
   ]
 }
