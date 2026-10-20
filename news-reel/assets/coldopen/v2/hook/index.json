@@ -107,5 +107,21 @@
   "twos": true,
   "note": "Seedance 2.5 clip (start frame: sip, end frame: engine close-up with the ring), cut in at 0.80 s so the drone never shows; splat at 3.38 s",
   "lineAt": 3.35
+ },
+ "coffee_ms": {
+  "frames": 0,
+  "fps": 24,
+  "hold": 3.58,
+  "voice": "../../coldopen/voice/hook_coffee",
+  "line": 4.43,
+  "lineAt": 0,
+  "voiceGain": -3,
+  "markRect": [
+   -31,
+   -66,
+   112,
+   0
+  ],
+  "sfx": []
  }
 }

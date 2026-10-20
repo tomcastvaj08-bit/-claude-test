@@ -115,7 +115,7 @@ export function buildBoardHook(root, ep, cfg) {
       ${sheet(NOTE, "note", noteExtras)}
       ${sheet(CAL, "cal", calExtras, calUnder)}
       ${sheet(PAPER, "paper", paperExtras)}
-      ${GAG ? `<img class="bh-mark" src="../assets/coldopen/v2/hook/${GAG.id}/mark.png" style="left:${DATE.x - 74}px;top:${DATE.y - 70}px;width:124px;height:124px;transform:rotate(${CAL.rot - 8}deg)">` : ""}
+      ${GAG ? (() => { const [mx, my, ms, mr] = GAG.markRect ?? [-74, -70, 124, -8]; return `<img class="bh-mark" src="../assets/coldopen/v2/hook/${GAG.id}/mark.png" style="left:${DATE.x + mx}px;top:${DATE.y + my}px;width:${ms}px;height:${ms}px;transform:rotate(${CAL.rot + mr}deg)">`; })() : ""}
       <svg class="chalk2-svg bh-arrow" style="left:0;top:0" width="${PLATE.w}" height="${PLATE.h}" viewBox="0 0 ${PLATE.w} ${PLATE.h}">
         <path pathLength="1" d="${arrowPath()}"/>
       </svg>
