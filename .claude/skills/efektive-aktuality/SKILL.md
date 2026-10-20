@@ -142,6 +142,7 @@ Postup (`"hookGag": "<id>"` v episode.json, data ve `v2/hook/index.json`):
 3. video Seedance 2.5 `omni_reference` se start_image + end_image, 5 s, bez zvuku. Vystřihni úseky, kde je vidět dron;
 4. `scripts/hook-gag-frames.py <id> clip.mp4 --start … --end … --twos` (render.mjs si snímky upeče sám, když chybí);
    **Multishot (doporučeno, od 20. 10.):** jeden Seedance 2.5 klip 720p, 16:9, 6 s (42 kreditů) se 7 keyframy v `image_references` a s časováním záběrů v promptu (wide příchod → detail hrnku s pískáním → detail boty, zakopnutí → slow-mo pád / káva / obličej / kapka → kalendář normální rychlostí, cákanec u dne). Pak střih v ffmpeg do `edited.mp4`: normální rychlost ×1,3, slow-mo nechat, vadné úseky vyhodit, upscale na 1080p. Časy střihů dej do `cuts` v indexu: závěrka pak nemíchá snímky přes střih a „po dvou“ začíná znovu na každém střihu. Náhled jen hooku: `render.mjs <ep> --hook-only` (výstup `build/hook/`);
+   **Dostřih bez renderu:** `voiceSs` v indexu přeskočí začátek repliky (u kafe zůstane jen „Sedmýho… října…“). `postCut: [od, do]` vystřihne úsek z hotového filmu (obraz i smíchaný zvuk, 80 ms prolnutí). Platí i pro celé video. Změna zvuku = jen `--mux-only`;
 5. zvuk: hudba (ElevenLabs SFX „cinematic trailer cue“) s vrcholem na dopadu + 8–10 vrstev foley/designed na hlavní akci (např. kafe: dron, srknutí, leknutí, ťuknutí hrnku, šplouchnutí, švih, nasávání, dopad na papír, klik + tělo + sub) + replika (hlas Pavel).
 
 ### Hook „tabule“ – krátká verze (výchozí od 17. 10.)

@@ -240,6 +240,18 @@
     "at": 3.8,
     "gain": -8,
     "lp": 220
+   },
+   {
+    "name": "d_whoosh_s",
+    "at": 5.88,
+    "gain": -15,
+    "dur": 0.45
+   },
+   {
+    "name": "d_sub",
+    "at": 5.92,
+    "gain": -13,
+    "dur": 0.6
    }
   ],
   "src": "edited.mp4",
@@ -254,6 +266,11 @@
    3.2,
    3.74
   ],
-  "edit": "Seedance 2.5 multishot 0a7fadf3 (720p): wide 0.15-1.62 x1.3 | plant 1.62-2.17 x1.3 | shoe 2.17-2.62 x1.3 | [shot 2.62-3.54 dropped: stain already on the calendar + comic text] | mug slow-mo 3.55-4.25 | face slow-mo 4.28-4.88 | drop 5.0-5.54 | calendar 5.54-6.04; upscaled to 1080p"
+  "edit": "Seedance 2.5 multishot 0a7fadf3 (720p): wide 0.15-1.62 x1.3 | plant 1.62-2.17 x1.3 | shoe 2.17-2.62 x1.3 | [shot 2.62-3.54 dropped: stain already on the calendar + comic text] | mug slow-mo 3.55-4.25 | face slow-mo 4.28-4.88 | drop 5.0-5.54 | calendar 5.54-6.04; upscaled to 1080p",
+  "voiceSs": 2.12,
+  "postCut": [
+   3.98,
+   5.92
+  ]
  }
 }

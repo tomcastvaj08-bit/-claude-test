@@ -415,6 +415,8 @@ async function main() {
     sfx: sfx.sort((a, b) => a.at - b.at),
     // hard cuts inside the hook (gag clip edit) – the renderer keeps the shutter from blending across them
     cuts: hook.cuts ?? [],
+    // [from, to]: the renderer removes this span from the finished film (picture + mixed sound, short audio crossfade)
+    postCut: hook.postCut ?? null,
   };
   // ?only=hook: just the hook + the first beat of the graphics landing (to judge the hook on its own)
   if (q.get("only") === "hook") {
@@ -440,7 +442,7 @@ async function main() {
       // ?only=cold renders the pre-scene alone at its own fps/shutter (co.fps / co.shutter)
       ...(q.get("only") === "cold" ? { renderFps: co.fps ?? 30, shutter: co.shutter ?? 0.75, masterRef: co.masterRef, cuts: co.cuts }
         // full film: the pre-scene's hard cuts + the cut into the hook never get blended by the shutter
-        : { coldRef: co.masterRef, cuts: [...(co.cuts ?? []), C, ...(m.cuts ?? []).map((x) => x + C)] }),
+        : { coldRef: co.masterRef, cuts: [...(co.cuts ?? []), C, ...(m.cuts ?? []).map((x) => x + C)], postCut: m.postCut ? m.postCut.map((x) => x + C) : null }),
       sceneStarts: m.sceneStarts.map((s) => ({ ...s, start: s.start + C, end: s.end + C })),
       sfx: [...co.sfx, ...m.sfx.map((e) => ({ ...e, at: +(e.at + C).toFixed(3) }))].filter((e) => e.at < total).sort((a, b) => a.at - b.at),
     };

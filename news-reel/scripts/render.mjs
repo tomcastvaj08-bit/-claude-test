@@ -11,7 +11,7 @@
 //   node scripts/render.mjs episodes/<id> --cuts          frames around every cut (overlap QA)
 //   node scripts/render.mjs episodes/<id> --mux-only      only re-mix audio onto the last rendered video
 import { createServer } from "node:http";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, createReadStream } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, createReadStream, renameSync } from "node:fs";
 import { join, dirname, resolve, relative, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn, spawnSync, execFileSync } from "node:child_process";
@@ -256,6 +256,17 @@ function mixAndMux(silent, meta) {
   f.push(`${pre},${ln},aresample=48000,apad,atrim=0:${meta.duration.toFixed(3)}[out]`);
   const out = join(build, "reel.mp4");
   execFileSync("ffmpeg", ["-y", "-v", "error", ...inputs, "-filter_complex", f.join(";"), "-map", "0:v", "-map", "[out]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", out], { stdio: "inherit" });
+  if (meta.postCut) {
+    // edit after the mix: drop [a, b] from picture and sound (the gag's line is trimmed this way without
+    // re-rendering frames); the sound gets a 80 ms crossfade so the cut is not heard
+    const [a, b] = meta.postCut, x = 0.04, tmp = join(build, "reel_cut.mp4");
+    execFileSync("ffmpeg", ["-y", "-v", "error", "-i", out, "-filter_complex",
+      `[0:v]trim=0:${a},setpts=PTS-STARTPTS[v1];[0:v]trim=start=${b},setpts=PTS-STARTPTS[v2];[v1][v2]concat=n=2:v=1:a=0[v];` +
+      `[0:a]atrim=0:${a + x},asetpts=PTS-STARTPTS[a1];[0:a]atrim=start=${b - x},asetpts=PTS-STARTPTS[a2];[a1][a2]acrossfade=d=${2 * x}:c1=tri:c2=tri[a]`,
+      "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp], { stdio: "inherit" });
+    renameSync(tmp, out);
+    console.log(`střih ${a}–${b} s vystřižen (−${(b - a).toFixed(2)} s)`);
+  }
   console.log(`✔ ${out}`);
   // shareable copy (grain makes the master huge): two-pass ~7 Mb/s → ~25 MB per 30 s
   const web = join(build, "reel_web.mp4");

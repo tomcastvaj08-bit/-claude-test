@@ -585,7 +585,8 @@ export function buildBoardHook(root, ep, cfg) {
     const O = T.out[0], L = T.out[1];
     const sfxG = [
       ...GAG.sfx.map((e) => ({ ...e })),
-      ...(GAG.voice ? [{ name: GAG.voice, at: (GAG.lineAt ?? clipEnd - 0.55), gain: GAG.voiceGain ?? -3, dur: GAG.line + 0.3, fo: 0.1 }] : []),
+      // voiceSs skips the start of the take (e.g. only the question part of the line), keeping the rest in place
+      ...(GAG.voice ? [{ name: GAG.voice, at: (GAG.lineAt ?? clipEnd - 0.55) + (GAG.voiceSs ?? 0), ss: GAG.voiceSs ?? 0, gain: GAG.voiceGain ?? -3, dur: GAG.line + 0.3 - (GAG.voiceSs ?? 0), fi: GAG.voiceSs ? 0.03 : 0, fo: 0.1 }] : []),
       { name: "amb_city", at: clipEnd - 0.1, gain: -19, dur: O + L - clipEnd + 0.3, fi: 0.1, fo: 0.4, hp: 160, lp: 5200, pan: -0.25 },
       { name: "clock_tick", at: clipEnd + 0.05, gain: -14, dur: GAG.hold, fi: 0.05, fo: 0.2, hp: 500, lp: 7000, pan: 0.35 },
       { name: "d_tension", at: clipEnd, gain: -16, dur: GAG.hold + L, fi: 0.3, fo: 0.2, hp: 40 },
@@ -594,7 +595,7 @@ export function buildBoardHook(root, ep, cfg) {
       { name: "hook_impact", at: O + L - 0.04, gain: -11, lp: 180 },
       { name: "reveal_shimmer", at: O + L - 0.2, gain: -13 },
     ];
-    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out, cuts: GAG.cuts ?? [],
+    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out, cuts: GAG.cuts ?? [], postCut: GAG.postCut ?? null,
       cues: { impact: clipEnd, whoosh: O, ticks: [], riser: [0, clipEnd] }, sfx: sfxG };
   }
   if (SHORT) {
