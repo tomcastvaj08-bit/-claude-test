@@ -21,7 +21,8 @@ def spoken(ws):  # drop audio tags ([whispering, playful] can span several "word
         if t.endswith("]"): inside = False
     return out
 nw = spoken(json.load(open(wj))["words"])
-if [norm(w["text"]) for w in ow] != [norm(w["text"]) for w in nw]:
+# --loose: same word count is enough (phonetic respellings like "karusely" for "carousely")
+if (len(ow) != len(nw)) if "--loose" in sys.argv else ([norm(w["text"]) for w in ow] != [norm(w["text"]) for w in nw]):
     sys.exit("word lists differ:\n" + " ".join(w["text"] for w in ow) + "\n" + " ".join(w["text"] for w in nw))
 # anchors: (new time, old time); segment i = [anchor i, anchor i+1)
 A = [(max(0, nw[0]["start"] - 0.03), max(0, ow[0]["start"] - 0.03))]

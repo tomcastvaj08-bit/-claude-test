@@ -402,6 +402,18 @@ async function main() {
     }
   };
 
+  // episode-level sound design layers on top of the scenes' own: { name, at, gain, …mix opts } where `at` is
+  // absolute, or relative to a spoken word ({ word: "Fotky", at: -0.05 }, n-th match with `nth`) or a cue
+  for (const { word, nth = 1, cue, at = 0, name, gain = 0, ...o } of ep.sfxExtra ?? []) {
+    let base = 0;
+    if (word) {
+      const m = words.filter((w) => w.text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "").startsWith(word.toLowerCase()));
+      if (!m[nth - 1]) { console.warn(`sfxExtra: word ${word} not found`); continue; }
+      base = abs(m[nth - 1].start);
+    } else if (cue) base = cueTime(cue) ?? 0;
+    addSfx(name, base + at, gain, o);
+  }
+
   window.__meta = {
     duration: total,
     fps: cfg.video.fps,

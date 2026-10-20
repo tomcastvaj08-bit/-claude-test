@@ -164,5 +164,113 @@
     "flow": "1CWkLCHJJuFlsmj13frG",
     "generation": "zQzsEe1vCQM82DxHEPWN"
   },
-  "hookGag": "coffee_ms"
+  "hookGag": "coffee_ms",
+  "sfxExtra": [
+    {
+      "name": "music_bed",
+      "at": 7.45,
+      "gain": -19,
+      "dur": 22.6,
+      "fi": 0.25,
+      "fo": 1.6,
+      "hp": 60
+    },
+    {
+      "word": "carousely",
+      "at": -0.28,
+      "name": "swoosh_air",
+      "gain": -8
+    },
+    {
+      "word": "carousely",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -6
+    },
+    {
+      "word": "fotky",
+      "at": 0.04,
+      "name": "cam_shutter",
+      "gain": -4
+    },
+    {
+      "word": "videa",
+      "at": 0.0,
+      "name": "film_reel",
+      "gain": -9
+    },
+    {
+      "word": "texty",
+      "at": 0.0,
+      "name": "key_clacks",
+      "gain": -6
+    },
+    {
+      "word": "efekty",
+      "at": 0.02,
+      "name": "sparkle",
+      "gain": -9
+    },
+    {
+      "word": "všechno",
+      "at": -0.22,
+      "name": "swoosh_air",
+      "gain": -11
+    },
+    {
+      "word": "fonty",
+      "at": -0.18,
+      "name": "swoosh_air",
+      "gain": -11
+    },
+    {
+      "word": "samolepky",
+      "at": 0.12,
+      "name": "sticker_slap",
+      "gain": -4
+    },
+    {
+      "word": "iphonu",
+      "at": 0.08,
+      "name": "notif_ding",
+      "gain": -7
+    },
+    {
+      "word": "android",
+      "at": 0.0,
+      "name": "glitch",
+      "gain": -7
+    },
+    {
+      "word": "rychlejší",
+      "at": -0.18,
+      "name": "swoosh_air",
+      "gain": -9
+    },
+    {
+      "word": "carousely",
+      "nth": 2,
+      "at": 0.05,
+      "name": "sparkle",
+      "gain": -11
+    },
+    {
+      "word": "přepínání",
+      "at": 0.0,
+      "name": "glitch",
+      "gain": -11
+    },
+    {
+      "word": "tak",
+      "at": -0.06,
+      "name": "bass_drop",
+      "gain": -8
+    },
+    {
+      "word": "kolik",
+      "at": 0.0,
+      "name": "stopwatch",
+      "gain": -7
+    }
+  ]
 }
