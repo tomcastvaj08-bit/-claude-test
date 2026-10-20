@@ -159,9 +159,10 @@
   "voice": {
     "provider": "elevenlabs-mcp",
     "model": "eleven_v4",
-    "voiceId": "wNYzYiprejHCPi4voSeA",
-    "flow": "h78qHDgsTdOuGYvSRn22",
-    "generation": "mJK6LstvlfFaz9ynDvc1"
+    "voiceId": "81wovuU8h1mgIHLBNeBy",
+    "voiceName": "Efík – Aktuality maskot",
+    "flow": "1CWkLCHJJuFlsmj13frG",
+    "generation": "zQzsEe1vCQM82DxHEPWN"
   },
   "hookGag": "coffee_ms"
 }

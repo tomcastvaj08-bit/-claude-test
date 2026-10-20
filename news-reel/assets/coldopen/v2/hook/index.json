@@ -111,10 +111,10 @@
  "coffee_ms": {
   "frames": 102,
   "fps": 24,
-  "hold": 3.71,
-  "voice": "../../coldopen/voice/hook_coffee",
-  "line": 4.43,
-  "lineAt": 3.82,
+  "hold": 3.21,
+  "voice": "../../coldopen/voice/hook_coffee_efik",
+  "line": 1.76,
+  "lineAt": 5.88,
   "voiceGain": -3,
   "markRect": [
    -31,
@@ -243,13 +243,13 @@
    },
    {
     "name": "d_whoosh_s",
-    "at": 5.88,
+    "at": 5.82,
     "gain": -15,
     "dur": 0.45
    },
    {
     "name": "d_sub",
-    "at": 5.92,
+    "at": 5.86,
     "gain": -13,
     "dur": 0.6
    }
@@ -267,10 +267,10 @@
    3.74
   ],
   "edit": "Seedance 2.5 multishot 0a7fadf3 (720p): wide 0.15-1.62 x1.3 | plant 1.62-2.17 x1.3 | shoe 2.17-2.62 x1.3 | [shot 2.62-3.54 dropped: stain already on the calendar + comic text] | mug slow-mo 3.55-4.25 | face slow-mo 4.28-4.88 | drop 5.0-5.54 | calendar 5.54-6.04; upscaled to 1080p",
-  "voiceSs": 2.12,
   "postCut": [
    3.98,
-   5.92
-  ]
+   5.86
+  ],
+  "note_voice": "hook_coffee_efik = 'Sedmýho… října?' in the series voice Efík (eleven_v4, generation onVCjJMI6lZZvG1nQK3a), pause tightened, tempo 1.2; calendar hold shortened 0.5 s"
  }
 }
