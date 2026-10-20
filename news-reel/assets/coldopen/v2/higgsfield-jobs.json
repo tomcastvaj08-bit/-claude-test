@@ -164,5 +164,13 @@
   "thumb_up_1 (used)": "6febb678-51a0-4fd4-ad77-057eb8497616",
   "thumb_up_2": "b94532f4-be0d-4f93-8031-eab64fac72a4"
  },
+ "spiderverse_styleframes": {
+  "board_ref_media": "fab790a9-5f4f-4c0d-b6f9-d02fb6b165d7",
+  "1_barva": "6e9bdcba-19c5-4732-ba4e-c811680087e5",
+  "2_kafe": "133d6bca-994d-4fd0-ab5f-f2d32ff0b327",
+  "3_sipka": "9d0490ab-2077-4012-a79d-c0033f2287fe",
+  "4_zvykacka": "d302a716-915f-4b46-b897-af0c2a1f178a",
+  "5_vlastovka": "ed387112-9806-4239-94d5-b9ea1cd32918"
+ },
  "_info": "Higgsfield gpt_image_2_5, 2k, quality high. Composites = room photo + character sheet; *_cut = transparent extraction; redraws = edits of the cut."
 }
