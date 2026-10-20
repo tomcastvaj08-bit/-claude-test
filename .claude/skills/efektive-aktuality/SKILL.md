@@ -134,6 +134,15 @@ Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně
 Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.
 
 ### Cold open – postavička před hookem (volitelné)
+### Hook „nehoda u tabule“ (gag, od 20. 10.): nahrazuje úvodní scénky
+Jedna lokace, tabule z hooku. Postavička je kreslená ve stylu Spider-Verse (tlusté obrysy, rastrové tečky, posunuté barvy) a animovaná po dvou snímcích, prostředí zůstává fotoreálné. Kamera = **záběr z FPV dronu** (průlet kolem něj, šílené úhly). Dron samotný NIKDY nesmí být v záběru. Nehoda (max 5 s) vždy skončí na dni novinky v kalendáři. Pak řekne repliku („Ne! Na sedmičku ne!… Sedmýho… října…“), během ní kamera najíždí na den a během konce repliky se otočí kostka do motion grafiky.
+Postup (`"hookGag": "<id>"` v episode.json, data ve `v2/hook/index.json`):
+1. style frame nehody (gpt_image: záběr tabule + character sheet), startovní snímek (vteřinu před nehodou);
+2. koncový snímek = still z enginu (`--stills 0` s `hookGag` a 0 snímky klipu): detail kalendáře se značkou (`v2/hook/<id>/mark.png`);
+3. video Seedance 2.5 `omni_reference` se start_image + end_image, 5 s, bez zvuku. Vystřihni úseky, kde je vidět dron;
+4. `scripts/hook-gag-frames.py <id> clip.mp4 --start … --end … --twos` (render.mjs si snímky upeče sám, když chybí);
+5. zvuk: hudba (ElevenLabs SFX „cinematic trailer cue“) s vrcholem na dopadu + 8–10 vrstev foley/designed na hlavní akci (např. kafe: dron, srknutí, leknutí, ťuknutí hrnku, šplouchnutí, švih, nasávání, dopad na papír, klik + tělo + sub) + replika (hlas Pavel).
+
 ### Hook „tabule“ – krátká verze (výchozí od 17. 10.)
 Žádný pojezd podél zdi a žádný papír s „novinka ze X“. Hook začíná tvrdým střihem rovnou na detail kalendáře se dnem novinky **přesně uprostřed obrazu**. Kamera na něj najíždí (rychlý start, dlouhé dojetí) a fix ho zakroužkuje. Pak přijde 3D přechod doprava jako v After Effects: kalendář a motion grafika jsou dvě sousední stěny jedné kostky, kamera se otočí na pravou stěnu a lehce při tom couvne. Grafika (Instagram Edits…) naskočí rovnou. Celý hook má asi 1,6 s. Dlouhou verzi zapne `"hookBoard": "full"` v episode.json.
 

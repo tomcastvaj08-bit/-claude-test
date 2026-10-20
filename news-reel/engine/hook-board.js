@@ -51,6 +51,8 @@ const monthCells = (y, m) => { const first = new Date(Date.UTC(y, m, 1)); const 
 function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 const bump = (t, c, w) => { const u = (t - c) / (w / 2); return Math.abs(u) >= 1 ? 0 : 0.5 * (1 + Math.cos(Math.PI * u)); };
 
+import GAGS from "../assets/coldopen/v2/hook/index.json" with { type: "json" };
+
 export function buildBoardHook(root, ep, cfg) {
   const W = window.__W ?? 1920, H = window.__H ?? 1080;
   const news = parse(ep.newsDate);
@@ -79,7 +81,13 @@ export function buildBoardHook(root, ep, cfg) {
   // the news day dead centre, a push-in while the marker circles it, then a 3D camera move to the right
   // that carries the motion graphics in (engine: hook.handoff). Mode "full" = the original long take.
   const SHORT = (ep.hookBoard ?? cfg.series.hookBoard ?? "cut") !== "full";
-  const T = SHORT
+  // gag (ep.hookGag): an animated accident clip lands on the news day (the mark replaces the marker circle),
+  // the engine holds the close-up while he says his line, then the 3D move
+  const GAG = SHORT && ep.hookGag ? { id: ep.hookGag, ...GAGS[ep.hookGag] } : null;
+  const clipEnd = GAG ? GAG.frames / GAG.fps : 0;
+  const T = GAG
+    ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [99, 1], pan: [99, 1], write: [99, 1], dive: [99, 1], clip: clipEnd, out: [clipEnd + GAG.hold, 0.62] }
+    : SHORT
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [0.3, 0.42], pan: [99, 1], write: [99, 1], dive: [99, 1], out: [1.0, 0.62] }
     : { truck: [0, 1.45], push: [1.3, 0.5], cut: 1.8, circle: [2.12, 0.5], pan: [3.0, 0.72], write: [3.38, 0.62], dive: [3.92, 0.62] };
   T.arrow = SHORT ? [99, 1] : [T.circle[0] + 0.55, 0.36];
@@ -107,13 +115,14 @@ export function buildBoardHook(root, ep, cfg) {
       ${sheet(NOTE, "note", noteExtras)}
       ${sheet(CAL, "cal", calExtras, calUnder)}
       ${sheet(PAPER, "paper", paperExtras)}
+      ${GAG ? `<img class="bh-mark" src="../assets/coldopen/v2/hook/${GAG.id}/mark.png" style="left:${DATE.x - 74}px;top:${DATE.y - 70}px;width:124px;height:124px;transform:rotate(${CAL.rot - 8}deg)">` : ""}
       <svg class="chalk2-svg bh-arrow" style="left:0;top:0" width="${PLATE.w}" height="${PLATE.h}" viewBox="0 0 ${PLATE.w} ${PLATE.h}">
         <path pathLength="1" d="${arrowPath()}"/>
       </svg>
     </div></div>
     <div class="bh-leaves"></div>
     <div class="bh-haze"></div><div class="bh-leak"></div><div class="bh-vig"></div>
-    <div class="bh-white"></div>`;
+    <div class="bh-white"></div>${GAG ? '<img class="bh-clip">' : ""}`;
   root.appendChild(layer);
 
   const shot = layer.querySelector(".bh-shot"), plate = shot.firstElementChild;
@@ -132,6 +141,8 @@ export function buildBoardHook(root, ep, cfg) {
     o.shadow = o.el.querySelector(".sh-shadow");
   });
   const calSheet = SHEETS[2];
+  const clipEl = layer.querySelector(".bh-clip");
+  const clipSrc = (i) => `../assets/coldopen/v2/hook/${GAG.id}/clip/f${String(i + 1).padStart(4, "0")}.jpg`;
 
   // ------------------------------------------------------------ paper drawing (after fonts + images)
   const paperImg = new Image(); paperImg.src = "../assets/plates/paper.jpg";
@@ -399,6 +410,8 @@ export function buildBoardHook(root, ep, cfg) {
 
   async function prepare() {
     await Promise.all([paperImg.decode().catch(() => {}), plateImg.decode().catch(() => {})]);
+    // the gag clip plays frame by frame from JPEGs: decode them all up front (deterministic render)
+    if (GAG) await Promise.all(Array.from({ length: GAG.frames }, (_, i) => { const im = new Image(); im.src = clipSrc(i); return im.decode().catch(() => {}); }));
     await Promise.all(['800 96px "Inter"', '600 34px "Inter"', '700 30px "Inter"', '500 10px "Inter"', '700 40px "Caveat"'].map((f) => document.fonts.load(f, "aktualita #0123456789 každé pondělí → novinky nápady – ČSR " + MONTHS_NOM.join(" ") + MONTHS_GEN.join(" ") + Object.values(HOL).join(" "))));
     noise = makeNoise();
     lmStats = boardStats();
@@ -409,7 +422,7 @@ export function buildBoardHook(root, ep, cfg) {
     SHEETS[0].master = drawSticky(); SHEETS[1].master = drawNote(); drawPaper(0); writeP = 0;
     [SHEETS[0], SHEETS[1]].forEach(blit);
     // short hook: the date must read – only the leaf that crosses the left edge during the 3D move stays
-    leafEls = LEAVES.map((L, i) => { if (SHORT && i !== 2) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
+    leafEls = LEAVES.map((L, i) => { if (GAG || (SHORT && i !== 2)) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
   }
 
   // ------------------------------------------------------------ camera
@@ -427,6 +440,11 @@ export function buildBoardHook(root, ep, cfg) {
   // close-up framing: month name + the news day both in shot
   const closeC = (() => { const sy = Math.max((150 + dateCell.y) / 2, dateCell.y - 190); const p = toPlate(CAL, lerp(CAL.w / 2, dateCell.x, 0.4), sy); return { x: p.x, y: p.y }; })();
   function camAt(t) {
+    if (GAG) {
+      // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
+      const z = clamp((t - clipEnd) / (GAG.hold + 0.62));
+      return { cx: DATE.x, cy: DATE.y, s: lerp(2.25, 2.85, ease.inOutSine(z)), rot: 0 };
+    }
     if (SHORT) {
       // push-in on the circled day, kept exactly in the middle of the frame (AE-style camera push: fast
       // start, long ease-out), still creeping while the 3D move takes us right
@@ -480,8 +498,15 @@ export function buildBoardHook(root, ep, cfg) {
     const on = t < T.end + 0.05;
     layer.style.display = on ? "block" : "none";
     if (!on) return;
+    if (clipEl) {
+      const inClip = t < clipEnd;
+      clipEl.style.display = inClip ? "block" : "none";
+      if (inClip) { const src = clipSrc(Math.min(GAG.frames - 1, Math.floor(t * GAG.fps))); if (clipEl.dataset.src !== src) { clipEl.src = src; clipEl.dataset.src = src; } }
+      // the clip's splash settles into the engine's mark: last 0.25 s cross-fade onto the real calendar
+      clipEl.style.opacity = String(1 - ease.inOutSine(prog(t, clipEnd - 0.25, 0.25)));
+    }
     const c = camAt(t);
-    const sh = shake(t, t < T.cut ? 0.3 : 0.75);
+    const sh = shake(t, GAG ? 0.5 : t < T.cut ? 0.3 : 0.75);
     const k = clampCam(c.cx + sh.x / c.s, c.cy + sh.y / c.s, c.s);
     plate.style.transform = `translate(${W / 2 - k.cx * k.s}px, ${H / 2 - k.cy * k.s}px) scale(${k.s})`;
     shot.style.transform = `rotate(${c.rot + sh.r}deg)`;
@@ -556,6 +581,22 @@ export function buildBoardHook(root, ep, cfg) {
     { name: "hook_impact", at: B - 0.02, gain: -9.7, lp: 180 },
     { name: "reveal_shimmer", at: B - 0.25, gain: -11.6 },
   ];
+  if (GAG) {
+    const O = T.out[0], L = T.out[1];
+    const sfxG = [
+      ...GAG.sfx.map((e) => ({ ...e })),
+      ...(GAG.voice ? [{ name: GAG.voice, at: (GAG.lineAt ?? clipEnd - 0.55), gain: GAG.voiceGain ?? -3, dur: GAG.line + 0.3, fo: 0.1 }] : []),
+      { name: "amb_city", at: clipEnd - 0.1, gain: -19, dur: O + L - clipEnd + 0.3, fi: 0.1, fo: 0.4, hp: 160, lp: 5200, pan: -0.25 },
+      { name: "clock_tick", at: clipEnd + 0.05, gain: -14, dur: GAG.hold, fi: 0.05, fo: 0.2, hp: 500, lp: 7000, pan: 0.35 },
+      { name: "d_tension", at: clipEnd, gain: -16, dur: GAG.hold + L, fi: 0.3, fo: 0.2, hp: 40 },
+      { name: "d_riser", at: O - 0.55, gain: -9, dur: 0.75, ss: 0.15, fi: 0.05, fo: 0.05 },
+      { name: "d_whoosh_pan", at: O + L * 0.5 - 0.52, gain: -5, dur: 0.8, fo: 0.2 },
+      { name: "hook_impact", at: O + L - 0.04, gain: -11, lp: 180 },
+      { name: "reveal_shimmer", at: O + L - 0.2, gain: -13 },
+    ];
+    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out,
+      cues: { impact: clipEnd, whoosh: O, ticks: [], riser: [0, clipEnd] }, sfx: sfxG };
+  }
   if (SHORT) {
     // short hook: room + marker on the push-in, then the 3D move right (designed whoosh peaking mid-move,
     // a reverse swell into it, a soft sub as the graphics land) – the cold open already set up the room

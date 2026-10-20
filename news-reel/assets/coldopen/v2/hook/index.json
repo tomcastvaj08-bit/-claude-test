@@ -1,0 +1,111 @@
+{
+ "_info": "Board-hook gags: an AI-animated clip (Spider-Verse character, FPV camera) that ends on the calendar close-up, then the engine holds on the marked day while he says the line, then the 3D move into the graphics. frames = held frames at fps in <id>/clip/f0001.jpg…; mark = overlay on the news day; line = seconds of his line.",
+ "coffee": {
+  "frames": 94,
+  "fps": 24,
+  "hold": 3.58,
+  "voice": "../../coldopen/voice/hook_coffee",
+  "line": 4.43,
+  "sfx": [
+   {
+    "name": "music_gag",
+    "at": 0,
+    "ss": 0.52,
+    "gain": -12,
+    "dur": 7.0,
+    "fo": 1.2
+   },
+   {
+    "name": "fpv_flyby",
+    "at": 0.0,
+    "gain": -3,
+    "dur": 2.0,
+    "pan": -0.4,
+    "hp": 120
+   },
+   {
+    "name": "fpv_flyby",
+    "at": 0.7,
+    "gain": -7,
+    "dur": 2.0,
+    "pan": 0.6,
+    "hp": 200
+   },
+   {
+    "name": "d_whoosh_s",
+    "at": 0.45,
+    "gain": -12,
+    "dur": 0.5
+   },
+   {
+    "name": "sip_gasp",
+    "at": 1.15,
+    "gain": -6,
+    "dur": 1.0
+   },
+   {
+    "name": "mug_clink",
+    "at": 1.5,
+    "gain": -3,
+    "dur": 0.8
+   },
+   {
+    "name": "coffee_slosh",
+    "at": 1.55,
+    "gain": 10,
+    "dur": 1.5,
+    "fo": 0.3
+   },
+   {
+    "name": "d_whoosh_m",
+    "at": 2.28,
+    "gain": -9,
+    "dur": 0.6
+   },
+   {
+    "name": "whip_air",
+    "at": 2.5,
+    "gain": -15,
+    "dur": 1.0
+   },
+   {
+    "name": "d_riser",
+    "at": 2.48,
+    "gain": -10,
+    "dur": 0.9,
+    "fo": 0.005
+   },
+   {
+    "name": "coffee_splat",
+    "at": 3.33,
+    "gain": 6,
+    "dur": 2.0,
+    "fo": 0.5
+   },
+   {
+    "name": "d_hit",
+    "at": 3.38,
+    "gain": -5,
+    "dur": 1.0
+   },
+   {
+    "name": "d_sub",
+    "at": 3.38,
+    "gain": -6,
+    "dur": 1.1
+   },
+   {
+    "name": "hook_impact",
+    "at": 3.38,
+    "gain": -8,
+    "lp": 220
+   }
+  ],
+  "src": "clip.mp4",
+  "start": 0.8,
+  "end": 4.7,
+  "twos": true,
+  "note": "Seedance 2.5 clip (start frame: sip, end frame: engine close-up with the ring), cut in at 0.80 s so the drone never shows; splat at 3.38 s",
+  "lineAt": 3.35
+ }
+}

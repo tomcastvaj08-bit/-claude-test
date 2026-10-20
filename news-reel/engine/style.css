@@ -592,3 +592,7 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .c2-povscr { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; background: #fff; }
 .c2-povscr .co-feed { border-radius: 0; padding: 70px 18px; }
 .c2-povglare { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,240,220,.16), rgba(255,255,255,0) 40%, rgba(0,0,0,.08)); pointer-events: none; }
+
+/* board hook gag: the accident's mark on the news day + the animated clip that lands on it */
+.bhook .bh-mark { position: absolute; mix-blend-mode: multiply; pointer-events: none; }
+.bhook .bh-clip { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; display: none; }

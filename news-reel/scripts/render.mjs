@@ -31,6 +31,14 @@ const epBuild = join(epDir, "build");
 // (+ the first second of the hook) into build/cold-<id>/
 const coldId = opt("--cold");
 const coldOnly = args.includes("--cold-only");
+// board-hook gag clips are kept as mp4 in git; their frame sequences are baked on demand (gitignored)
+{
+  const gagDir = join(ROOT, "assets", "coldopen", "v2", "hook"), idxP = join(gagDir, "index.json");
+  if (existsSync(idxP)) for (const [id, g] of Object.entries(JSON.parse(readFileSync(idxP, "utf8")))) {
+    if (!g?.src || existsSync(join(gagDir, id, "clip", "f0001.jpg"))) continue;
+    execFileSync("python3", [join(ROOT, "scripts", "hook-gag-frames.py"), id, join(gagDir, id, g.src), "--start", String(g.start ?? 0), "--end", String(g.end), ...(g.twos ? ["--twos"] : [])], { stdio: "inherit" });
+  }
+}
 const build = coldId && coldOnly ? join(epBuild, `cold-${coldId}`) : epBuild;
 mkdirSync(build, { recursive: true });
 

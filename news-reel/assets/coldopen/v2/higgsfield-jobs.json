@@ -172,5 +172,13 @@
   "4_zvykacka": "d302a716-915f-4b46-b897-af0c2a1f178a",
   "5_vlastovka": "ed387112-9806-4239-94d5-b9ea1cd32918"
  },
+ "hook_gag_coffee": {
+  "start_frame": "3da46150-71f8-4c0e-8cb4-8bc6da6fd04e",
+  "ring_overlay": "ca046e48-3cb5-465f-86da-f129baca3819",
+  "end_frame_media": "03970def-0008-4d87-8287-81c9f92927c2",
+  "kling_a": "b8c759ff-56cb-4040-b719-0931156caf95",
+  "kling_b": "4acb02a4-61ab-4a26-b105-6b3c9b0a0933",
+  "seedance (used)": "1d164469-26f5-42a5-a8c9-badf4034f849"
+ },
  "_info": "Higgsfield gpt_image_2_5, 2k, quality high. Composites = room photo + character sheet; *_cut = transparent extraction; redraws = edits of the cut."
 }
