@@ -398,7 +398,7 @@ document.documentElement.classList.add("js");
         ${meta}
         <button type="button" class="bub-vid" aria-label="Pustit video: ${c.name}"><img src="${thumb}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('noimg')"><span class="fmt">${c.label || (c.fmt === "short" ? "Short" : "Long form")}</span><span class="play">${PLAY}</span></button>`;
       arena.appendChild(el);
-      el.querySelector(".bub-vid").addEventListener("click", () => openVideo({ title: c.name, yt: c.yt, start: c.start, drive: c.drive, file: c.file, poster: c.poster, fmt: c.fmt }));
+      el.querySelector(".bub-vid").addEventListener("click", () => c.drive ? window.open(`https://drive.google.com/file/d/${c.drive}/view`, "_blank", "noopener") : openVideo({ title: c.name, yt: c.yt, start: c.start, drive: c.drive, file: c.file, poster: c.poster, fmt: c.fmt }));
       return { c, el, x: 0, y: 0, vx: 0, vy: 0, wind: 0, ph: Math.random() * Math.PI * 2, w: 0, h: 0, r: 0, drag: null, s: 1 };
     });
 
@@ -428,7 +428,11 @@ document.documentElement.classList.add("js");
         let d = e.data;
         try { if (typeof d === "string") d = JSON.parse(d); } catch (err) { return; }
         if (!d || !d.info || d.info.playerState !== 1) return;
-        for (const b of live) if (b.live && b.live.contentWindow === e.source) show(b, b.live);
+        for (const b of live) if (b.live && b.live.contentWindow === e.source && !b.live.dataset.playing) {
+          const m = b.live;
+          m.dataset.playing = "1";
+          setTimeout(() => show(b, m), 5200);
+        }
       });
       const mount = (b) => {
         if (b.live || live.size >= MAX_LIVE) return;
@@ -450,7 +454,7 @@ document.documentElement.classList.add("js");
           m.addEventListener("load", () => {
             // Subscribe to state events; keep a fallback in case the API message never arrives.
             try { m.contentWindow.postMessage(JSON.stringify({ event: "listening", id, channel: "widget" }), "*"); } catch (err) {}
-            setTimeout(() => show(b, m), 2600);
+            setTimeout(() => show(b, m), 9000);
           }, { once: true });
         } else return;
         m.className = "bub-live";
