@@ -5,3 +5,5 @@ assets/thumbs/
 assets/audio/
 __pycache__/
 assets/img/
+thumb/*.jpg
+thumb/*.png
