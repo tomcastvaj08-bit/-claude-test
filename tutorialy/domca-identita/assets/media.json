@@ -1,0 +1,38 @@
+{
+ "original": {
+  "fps": 24,
+  "frames": 150,
+  "thumbs": 6,
+  "dur": 6.235,
+  "w": 3840,
+  "h": 2160,
+  "audio": true
+ },
+ "genjutsu": {
+  "fps": 24,
+  "frames": 144,
+  "thumbs": 6,
+  "dur": 6.0,
+  "w": 1280,
+  "h": 720,
+  "audio": true
+ },
+ "final": {
+  "fps": 24,
+  "frames": 267,
+  "thumbs": 11,
+  "dur": 11.135,
+  "w": 3840,
+  "h": 2160,
+  "audio": true
+ },
+ "nadrazi": {
+  "fps": 24,
+  "frames": 178,
+  "thumbs": 7,
+  "dur": 7.402,
+  "w": 3840,
+  "h": 2160,
+  "audio": true
+ }
+}

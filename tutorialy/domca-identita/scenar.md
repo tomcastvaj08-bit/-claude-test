@@ -10,7 +10,7 @@
 
 ## K00 · Úvod (~1:00)
 
-> VIZ: Plátno ve tmě. Uprostřed karta s hotovým videem (Domča) a přehraje se celé s původním zvukem (vložka „final“). Pak vedle něj naskočí karta s originálem (já, talking head) – dva telefony vedle sebe, synchronně. Lusknutí = bílý záblesk, kamera odletí na hub.
+> VIZ: Plátno ve tmě. Uprostřed karta s hotovým videem a přehraje se celé s původním zvukem (vložka „final“, 11,1 s: 0–6 s Domča na ulici, v 6 s střih na mě na nádraží). Pak vedle sebe dvě karty synchronně: originál (já, ulice, „original“) a výstup z Genjutsu („genjutsu“). Lusknutí = bílý záblesk, kamera odletí na hub.
 
 {#hook} Tohle nejsem já. Teda jsem, ale vypadám a mluvím jako Domča.
 
@@ -40,11 +40,11 @@
 
 ## K02 · Krok 1: Natoč talking head (~0:45)
 
-> VIZ: Uzel „KROK 01“. Originální video (já) v kartě telefonu, vedle callouty. [DOPLNIT: na čem jsi točil, jak dlouhé to je, jestli jsi něco hlídal – světlo, pozadí, pohled do kamery.]
+> VIZ: Uzel „KROK 01“. Originál („original“, 6,2 s, 4K 30 fps, selfie z ruky na ulici u trati) v kartě, vedle callouty: „6 sekund“, „z ruky, za chůze“, „venku, denní světlo“, „kšiltovka + vousy → pryč“.
 
 {#s1} Krok jedna. Natoč obyčejný talking head.
 
-{#shot} Žádná věda. Já, kamera, pár vět do telefonu. [DOPLNIT]
+{#shot} Žádná věda. Šest sekund, telefon v ruce, jdu po ulici a mluvím do kamery. Venku, normální denní světlo.
 
 {#why1} Tohle video je kostra všeho. Pohyb hlavy, mimika, pohyb pusy i načasování řeči, všechno se bere odsud. Takže co natočíš tady, to uvidíš ve výsledku.
 
@@ -82,11 +82,21 @@
 
 ## K05 · Krok 4: Genjutsu (~1:15)
 
-> VIZ: Uzel „KROK 04“. Prompt pro Genjutsu (anglicky, zvýraznění). Vedle tři karty: originál → Seedance → Genjutsu, stejný snímek. Pak export: 720p, přepínač „sound effect“ vypnutý.
+> VIZ: Uzel „KROK 04“. Vlevo reference (assets/img/reference1.png – screenshot jejího postu). Uprostřed prompt (podklady/prompt_genjutsu.txt) jako dlouhá karta, kamera po ní sjíždí a zvýrazňuje bloky: STRICT IDENTITY PRESERVATION → CRITICAL — MOUTH MOVEMENT → ORIGINAL AUDIO → PRESERVE THE SHOT → poslední věta. Vpravo originál vs. Genjutsu synchronně. Pak export: 720p, „sound effect“ vypnutý. [DOPLNIT: je tohle prompt pro Genjutsu? A kde je druhá referenční fotka?]
 
 {#s4} Krok čtyři. Higgsfield Genjutsu.
 
-{#prompt4} Prompt: [DOPLNIT: prompt pro Genjutsu, nastavení, kredity]
+{#prompt4} Prompt má pět bloků a každej hlídá něco jinýho. Na začátku jedna věta: nahraď muže ve videu přesně tou ženou z referenčních fotek.
+
+{#ident} První blok je identita. Zachovej její rysy, proporce, oči, obočí, nos, lícní kosti, bradu, tvar a objem rtů, pleť, make-up a dlouhý rovný tmavý vlasy. A hlavně co nedělat: nevylepšuj, nestylizuj, nezeštíhluj a nemíchej její obličej s tím chlapem.
+
+{#mouth4} Druhej blok je nejdůležitější a je nadepsanej critical. Pohyb pusy. Přenes moji artikulaci a timing snímek po snímku, každý otevření pusy, každou samohlásku, každou pauzu. Ale přizpůsob to jejím rtům. Rty si maj nechat svůj tvar a plnost. A k tomu realistický zuby a žádný zamrzlý nebo zpožděný rty.
+
+{#audio4} Třetí blok: zachovej původní českej zvuk přesně. Žádnej dabing, žádnej překlad, žádná změna rychlosti.
+
+{#shot4} Čtvrtej: zachovej záběr. Chůzi, pohyby hlavy, pohled, gesta, kameru z ruky i ulici s auty za mnou. Sundej kšiltovku a vousy, dej jí její vlasy a černej top. A nepřetahuj z reference pozadí, mikrofon, titulky ani rozhraní telefonu.
+
+{#first4} A poslední věta, na kterou se zapomíná: musí bejt hotová od prvního snímku. Žádná viditelná proměna.
 
 {#wow} A tohle mě upřímně překvapilo. [DOPLNIT: co přesně – lip sync, pleť, vlasy?]
 
@@ -134,7 +144,7 @@
 
 ## K08 · Krok 7: CapCut na telefonu (~1:15)
 
-> VIZ: Uzel „KROK 07“. Mockup telefonu s CapCutem: dvě video stopy (originál dole, Genjutsu nahoře jako překrytí), pod nimi tři audio kousky, které se posunou na vlnu originálu. Pak ikona lusknutí + vlna SFX. Export.
+> VIZ: Uzel „KROK 07“. Mockup telefonu s CapCutem: dvě video stopy (originál dole, Genjutsu nahoře jako překrytí), pod nimi tři audio kousky, které se posunou na vlnu originálu. Pak ikona lusknutí + vlna SFX, přehrání záběru z nádraží („nadrazi“, lusknutí na začátku) a střih ve „final“ v 6 s. Export. [DOPLNIT: co přesně říkáš v záběru z nádraží a jak navazuje na Domču?]
 
 {#s7} Krok sedm. Postprodukce. Celý jsem to dělal v CapCutu normálně na telefonu.
 

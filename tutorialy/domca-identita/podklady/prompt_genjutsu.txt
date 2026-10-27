@@ -1,0 +1,21 @@
+Replace the male speaker in the source video with the exact woman shown in the two reference images.
+
+STRICT IDENTITY PRESERVATION:
+The reference images define her identity. Preserve her exact facial features, facial proportions, eyes, eyebrows, nose, cheekbones, jawline, chin, natural lip shape and volume, skin tone, makeup, hairline and long straight dark hair.
+
+She must remain clearly recognizable as the same woman in every frame. Do not redesign, beautify, stylize, slim, reshape or reinterpret her appearance. Do not blend her face with the original male speaker. Preserve her own facial anatomy throughout all expressions and mouth movements.
+
+CRITICAL — MOUTH MOVEMENT:
+Transfer the original speaker's speech articulation and timing precisely, frame by frame. Preserve every mouth opening, lip closure, rounded vowel, jaw movement, syllable and pause, naturally adapted to her own lips and facial anatomy.
+
+Her lips must retain their characteristic shape and fullness while moving naturally. Transfer the performance without making her mouth or face resemble the man. Allow normal facial movement during speech while keeping her identity consistent. Maintain realistic teeth and mouth interior. No exaggerated articulation, frozen lips, flickering or delayed mouth movements.
+
+ORIGINAL AUDIO:
+Preserve the original Czech soundtrack exactly, including the original voice, words, pacing, pauses and intonation. No dubbing, translation, voice replacement or speed changes.
+
+PRESERVE THE SHOT:
+Keep the original walking rhythm, head movements, gaze, expressions, gestures, handheld camera motion, framing and duration. Preserve the outdoor street, traffic and background activity.
+
+Remove the man's cap and facial hair. Use the woman's hair and black top from the references. Match the existing outdoor lighting naturally. Do not import the reference backgrounds, microphone, captions or phone interface.
+
+The woman must appear fully established from the first frame, with stable identity throughout and no visible transformation.

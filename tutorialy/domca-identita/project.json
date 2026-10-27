@@ -11,7 +11,15 @@
   "tempo": 1.1,
   "para_gap": 0.35,
   "ch_lead": 2.0,
-  "inserts": {},
+  "inserts": {
+    "k00.hook": {
+      "before": true,
+      "src": "final",
+      "a": 0,
+      "b": 11.135,
+      "pad": 0.9
+    }
+  },
   "hud": {},
   "steps": null,
   "sfx_lib": "~/Desktop/SFX AI final",
