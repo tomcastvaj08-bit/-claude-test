@@ -18,9 +18,20 @@
       "a": 0,
       "b": 11.135,
       "pad": 0.9
+    },
+    "k07.exp": {
+      "after": true,
+      "src": "final",
+      "a": 4.6,
+      "b": 8.4,
+      "pad": 0.5
     }
   },
-  "hud": {},
+  "hud": {
+    "k00": "Úvod",
+    "k01": "Nástroje",
+    "k08": "Výsledek"
+  },
   "steps": null,
   "sfx_lib": "~/Desktop/SFX AI final",
   "music": [
@@ -35,5 +46,19 @@
     "harp"
   ],
   "music_duck_db": -19.0,
-  "music_open_db": -9.0
+  "music_open_db": -9.0,
+  "mono": {
+    "seedance": [
+      "S",
+      "#0A0D14"
+    ],
+    "genjutsu": [
+      "G",
+      "#1F4DFF"
+    ],
+    "capcut": [
+      "CC",
+      "#0A0D14"
+    ]
+  }
 }

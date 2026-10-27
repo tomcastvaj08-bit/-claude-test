@@ -3,6 +3,13 @@ import re
 
 # pořadí je důležité: delší fráze dřív
 PRON = [
+    (r"Higgsfield Genjutsu", "Higsfíld Gendžucu"), (r"Genjutsu", "Gendžucu"),
+    (r"Voice Changer", "Vojs čejndžr"), (r"talking head", "tóking hed"),
+    (r"CapCut", "Kepkat"), (r"edit módu", "edyt módu"), (r"edit mode", "edyt mód"),
+    (r"lip sync", "lip sink"), (r"Lip sync", "Lip sink"), (r"\bRobust\b", "Robast"), (r"similarity", "similerity"),
+    (r"critical", "krytykl"), (r"\bDMs\b", "dý emkách"), (r"\bfollow\b", "folou"), (r"\bFollow\b", "Folou"),
+    (r"\bSFX\b", "es ef iks"), (r"make-up", "mejkap"), (r"dva bod pět turbo", "dva bod pět túrbo"),
+    (r"\bv3\b", "vé tři"), (r"Patreonu", "Pejtreonu"),
     (r"news-reel engine", "ňůz ríl endžin"), (r"news-reel", "ňůz ríl"), (r"voiceover", "vojsouvr"), (r"iPhone\b", "ajfoun"),
     (r"Spider-Man: Into the Spider-Verse", "Spajdrmen: Intů d Spajdrvérs"),
     (r"Spider-Verse", "Spajdrvérs"),
