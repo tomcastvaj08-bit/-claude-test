@@ -9,8 +9,7 @@
     fx: [{ t: AT(C('fail2'), 'zrovna'), sel: '.dim' }],
     html: `<div class="card" style="height:100%;padding:36px 40px;position:relative">
       <div style="display:flex;align-items:center;gap:24px">${logo('seedance', 90)}<div style="font:650 54px var(--sans);letter-spacing:-.04em">Seedance · edit</div></div>
-      <div class="pic" style="height:760px;margin-top:28px;position:relative"><img src="${frame('original', 3.2)}" style="width:100%;height:100%;object-fit:cover">
-        <div style="position:absolute;left:41%;top:52%;width:180px;height:110px;border:8px solid var(--red);border-radius:50%"></div></div>
+      <div class="pic" style="height:760px;margin-top:28px;position:relative"><img src="${frame('original', 3.2)}" style="width:100%;height:100%;object-fit:cover"></div>
       <div class="dim" style="position:absolute;inset:0;border-radius:inherit;background:rgba(244,246,249,calc(var(--hl,0)*.6))"></div></div>` });
 
   W.html({ x: X(1150), y: Y(-250), z: 80, w: 1300, h: 200, in: AT(C('fail2'), 'vzhled'), anim: 'pop',

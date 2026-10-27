@@ -53,7 +53,7 @@
     const el = document.getElementById('hud');
     const brand = (o.brand || 'efektive.cz').replace(/(\.[a-z]+)$/, '<b>$1</b>');
     el.innerHTML = `<div class="hud-tl"><span class="mpill"><span class="d"></span><span id="hk"></span></span></div>
-      <div class="hud-tr" id="hn"></div><div class="hud-bl">${brand}</div><div class="hud-br">${o.foot || ''}</div><div class="hud-prog" id="hp"></div>`;
+      <div class="hud-tr" id="hn"></div><div class="hud-bl">${brand}</div>${o.foot ? `<div class="hud-br">${o.foot}</div>` : ''}<div class="hud-prog" id="hp"></div>`;
     const steps = o.steps ?? Math.max(0, ...chapters.map(c => c.n ?? 0));
     const hk = el.querySelector('#hk'), hn = el.querySelector('#hn'), hp = el.querySelector('#hp'), tl = el.querySelector('.hud-tl');
     S.hud.push(t => {
