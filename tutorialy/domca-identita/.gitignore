@@ -1,0 +1,6 @@
+build/
+out/
+assets/seq/
+assets/thumbs/
+assets/audio/
+__pycache__/

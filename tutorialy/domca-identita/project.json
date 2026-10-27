@@ -1,0 +1,31 @@
+{
+  "slug": "Domca_identita",
+  "title": "Jak jsem se proměnil v Domču – celý postup",
+  "brand": "efektive.cz",
+  "foot": "patreon · teecee",
+  "who": "Teecee · face + voice swap",
+  "lang": "cs",
+  "voice_id": "CAA06AyScaqhkbiFnTQ9",
+  "voice_name": "Maty",
+  "tts_model": "eleven_v4",
+  "tempo": 1.1,
+  "para_gap": 0.35,
+  "ch_lead": 2.0,
+  "inserts": {},
+  "hud": {},
+  "steps": null,
+  "sfx_lib": "~/Desktop/SFX AI final",
+  "music": [
+    "newslike",
+    "timelapse",
+    "exploration",
+    "rise",
+    "wonder",
+    "pads",
+    "celeste",
+    "harppiano",
+    "harp"
+  ],
+  "music_duck_db": -19.0,
+  "music_open_db": -9.0
+}
