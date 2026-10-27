@@ -29,6 +29,7 @@ TRACKS = {
     "harp": ("music_liborio_conti/Storytelling-Essentials-Free-No-Copyright-Music-by-Liborio-Conti-12-Harp-Arpeggio.mp3", -14.2),
     "harppiano": ("music_liborio_conti/Storytelling-Essentials-Free-No-Copyright-Music-by-Liborio-Conti-13-Harp-Arpeggio-With-Piano.mp3", -16.2),
     "pads": ("music_liborio_conti/Storytelling-Essentials-Free-No-Copyright-Music-by-Liborio-Conti-17-Pads.mp3", -13.2),
+    "pad": ("music_synth/pad.wav", -10.1),
     "celeste": ("music_liborio_conti/Storytelling-Essentials-Free-No-Copyright-Music-by-Liborio-Conti-18-Celeste.mp3", -15.3),
 }
 # stopy se po kapitolách střídají v tomhle pořadí (project.json "music" ho může přepsat); když je kapitola delší než stopa, naváže další
