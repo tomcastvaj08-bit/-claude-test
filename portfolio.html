@@ -13,7 +13,7 @@
 <meta name="color-scheme" content="light" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&display=swap" />
 <style>
 /* Layout: Luke-style long-scroll sales page in the EFEKTIVE look.
    Paper with thin grid lines, blue and green glowing orbs, dark artwork only as objects.
@@ -35,8 +35,8 @@
   --red: #d42a1e;
   --night: #070a11;
 
-  --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
-  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
@@ -782,7 +782,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   .foot-nav { justify-content: center; }
 }
 </style>
-<link rel="stylesheet" href="assets/site.css?v=3" />
+<link rel="stylesheet" href="assets/site.css?v=619ccadb" />
 <script>document.documentElement.classList.add("js")</script>
 </head>
 <body class="p-portfolio">
@@ -795,7 +795,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
       <a href="https://portfolio.efektive.cz" aria-current="page">Portfolio</a>
       <a href="https://klienti.efektive.cz">Klienti</a>
     </nav>
-    <a class="btn" href="https://klienti.efektive.cz/#kontakt">Napište nám<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="btn" href="https://klienti.efektive.cz/#kontakt">Napište nám</a>
   </div>
 </header>
 
@@ -803,17 +803,14 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 
   <!-- Hero -->
   <section class="hero simple" aria-labelledby="hero-title">
-    <span class="orb b" aria-hidden="true"></span>
-    <span class="orb g" aria-hidden="true"></span>
     <div class="wrap">
       <div class="hero-copy">
-        <span class="eyebrow"><i aria-hidden="true"></i>Portfolio EFEKTIVE</span>
-        <h1 class="display" id="hero-title" aria-label="Naše práce. Videa, která zastaví scroll.">
+        <span class="eyebrow">Portfolio</span>
+        <h1 class="display" id="hero-title" aria-label="Naše práce.">
           <span class="line" aria-hidden="true">Naše práce.</span>
-          <span class="line grad-line" aria-hidden="true">Videa, která zastaví scroll.</span>
         </h1>
         <div class="hero-join">
-          <p class="lede">Tři videa, na která jsme nejvíc hrdí. Natočené, vytvořené s AI a sestříhané u nás. <b>Klikněte a pusťte si je.</b></p>
+          <p class="lede">Tři naše videa. Natočili jsme je, dotvořili s AI a sestříhali. Kliknutím se pustí.</p>
         </div>
       </div>
     </div>
@@ -849,7 +846,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
         </article>
       </div>
       <div class="works-cta rv">
-        <a class="btn magnetic" id="hero-cta" href="https://klienti.efektive.cz/#kontakt">Chci taky takové video<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+        <a class="btn" id="hero-cta" href="https://klienti.efektive.cz/#kontakt">Chci taky takové video</a>
         <a class="link" href="https://patreon.efektive.cz">Naučit se to na Patreonu<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
       </div>
     </div>
@@ -873,7 +870,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
           <span class="xviz night" aria-hidden="true"><span class="xsplit"><i>Jak to vzniklo</i><i>Proč to funguje</i></span></span>
           <span class="xdom">patreon.efektive.cz</span>
           <b class="h3">Vzdělávací Patreon</b>
-          <span class="body">Ke každému videu tutoriál: jak vzniklo s AI a proč prodává.</span>
+          <span class="body">Ke každému videu tutoriál: jak vzniklo s AI a proč funguje.</span>
           <span class="xgo">Přidat se<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
         </a>
       </div>
@@ -907,9 +904,9 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 
 <div class="dock" id="dock" aria-hidden="true">
   <span class="d-txt">Naučte se to taky</span>
-  <a class="btn" href="https://patreon.efektive.cz" tabindex="-1">Patreon<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+  <a class="btn" href="https://patreon.efektive.cz" tabindex="-1">Patreon</a>
 </div>
 
-<script src="assets/site.js?v=3"></script>
+<script src="assets/site.js?v=619ccadb"></script>
 </body>
 </html>

@@ -85,7 +85,7 @@ document.documentElement.classList.add("js");
   });
 
   // Magnetic buttons on desktop.
-  if (fine && !reduce) {
+  if (false) {
     document.querySelectorAll(".magnetic").forEach((el) => {
       el.addEventListener("pointermove", (e) => {
         const b = el.getBoundingClientRect();
@@ -372,12 +372,12 @@ document.documentElement.classList.add("js");
     if (!arena) return;
     const W = "https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/";
     const CLIENTS = [
-      { name: "Tary", meta: "YouTube · 1,71 mil. odběratelů", av: W + "200000643-b91c8b91ca/450/IMG_4132-8.webp?ph=a620bd5331", yt: "tfkOIZw8mFs", fmt: "long" },
-      { name: "Braeden", meta: "Creator · 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short" },
-      { name: "Harv Connell", meta: "Creator · anglický obsah", av: W + "200000651-0ee870ee89/450/IMG_4139-1.webp?ph=a620bd5331", yt: "Wi_21EqgjBM", fmt: "long" },
-      { name: "Tripaři na stopu", meta: "YouTube · 14,8 tis. odběratelů", av: W + "200000784-e4e7de4e7f/channels4_profile.webp?ph=a620bd5331", yt: "-xpR4gBzmLI", fmt: "long" },
-      { name: "The Long Investor", meta: "YouTube · investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "pbCkKZnR2Jc", start: 392, fmt: "long" },
-      { name: "Martin Cuper", meta: "YouTube · 14 tis. odběratelů", av: "https://yt3.ggpht.com/86qQEg0uDj2fgggL7u_ETSF7qt7uO0BWpM7M5Mv4vFw-FDSoSau4fMY7SYVkE9Qb-1MfBDyj3A=s176-c-k-c0x00ffffff-no-rj-mo", yt: "5dnivJD0Oyk", fmt: "long" },
+      { name: "Tary", meta: "YouTube, 1,71 mil. odběratelů", av: W + "200000643-b91c8b91ca/450/IMG_4132-8.webp?ph=a620bd5331", yt: "tfkOIZw8mFs", fmt: "long" },
+      { name: "Braeden", meta: "Creator, 1,3 mil. sledujících", av: W + "200000645-6313563136/450/IMG_4137-8.webp?ph=a620bd5331", yt: "5skSP2-p3mE", fmt: "short" },
+      { name: "Harv Connell", meta: "Creator, anglický obsah", av: W + "200000651-0ee870ee89/450/IMG_4139-1.webp?ph=a620bd5331", yt: "Wi_21EqgjBM", fmt: "long" },
+      { name: "Tripaři na stopu", meta: "YouTube, 14,8 tis. odběratelů", av: W + "200000784-e4e7de4e7f/channels4_profile.webp?ph=a620bd5331", yt: "-xpR4gBzmLI", fmt: "long" },
+      { name: "The Long Investor", meta: "YouTube, investice", av: "https://yt3.googleusercontent.com/AzeaUnZxKelgqc_E8GENApn1FQpy8rN-SFha45X0uyKM5KyuNk0Bq3huG39A-5qLS-mb_2WC=s160-c-k-c0x00ffffff-no-rj", yt: "pbCkKZnR2Jc", start: 392, fmt: "long" },
+      { name: "Martin Cuper", meta: "YouTube, 14 tis. odběratelů", av: "https://yt3.ggpht.com/86qQEg0uDj2fgggL7u_ETSF7qt7uO0BWpM7M5Mv4vFw-FDSoSau4fMY7SYVkE9Qb-1MfBDyj3A=s176-c-k-c0x00ffffff-no-rj-mo", yt: "5dnivJD0Oyk", fmt: "long" },
       { name: "Resono", meta: "Vizuály na projekci pro akci", mono: "RESONO", monoBg: "#14102a", file: "assets/clients/resono.mp4", preview: "assets/clients/resono-preview.mp4", poster: "assets/clients/resono.jpg", fmt: "long", label: "Vizuály" },
       { name: "Best Account", meta: "Účetní kancelář", av: "assets/clients/bestaccount-logo.webp", file: "assets/clients/bestaccount.mp4", poster: "assets/clients/bestaccount.jpg", fmt: "short" },
       { name: "BU1", meta: "@goalkeepingforever", link: "https://www.instagram.com/goalkeepingforever/", av: "assets/clients/bu1-logo.webp", file: "assets/clients/bu1.mp4", preview: "assets/clients/bu1-preview.mp4", poster: "assets/clients/bu1.jpg", fmt: "short" },

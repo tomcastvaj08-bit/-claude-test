@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://www.google.com" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&display=swap" />
 <style>
 /* Layout: Luke-style long-scroll sales page in the EFEKTIVE look.
    Paper with thin grid lines, blue and green glowing orbs, dark artwork only as objects.
@@ -39,8 +39,8 @@
   --red: #d42a1e;
   --night: #070a11;
 
-  --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
-  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
@@ -786,7 +786,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   .foot-nav { justify-content: center; }
 }
 </style>
-<link rel="stylesheet" href="assets/site.css?v=3" />
+<link rel="stylesheet" href="assets/site.css?v=619ccadb" />
 <script>document.documentElement.classList.add("js")</script>
 </head>
 <body class="p-klienti">
@@ -799,7 +799,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
       <a href="https://portfolio.efektive.cz">Portfolio</a>
       <a href="https://klienti.efektive.cz" aria-current="page">Klienti</a>
     </nav>
-    <a class="btn" href="#kontakt">Napište nám<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="btn" href="#kontakt">Napište nám</a>
   </div>
 </header>
 
@@ -807,19 +807,17 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 
   <!-- Hero -->
   <section class="hero simple" aria-labelledby="hero-title">
-    <span class="orb b" aria-hidden="true"></span>
-    <span class="orb g" aria-hidden="true"></span>
     <div class="wrap">
       <div class="hero-copy">
-        <span class="eyebrow"><i aria-hidden="true"></i>Pro youtubery, tvůrce a firmy</span>
+        <span class="eyebrow">Pro youtubery, tvůrce a firmy</span>
         <h1 class="display" id="hero-title" aria-label="Klienti a reference.">
           <span class="line" aria-hidden="true">Klienti</span>
-          <span class="line grad-line" aria-hidden="true">a reference.</span>
+          <span class="line" aria-hidden="true">a reference.</span>
         </h1>
         <div class="hero-join">
-          <p class="lede">Stříháme a tvoříme pro lidi, které možná znáte. <b>Chyťte kohokoli za profilovku a hoďte s ním.</b> Kliknutím na video ho pustíte celé.</p>
+          <p class="lede">Pro tyhle lidi stříháme a tvoříme. Profilovku můžete chytit a hodit, kliknutím na video ho pustíte celé.</p>
           <div class="ctas">
-            <a class="btn magnetic" id="hero-cta" href="#kontakt">Chci spolupráci<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+            <a class="btn" id="hero-cta" href="#kontakt">Chci spolupráci</a>
             <a class="link" href="https://portfolio.efektive.cz">Naše práce<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
           </div>
         </div>
@@ -850,74 +848,18 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   <section class="sec" id="co-delame" aria-labelledby="sluzby-title">
     <div class="wrap">
       <div class="sec-head">
-        <h2 class="display h2 rv" id="sluzby-title">Od nápadu až po reklamu, která prodává.</h2>
-        <p class="lede rv" style="--d:1">Video umíme vymyslet, vytvořit s AI, sestříhat a pustit do reklamy. A všechno, co děláme, učíme i ostatní.</p>
+        <h2 class="display h2 rv" id="sluzby-title">Co děláme.</h2>
+        <p class="lede rv" style="--d:1">Video vymyslíme, natočíme nebo vytvoříme s AI, sestříháme a pustíme do reklamy.</p>
       </div>
-      <div class="bento">
-        <article class="tile patreon-t rv">
-          <div class="viz split"><canvas id="t-patreon" aria-hidden="true"></canvas><span class="tag l">Teecee</span><span class="tag r">Maty</span></div>
-          <span class="num">01</span>
-          <h3 class="h3">Vzdělávací Patreon</h3>
-          <p class="body">Ke každému videu z Instagramu tutoriál: <b>jak vzniklo s AI</b> a <b>proč prodává.</b></p>
-          <a class="link" href="https://patreon.efektive.cz/#patreon">Jak to funguje<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
-        </article>
-        <article class="tile ai-t rv" style="--d:1">
-          <div class="viz"><canvas id="t-ai" aria-hidden="true"></canvas></div>
-          <span class="num">02</span>
-          <h3 class="h3">AI videa a spoty</h3>
-          <p class="body">Reklamní spoty, produktová videa a obsah na sítě. Vytvořené s umělou inteligencí a dotažené ve střihu.</p>
-        </article>
-        <article class="tile ads-t rv">
-          <div class="viz ads" aria-hidden="true">
-            <div class="chips"><span>Meta</span><span>Google</span></div>
-            <div class="bars"><i style="--h:30%;--i:0"></i><i style="--h:42%;--i:1"></i><i style="--h:38%;--i:2"></i><i style="--h:55%;--i:3"></i><i style="--h:64%;--i:4"></i><i style="--h:72%;--i:5"></i><i style="--h:88%;--i:6"></i></div>
-            <svg viewBox="0 0 300 170" preserveAspectRatio="none"><path d="M16 140 C 70 132, 90 118, 130 108 S 200 70, 230 58 S 270 30, 286 22"/></svg>
-          </div>
-          <span class="num">03</span>
-          <h3 class="h3">Meta a Google Ads</h3>
-          <p class="body">Kampaně, které přivádějí poptávky a zákazníky. Ne jen lajky.</p>
-        </article>
-        <article class="tile lect-t rv" style="--d:1">
-          <div class="viz slide" aria-hidden="true">
-            <span class="s-orb b"></span><span class="s-orb g"></span>
-            <span class="s-t">AI marketing<br>v praxi</span>
-            <span class="s-l"><i style="--w:120px"></i><i style="--w:90px"></i><i style="--w:104px"></i></span>
-            <span class="s-p"><span class="logo"><span class="e">efektive</span><span class="cz">.cz</span></span></span>
-          </div>
-          <span class="num">04</span>
-          <h3 class="h3">Přednášky o AI</h3>
-          <p class="body">Přednášíme na střední škole. Stejnou přednášku připravíme pro váš tým.</p>
-          <a class="link" href="https://patreon.efektive.cz/#prednasky">Chci přednášku<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
-        </article>
-        <article class="tile caps-t rv" style="--d:2">
-          <span class="badge">Beta</span>
-          <div class="viz caps" aria-hidden="true"><div class="cap-line" id="cap-line"><span>Titulky</span><span>které</span><span>chytí</span><span>pozornost</span></div></div>
-          <span class="num">05</span>
-          <h3 class="h3">AI aplikace na titulky</h3>
-          <p class="body">Vyvíjíme vlastní appku na automatické titulky do videí. Ve více jazycích a s pohybem, který drží pozornost.</p>
-        </article>
-        <article class="tile edit-t rv">
-          <div class="viz edit" aria-hidden="true">
-            <div class="rows">
-              <div class="row"><i style="--f:3"></i><i style="--f:2"></i><i style="--f:4"></i><i style="--f:1.5"></i><i style="--f:3"></i></div>
-              <div class="row"><i style="--f:2"></i><i style="--f:5"></i><i style="--f:2.5"></i><i style="--f:3"></i></div>
-              <div class="row"><i style="--f:6"></i><i style="--f:4"></i><i style="--f:5"></i></div>
-            </div>
-            <span class="head"></span>
-          </div>
-          <span class="num">06</span>
-          <h3 class="h3">Střih a editace videí</h3>
-          <p class="body">Reels, vlogy i dlouhá videa. Střih, u kterého lidi neodscrollují.</p>
-        </article>
-        <article class="tile web-t rv" style="--d:1">
-          <div class="viz web" aria-hidden="true">
-            <div class="phone"><i class="h" style="--w:80%"></i><i class="h" style="--w:60%"></i><i style="--w:90%"></i><i style="--w:70%"></i><i class="c"></i></div>
-          </div>
-          <span class="num">07</span>
-          <h3 class="h3">Weby a landing pages</h3>
-          <p class="body">Rychlé weby stavěné hlavně pro mobil. Třeba přesně jako tenhle.</p>
-        </article>
-      </div>
+            <ol class="svc">
+        <li><b>Vzdělávací Patreon</b><span>Ke každému videu z Instagramu tutoriál: jak vzniklo s AI a proč funguje. <a href="https://patreon.efektive.cz/#patreon">Jak to funguje</a></span></li>
+        <li><b>AI videa a spoty</b><span>Reklamní spoty, produktová videa a obsah na sítě, vytvořené s AI a dotažené ve střihu.</span></li>
+        <li><b>Meta a Google Ads</b><span>Kampaně na poptávky a prodej.</span></li>
+        <li><b>Střih videí</b><span>Reels, vlogy i dlouhá videa na YouTube.</span></li>
+        <li><b>Weby</b><span>Weby a landing page dělané hlavně pro mobil. Třeba tenhle.</span></li>
+        <li><b>Přednášky o AI</b><span>Přednášíme na střední škole. Stejnou přednášku připravíme pro firmu. <a href="https://patreon.efektive.cz/#prednasky">Chci přednášku</a></span></li>
+        <li><b>Aplikace na titulky</b><span>Vlastní appka na automatické titulky do videí. Teď je v betě.</span></li>
+      </ol>
     </div>
   </section>
 
@@ -925,8 +867,8 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   <section class="sec" aria-labelledby="chain-title">
     <div class="wrap">
       <div class="sec-head">
-        <h2 class="display h2 rv" id="chain-title">Video samo nic neprodá.</h2>
-        <p class="lede rv" style="--d:1">Prodává až celý řetězec. Stačí jeden slabý článek a zbytek přijde vniveč. Proto se díváme na všechny.</p>
+        <h2 class="display h2 rv" id="chain-title">Na čem to celé stojí.</h2>
+        <p class="lede rv" style="--d:1">Když jedna věc chybí, zbytek moc nepomůže. Proto řešíme všech pět.</p>
       </div>
       <div class="chain" id="chain">
         <span class="fill" aria-hidden="true"></span>
@@ -966,14 +908,14 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
           <span class="xviz" aria-hidden="true"><span class="xthumbs"><span class="xt" style="--i:0"><img src="assets/portfolio-viral.webp" alt="" loading="lazy" decoding="async"></span><span class="xt" style="--i:1"><img src="assets/portfolio-stozar.webp" alt="" loading="lazy" decoding="async"></span><span class="xt" style="--i:2"><img src="assets/portfolio-tesla.webp" alt="" loading="lazy" decoding="async"></span></span></span>
           <span class="xdom">portfolio.efektive.cz</span>
           <b class="h3">Naše práce</b>
-          <span class="body">Tři videa, u kterých lidi přestali scrollovat. Jedno má přes půl milionu zhlédnutí.</span>
+          <span class="body">Tři naše videa. Jedno má 587 tisíc zhlédnutí.</span>
           <span class="xgo">Podívat se<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
         </a>
         <a class="xcard xpa rv" href="https://patreon.efektive.cz">
           <span class="xviz night" aria-hidden="true"><span class="xsplit"><i>Jak to vzniklo</i><i>Proč to funguje</i></span></span>
           <span class="xdom">patreon.efektive.cz</span>
           <b class="h3">Vzdělávací Patreon</b>
-          <span class="body">Ke každému videu tutoriál: jak vzniklo s AI a proč prodává.</span>
+          <span class="body">Ke každému videu tutoriál: jak vzniklo s AI a proč funguje.</span>
           <span class="xgo">Přidat se<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
         </a>
       </div>
@@ -984,7 +926,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   <section class="sec" id="kontakt" aria-labelledby="kontakt-title">
     <div class="wrap">
       <div class="contact-card">
-        <canvas id="contact-art" aria-hidden="true"></canvas>
+        
         <div style="display:grid;gap:18px;align-content:start">
           <h2 class="display h2" id="kontakt-title">Domluvme si krátký hovor.</h2>
           <p class="lede">Napište, s čím chcete pomoct. Ozveme se a domluvíme se, jestli si sedneme.</p>
@@ -1022,7 +964,7 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
             <textarea id="msg" name="msg" placeholder="Třeba: máme videa, ale nepřivádějí zákazníky."></textarea>
           </div>
           <div class="form-foot">
-            <button class="btn light magnetic" type="submit" id="join-cta">Odeslat nezávazně<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+            <button class="btn light" type="submit" id="join-cta">Odeslat nezávazně</button>
             <span class="meta">Otevře se vám předvyplněný e-mail. Stačí ho odeslat.</span>
             <span class="form-status" id="form-status" aria-live="polite"></span>
           </div>
@@ -1058,9 +1000,9 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 
 <div class="dock" id="dock" aria-hidden="true">
   <span class="d-txt">Chcete taky takové video?</span>
-  <a class="btn" href="#kontakt" tabindex="-1">Napište nám<span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+  <a class="btn" href="#kontakt" tabindex="-1">Napište nám</a>
 </div>
 
-<script src="assets/site.js?v=3"></script>
+<script src="assets/site.js?v=619ccadb"></script>
 </body>
 </html>
