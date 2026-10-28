@@ -1037,3 +1037,6 @@ video.bub-live { object-fit: cover; }
 body { background-image: none; }
 .lect-card.dark::before, .lect-card.dark::after { display: none; }
 .chain .fill { background: var(--ink); }
+
+/* Safari: make rounded cards really clip what is inside them, so no square corner shows behind */
+.lect-card.dark, .contact-card, .xviz { -webkit-mask-image: -webkit-radial-gradient(white, black); }

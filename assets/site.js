@@ -517,6 +517,10 @@ document.documentElement.classList.add("js");
         b.r = (b.w + b.h) / 4;
         b.wind = (small ? 16 : 26) + Math.random() * (small ? 14 : 22);
       });
+      // Always leave room for two rows of cards, whatever the screen height.
+      const tallest = Math.max(...bodies.map((b) => b.h));
+      arena.style.minHeight = Math.round(2 * tallest * 0.86 + 60) + "px";
+      AH = arena.clientHeight;
     };
     measure();
     // Each card floats in its own lane, so they spread over the whole area.
@@ -524,7 +528,7 @@ document.documentElement.classList.add("js");
     let lanes = 2;
     const laneY = (k) => {
       const maxH = Math.max(...bodies.map((b) => b.h)) + 40;
-      lanes = Math.max(1, Math.min(3, Math.floor((AH - 40) / (maxH * 0.78))));
+      lanes = Math.max(2, Math.min(3, Math.floor((AH - 40) / (maxH * 0.78))));
       return 40 + (AH - 40) * ((k % lanes) + 0.5) / lanes;
     };
     const order = bodies.map((_, i) => i).sort(() => Math.random() - 0.5);
