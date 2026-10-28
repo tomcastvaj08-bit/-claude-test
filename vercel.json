@@ -1,9 +1,11 @@
 {
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "patreon.efektive.cz" }], "destination": "/patreon" },
+    { "source": "/", "has": [{ "type": "host", "value": "patreon.teeceeportfolio.com" }], "destination": "/patreon" },
     { "source": "/", "has": [{ "type": "host", "value": "portfolio.efektive.cz" }], "destination": "/portfolio" },
     { "source": "/", "has": [{ "type": "host", "value": "klienti.efektive.cz" }], "destination": "/klienti" },
-    { "source": "/", "destination": "/patreon" }
+    { "source": "/", "destination": "/home" }
   ],
   "headers": [
     { "source": "/(.*)", "headers": [ { "key": "X-Content-Type-Options", "value": "nosniff" } ] }
