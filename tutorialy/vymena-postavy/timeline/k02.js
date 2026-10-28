@@ -11,7 +11,7 @@
   const refs = [['03', 'ref1 · TikTok detail', 'Detail', 520, 1130, 'obličej + tričko · @image1'], ['04', 'ref2 · celá postava', 'postavu', 520, 1130, 'tělo + outfit · @image2'],
     ['05', 'ref3 · skupinová', 'skupinovou', 520, 1130, null], ['06', 'ref4 · selfie', 'selfíčka', 300, 535, null], ['07', 'ref5 · žlutá zeď', 'selfíčka', 400, 534, 'obličej · @image3']];
   refs.forEach(([f, cap, w, ww, hh, role], i) => {
-    const x = X(-2400 + i * 1200), y = Y(-100);
+    const x = X(-2200 + i * 1100), y = Y(-100);
     W.img({ x, y, z: 20 - Math.abs(i - 2) * 30, w: ww, h: hh, src: IMG(f), cap, in: AT(C('refs'), w) + (i === 4 ? .3 : 0), anim: 'pop', dof: false, float: 6, rz: (i - 2) * 2,
       fx: role ? [] : [{ t: T(C('best')) + 1.2, sel: '.pic', var: '--hl' }] });
     if (role) W.html({ x, y: Y(720), z: 120, w: 1100, h: 130, in: AT(C('best'), w === 'Detail' ? 'Detail' : w === 'postavu' ? 'postavu' : 'selfie', w === 'Detail' ? 1 : 1) , anim: 'pop',
@@ -24,7 +24,7 @@
     html: `<div style="text-align:center;font:700 80px var(--sans);letter-spacing:-.04em">míň a ostřejších <span class="gr">= víc</span></div>` });
 
   flyTo('k02', { x: X(0), y: Y(-2200), d: 2400 });
-  cam({ t: T(C('refs')) - .3, dur: 1.4, x: X(0), y: Y(0), d: 5600, ease: 'smooth', rx: 4, ry: 2, push: .04 });
-  cam({ t: T(C('lowres')) - .3, dur: 1.2, x: X(1200), y: Y(300), d: 3300, ease: 'whip', rx: 2, ry: -4, push: .05 });
-  cam({ t: T(C('best')) - .3, dur: 1.4, x: X(0), y: Y(450), d: 5000, ease: 'smooth', rx: 4, ry: 3, push: .04 });
+  cam({ t: T(C('refs')) - .3, dur: 1.4, x: X(0), y: Y(50), d: 4700, ease: 'smooth', rx: 4, ry: 2, push: .04 });
+  cam({ t: T(C('lowres')) - .3, dur: 1.2, x: X(0), y: Y(600), d: 4200, ease: 'whip', rx: 2, ry: -4, push: .05 });
+  cam({ t: T(C('best')) - .3, dur: 1.4, x: X(0), y: Y(500), d: 4700, ease: 'smooth', rx: 4, ry: 3, push: .04 });
 })();
