@@ -1,0 +1,8 @@
+build/
+out/
+assets/seq/
+assets/thumbs/
+assets/audio/
+assets/img/
+__pycache__/
+podklady/*.html

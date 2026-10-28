@@ -1,0 +1,29 @@
+{
+ "original": {
+  "fps": 24,
+  "frames": 236,
+  "thumbs": 10,
+  "dur": 9.836,
+  "w": 720,
+  "h": 1280,
+  "audio": true
+ },
+ "pokus1": {
+  "fps": 24,
+  "frames": 240,
+  "thumbs": 10,
+  "dur": 10.0,
+  "w": 720,
+  "h": 1280,
+  "audio": true
+ },
+ "pokus2": {
+  "fps": 24,
+  "frames": 236,
+  "thumbs": 10,
+  "dur": 9.844,
+  "w": 2160,
+  "h": 3840,
+  "audio": true
+ }
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Tutorial canvas engine</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="vp">
+  <div id="glow"></div><canvas id="gridc"></canvas>
+  <div id="world"></div>
+  <div id="vignette"></div>
+  <div id="hud"></div>
+</div>
+<script src="core.js"></script>
+<script src="widgets.js"></script>
+<script>
+  // ?tl=../timeline/test.js  -> načte timeline; ?t=12.5 -> náhled snímku; ?play=1 -> přehrávání v reálném čase
+  const q = new URLSearchParams(location.search);
+  window.SUBS = !!q.get('subs');
+  if (window.SUBS) document.getElementById('hud').insertAdjacentHTML('afterend', '<div id="subs" style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:1250px;text-align:center;font:500 19px/1.3 Geist;color:#fff;background:rgba(10,13,20,.72);padding:7px 16px;border-radius:12px"></div>');
+  const s = document.createElement('script');
+  s.src = q.get('tl') || '../build/tl.js';
+  s.onload = async () => {
+    await ENGINE.ready();
+    if (q.get('play')) {
+      const t0 = performance.now() / 1000 - parseFloat(q.get('t') || 0);
+      const a = ENGINE.S.audio && q.get('audio') !== '0' ? new Audio(ENGINE.S.audio) : null;
+      if (a) { a.currentTime = parseFloat(q.get('t') || 0); a.play().catch(() => {}); }
+      const loop = () => { ENGINE.seek(a ? a.currentTime : performance.now() / 1000 - t0); requestAnimationFrame(loop); };
+      loop();
+    } else ENGINE.seek(parseFloat(q.get('t') || 0));
+    window.__ready = true;
+  };
+  document.body.appendChild(s);
+</script>
+</body>
+</html>
