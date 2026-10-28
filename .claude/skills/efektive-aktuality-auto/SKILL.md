@@ -1,6 +1,6 @@
 ---
 name: efektive-aktuality-auto
-description: Plně automatická výroba dílu EFEKTIVE AKTUALITY obden (čt, so, po, st…, hotovo ve 20:00 Praha), od researche AI novinek přes brief, nový Spider-Verse hook s maskotem (Seedance multishot), motion grafiku, hlas Aura, sound design, kameru a render až po popisek, thumbnail (Canva) a doručení na Google Drive. Použij, když se spustí plánovaná úloha „Aktuality obden“ nebo uživatel řekne „udělej další aktualitu sám“, „automatická aktualita“ nebo „jeď pipeline od researche“.
+description: Plně automatická výroba dílu EFEKTIVE AKTUALITY obden (čt, so, po, st…, výroba od 4:40, doručení v 8:00 Praha), od researche AI novinek přes brief, nový Spider-Verse hook s maskotem (Seedance multishot), motion grafiku, hlas Aura, sound design, kameru a render až po popisek, thumbnail (Canva) a doručení na Google Drive. Použij, když se spustí plánovaná úloha „Aktuality obden“ nebo uživatel řekne „udělej další aktualitu sám“, „automatická aktualita“ nebo „jeď pipeline od researche“.
 ---
 
 # AKTUALITY: automat od researche po doručení
@@ -11,8 +11,8 @@ Vzor dílu je **Aktualita #1** (`news-reel/episodes/2026-10-13-instagram-edits/`
 
 ## Harmonogram
 - **Obden:** čt 29. 10. 2026, so 31. 10., po 2. 11., st 4. 11., … (každých 48 h od 29. 10. 2026).
-- Plánovaná úloha se spouští **denně v 16:40 (Europe/Prague)**. Nejdřív spočítej `(dnešní datum − 2026-10-29) v dnech`. Je-li číslo **liché**, napiš jen „Dnes se aktualita nedělá (obden).“ a skonči. Nic negeneruj, nic necommituj.
-- Hotovo a doručeno nejpozději **ve 20:00 Praha**. Počítej s rezervou: generování ~30 min, render celého videa ~50 min.
+- Plánovaná úloha se spouští **denně ve 4:40 (Europe/Prague)** v hlavní session (ta má konektory Higgsfield, ElevenLabs, Canva, Google Drive). Nejdřív spočítej `(dnešní datum − 2026-10-29) v dnech`. Je-li číslo **liché**, napiš jen „Dnes se aktualita nedělá (obden).“ a skonči.
+- **Doručení přesně v 8:00 Praha.** Když je hotovo dřív, naplánuj si `send_later` na 08:00 a doruč až na ni. Rezerva na výrobu je přes 3 h (generování ~30 min, render ~50 min).
 
 ## Rozpočet na díl (strop)
 - **Higgsfield ≤ 120 kreditů:** Seedance 2.5 multishot 720p 6 s = 42 kr. Obrázky gpt_image: keyframy, samolepka. Jedno přegenerování videa je OK, dvě ne.
@@ -121,7 +121,7 @@ Zdroje: <url>, <url>
   4. nahrát do Canvy jako 3 vrstvy (`create-upload-url` → POST → `create-design` → `read-design open_transaction` → `edit-design`) a **commit**.
 - Uživatel tuhle automatiku schválil, takže koncept v Canvě rovnou ulož.
 
-### 10. Doručení (do 20:00)
+### 10. Doručení (v 8:00)
 - Na Google Drive do složky **„EFEKTIVE Aktuality / <YYYY-MM-DD> – <téma>“** nahraj:
   - `reel_web.mp4`;
   - `thumbnail_9x16.png`;
