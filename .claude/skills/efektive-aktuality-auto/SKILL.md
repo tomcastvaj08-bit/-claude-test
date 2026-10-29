@@ -128,11 +128,13 @@ Zdroje: <url>, <url>
 - Uživatel tuhle automatiku schválil, takže koncept v Canvě rovnou ulož.
 
 ### 10. Doručení (v 8:00)
-- Na Google Drive (nadřazená složka **„EFEKTIVE Aktuality“**, id `1mg8yWVGh3Qp2lNcASiqcYfGXuNvrYw7V`) vytvoř podsložku **„<YYYY-MM-DD> – <téma>“** a nahraj do ní `popisek.txt` a `brief.txt` (s odkazem na Canva cover). **Binární soubory (mp4, png) Drive konektor neumí:** šly by jen jako base64 v konverzaci a reel má desítky MB. Video a cover proto pošli uživateli přes `SendUserFile` v závěrečné zprávě. Původní seznam souborů:
-  - `reel_web.mp4`;
-  - `thumbnail_9x16.png`;
-  - `popisek.txt`;
-  - `brief.txt`.
+- **Google Drive (pravidlo uživatele):** každý díl dostane vlastní složku v nadřazené složce **„EFEKTIVE Aktuality“** (id `1mg8yWVGh3Qp2lNcASiqcYfGXuNvrYw7V`).
+  - Pojmenuj ji podle aktuality: **„Aktualita #N – <téma> (<D. M. RRRR>)“**. Příklad: „Aktualita #2 – ChatGPT ovládá PC (29. 10. 2026)“, id `15xaVGt9NrvfgaAjNEEcCE4VE9dlGCcmQ`.
+  - Do složky VŽDY patří: **video (`reel_web.mp4`), thumbnail (`thumbnail_9x16.png`) a `popisek.txt`**, k tomu `brief.txt`.
+  - **Texty** nahraj přes `create_file` (`textContent`, `disableConversionToGoogleType: true`).
+  - **Video a thumbnail přes Drive konektor nejdou:** binární obsah by se musel poslat jako base64 přímo v parametru volání, a reel má ~36 MB.
+  - **Cesta 1 (plně automatická):** zavolej `list_computer_folders`. Když tam je složka z Google Drive pro desktop (synchronizovaná složka „EFEKTIVE Aktuality“, musí to být kořen git repozitáře), připoj ji přes `request_computer_folder`. Pak tam zkopíruj podsložku dílu s videem, thumbnailem a popiskem; Drive ji sám nasynchronizuje.
+  - **Cesta 2 (když cesta 1 není nastavená):** pošli video a thumbnail přes `SendUserFile` a v závěrečné zprávě napiš přesný název složky, kam je uživatel přetáhne.
 - Commitni a pushni epizodu (bez `build/`).
 - **Závěrečná zpráva** (česky, krátce):
   - téma a proč;
