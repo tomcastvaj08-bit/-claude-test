@@ -150,7 +150,7 @@ server.close();
 function resolveSfx(name) {
   const dir = join(ROOT, "assets", "sfx");
   const alias = { synth_riser: "riser.wav", tick: "tick.wav" };
-  for (const f of [join(dir, "el", `${name}.mp3`), join(dir, "el", `${name}.wav`), join(dir, "designed", `${name}.wav`), join(dir, alias[name] ?? `${name}.wav`)]) if (existsSync(f)) return f;
+  for (const f of [join(dir, "el", `${name}.mp3`), join(dir, "el", `${name}.wav`), join(dir, "drive", `${name}.wav`), join(dir, "designed", `${name}.wav`), join(dir, alias[name] ?? `${name}.wav`)]) if (existsSync(f)) return f;
   return null;
 }
 // integrated loudness (EBU R128) of a file, optionally only its first `dur` seconds

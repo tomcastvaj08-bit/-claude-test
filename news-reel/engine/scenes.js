@@ -90,6 +90,9 @@ const ICONS = {
   arrow: `<path d="M8 24 H38 M28 14 L39 24 L28 34"/>`,
   hook: `<path d="M30 8 V28 A9 9 0 1 1 12 28 V24"/>`,
   flag: `<path d="M12 42 V7 M12 9 H36 L31 17 L36 25 H12"/>`,
+  grid: `<rect x="8" y="8" width="13" height="13" rx="4"/><rect x="27" y="8" width="13" height="13" rx="4"/><rect x="8" y="27" width="13" height="13" rx="4"/><rect x="27" y="27" width="13" height="13" rx="4"/>`,
+  table: `<rect x="7" y="9" width="34" height="30" rx="5"/><path d="M7 19 H41 M7 29 H41 M19 9 V39"/>`,
+  mail: `<rect x="6" y="11" width="36" height="26" rx="5"/><path d="M8 14 L24 26 L40 14"/>`,
 };
 export const icon = (name, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 48 48">${ICONS[name] ?? ICONS.sparkle}</svg>`;
 

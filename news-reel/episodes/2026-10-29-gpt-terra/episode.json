@@ -5,7 +5,7 @@
   "newsDate": "2026-10-27",
   "title": "ChatGPT umí ovládat počítač: GPT-6.1 Terra",
   "source": "🤖 GPT-6.1 Terra: ChatGPT ovládá počítač — Novinka ze 27. října.\nCo se změnilo: OpenAI vydalo model GPT-6.1 Terra, který rozumí tomu, co je na obrazovce, a sám kliká a píše napříč aplikacemi a weby (computer use). Je o polovinu levnější než předchozí modely.\nPro klienty: Míň ruční práce s opakovanými úkoly (vyplňování, nahrávání, posílání) a víc času na byznys.\nVyzkoušet: V placeném ChatGPT (Plus a výš) v režimu Work zadej jeden nudný opakovaný úkol a změř ušetřený čas.\nZdroje: https://qz.com/openai-gpt-61-terra-cheaper-mid-tier-model-102726 , https://community.openai.com/t/gpt-6-1-terra-delivering-fast-and-capable-computer-use-at-a-lower-price/1409900",
-  "script": "[[intro]][confident, relaxed, brisk pace] Čet dží pí tý má nový model, dží pí tý šest celá jedna Tera… a ten umí ovládat tvůj počítač. [[boom]]Na autopilota! [[explain]]Pro ty pomalejší: AI se dívá na obrazovku jako ty, hýbe myší, kliká a píše. Řekneš úkol… a ono ho samo dodělá. [[mix]]Otevře apku, vyplní tabulku, nahraje fotky, pošle mejl. [[platform]]Najdeš to v placeným Čet dží pí tý, v režimu Vork. [[joke]][deadpan] Jediný, co zatím neumí… je uvařit ti kafe. [[joke2]]Upřímně, to bys stejně rozlil. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená míň klikání [[clients2]]a víc času na byznys. [[try]]Tak to zkus: dej mu jeden nudnej úkol… a změř si, kolik času ušetříš.",
+  "script": "[[intro]][confident, relaxed, brisk pace] Čet dží pí tý má nový model, dží pí tý šest celá jedna Tera… a ten umí ovládat tvůj počítač. [[boom]]Na autopilota! [[explain]]Pro ty pomalejší: AI se dívá na obrazovku jako ty, hýbe myší, kliká a píše. Řekneš úkol… a ono ho samo dodělá. [[mix]]Otevře apku, vyplní tabulku, nahraje fotky, pošle mejl. [[platform]]Najdeš to v placeným Čet dží pí tý, v režimu Vork. [[joke]][deadpan] Jediný, co zatím neumí… je uvařit ti kafe. [[joke2]]Upřímně, to bys stejně rozlil. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená [[clients2]]míň klikání a víc času na byznys. [[try]]Tak to zkus: dej mu jeden nudnej úkol… a změř si, kolik času ušetříš.",
   "scenes": [
     {
       "cue": "intro",
@@ -42,7 +42,7 @@
     {
       "cue": "explain",
       "template": "desktop",
-      "transition": "whip",
+      "transition": "flash",
       "props": {
         "title": "AI **ovládá** počítač",
         "app": "Objednávky – Firma",
@@ -96,30 +96,35 @@
     },
     {
       "cue": "mix",
-      "template": "fan",
-      "transition": "whip",
+      "template": "tower",
+      "transition": "flash",
       "props": {
+        "kicker": "Autopilot",
         "title": "Udělá to **za tebe**",
         "items": [
           {
-            "title": "01",
-            "value": "Appky",
-            "tone": "blue"
+            "label": "Appky",
+            "icon": "grid",
+            "tone": "blue",
+            "at": "apku"
           },
           {
-            "title": "02",
-            "value": "Tabulky",
-            "tone": "green"
+            "label": "Tabulky",
+            "icon": "table",
+            "tone": "green",
+            "at": "tabulku"
           },
           {
-            "title": "03",
-            "value": "Fotky",
-            "tone": "ink"
+            "label": "Fotky",
+            "icon": "photo",
+            "tone": "ink",
+            "at": "fotky"
           },
           {
-            "title": "04",
-            "value": "E-maily",
-            "tone": "paper"
+            "label": "E-maily",
+            "icon": "mail",
+            "tone": "paper",
+            "at": "mejl"
           }
         ]
       }
@@ -146,7 +151,8 @@
             "at": "vork",
             "done": true
           }
-        ]
+        ],
+        "side": "left"
       }
     },
     {
@@ -174,17 +180,17 @@
       "template": "particles",
       "transition": "invert",
       "props": {
-        "text": "Míň **klikání**"
+        "text": "Takže **jedem dál**!"
       }
     },
     {
       "cue": "clients2",
-      "template": "words",
-      "transition": "blur",
+      "template": "globe",
+      "transition": "flash",
       "props": {
         "kicker": "Pro klienty",
-        "text": "Víc času na **byznys**.",
-        "size": "lg"
+        "ring": "MÍŇ KLIKÁNÍ • VÍC ČASU",
+        "text": "Míň klikání, víc času na **byznys**."
       }
     },
     {

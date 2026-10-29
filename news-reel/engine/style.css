@@ -472,6 +472,7 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 /* invert transition: backdrop negative + white flash frame */
 .fx-invert { position: absolute; inset: 0; display: none; backdrop-filter: invert(1) hue-rotate(180deg) contrast(1.1); }
 .fx-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+.fx-glow { position: absolute; inset: -10%; opacity: 0; mix-blend-mode: screen; background: radial-gradient(ellipse at 50% 48%, rgba(255,255,255,1) 0%, rgba(214,228,255,.85) 28%, rgba(120,160,255,.35) 55%, rgba(47,107,237,0) 75%); filter: blur(30px); }
 /* the graphics live on the sheet the hook dives into: a faint real-paper fibre under everything */
 .bg-tex { position: absolute; inset: 0; background: url("../assets/plates/paper.jpg") 50% 50% / 150% auto; filter: grayscale(1) contrast(1.4) brightness(1.18); mix-blend-mode: multiply; opacity: .32; }
 
@@ -656,3 +657,37 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 #stage.land .dk-copy .kw-line.md { font-size: 74px; }
 .dk-copy .ph-legend { flex-direction: column; gap: 12px; font-size: 54px; }
 .dk-copy .pl span { font-size: 30px; }
+
+/* iphone: phone on the left, copy on the right */
+.sc.sc-iphone.left { flex-direction: row-reverse; }
+
+/* tower: isometric slabs stacking up */
+.sc.sc-tower { flex-direction: row; justify-content: center; align-items: center; gap: 20px; }
+.tw-copy { width: 560px; display: flex; flex-direction: column; align-items: flex-start; gap: 24px; }
+.tw-copy .kw-line { justify-content: flex-start; text-align: left; }
+#stage.land .tw-copy .kw-line.md { font-size: 84px; }
+.tw-stage { width: 820px; height: 740px; perspective: 2400px; perspective-origin: 50% 20%; display: grid; place-items: center; }
+.tw-iso { position: relative; width: 600px; height: 340px; transform-style: preserve-3d; margin-top: 200px; }
+.tw-floor { position: absolute; inset: -40px; border-radius: 60px; background: radial-gradient(closest-side, rgba(37,50,90,.28), rgba(37,50,90,0)); filter: blur(10px); }
+.tw-slab { position: absolute; inset: 0; transform-style: preserve-3d; }
+.tw-top { position: absolute; inset: 0; border-radius: 40px; display: flex; align-items: center; gap: 26px; padding: 0 40px; transform: translateZ(44px); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
+.tw-front, .tw-side { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; transform-origin: 50% 100%; transform: rotateX(-90deg); border-radius: 0 0 22px 22px; }
+.tw-side { left: auto; right: 0; top: 0; bottom: 0; width: 44px; height: auto; transform-origin: 100% 50%; transform: rotateY(90deg); border-radius: 0 22px 22px 0; }
+.tw-ic { width: 110px; height: 110px; border-radius: 30px; background: rgba(255,255,255,.22); display: grid; place-items: center; flex: none; }
+.tw-ic .ic { width: 64px; height: 64px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.tw-top em { font-style: normal; font-size: 78px; font-weight: 800; letter-spacing: -.04em; flex: 1; }
+.tw-ok { width: 70px; height: 70px; border-radius: 50%; background: #fff; display: grid; place-items: center; flex: none; transform: scale(0); }
+.tw-ok .ic { width: 42px; height: 42px; fill: none; stroke: var(--green); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.tw-slab.blue .tw-top { background: linear-gradient(135deg, #4b82f3, var(--blue)); color: #fff; } .tw-slab.blue .tw-front, .tw-slab.blue .tw-side { background: #1f4fc0; }
+.tw-slab.green .tw-top { background: linear-gradient(135deg, #8ee067, var(--lime)); color: #fff; } .tw-slab.green .tw-front, .tw-slab.green .tw-side { background: #4b9a2a; }
+.tw-slab.ink .tw-top { background: linear-gradient(135deg, #3a4150, var(--ink)); color: #fff; } .tw-slab.ink .tw-front, .tw-slab.ink .tw-side { background: #12151c; }
+.tw-slab.paper .tw-top { background: linear-gradient(135deg, #ffffff, #e9edf5); color: var(--ink); } .tw-slab.paper .tw-front, .tw-slab.paper .tw-side { background: #c9d0dd; }
+
+/* globe: dotted sphere + orbiting text ring */
+.sc.sc-globe { flex-direction: row; justify-content: center; align-items: center; gap: 0px; perspective: 1800px; }
+.gl-stage { position: relative; width: 760px; height: 740px; transform-style: preserve-3d; display: grid; place-items: center; }
+.gl-dots { position: absolute; width: 700px; height: 700px; left: 30px; top: 20px; }
+.gl-ring { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.gl-ring span { position: absolute; left: -22px; top: -36px; width: 44px; text-align: center; font-size: 60px; font-weight: 800; letter-spacing: 0; color: var(--ink); backface-visibility: visible; }
+.gl-copy { width: 640px; flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+.gl-copy .kw-line { justify-content: flex-start; text-align: left; }

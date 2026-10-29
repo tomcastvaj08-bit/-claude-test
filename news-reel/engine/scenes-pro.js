@@ -350,7 +350,7 @@ Object.assign(proTemplates, {
   iphone(el, p, ctx) {
     const items = p.items ?? [];
     const KB = ["qwertzuiop", "asdfghjkl", "yxcvbnm"];
-    el.appendChild(h(`<div class="sc sc-iphone">
+    el.appendChild(h(`<div class="sc sc-iphone ${p.side === "left" ? "left" : ""}">
       <div class="ip-copy">
         ${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}
         ${p.title ? kineticWords(p.title, "md") : ""}
@@ -394,12 +394,13 @@ Object.assign(proTemplates, {
       if (tag) { const q = brandOut(prog(t, 0, 0.6)); tag.style.opacity = q; tag.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
       // phone: 3D arc in, then a slow turntable drift + float
       const e = snapOut(prog(t, -0.1, 1.0)), d = brandInOut(prog(t, 0.6, Math.max(1, dur)));
-      const ry = lerp(-62, -20, e) + d * 14, rx = lerp(38, 7, e) - d * 2, rz = lerp(14, 2.5, e);
+      const side = p.side === "left" ? -1 : 1; // phone on the left faces right (mirrored turn)
+      const ry = (lerp(-62, -20, e) + d * 14) * side, rx = lerp(38, 7, e) - d * 2, rz = lerp(14, 2.5, e) * side;
       const ty = (1 - e) * 900 + Math.sin(t * 1.4) * 8;
       phone.style.transform = `translateY(${ty}px) translateZ(${(1 - e) * -400}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
       shadow.style.opacity = String(0.55 * e);
       shadow.style.transform = `translateX(${-ry * 1.6}px) scale(${lerp(0.6, 1, e)}, 1)`;
-      glare.style.backgroundPosition = `${lerp(-40, 140, (ry + 62) / 76)}% 0`;
+      glare.style.backgroundPosition = `${lerp(-40, 140, (ry * side + 62) / 76)}% 0`;
       // typing
       let active = null;
       typers.forEach((ty, i) => {
@@ -583,6 +584,109 @@ Object.assign(proTemplates, {
         l.style.opacity = String(clamp(a * 1.5) * (i === idx ? 1 : 0.35));
         l.style.transform = `translateX(${(1 - a) * -40}px)`;
         l.classList.toggle("on", i === idx);
+      });
+    };
+  },
+});
+
+
+// ===================== 3D vocabulary added with episode #2 =====================
+// tower – isometric 3D layers: each item is a thick glass slab that drops from above onto the stack on its
+//         spoken word (squash on landing, shadow tightens), the tower slowly turns; title on the left.
+// globe – dotted 3D sphere flies in from deep background and spins; a text ring orbits its equator
+//         (letters facing the camera are sharp, the back side fades), headline lands under it.
+Object.assign(proTemplates, {
+  tower(el, p, ctx) {
+    const items = p.items ?? [];
+    const tones = ["blue", "green", "ink", "paper"];
+    el.appendChild(h(`<div class="sc sc-tower">
+      <div class="tw-copy">${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}${p.title ? kineticWords(p.title, "md") : ""}</div>
+      <div class="tw-stage"><div class="tw-iso">
+        <i class="tw-floor"></i>
+        ${items.map((it, i) => `<div class="tw-slab ${it.tone ?? tones[i % 4]}" style="--i:${i}">
+          <b class="tw-side"></b><b class="tw-front"></b>
+          <div class="tw-top"><span class="tw-ic">${icon(it.icon ?? "sparkle")}</span><em>${esc(it.label ?? "")}</em><i class="tw-ok">${icon("check")}</i></div>
+        </div>`).join("")}
+      </div></div>
+    </div>`));
+    const iso = el.querySelector(".tw-iso"), slabs = [...el.querySelectorAll(".tw-slab")], oks = [...el.querySelectorAll(".tw-ok")];
+    const floor = el.querySelector(".tw-floor"), title = el.querySelector(".kw-line"), tagEl = el.querySelector(".tw-copy .tag");
+    const T = items.map((it, i) => ctx.at(it.at, 0.35 + i * 0.6));
+    const GAP = 70; // slab thickness + spacing in px
+    T.forEach((tt, i) => { ctx.sfx("whip_air", tt - 0.22, -16); ctx.sfx("ui_tap", tt, -6); ctx.sfx("check_tick", tt + 0.32, -10); });
+    let tw;
+    return (t, dur) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.1, 0.1); }
+      if (title) animateWords(title, t, tw);
+      if (tagEl) { const q = brandOut(prog(t, 0, 0.6)); tagEl.style.opacity = q; tagEl.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
+      const e = snapOut(prog(t, -0.05, 0.9)), spin = brandInOut(prog(t, 0, Math.max(1, dur)));
+      iso.style.transform = `translateY(${(1 - e) * 260}px) rotateX(${lerp(68, 54, e)}deg) rotateZ(${lerp(-58, -34, e) + spin * 10}deg)`;
+      floor.style.opacity = String(e * 0.9);
+      let landed = 0;
+      slabs.forEach((sl, i) => {
+        const a = prog(t, T[i] - 0.3, 0.3), land = ease.inCubic(a);
+        const squash = Math.sin(Math.PI * clamp((t - T[i]) / 0.24)) * (t > T[i] ? 1 : 0);
+        const z = i * GAP + (1 - land) * 900;
+        sl.style.opacity = String(clamp(a * 4));
+        sl.style.transform = `translateZ(${z - squash * 10}px) scale(${1 + squash * 0.035})`;
+        sl.style.filter = a > 0 && a < 1 ? `blur(${(1 - land) * 6}px)` : "none";
+        if (t >= T[i]) landed = i + 1;
+        const ok = brandOut(prog(t, T[i] + 0.3, 0.4));
+        oks[i].style.transform = `scale(${ok > 0 ? ease.outBack(ok, 2) : 0})`;
+      });
+      floor.style.transform = `translateZ(-2px) scale(${1 + landed * 0.06})`;
+    };
+  },
+
+  globe(el, p, ctx) {
+    const ring = ((p.ring ?? "VÍC ČASU NA BYZNYS") + " • ").repeat(p.repeat ?? 2);
+    const chars = [...ring];
+    const R = 430, RT = 370; // sphere radius (canvas px, 1000 canvas shown at 700) and text ring radius (css px)
+    el.appendChild(h(`<div class="sc sc-globe">
+      <div class="gl-stage"><canvas class="gl-dots" width="1000" height="1000"></canvas>
+        <div class="gl-ring">${chars.map((c) => `<span>${c === " " ? "&nbsp;" : esc(c)}</span>`).join("")}</div></div>
+      <div class="gl-copy">${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}${p.text ? kineticWords(p.text, "lg") : ""}</div>
+    </div>`));
+    const stage = el.querySelector(".gl-stage"), cv = el.querySelector(".gl-dots"), g = cv.getContext("2d");
+    const spans = [...el.querySelectorAll(".gl-ring span")], title = el.querySelector(".kw-line"), tagEl = el.querySelector(".gl-copy .tag");
+    // fibonacci sphere
+    const N = 900, P = [];
+    for (let k = 0; k < N; k++) { const y = 1 - (2 * (k + 0.5)) / N, r = Math.sqrt(1 - y * y), th = k * 2.39996323; P.push([Math.cos(th) * r, y, Math.sin(th) * r]); }
+    const tLand = 0.55;
+    ctx.sfx("hook_dive", -0.2, -12);
+    ctx.sfx("hook_impact", tLand - 0.05, -16);
+    ctx.sfx("reveal_shimmer", tLand, -13);
+    let tw;
+    return (t) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.5, 0.1); }
+      if (title) animateWords(title, t, tw);
+      if (tagEl) { const q = brandOut(prog(t, 0.2, 0.6)); tagEl.style.opacity = q; tagEl.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
+      // fly-in from deep background: far + small + blurred -> overshoots slightly toward camera -> settles
+      const f = snapOut(prog(t, -0.1, tLand + 0.1));
+      const z = lerp(-2600, 0, f) + Math.sin(Math.PI * clamp((t - tLand + 0.1) / 0.5)) * 60;
+      stage.style.transform = `translateZ(${z}px) rotateZ(${lerp(-18, -12, f)}deg)`;
+      stage.style.filter = f < 0.98 ? `blur(${(1 - f) * 14}px)` : "none";
+      stage.style.opacity = String(clamp(f * 2));
+      const spin = t * 0.9 + (1 - f) * 3; // fast spin while flying in, then steady
+      const tilt = 0.32, ct = Math.cos(tilt), st = Math.sin(tilt);
+      g.clearRect(0, 0, 1000, 1000);
+      for (const [x0, y0, z0] of P) {
+        const x = x0 * Math.cos(spin) + z0 * Math.sin(spin), zz = -x0 * Math.sin(spin) + z0 * Math.cos(spin);
+        const y = y0 * ct - zz * st, z2 = y0 * st + zz * ct;
+        const d = (z2 + 1) / 2; // 0 back .. 1 front
+        g.globalAlpha = 0.12 + d * 0.8;
+        g.fillStyle = d > 0.55 ? "#2f6bed" : "#9db8f5";
+        g.beginPath(); g.arc(500 + x * R, 500 + y * R, 1.6 + d * 2.6, 0, 6.2832); g.fill();
+      }
+      g.globalAlpha = 1;
+      // text ring: each letter at an angle on the equator, rotating opposite to the dots
+      const n = spans.length, rs = -t * 0.55 - (1 - f) * 2;
+      spans.forEach((sp, k) => {
+        const a = (k / n) * Math.PI * 2 + rs, cz = Math.cos(a);
+        const front = (cz + 1) / 2;
+        sp.style.transform = `rotateX(${-tilt * 57.3}deg) rotateY(${a * 57.3}deg) translateZ(${RT}px)`;
+        sp.style.opacity = String(0.15 + front * 0.85);
+        sp.style.color = front > 0.5 ? "var(--ink)" : "var(--blue-2)";
       });
     };
   },

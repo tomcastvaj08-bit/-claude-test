@@ -15,7 +15,13 @@ Vzor dílu je **Aktualita #1** (`news-reel/episodes/2026-10-13-instagram-edits/`
 - **Doručení přesně v 8:00 Praha.** Když je hotovo dřív, naplánuj si `send_later` na 08:00 a doruč až na ni. Rezerva na výrobu je přes 3 h (generování ~30 min, render ~50 min).
 
 ## Rozpočet na díl (strop)
-- **Higgsfield ≤ 120 kreditů:** Seedance 2.5 multishot 720p 6 s = 42 kr. Obrázky gpt_image: keyframy, samolepka. Jedno přegenerování videa je OK, dvě ne. **Když zůstatek na Higgsfieldu nestačí na 720p** (zkontroluj `balance` a `get_cost`), udělej multishot v **480p** (6 s = 18 kr.), bez keyframů, jen s referencemi (character sheet, board, style frame) a end framem z enginu. Pak ho Lanczosem zvětši na 1080p (díl #2 takhle vyšel dobře). V závěrečné zprávě napiš, kolik kreditů zbývá.
+- **Higgsfield ≤ 120 kreditů.**
+  - **Hook (Seedance 2.5 multishot) generuj vždy v 480p**: pokyn uživatele po dílu #2; 6 s stojí 18 kr. (720p 42 kr.).
+  - Bez keyframů, jen s referencemi (character sheet, board, style frame) a end framem z enginu.
+  - Pak klip zvětši na 1080p Lanczosem s jemným doostřením (`unsharp`). Díl #2 takhle vyšel dobře.
+  - Obrázky gpt_image (samolepka) stojí 0,25 kr.
+  - Jedno přegenerování videa je OK, dvě ne.
+  - Před generováním zkontroluj `balance` a `get_cost`. V závěrečné zprávě napiš, kolik kreditů zbývá.
 - **ElevenLabs ≤ 3 000 kreditů:**
   - voiceover: 2 verze;
   - replika postavičky: 2 verze;
@@ -135,6 +141,23 @@ Zdroje: <url>, <url>
   - popisek k vložení;
   - délka, LUFS, kredity.
 - Když něco selže (kredity, fronta, render), pošli aspoň to, co je hotové, a napiš přesně, co chybí.
+
+## Motion grafika se musí každým dílem zlepšovat (pravidlo uživatele)
+- **Nikdy jen nevyměňuj texty v minulém dílu.** Vezmi předchozí díl jako základ a **změň aspoň 2 grafiky**: úplně nová šablona (3D objekt, scéna na míru tématu), nebo výrazně jiný layout (vějíř → věž nad sebou; telefon vpravo → vlevo / uprostřed). Změny se sčítají, takže #3 má změny z #2 a k tomu další 2 nové.
+- **Struktura scénáře zůstává** (je vymazlená), mění se jen to, JAK se věci ukazují.
+- **Myšlenkový proces u každého dílu:**
+  1. Přečti `news-reel/docs/motion-evolution.md` (co bylo minule).
+  2. Přečti si reference v `news-reel/docs/motion-reference.md` + `docs/ref/`.
+  3. Vymysli k tématu aspoň 2 nové / přestavěné grafiky.
+  4. Postav je jako šablony v `engine/scenes-pro.js` (ověř na stills).
+  5. Připiš řádek do `motion-evolution.md`.
+- **3D objekty jsou vítané**, např. `globe` (text obíhá kolem tečkové koule, která přiletí z hloubky). Uživateli se líbí prstenec částic (`particles`), takže dělej jeho varianty.
+- **Flash přechody:** `transition: "flash"` aspoň 2× za video. Expozice nahoru, 2 snímky bílá, bloom/glow a nová scéna se vynoří ze světla. Zvuk: swell + impact z Drivu.
+- **SFX knihovna na Drivu:** složka **„SFX AI final“** (`1_ov-XY7iJkn3LAjMd5ohhzJZuouVsdKn`, ~10 000 zvuků v kategoriích: whoosh, riser, impact, beep, transition, …).
+  1. Hledej `search_files` (`title contains 'riser'` apod., `owner = 'me'`, `mimeType contains 'audio'`).
+  2. Stáhni `download_file_content`. Výsledek se uloží do souboru v tool-results jako JSON s base64 `content`.
+  3. Dekóduj ho Pythonem do `news-reel/assets/sfx/drive/<název>.wav`. Engine ho najde podle jména.
+  4. Každý díl přidej aspoň pár nových zvuků z Drivu.
 
 ## Co se naučilo (nepřekračovat)
 - **Render pouštěj odpojeně** (`setsid nohup … &`) a průběžně commituj. Restart workeru zabije proces na pozadí a render pak musí začít znovu. Celé video (~1000 snímků) trvá ~40 min.

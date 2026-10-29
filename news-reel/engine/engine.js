@@ -170,14 +170,20 @@ async function main() {
   // transition overlays (strobe = 1-frame colour flashes, streak = light line that opens into a panel)
   const fx = document.createElement("div");
   fx.className = "fx";
-  fx.innerHTML = `<div class="fx-strobe"></div><div class="fx-streak"><i></i></div><div class="fx-invert"></div><div class="fx-flash"></div>`;
+  fx.innerHTML = `<div class="fx-strobe"></div><div class="fx-streak"><i></i></div><div class="fx-invert"></div><div class="fx-flash"></div><div class="fx-glow"></div>`;
   stage.appendChild(fx);
   const strobe = fx.querySelector(".fx-strobe"), streak = fx.querySelector(".fx-streak"), streakLine = streak.firstChild;
-  const invertFx = fx.querySelector(".fx-invert"), flashFx = fx.querySelector(".fx-flash");
+  const invertFx = fx.querySelector(".fx-invert"), flashFx = fx.querySelector(".fx-flash"), glowFx = fx.querySelector(".fx-glow");
   scenes.forEach((s) => {
     if (s.def.transition === "strobe") addSfx("transition_swish", s.start - 0.12, -3), addSfx("hook_impact", s.start, -10);
     if (s.def.transition === "streak") addSfx("hook_dive", s.start - 0.35, -6);
     if (s.def.transition === "invert") addSfx("invert_hit", s.start - 0.09, -1), addSfx("hook_impact", s.start - 0.04, -12);
+    // flash = light swells in, the frame burns out to white with a bloom, the next scene develops out of the glow
+    if (s.def.transition === "flash") {
+      addSfx("whoosh_slow_swell", s.start - 0.95, -9, { ss: 1.2, dur: 1.05, fo: 0.04 });
+      addSfx("impact_synthetic_hit_01", s.start - 0.02, -9, { dur: 1.4, fo: 0.5 });
+      addSfx("reveal_shimmer", s.start + 0.04, -14);
+    }
   });
 
   const outroUpdate = buildOutro(stage, cfg);
@@ -298,7 +304,7 @@ async function main() {
 
     scenes.forEach((s, si) => {
       const local = t - s.start, dur = s.end - s.start;
-      const hardOut = ["strobe", "streak", "invert"].includes(scenes[si + 1]?.def.transition);
+      const hardOut = ["strobe", "streak", "invert", "flash"].includes(scenes[si + 1]?.def.transition);
       const OUT = hardOut ? 0 : 0.24;
       const vis = local >= (si === 0 && HO ? HO[0] - s.start : -0.02) && local < dur + OUT;
       s.el.style.display = vis ? "block" : "none";
@@ -320,6 +326,8 @@ async function main() {
       if (inType === "whip") { tx += (1 - i) * 620; bl += (1 - i) * 30; op *= clamp(i * 3); }
       if (inType === "zoom") { sc *= lerp(0.72, 1, i); bl += (1 - i) * 22; op *= clamp(i * 2); }
       if (inType === "blur") { bl += (1 - i) * 26; op *= clamp(i * 1.5); }
+      if (outType === "flash") { const f = ease.inCubic(prog(local, dur - 0.22, 0.22)); sc *= 1 + f * 0.06; bl += f * 6; }
+      if (inType === "flash") { const pu = snapOut(prog(local, 0.02, 0.7)); sc *= lerp(1.09, 1, pu); bl += (1 - pu) * 12; }
       if (inType === "invert") { const pu = snapOut(prog(local, 0, 0.5)); sc *= lerp(1.2, 1, pu); bl += (1 - pu) * 6; }
       s.el.style.opacity = op;
       s.el.style.transform = `translate(${tx}px, ${ty}px) scale(${sc}) ${shotXf(s.def.camera ?? SHOTS[si % SHOTS.length], local, dur)}`;
@@ -349,6 +357,8 @@ async function main() {
     streak.style.display = "none";
     invertFx.style.display = "none";
     flashFx.style.opacity = "0";
+    glowFx.style.opacity = "0";
+    let burn = 0;
     for (const s of scenes) {
       const d = t - s.start;
       if (s.def.transition === "strobe" && d >= -0.1 && d < 0.0) {
@@ -362,6 +372,13 @@ async function main() {
         else if (d < 0.17) invertFx.style.display = "block";
         else flashFx.style.opacity = String(0.55 * (1 - prog(d, 0.17, 0.13)));
       }
+      if (s.def.transition === "flash" && d >= -0.24 && d < 0.55) {
+        // brightness ramps up (exposure push), 2 frames of pure white, then a bloom that decays exponentially
+        const up = ease.inCubic(prog(d, -0.24, 0.2)), down = 1 - ease.outCubic(prog(d, 0.06, 0.48));
+        burn = Math.max(burn, d < 0.06 ? up : down);
+        flashFx.style.opacity = String(d >= -0.04 && d < 0.06 ? 1 : d < 0 ? up * 0.55 : down * 0.85);
+        glowFx.style.opacity = String(d < 0.06 ? up : down);
+      }
       if (s.def.transition === "streak" && d >= -0.4 && d < 0.3) {
         streak.style.display = "block";
         const a = ease.inExpo(prog(d, -0.4, 0.18)); // line shoots across
@@ -372,6 +389,7 @@ async function main() {
         streak.style.background = o > 0.02 ? "var(--blue)" : "transparent";
       }
     }
+    cam.style.filter = burn > 0.01 ? `brightness(${1 + burn * 1.6}) saturate(${1 + burn * 0.4}) blur(${burn * 4}px)` : "none";
     const curScene = scenes.reduce((c, s) => (t >= s.start - 0.05 ? s : c), scenes[0]);
     const darkScene = curScene && ["bigtype"].includes(curScene.def.template) && !["paper", "lime"].includes(curScene.def.props?.bg ?? "blue");
     capEl.classList.toggle("on-dark", !!darkScene && t < outroStart);
