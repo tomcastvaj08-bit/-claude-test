@@ -6,3 +6,5 @@ assets/audio/
 assets/img/
 __pycache__/
 podklady/*.html
+covers/*.jpg
+covers/*.png
