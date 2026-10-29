@@ -1,0 +1,51 @@
+{
+  "slug": "AI_TIP_postup",
+  "title": "AI TIP #01 – denní 3D video v Claude Code",
+  "brand": "efektive.cz",
+  "foot": "",
+  "who": "Teecee · zadání",
+  "lang": "cs",
+  "voice_id": "CAA06AyScaqhkbiFnTQ9",
+  "voice_name": "Maty",
+  "tts_model": "eleven_v4",
+  "tempo": 1.1,
+  "para_gap": 0.35,
+  "ch_lead": 2.0,
+  "inserts": {},
+  "hud": {
+    "k00": "Úvod",
+    "k01": "Zadání",
+    "k08": "Zpětná vazba",
+    "k13": "Cena a poučení",
+    "k14": "Konec"
+  },
+  "steps": null,
+  "sfx_lib": "/home/user/-claude-test/tutorialy/ai-tip-01/build/sfxlib",
+  "music": [
+    "pad"
+  ],
+  "music_duck_db": -19.0,
+  "music_open_db": -9.0,
+  "mono": {
+    "higgsfield": [
+      "H",
+      "#0A0D14"
+    ],
+    "node": [
+      "N",
+      "#3C873A"
+    ],
+    "chrome": [
+      "C",
+      "#1F4DFF"
+    ],
+    "puppeteer": [
+      "P",
+      "#00D8A2"
+    ],
+    "npm": [
+      "npm",
+      "#CB3837"
+    ]
+  }
+}
