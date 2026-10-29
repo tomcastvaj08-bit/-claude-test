@@ -50,7 +50,7 @@ Zdroje: <url>, <url>
 - **Jeden vtip:** drzý, ne zlý, ideálně o konkurenci nebo o zbytečné práci. Za ním „Takže jedem dál!“.
 - **Konec:** „Pro klienty to znamená…“ a „Tak to zkus: …“.
 - **Délka:** 80–95 slov (≈ 34 s hlasu při tempu 1,15). Celé video 38–45 s.
-- **Výslovnost:** anglická slova piš foneticky česky (karusel, apek, ejaj, čet dží pí tí…). Tagy eleven_v4: `[confident, relaxed, brisk pace]` na začátek, `[deadpan]` před vtip, `[upbeat]` po něm.
+- **Výslovnost: všechno česky** (pravidlo uživatele, chyba se opakovala v #1 i #2). **AI = „á í“, NIKDY „ej aj“.** Zkratky čti česky po písmenech (GPT = gé pé té, API = á pé í), anglická slova piš foneticky česky (karusel, apka, mejl, vork). Před každým TTS projdi skript podle slovníku `news-reel/docs/vyslovnost.md` (hledej `\b[A-Z]{2,}\b` a anglická slova), co chybí, doplň. Tagy eleven_v4: `[confident, relaxed, brisk pace]` na začátek, `[deadpan]` před vtip, `[upbeat]` po něm.
 - **Cue značky:** `[[intro]] [[boom]] [[explain]] [[mix]] [[style]] [[platform]] [[joke]] [[clients]] [[clients2]] [[try]]`. Názvy a počet uprav podle tématu.
 
 ### 4. Hook s maskotem (NOVÝ gag každý díl, stejně propracovaný jako kafe v #1)
@@ -143,6 +143,14 @@ Zdroje: <url>, <url>
   - popisek k vložení;
   - délka, LUFS, kredity.
 - Když něco selže (kredity, fronta, render), pošli aspoň to, co je hotové, a napiš přesně, co chybí.
+
+## Zpětná vazba k dílu #2 (platí od #3)
+- **Začátek po hooku nesmí mít prodlevu.** V #2 visela intro scéna s ikonou appky přes celou větu „Čet GPT má nový model…“ (~5 s) a skoro nic se nehýbalo. Hned po kostce musí být „úplný mrdy“: každých 0,6–1,2 s nový pohyb nebo nový prvek, žádný prvek nestojí déle než ~1 s bez animace.
+  - Intro rozděl na 2–3 beaty, každý na klíčové slovo: logo nebo ikona se postaví, číslo verze se protočí, tlačítko se ťukne, punch-in kamery, flash.
+  - Na každý beat dej zvuk.
+- **Prstenec částic (`particles`) v #3 NEPOUŽÍVEJ.** Uživatel si ho přál v #2, pro #3 chce místo něj novou motion grafiku. Obecně: co jednou zazářilo, v dalším dílu vyměň.
+- **Celkově víc dynamiky:** kratší scény, víc střihů a punch-inů, flash přechody.
+- **SFX napasuj přesněji.** Každý zvuk patří na snímek, kde se v obraze opravdu něco děje (dopad prvku, klik, flash), ne jen na slovo v hlase. Ověř to na stills nebo contact sheetu kolem každého zvuku a uprav `at`.
 
 ## Motion grafika se musí každým dílem zlepšovat (pravidlo uživatele)
 - **Nikdy jen nevyměňuj texty v minulém dílu.** Vezmi předchozí díl jako základ a **změň aspoň 2 grafiky**: úplně nová šablona (3D objekt, scéna na míru tématu), nebo výrazně jiný layout (vějíř → věž nad sebou; telefon vpravo → vlevo / uprostřed). Změny se sčítají, takže #3 má změny z #2 a k tomu další 2 nové.

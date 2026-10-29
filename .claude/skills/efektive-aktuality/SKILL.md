@@ -40,7 +40,7 @@ Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den pub
 - **Uveď produkt prakticky.** Co to je, odkud a za kolik, např. „appka přímo od Instagramu, v App Storu úplně zadarmo“. Lidi rádi slyší „zadarmo“. Grafika: ikona appky + tlačítko „Získat“, které se ťukne (šablona `app`, props `button`, `buttonDone`, `buttonAt`).
 - **Jeden vtip na díl.** Drzý, ale ne zlý (např. „Android je na cestě… ale upřímně? Android maj stejně jen divný lidi. Takže jedem dál!“). Zvukově: hudba se na vtip zastaví (`dj_brake`, hudební podklad přes `until`), pod vtipem rostou risery, na „jedem dál“ přijde basový úder a hudba naskočí. Kamera při vtipu skočí blíž a stojí.
 - **Délka:** cíl ~40 s celkem (max 60 s), čím rychlejší, tím lepší. Tempo hlasu 1,15 (`"tempo"` v episode.json).
-- **Anglická slova piš foneticky česky** (karusel, apek), jinak je hlas vysloví anglicky.
+- **Všechno česky:** AI = „á í“ (nikdy „ej aj“), zkratky česky po písmenech, anglická slova foneticky česky. Slovník: `news-reel/docs/vyslovnost.md`, projdi ho před každým TTS.
 - **Statická scéna nesmí stát.** Na každé scéně je kamerový pohyb (`camera`, viz níže) a na každé změně zvuk (ui_swipe + ui_tap), na klíčových slovech tichý tik (`ui_tick`).
 
 - Česky, tykání, rychle a úderně, 45–70 slov (≈ 18–24 s). Žádné pozdravy, žádné datum (to je v hooku), **nezmiňuj značku EFEKTIVE** – ta je jen v outru.

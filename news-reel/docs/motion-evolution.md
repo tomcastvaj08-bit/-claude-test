@@ -12,9 +12,14 @@ Změny se sčítají, takže každý díl vypadá jinak než ten předchozí. St
 | #2 | GPT-6.1 Terra (computer use) | `app` + tlačítko Spustit | `bigtype` | **`desktop`** NOVÉ: okno appky, sken obrazovky, AI kurzor po křivkách, klik, psaní, odeslání | **`tower`** NOVÉ: 3D izometrické vrstvy padají na sebe | `iphone` **vlevo** (zrcadlené natočení) | `words` ×2 (callback na kafe) | `particles` + **`globe`** NOVÉ: 3D tečková koule přiletí z hloubky, kolem ní obíhá text | `cta` | **`flash`** NOVÉ (expozice nahoru, bílá, bloom) ×3 | `desktop`, `tower`, `globe`, `flash`, SFX z Drivu |
 
 ## Zásobník nápadů na další díly (vyber aspoň 2 a/nebo vymysli vlastní k tématu)
-- `particles` prstenec líbí se: varianty (prstenec se rozpadne do loga appky, prstenec jako ciferník, spirála).
+- `particles` (prstenec): **v #3 nepoužívat** (pokyn uživatele), nahradit novou grafikou. Později případně jen výrazná varianta.
 - Text po obvodu 3D objektu (koule hotová). Dál válec, prstenec, kostka s textem na stěnách.
 - Telefon / okno: střídat pozici (vlevo / vpravo / uprostřed zepředu / ze shora na stole), nikdy dvakrát stejně za sebou.
 - Výčet: věž (hotová), mřížka dlaždic, které se otočí (flip), karusel na kruhu (coverflow), seznam s checkboxy, odpočet.
 - Úder: `bigtype` střídat s kinetickým slovem přes celou obrazovku, masked reveal přes obrázek, slovo složené z částic.
 - Přechody: `flash` aspoň 2× za video (s Drive SFX), mezi tím whip/strobe/streak/invert.
+
+## Zpětná vazba k #2
+- Intro po hooku moc dlouhé a statické (~5 s jedna ikona). Od #3 rozdělit na 2–3 rychlé beaty se zvukem.
+- V #3 vyměnit `particles` za novou grafiku; celkově víc dynamiky a přesnější SFX.
+- Výslovnost: „AI“ se četlo „ej aj“. Musí být „á í“ (viz `vyslovnost.md`).
