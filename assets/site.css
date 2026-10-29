@@ -1054,6 +1054,10 @@ body { background-image: none; }
 @media (min-width: 760px) { .stats { grid-template-columns: repeat(3, 1fr); } .stats .stat:last-child:nth-child(odd) { grid-column: auto; } }
 .xviz.xshot { background: var(--paper); }
 .xviz.xshot img { position: absolute; inset: 10px; width: calc(100% - 20px); height: calc(100% - 20px); object-fit: cover; border-radius: 10px; box-shadow: 0 10px 24px -14px rgba(10, 20, 60, 0.5); }
+/* Patreon card: tutorial thumbnails are landscape */
+.xt.land { width: 130px; aspect-ratio: 16 / 9; margin-inline: -30px; border-radius: 8px; background: #fff; }
+.xt.land:nth-child(2) { width: 168px; z-index: 1; }
+@media (min-width: 760px) { .xt.land { width: 140px; } .xt.land:nth-child(2) { width: 184px; } }
 /* Brand paper: every click tears it a bit more */
 .brand-paper.tear { position: relative; display: block; padding: 0; border: 0; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .brand-paper.tear:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
