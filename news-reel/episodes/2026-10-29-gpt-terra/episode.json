@@ -1,0 +1,672 @@
+{
+  "id": "2026-10-29-gpt-terra",
+  "number": 2,
+  "today": "2026-10-29",
+  "newsDate": "2026-10-27",
+  "title": "ChatGPT umí ovládat počítač: GPT-6.1 Terra",
+  "source": "🤖 GPT-6.1 Terra: ChatGPT ovládá počítač — Novinka ze 27. října.\nCo se změnilo: OpenAI vydalo model GPT-6.1 Terra, který rozumí tomu, co je na obrazovce, a sám kliká a píše napříč aplikacemi a weby (computer use). Je o polovinu levnější než předchozí modely.\nPro klienty: Míň ruční práce s opakovanými úkoly (vyplňování, nahrávání, posílání) a víc času na byznys.\nVyzkoušet: V placeném ChatGPT (Plus a výš) v režimu Work zadej jeden nudný opakovaný úkol a změř ušetřený čas.\nZdroje: https://qz.com/openai-gpt-61-terra-cheaper-mid-tier-model-102726 , https://community.openai.com/t/gpt-6-1-terra-delivering-fast-and-capable-computer-use-at-a-lower-price/1409900",
+  "script": "[[intro]][confident, relaxed, brisk pace] Čet dží pí tý má nový model, dží pí tý šest celá jedna Tera… a ten umí ovládat tvůj počítač. [[boom]]Na autopilota! [[explain]]Pro ty pomalejší: AI se dívá na obrazovku jako ty, hýbe myší, kliká a píše. Řekneš úkol… a ono ho samo dodělá. [[mix]]Otevře apku, vyplní tabulku, nahraje fotky, pošle mejl. [[platform]]Najdeš to v placeným Čet dží pí tý, v režimu Vork. [[joke]][deadpan] Jediný, co zatím neumí… je uvařit ti kafe. [[joke2]]Upřímně, to bys stejně rozlil. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená míň klikání [[clients2]]a víc času na byznys. [[try]]Tak to zkus: dej mu jeden nudnej úkol… a změř si, kolik času ušetříš.",
+  "scenes": [
+    {
+      "cue": "intro",
+      "template": "app",
+      "props": {
+        "name": "GPT-6.1 Terra",
+        "glyph": "T",
+        "gradient": [
+          "#10a37f",
+          "#0b3d2e"
+        ],
+        "tag": "OpenAI · Novinka",
+        "caption": "Ovládá tvůj počítač",
+        "captionAt": "ovládat",
+        "button": "Spustit",
+        "buttonDone": "Běží ✓",
+        "buttonAt": "počítač"
+      }
+    },
+    {
+      "cue": "boom",
+      "template": "bigtype",
+      "transition": "strobe",
+      "props": {
+        "word": "Autopilot",
+        "bg": "blue",
+        "meta": [
+          "GPT-6.1 Terra",
+          "Computer use"
+        ],
+        "sub": "kouká · kliká · píše"
+      }
+    },
+    {
+      "cue": "explain",
+      "template": "desktop",
+      "transition": "whip",
+      "props": {
+        "title": "AI **ovládá** počítač",
+        "app": "Objednávky – Firma",
+        "heading": "Nová objednávka",
+        "fields": [
+          {
+            "label": "Zákazník",
+            "value": "Jana Nováková"
+          },
+          {
+            "label": "E-mail",
+            "value": "jana@firma.cz"
+          },
+          {
+            "label": "Částka",
+            "value": "12 400 Kč"
+          }
+        ],
+        "button": "Odeslat",
+        "task": "Vyplň a odešli",
+        "toast": "Odesláno",
+        "lookAt": "dívá",
+        "moveAt": "hýbe",
+        "clickAt": "kliká",
+        "typeAt": "píše",
+        "taskAt": "řekneš",
+        "doneAt": "dodělá",
+        "steps": [
+          {
+            "label": "Kouká",
+            "at": "dívá"
+          },
+          {
+            "label": "Hýbe myší",
+            "at": "hýbe"
+          },
+          {
+            "label": "Kliká",
+            "at": "kliká"
+          },
+          {
+            "label": "Píše",
+            "at": "píše"
+          },
+          {
+            "label": "Hotovo",
+            "at": "dodělá"
+          }
+        ]
+      }
+    },
+    {
+      "cue": "mix",
+      "template": "fan",
+      "transition": "whip",
+      "props": {
+        "title": "Udělá to **za tebe**",
+        "items": [
+          {
+            "title": "01",
+            "value": "Appky",
+            "tone": "blue"
+          },
+          {
+            "title": "02",
+            "value": "Tabulky",
+            "tone": "green"
+          },
+          {
+            "title": "03",
+            "value": "Fotky",
+            "tone": "ink"
+          },
+          {
+            "title": "04",
+            "value": "E-maily",
+            "tone": "paper"
+          }
+        ]
+      }
+    },
+    {
+      "cue": "platform",
+      "template": "iphone",
+      "transition": "streak",
+      "props": {
+        "kicker": "Kde to najdeš?",
+        "title": "V placeném **ChatGPT**",
+        "sub": "Plus a výš · režim Work",
+        "app": "Poznámky",
+        "heading": "GPT-6.1 Terra",
+        "date": "27. října 2026",
+        "items": [
+          {
+            "text": "ChatGPT Plus / Pro",
+            "at": "placeným",
+            "done": true
+          },
+          {
+            "text": "Režim Work",
+            "at": "vork",
+            "done": true
+          }
+        ]
+      }
+    },
+    {
+      "cue": "joke",
+      "template": "words",
+      "transition": "strobe",
+      "props": {
+        "kicker": "Jediný háček?",
+        "text": "Kafe ti zatím **neuvaří**.",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "joke2",
+      "template": "words",
+      "transition": "blur",
+      "props": {
+        "kicker": "Upřímně",
+        "text": "To bys stejně **rozlil**.",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "clients",
+      "template": "particles",
+      "transition": "invert",
+      "props": {
+        "text": "Míň **klikání**"
+      }
+    },
+    {
+      "cue": "clients2",
+      "template": "words",
+      "transition": "blur",
+      "props": {
+        "kicker": "Pro klienty",
+        "text": "Víc času na **byznys**.",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "try",
+      "template": "cta",
+      "transition": "whip",
+      "props": {
+        "kicker": "Vyzkoušej",
+        "steps": [
+          "Otevři **ChatGPT Work**",
+          "Zadej 1 **nudný úkol**",
+          "Změř čas vs. dosud"
+        ],
+        "stepsAt": [
+          "zkus",
+          "nudnej",
+          "změř"
+        ]
+      }
+    }
+  ],
+  "voice": {
+    "provider": "elevenlabs-mcp",
+    "model": "eleven_v4",
+    "voiceId": "vHP4Az3ehXL47emKpHTK",
+    "voiceName": "Aura – Aktuality vypravěč",
+    "flow": "ETkxoRKXiYcBEenJQsKq",
+    "generation": "RaPtVLzEzj6w349cD2mW"
+  },
+  "hookGag": "paint_ms",
+  "tempo": 1.15,
+  "sfxExtra": [
+    {
+      "cue": "intro",
+      "at": -0.6,
+      "name": "music_bed",
+      "gain": -16,
+      "fi": 1.0,
+      "fo": 0.06,
+      "hp": 60,
+      "until": {
+        "cue": "joke",
+        "at": -0.08
+      }
+    },
+    {
+      "cue": "joke",
+      "at": -0.2,
+      "name": "dj_brake",
+      "gain": -9
+    },
+    {
+      "word": "rozlil",
+      "at": 0.0,
+      "name": "coffee_splat",
+      "gain": -14
+    },
+    {
+      "cue": "clients",
+      "at": -3.0,
+      "name": "riser_noise",
+      "gain": -17,
+      "dur": 3.0,
+      "fi": 0.9,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -2.5,
+      "name": "riser_tonal",
+      "gain": -16,
+      "dur": 2.5,
+      "fi": 0.5,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -13
+    },
+    {
+      "cue": "clients",
+      "at": 0.0,
+      "name": "music_bed",
+      "ss": 6.0,
+      "gain": -16,
+      "dur": 22,
+      "fi": 0.02,
+      "fo": 1.6,
+      "hp": 60
+    },
+    {
+      "word": "autopilota",
+      "at": -0.3,
+      "name": "swoosh_air",
+      "gain": -13
+    },
+    {
+      "word": "autopilota",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -17
+    },
+    {
+      "word": "apku",
+      "at": 0.0,
+      "name": "ui_softpop",
+      "gain": -6
+    },
+    {
+      "word": "tabulku",
+      "at": 0.0,
+      "name": "key_clacks",
+      "gain": -7
+    },
+    {
+      "word": "fotky",
+      "at": 0.04,
+      "name": "cam_shutter",
+      "gain": -13
+    },
+    {
+      "word": "mejl",
+      "at": 0.0,
+      "name": "notif_ding",
+      "gain": -6
+    },
+    {
+      "word": "vork",
+      "at": 0.05,
+      "name": "sparkle",
+      "gain": -14
+    },
+    {
+      "word": "klikání",
+      "at": -0.18,
+      "name": "swoosh_air",
+      "gain": -12
+    },
+    {
+      "word": "byznys",
+      "at": 0.05,
+      "name": "sparkle",
+      "gain": -15
+    },
+    {
+      "cue": "try",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -19
+    },
+    {
+      "word": "zkus",
+      "at": 0.0,
+      "name": "ui_chime",
+      "gain": -13
+    },
+    {
+      "word": "kolik",
+      "at": 0.0,
+      "name": "stopwatch",
+      "gain": -3
+    },
+    {
+      "cue": "boom",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "boom",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "explain",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "explain",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "mix",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "mix",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "platform",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "platform",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "clients2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "clients2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "try",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "try",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "cue": "joke2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -4
+    },
+    {
+      "cue": "joke2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -7
+    },
+    {
+      "word": "umí",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "najdeš",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "režimu",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "klienty",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "znamená",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "dej",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "jeden",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    },
+    {
+      "word": "změř",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -7
+    }
+  ],
+  "camera": [
+    {
+      "cue": "intro",
+      "z": 1.0
+    },
+    {
+      "cue": "boom",
+      "at": -0.1,
+      "z": 1.035,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "boom",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "cue": "boom",
+      "at": 0.27,
+      "z": 1.07,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "explain",
+      "at": -0.12,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "explain",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "hýbe",
+      "at": -0.1,
+      "z": 1.0,
+      "ease": "linear"
+    },
+    {
+      "word": "kliká",
+      "z": 1.05,
+      "ease": "outQuart"
+    },
+    {
+      "word": "píše",
+      "z": 1.07,
+      "ease": "outQuart"
+    },
+    {
+      "word": "řekneš",
+      "z": 1.04,
+      "ease": "inOutCubic"
+    },
+    {
+      "word": "dodělá",
+      "z": 1.1,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "mix",
+      "at": -0.12,
+      "z": 1.11,
+      "ease": "linear"
+    },
+    {
+      "cue": "mix",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "fotky",
+      "z": 1.04,
+      "ease": "inOutCubic"
+    },
+    {
+      "word": "mejl",
+      "z": 1.1,
+      "ease": "outQuart"
+    },
+    {
+      "cue": "platform",
+      "at": -0.15,
+      "z": 1.11,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "platform",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "vork",
+      "at": -0.1,
+      "z": 1.06,
+      "ease": "inOutQuad"
+    },
+    {
+      "cue": "joke",
+      "at": -0.12,
+      "z": 1.065,
+      "ease": "linear"
+    },
+    {
+      "cue": "joke",
+      "z": 1.12,
+      "snap": true
+    },
+    {
+      "cue": "joke2",
+      "at": -0.12,
+      "z": 1.11,
+      "ease": "linear"
+    },
+    {
+      "cue": "joke2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "rozlil",
+      "z": 1.09,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "clients",
+      "at": -0.12,
+      "z": 1.1,
+      "ease": "linear"
+    },
+    {
+      "cue": "clients",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "cue": "clients2",
+      "at": -0.12,
+      "z": 1.1,
+      "ease": "inOutCubic"
+    },
+    {
+      "cue": "clients2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "byznys",
+      "z": 1.1,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "try",
+      "at": -0.12,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "try",
+      "z": 1.08,
+      "snap": true
+    },
+    {
+      "cue": "try",
+      "at": 1.2,
+      "z": 1.0,
+      "ease": "outCubic"
+    },
+    {
+      "word": "změř",
+      "at": -0.2,
+      "z": 1.04,
+      "ease": "inOutSine"
+    },
+    {
+      "word": "změř",
+      "at": 0.1,
+      "z": 1.08,
+      "ease": "outQuart"
+    },
+    {
+      "word": "ušetříš",
+      "at": 0.8,
+      "z": 1.0,
+      "ease": "inOutQuart"
+    }
+  ]
+}

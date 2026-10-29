@@ -50,7 +50,7 @@ Vzor: `episodes/2026-10-13-instagram-edits/episode.json`. Pole: `today` (den pub
 
 ### 3. Voiceover přes ElevenLabs konektor (MCP)
 1. `creative_create_flow` (název „Aktuality #N – téma“).
-2. `creative_generate_speech`: `model_id: "eleven_v4"`, `voice_id: "pq4dsKDG1xJYWPJUNn8d"` (**Aura – hluboký zastřený sebevědomý vypravěč, stálý hlas série od 20. 10.**, prompt začni `[confident, relaxed, brisk pace]`; postavička v hooku mluví hlasem Efík `81wovuU8h1mgIHLBNeBy`; viz `news-reel/assets/voice-design/README.md`. Dřív Karel `wNYzYiprejHCPi4voSeA`). Anglická slova piš foneticky česky (karusel, apek), `prompt` = skript BEZ `[[cue]]` značek, `flow_id`. Poll `creative_get_flow_run_status`.
+2. `creative_generate_speech`: `model_id: "eleven_v4"`, `voice_id: "vHP4Az3ehXL47emKpHTK"` (**Aura – hluboký zastřený sebevědomý vypravěč, stálý hlas série od 20. 10.**, prompt začni `[confident, relaxed, brisk pace]`; postavička v hooku mluví hlasem Efík `LeAUiEe2DARUVrjI6jCU`; viz `news-reel/assets/voice-design/README.md`. Dřív Karel `wNYzYiprejHCPi4voSeA`). Anglická slova piš foneticky česky (karusel, apek), `prompt` = skript BEZ `[[cue]]` značek, `flow_id`. Poll `creative_get_flow_run_status`.
 3. Vyber take (první, pokud uživatel neřekne jinak), stáhni `content_url` (curl) do `build/takes/takeN.mp3`.
 4. `creative_add_flow_asset_node` (generation_id vybraného take) → `creative_transcribe_audio` (`eleven_scribe_v1`, `connect_from` = ten node) → stáhni `words_download_url` do `build/takes/takeN.words.json`.
 5. `node scripts/ingest-voice.mjs episodes/<id> build/takes/takeN.mp3 build/takes/takeN.words.json` → zrychlí (config `tempo` 1.1), spočítá časy cue a slov.
@@ -74,6 +74,7 @@ Scéna: `{ "cue", "template", "props" }`, trvá do další cue. Časování prvk
 | `bigtype` | úder: jedno obří slovo přes celou plochu (modrá/limetková/grafit), obrysová tapeta, mikro popisky (v4) – ideálně na klíčové slovo, krátce (0,8–1,5 s) | `word, bg:"blue"\|"lime"\|"ink"\|"paper", meta:["…","…"], sub` |
 | `metric` | skutečné číslo/statistika: tachometrové číslice + graf + kroužek (v4) – **nikdy nevymýšlej čísla** | `value, prefix, suffix, label, bars:[…], donut:0–1, donutLabel` |
 | `iphone` | 3D iPhone (Apple styl) přiletí po oblouku, pomalu se otáčí, na displeji se v Poznámkách PÍŠE nadpis + checklist (klávesy se mačkají) – 1× za video, kde dává smysl telefon / appka / platforma | `kicker, title, sub, app, heading, date, items:[{text, at, done}]` |
+| `desktop` | AI ovládá počítač (computer use): okno appky ve 3D, modrý sken obrazovky s detekčními rámečky, kurzor „AI“ jede po obloukových křivkách se stopou, klik (ripple), píše do polí; úkol se napíše do prompt baru, kurzor sám dovyplní a odešle (zelené tlačítko + toast) | `title, app, heading, fields:[{label, value}], button, task, toast, steps:[{label, at}], lookAt, moveAt, clickAt, typeAt, taskAt, doneAt` |
 | `particles` | energie / zrychlení: částice se slijí do prstence a vybuchnou, uprostřed text (v4) | `text, count` |
 | `app` | představení produktu (3D dlaždice) | `name, glyph, gradient:[c1,c2], tag, caption` |
 | `phone` | ukázka v aplikaci / karusel | `app, title, items:[{label, kind, color, at}]` |

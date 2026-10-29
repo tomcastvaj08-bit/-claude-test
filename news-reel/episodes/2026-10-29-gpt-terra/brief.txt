@@ -1,0 +1,5 @@
+🤖 GPT-6.1 Terra: ChatGPT ovládá počítač — Novinka z 27. října 2026.
+Co se změnilo: OpenAI vydalo model GPT-6.1 Terra, který rozumí tomu, co je na obrazovce, a sám kliká, píše a přepíná mezi aplikacemi a weby (computer use). Je výrazně levnější než předchozí modely této třídy. Dostupné v placeném ChatGPT (Plus a výš) v režimu Work a v Codexu, v API jako gpt-6.1-terra.
+Pro klienty: Míň ruční práce s opakovanými úkoly (vyplňování formulářů a tabulek, nahrávání, rozesílání) a víc času na byznys.
+Vyzkoušet: V ChatGPT Work zadej jeden nudný opakovaný úkol (např. přepsat objednávky do tabulky) a změř, kolik času ušetříš.
+Zdroje: https://qz.com/openai-gpt-61-terra-cheaper-mid-tier-model-102726 , https://community.openai.com/t/gpt-6-1-terra-delivering-fast-and-capable-computer-use-at-a-lower-price/1409900

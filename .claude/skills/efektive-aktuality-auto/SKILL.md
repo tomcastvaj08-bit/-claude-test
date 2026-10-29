@@ -15,7 +15,7 @@ Vzor dílu je **Aktualita #1** (`news-reel/episodes/2026-10-13-instagram-edits/`
 - **Doručení přesně v 8:00 Praha.** Když je hotovo dřív, naplánuj si `send_later` na 08:00 a doruč až na ni. Rezerva na výrobu je přes 3 h (generování ~30 min, render ~50 min).
 
 ## Rozpočet na díl (strop)
-- **Higgsfield ≤ 120 kreditů:** Seedance 2.5 multishot 720p 6 s = 42 kr. Obrázky gpt_image: keyframy, samolepka. Jedno přegenerování videa je OK, dvě ne.
+- **Higgsfield ≤ 120 kreditů:** Seedance 2.5 multishot 720p 6 s = 42 kr. Obrázky gpt_image: keyframy, samolepka. Jedno přegenerování videa je OK, dvě ne. **Když zůstatek na Higgsfieldu nestačí na 720p** (zkontroluj `balance` a `get_cost`), udělej multishot v **480p** (6 s = 18 kr.), bez keyframů, jen s referencemi (character sheet, board, style frame) a end framem z enginu. Pak ho Lanczosem zvětši na 1080p (díl #2 takhle vyšel dobře). V závěrečné zprávě napiš, kolik kreditů zbývá.
 - **ElevenLabs ≤ 3 000 kreditů:**
   - voiceover: 2 verze;
   - replika postavičky: 2 verze;
@@ -62,7 +62,7 @@ Zdroje: <url>, <url>
   2. **Keyframy:** 6–8 kusů přes gpt_image_2_5. Reference: character sheet + fotka tabule (media `fab790a9-…`, viz `assets/coldopen/v2/higgsfield-jobs.json`) + style frame kafe (`133d6bca-…`).
   3. **Video:** Seedance 2.5 `omni_reference`, **multishot, 720p, 6 s, 16:9**. Prompt pišu podle šablony multishotu z tutoriálu (přesné časy v sekundách i framech, střídat typy kamer: ultra-wide, rozostřené popředí, makro, dutch angle, přes rameno; slow motion uprostřed, dopad normální rychlostí). Do promptu vždy napiš „No drone visible, no text, no captions, no speech bubbles“.
   4. **Střih:** normální záběry na 1,3×, slow motion nechat, vadné záběry vyhodit (předčasná skvrna, nápisy, dron). Upscale na 1080p. Zapiš do `assets/coldopen/v2/hook/index.json` (`cuts`, `sfx`, `lineAt`, `hold`, `postCut`). Pečení snímků: `scripts/hook-gag-frames.py --twos`.
-  5. **Replika postavičky:** jen otázka s datem („<Dneška>… <měsíce>?“) hlasem **Efík** `81wovuU8h1mgIHLBNeBy` (eleven_v4, `[confused, thinking out loud]`). Pauzu zkrať a celé zrychli tak, aby nepřekryla vypravěče.
+  5. **Replika postavičky:** jen otázka s datem („<Dneška>… <měsíce>?“) hlasem **Efík** `LeAUiEe2DARUVrjI6jCU` (eleven_v4, `[confused, thinking out loud]`). Pauzu zkrať a celé zrychli tak, aby nepřekryla vypravěče.
   6. **Zvuk hooku:**
      - pískání a kroky;
      - švihy na střihy;
@@ -73,7 +73,7 @@ Zdroje: <url>, <url>
 - **Schválení:** vyrenderuj nejdřív `--hook-only` a zkontroluj snímky kolem střihů (žádné duchy, žádný dron, značka sedí na dni).
 
 ### 5. Hlas vypravěče
-- **Aura** `pq4dsKDG1xJYWPJUNn8d` (hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.
+- **Aura** `vHP4Az3ehXL47emKpHTK` (hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.
 - Scribe přepis → `node scripts/ingest-voice.mjs`. `"tempo": 1.15` v episode.json.
 
 ### 6. Motion grafika (laťka = lepší než #1)
@@ -137,6 +137,9 @@ Zdroje: <url>, <url>
 - Když něco selže (kredity, fronta, render), pošli aspoň to, co je hotové, a napiš přesně, co chybí.
 
 ## Co se naučilo (nepřekračovat)
+- **ElevenLabs workspace se 28. 10. 2026 změnil** (konektor teď míří na jiný workspace). Staré ID hlasů nefungují, platné jsou Aura `vHP4Az3ehXL47emKpHTK` a Efík `LeAUiEe2DARUVrjI6jCU` (znovu navržené se stejným popisem).
+- **Barva gagu nesmí připomínat krev.** Červená barva s kapkami na kalendáři vypadá jako krev, proto dej barvu v brandu (modrá #2f6bed).
+- **Scénu na míru tématu postav jako novou šablonu**, když se hodí lépe než existující. Příklad je `desktop` z dílu #2: computer use, sken obrazovky, kurzor po křivkách, klik, psaní a odeslání.
 - Dron nikdy v záběru.
 - Postavička nikdy nelevituje s mobilem.
 - Žádný papír „novinka ze X“.

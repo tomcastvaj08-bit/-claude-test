@@ -451,3 +451,139 @@ Object.assign(proTemplates, {
     };
   },
 });
+
+// ===================== computer use: the AI drives a desktop app =====================
+// desktop – an app window in 3D; a vision scan finds the UI (detection boxes), then an AI cursor
+//           glides on curved paths, clicks (ripple), types into fields, the user's task types into
+//           a prompt bar and the cursor finishes the form on its own (green button + toast).
+// props: { title, app, heading, fields: [{label, value}], button, task, toast,
+//          steps: [{label, at}], lookAt, moveAt, clickAt, typeAt, taskAt, doneAt }
+Object.assign(proTemplates, {
+  desktop(el, p, ctx) {
+    const fields = p.fields ?? [];
+    const steps = p.steps ?? [];
+    // window-local layout (px) – fixed so the cursor path can target it without measuring
+    const FX = 250, FW = 470, FH = 64, FY = (i) => 178 + i * 100, BY = 178 + fields.length * 100 + 4;
+    el.appendChild(h(`<div class="sc sc-desk">
+      <div class="dk3d"><div class="dk">
+        <div class="dk-bar"><i></i><i></i><i></i><span>${esc(p.app ?? "")}</span></div>
+        <div class="dk-side">${["", "", "", ""].map((_, i) => `<b class="${i === 1 ? "on" : ""}"></b>`).join("")}</div>
+        <div class="dk-h" style="left:${FX}px;top:84px">${esc(p.heading ?? "")}</div>
+        ${fields.map((f, i) => `<div class="dk-lab" style="left:${FX}px;top:${FY(i) - 34}px">${esc(f.label)}</div>
+          <div class="dk-in" style="left:${FX}px;top:${FY(i)}px;width:${FW}px;height:${FH}px"><span class="ty"></span></div>`).join("")}
+        <div class="dk-btn" style="left:${FX}px;top:${BY}px"><span>${esc(p.button ?? "Odeslat")}</span><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></div>
+        <div class="dk-prompt"><svg class="ic" viewBox="0 0 48 48">${'<path d="M20 7 L23 17 L33 20 L23 23 L20 33 L17 23 L7 20 L17 17 Z"/>'}</svg><span class="ty"></span><b>${icon("arrow")}</b></div>
+        <div class="dk-toast">${icon("check")}<span>${esc(p.toast ?? "Hotovo")}</span></div>
+        <div class="dk-scan"></div>
+        ${[["dk-h", 240, 72, 300, 50, "TEXT"], ...fields.map((_, i) => ["", FX - 8, FY(i) - 8, FW + 16, FH + 16, "POLE"]), ["", FX - 8, BY - 8, 236, 82, "TLAČÍTKO"]]
+          .map(([, x, y, w, hh, l]) => `<div class="dk-box" style="left:${x}px;top:${y}px;width:${w}px;height:${hh}px"><em>${l}</em></div>`).join("")}
+        <div class="dk-ring"></div>
+        ${[3, 2, 1, 0].map((k) => `<div class="dk-cur ${k ? "ghost" : ""}" data-k="${k}"><svg viewBox="0 0 28 36"><path d="M3 2 L3 29 L10 22.5 L14.5 33 L19 31 L14.7 20.8 L24 20.8 Z"/></svg>${k ? "" : '<i class="dk-ai">AI</i>'}</div>`).join("")}
+      </div></div>
+      <div class="dk-copy">
+        ${p.title ? kineticWords(p.title, "md") : ""}
+        <div class="ph-legend">${steps.map((s, i) => `<div class="pl"><span>${String(i + 1).padStart(2, "0")}</span>${esc(s.label)}</div>`).join("")}</div>
+      </div>
+    </div>`));
+    const win = el.querySelector(".dk"), scan = el.querySelector(".dk-scan"), boxes = [...el.querySelectorAll(".dk-box")];
+    const ins = [...el.querySelectorAll(".dk-in")], tys = [...el.querySelectorAll(".dk-in .ty")];
+    const btn = el.querySelector(".dk-btn"), prompt = el.querySelector(".dk-prompt"), ptxt = prompt.querySelector(".ty"), toast = el.querySelector(".dk-toast");
+    const ring = el.querySelector(".dk-ring"), curs = [...el.querySelectorAll(".dk-cur")];
+    const leg = [...el.querySelectorAll(".pl")], title = el.querySelector(".kw-line");
+    const tLook = ctx.at(p.lookAt, 1.0), tMove = ctx.at(p.moveAt, tLook + 1.2), tClick = ctx.at(p.clickAt, tMove + 0.8);
+    const tType = Math.max(tClick + 0.25, ctx.at(p.typeAt, tClick + 0.6)), tTask = ctx.at(p.taskAt, tType + 0.8);
+    const task = p.task ?? "", TCPS = 40, tTaskDone = tTask + task.length / TCPS;
+    const tDone = Math.max(ctx.at(p.doneAt, tTaskDone + 1.4), tTaskDone + 0.1 + Math.max(0, fields.length - 1) * 0.38 + 0.3);
+    const stepT = steps.map((s, i) => ctx.at(s.at, 0.8 + i * 0.9));
+    // cursor keyframes: arrive at {x,y} at t after a curved glide of d seconds; click on arrival
+    const fx = (i) => [FX + 54, FY(i) + FH / 2];
+    const K = [{ t: tMove - 0.6, x: 1010, y: 700, d: 0 }, { t: tClick, x: fx(0)[0], y: fx(0)[1], d: Math.max(0.5, tClick - tMove + 0.15), click: true }];
+    let tf = tTaskDone + 0.1;
+    const typeAt = [tType];
+    for (let i = 1; i < fields.length; i++) { K.push({ t: tf + 0.36, x: fx(i)[0], y: fx(i)[1], d: 0.36, click: true }); typeAt.push(tf + 0.42); tf += 0.38; }
+    K.push({ t: tDone, x: FX + 120, y: BY + 33, d: Math.max(0.3, Math.min(0.55, tDone - tf)), click: true });
+    const bend = [0, -0.22, 0.18, -0.16, 0.2, -0.18];
+    const at = (t) => {
+      let k = 0;
+      while (k + 1 < K.length && t >= K[k + 1].t - K[k + 1].d) k++;
+      const a = K[k], b = K[k + 1];
+      if (!b || t <= b.t - b.d) return [a.x, a.y];
+      const s = brandInOut(prog(t, b.t - b.d, b.d)), dx = b.x - a.x, dy = b.y - a.y, bn = bend[(k + 1) % bend.length];
+      const c1 = [a.x + dx * 0.3 - dy * bn, a.y + dy * 0.3 + dx * bn], c2 = [a.x + dx * 0.75 - dy * bn * 0.5, a.y + dy * 0.75 + dx * bn * 0.5];
+      const u = 1 - s, B = (p0, p1, p2, p3) => u * u * u * p0 + 3 * u * u * s * p1 + 3 * u * s * s * p2 + s * s * s * p3;
+      return [B(a.x, c1[0], c2[0], b.x), B(a.y, c1[1], c2[1], b.y)];
+    };
+    const clicks = K.filter((k) => k.click).map((k) => k.t);
+    const vals = fields.map((f) => f.value ?? "");
+    ctx.sfx("phone_slide", -0.1, -6);
+    ctx.sfx("reveal_shimmer", tLook - 0.05, -10);
+    clicks.forEach((c, i) => ctx.sfx("trackpad_click", c - 0.02, i === clicks.length - 1 ? -2 : -5));
+    typeAt.forEach((ta, i) => ctx.sfx("keyboard_typing", ta, -12));
+    ctx.sfx("ui_pop", tTask - 0.2, -7);
+    ctx.sfx("ui_chime", tDone + 0.12, -9);
+    let tw;
+    return (t, dur) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.2, 0.1); }
+      if (title) animateWords(title, t, tw);
+      // window: 3D settle, then a slow drift
+      const e = snapOut(prog(t, -0.05, 1.0)), d = brandInOut(prog(t, 0.8, Math.max(1, dur)));
+      win.style.transform = `translateY(${(1 - e) * 760}px) rotateY(${lerp(-30, -9, e) + d * 5}deg) rotateX(${lerp(22, 5, e)}deg) rotateZ(${(1 - e) * -6}deg)`;
+      // vision scan + detection boxes
+      const sc = brandInOut(prog(t, tLook - 0.1, 0.9));
+      scan.style.transform = `translateY(${lerp(-40, 640, sc)}px)`;
+      scan.style.opacity = String(sc > 0 && sc < 1 ? 1 : 0);
+      const fadeBoxes = 1 - 0.7 * brandOut(prog(t, tMove + 0.2, 0.6)) - 0.3 * brandOut(prog(t, tDone, 0.4));
+      boxes.forEach((b, i) => {
+        const y = parseFloat(b.style.top), q = snapOut(prog(t, tLook - 0.1 + 0.9 * clamp(y / 640) - 0.05, 0.45));
+        b.style.opacity = String(clamp(q * 1.6) * fadeBoxes);
+        b.style.transform = `scale(${lerp(1.12, 1, q)})`;
+      });
+      // cursor + motion trail (ghosts sample the path slightly in the past)
+      const vis = clamp((t - (tMove - 0.6)) * 4);
+      let press = 0;
+      clicks.forEach((c) => (press = Math.max(press, Math.sin(Math.PI * clamp((t - c + 0.06) / 0.2)))));
+      curs.forEach((c) => {
+        const k = +c.dataset.k, [x, y] = at(t - k * 0.022), [x0, y0] = at(t - k * 0.022 - 0.02);
+        const v = Math.hypot(x - x0, y - y0);
+        c.style.opacity = String(k ? vis * clamp(v / 10) * (0.26 - k * 0.06) : vis);
+        c.style.transform = `translate(${x}px, ${y}px) scale(${k ? 1 : 1 - 0.16 * press})`;
+      });
+      // click ripple at the most recent click
+      const lc = [...clicks].reverse().find((c) => t >= c - 0.03);
+      if (lc != null) {
+        const r = prog(t, lc - 0.03, 0.55), [x, y] = at(lc);
+        ring.style.opacity = String((1 - r) * 0.9);
+        ring.style.transform = `translate(${x}px, ${y}px) scale(${lerp(0.2, 2.2, brandOut(r))})`;
+      } else ring.style.opacity = "0";
+      // fields: focus on click, type the value
+      ins.forEach((inp, i) => {
+        const tc = i === 0 ? tClick : K[i + 1]?.t ?? 1e9, next = i + 1 < ins.length ? (K[i + 2]?.t ?? 1e9) : tDone;
+        inp.classList.toggle("focus", t >= tc - 0.02 && t < next - 0.05);
+        const n = Math.max(0, Math.min(vals[i].length, Math.floor((t - typeAt[i]) * (i === 0 ? 20 : 44))));
+        tys[i].textContent = vals[i].slice(0, n);
+        tys[i].classList.toggle("caret", t >= tc && t < next - 0.05 && Math.floor(t * 2.6) % 2 === 0);
+      });
+      // the user's task in the prompt bar
+      const pq = snapOut(prog(t, tTask - 0.3, 0.5));
+      prompt.style.opacity = String(clamp(pq * 2) * (1 - 0.75 * brandOut(prog(t, tTaskDone + 0.4, 0.4))));
+      prompt.style.transform = `translateY(${(1 - pq) * 40}px) scale(${lerp(0.94, 1, pq)})`;
+      ptxt.textContent = task.slice(0, Math.max(0, Math.min(task.length, Math.floor((t - tTask) * TCPS))));
+      prompt.classList.toggle("sent", t > tTaskDone + 0.05);
+      // button + toast
+      btn.classList.toggle("on", t >= tDone + 0.05);
+      btn.style.transform = `scale(${1 - 0.06 * Math.sin(Math.PI * clamp((t - tDone + 0.04) / 0.22))})`;
+      const tq = snapOut(prog(t, tDone + 0.1, 0.55));
+      toast.style.opacity = String(clamp(tq * 2));
+      toast.style.transform = `translateY(${(1 - tq) * -60}px)`;
+      // legend
+      let idx = -1;
+      stepT.forEach((s, i) => t >= s - 0.08 && (idx = i));
+      leg.forEach((l, i) => {
+        const a = brandOut(prog(t, stepT[i] - 0.2, 0.6));
+        l.style.opacity = String(clamp(a * 1.5) * (i === idx ? 1 : 0.35));
+        l.style.transform = `translateX(${(1 - a) * -40}px)`;
+        l.classList.toggle("on", i === idx);
+      });
+    };
+  },
+});
