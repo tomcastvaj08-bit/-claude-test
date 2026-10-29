@@ -698,3 +698,47 @@ document.documentElement.classList.add("js");
   if (dock && heroCta) new IntersectionObserver(([e]) => { heroGone = !e.isIntersecting && e.boundingClientRect.top < 0; sync(); }).observe(heroCta);
   if (dock && contactSec) new IntersectionObserver(([e]) => { contactIn = e.isIntersecting; sync(); }, { rootMargin: "0px 0px -30% 0px" }).observe(contactSec);
 })();
+
+// Brand paper: each click tears it more; the last click opens it fully, the next one starts over.
+(() => {
+  const tear = document.getElementById("brand-tear");
+  if (!tear) return;
+  const STEPS = 4;
+  const hint = document.getElementById("brand-hint");
+  const hints = ["Klikněte na papír.", "Ještě.", "Ještě kousek.", "Poslední.", "Spolu jedeme pod značkou EFEKTIVE."];
+  const sheet = tear.querySelector(".tear-sheet"), vid = tear.querySelector("video");
+  const N = 24;
+  const fac = Array.from({ length: N }, (_, i) => (i % 2 ? 0.74 + ((i * 37) % 11) / 45 : 1.02 + ((i * 53) % 7) / 28));
+  const radii = [0, 13, 26, 42, 100];
+  const hole = (r) => fac.map((f, i) => {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+    return `${(50 + Math.cos(a) * r * f).toFixed(2)}% ${(50 + Math.sin(a) * r * f).toFixed(2)}%`;
+  }).join(", ");
+  const show = (k) => {
+    if (sheet) sheet.style.clipPath = `polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${hole(radii[k])})`;
+    if (hint) hint.textContent = hints[k];
+  };
+  let step = 0;
+  show(0);
+  const toTime = (k) => {
+    const d = vid.duration;
+    if (!d) return;
+    if (k === 0) { vid.pause(); vid.currentTime = 0; return; }
+    const target = (d * k) / STEPS;
+    const p = vid.play();
+    if (p && p.catch) p.catch(() => {});
+    const tick = () => {
+      if (vid.ended || vid.currentTime >= target - 0.03) { if (k < STEPS) vid.pause(); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  tear.addEventListener("click", () => {
+    step = step >= STEPS ? 0 : step + 1;
+    show(step);
+    if (vid) toTime(step);
+    tear.classList.remove("hit");
+    void tear.offsetWidth;
+    tear.classList.add("hit");
+  });
+})();

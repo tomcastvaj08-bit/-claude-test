@@ -782,14 +782,14 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   .foot-nav { justify-content: center; }
 }
 </style>
-<link rel="stylesheet" href="assets/site.css?v=8c14bd7c" />
+<link rel="stylesheet" href="assets/site.css?v=b07b4a96" />
 <script>document.documentElement.classList.add("js")</script>
 </head>
 <body class="p-patreon p-funnel">
 
 <header class="top" id="top-bar">
   <div class="wrap">
-    <span class="logo" aria-label="EFEKTIVE"><span class="e">efektive</span><span class="cz">.cz</span></span>
+    <a class="logo" href="https://efektive.cz" aria-label="EFEKTIVE, hlavní stránka"><span class="e">efektive</span><span class="cz">.cz</span></a>
     <a class="btn" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener">Přidat se</a>
   </div>
 </header>
@@ -835,26 +835,14 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
     <div class="wrap">
       <div class="stats rv">
         <div class="stat"><b>Desítky</b><span>klientů, pro které tvoříme videa a reklamy</span></div>
-        <div class="stat"><b>2 pohledy</b><span>na každé video: tvorba a marketing</span></div>
-        <div class="stat"><b>Přednášíme</b><span>o AI marketingu na střední škole</span></div>
+        <div class="stat"><b>Přednášíme</b><span>o AI na základních a středních školách</span></div>
         <div class="stat"><b>Vlastní appka</b><span>na AI titulky, právě v betě</span></div>
       </div>
     </div>
   </section>
 
   <!-- Patreon -->
-  <section class="patreon" id="patreon" aria-labelledby="patreon-title">
-    <div class="layers-off">
-      <div class="layers-pin">
-        <div class="wrap">
-          <h2 class="display h2" id="patreon-title">Jedno video. Dva pohledy.</h2>
-          <ul class="legend">
-            <li><b>Marketing a konverze</b><span class="who g">Maty</span></li>
-            <li><b>AI workflow a střih</b><span class="who b">Teecee</span></li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <section class="patreon" id="patreon" aria-label="Co na Patreonu dostanete">
     <div class="get">
       <div class="wrap">
         <div class="get-card rv">
@@ -895,8 +883,8 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
         <p class="role">Marketing</p>
       </article>
       <figure class="brand rv">
-        <div class="brand-paper"><img src="https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/200000736-2e4f22e4f4/700/IMG_4381.webp?ph=a620bd5331" alt="Logo EFEKTIVE na roztrženém papíře" width="700" height="700" loading="lazy" decoding="async"></div>
-        <figcaption><span class="eyebrow-s">Naše značka</span><b>Spolu jedeme pod značkou EFEKTIVE.</b></figcaption>
+        <button type="button" class="brand-paper tear" id="brand-tear" aria-label="Natrhnout papír s logem EFEKTIVE"><img src="https://a620bd5331.clvaw-cdnwnd.com/eb03baedff6daa10d78f98e571732383/200000736-2e4f22e4f4/700/IMG_4381.webp?ph=a620bd5331" alt="Logo EFEKTIVE na roztrženém papíře" width="700" height="700" loading="lazy" decoding="async"><span class="tear-cover" aria-hidden="true"><span class="tear-sheet"></span></span></button>
+        <figcaption><span class="eyebrow-s">Naše značka</span><b id="brand-hint" aria-live="polite">Klikněte na papír.</b></figcaption>
       </figure>
     </div>
   </section>
@@ -940,7 +928,8 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
 
 <footer>
   <div class="wrap">
-    <span class="logo" aria-label="EFEKTIVE"><span class="e">efektive</span><span class="cz">.cz</span></span>
+    <a class="logo" href="https://efektive.cz" aria-label="EFEKTIVE, hlavní stránka"><span class="e">efektive</span><span class="cz">.cz</span></a>
+    <nav class="foot-nav" aria-label="Patička"><a href="https://efektive.cz">Hlavní stránka efektive.cz</a></nav>
     <span class="meta">© 2026 EFEKTIVE. Teecee a Maty.</span>
   </div>
 </footer>
@@ -959,6 +948,6 @@ footer .wrap { display: grid; gap: 22px; justify-items: start; }
   <a class="btn" href="https://www.patreon.com/c/EFEKTIVE" target="_blank" rel="noopener" tabindex="-1">Přidat se</a>
 </div>
 
-<script src="assets/site.js?v=8c14bd7c"></script>
+<script src="assets/site.js?v=b07b4a96"></script>
 </body>
 </html>
