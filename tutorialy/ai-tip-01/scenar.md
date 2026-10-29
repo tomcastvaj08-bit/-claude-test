@@ -2,7 +2,7 @@
 
 - **Podklad:** TUTORIAL_AI_TIP_01_postup.md (29. 10. 2026)
 - **Cílová délka:** ~7 min
-- **Hlas:** klon „Maty“, 1. osoba (mluví Teecee), v klidu, hovorově. Úvod „Zdarec bojs…“, konec „Zatím čus“.
+- **Hlas:** klon „teecee“, 1. osoba (mluví Teecee), v klidu, hovorově. Úvod „Zdarec bojs…“, konec „Zatím čus“.
 - **Obraz:** 1920×1080, 30 fps. Výsledná videa AI_TIP_01 nejsou k dispozici → úvod z fotek v1 (Higgsfield) a 3D grafiky.
 
 ---
@@ -199,4 +199,4 @@
 
 > VIZ: Shrnutí → odjezd na mapu → „Díky. efektive.cz“.
 
-{#end} Takže tak. Z jednoho promptu a dvou skillů je šablona na denní AI tipy a další díl už je jen o scénáři a hlasu. Zatím čus.
+{#recap} Takže tak. Z jednoho promptu a dvou skillů je šablona na denní AI tipy {#zoomout} a další díl už je jen o scénáři a hlasu. {#end} Zatím čus.
