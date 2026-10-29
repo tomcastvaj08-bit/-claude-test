@@ -14,7 +14,7 @@
     const m = M(name), a = o.a || 0, b = o.b ?? m.dur;
     return W.seq(Object.assign({ pattern: `../assets/seq/${name}/f_%04d.jpg`, first: Math.floor(a * m.fps) + 1,
       frames: Math.max(1, Math.min(m.frames - Math.floor(a * m.fps), Math.round((b - a) * m.fps))), fps: m.fps * (o.speed || 1), loop: o.loop ?? true,
-      w: 1600, h: Math.round(1600 * m.h / m.w) }, o));
+      w: o.w || 1600, h: o.h || Math.round((o.w || 1600) * m.h / m.w) }, o));   // výška z předané šířky
   };
   const thumbs = Object.entries(MEDIA).flatMap(([name, m]) => Array.from({ length: m.thumbs }, (_, i) => `../assets/thumbs/${name}_${String(i + 1).padStart(3, '0')}.jpg`));
 
