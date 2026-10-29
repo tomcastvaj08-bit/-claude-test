@@ -30,6 +30,8 @@
   .brand { position: absolute; left: 110px; bottom: 80px; background: #fff; border: 2px solid var(--line); border-radius: 60px; padding: 18px 40px;
            font: 700 50px var(--sans); letter-spacing: -.04em; color: var(--blue); box-shadow: 0 18px 40px rgba(10,13,20,.10); }
   .brand span { color: var(--green); }
+  /* gradientový text: vnitřní okraj vpravo, jinak background-clip usekne kraj posledního písmene (useknutý kraj „9“, „y“) */
+  .t1, .t2 { padding-right: .1em; margin-right: -.1em; }
 </style>
 </head>
 <body>

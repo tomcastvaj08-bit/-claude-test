@@ -18,3 +18,10 @@
 - **Malá fotka (< 500 px):** zvětši přes Higgsfield `upscale_image` (media_upload → curl PUT → media_confirm → upscale 2k → stáhnout). Stojí pár kreditů.
 - **Fiktivní postava místo skutečné** (když uživatel nechce konkrétního člověka): `generate_image` s `gpt_image_2_5`, 3:4, „original fictional person, not resembling any real celebrity“, realistické selfie.
 - Fotky skutečných lidí necommituj (`.gitignore` na `covers/*.jpg|png`).
+
+## Pasti
+
+- **Useknutá písmena u gradientového textu** (poslední „9“ v ceně, „y“): `background-clip: text` + záporný `letter-spacing` ořízne kraj posledního znaku. Gradientovému textu dej `display: inline-block; padding-right: .08–.1em; margin-right: -.08–.1em`.
+- **Instagram story 9:16:** obsah drž v zóně y 260–1600 a x 90–990 (nahoře profil a progress, dole odpověď a link sticker). Před uložením projdi bounding boxy prvků (`getBoundingClientRect`) a zkontroluj, že nic nepřesahuje a nic se nepřekrývá.
+- **Engine `style.css` zamyká stránku na 1920×1080** – v jiném formátu přepiš `html, body { width: …px !important; height: …px !important; }`.
+- **Story vs. post:** když uživatel řekne „storka“, dělej jen 9:16 (víc snímků po sobě), žádný carousel 4:5.
