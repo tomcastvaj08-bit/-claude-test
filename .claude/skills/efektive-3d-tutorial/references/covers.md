@@ -1,4 +1,4 @@
-# Thumbnail 16:9 a Instagram cover 9:16
+# Thumbnail 16:9, Instagram cover, storky a pozadí
 
 Šablony v `covers/` (zkopíruje je `new_project.py`), render `python tools/cover.py <html> [--size 1080x1920]`. Styl stejný jako video: papír s modrou mřížkou, Geist, gradient modrá→zelená, koule, bílé karty s fotkami, mono štítky, `efektive.cz` pilulka. **Žádné „Patreon“ ani „teecee“** v náhledu (uživatel to nechce).
 
@@ -12,6 +12,18 @@
 
 - **Všechno podstatné ve středu 3:4 (y 240–1680)** – Instagram v mřížce profilu ořízne horní a spodní pruh.
 - Nahoře „tutoriál“ + téma v gradientu, uprostřed dvě karty vedle sebe se štítky, dole `efektive.cz`.
+
+## Instagram storky (`covers/story_9x16.html`, 1080×1920, víc snímků přes `?s=N`)
+
+- Vzor: oznámení „kup si jen ten jeden tutoriál za **129 Kč** na Patreonu, kupuj **přes prohlížeč** (v appce na iPhonu bere Apple poplatek)“ – 3 snímky: (1) novinka + thumbnail + cena, (2) prohlížeč vs. appka (✕/✓ karty), (3) 3 kroky (odkaz → ••• → Otevřít v prohlížeči → přihlas a kup) + `efektive.cz` a volné místo dole na link sticker.
+- Texty a ceny jen od uživatele, nic nedomýšlej. Thumbnail tutoriálu ulož jako `covers/thumb.png`.
+- Render + kontrola: `python tools/cover.py covers/story_9x16.html --size 1080x1920 --slides 1,2,3 --story` → `story_9x16_1..3.png`; `--story` vypíše text mimo zónu y 260–1600 / x 90–990 a překryvy karet. Pokud něco vypíše, oprav a renderuj znovu.
+- K předání přidej popisek: pořadí snímků a kam dát link sticker (na 3. snímek pod `efektive.cz`).
+
+## Generické pozadí (`covers/pozadi_9x16.html`, 1080×1920)
+
+- Bez textu: papír s mřížkou, barevné záře, koule (ostré i rozostřené), dlaždice s ikonami (play, AI jiskry, mikrofon, kamera), karta s waveformem, karta s „promptem“ (jen pruhy), tečkované cesty. **Střed y ~620–1300 volný** na text, který si uživatel dopíše v Instagramu/CapCutu.
+- Na šířku: zkopíruj, nastav `width:1920px;height:1080px` a rozmísti prvky do okrajů.
 
 ## Fotky
 

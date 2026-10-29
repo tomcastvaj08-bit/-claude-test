@@ -1,12 +1,21 @@
 ---
 name: efektive-3d-tutorial
-description: Výroba vysvětlovacích tutoriálů ve stylu EFEKTIVE („Aktualita #1 – celý postup“, „Domča“, „Výměna postavy“) – jedno obří 3D plátno (myšlenková mapa, kapitoly na spirále), kamera jako v After Effects, motion grafika naskakující přesně na slova, hlas z ElevenLabs (klon Maty), hudba a zvuky, render 1920×1080/30 fps přes HTML/CSS engine + Playwright, plus thumbnail 16:9 a Instagram cover 9:16 ve stejném stylu. Použij vždy, když Teecee/EFEKTIVE chce tutoriál, Patreon video, vysvětlovačku „jak jsem udělal X“, video postupu z podkladů (PODKLADY.html, videa, prompty), náhledovku/thumbnail k tutoriálu nebo „stejný tutoriál jako minule“ – i když neřekne slovo skill, plátno ani motion grafika.
+description: Výroba vysvětlovacích tutoriálů ve stylu EFEKTIVE („Aktualita #1 – celý postup“, „Domča“, „Výměna postavy“) – jedno obří 3D plátno (myšlenková mapa, kapitoly na spirále), kamera jako v After Effects, motion grafika naskakující přesně na slova, hlas z ElevenLabs (klon Maty), hudba a zvuky, render 1920×1080/30 fps přes HTML/CSS engine + Playwright, plus thumbnail 16:9, Instagram cover 9:16, storky (např. oznámení Patreon za 129 Kč) a generická pozadí bez textu ve stejném stylu. Použij vždy, když Teecee/EFEKTIVE chce tutoriál, Patreon video, vysvětlovačku „jak jsem udělal X“, video postupu z podkladů (PODKLADY.html, videa, prompty), náhledovku/thumbnail k tutoriálu, Instagram storku nebo pozadí v EFEKTIVE stylu nebo „stejný tutoriál jako minule“ – i když neřekne slovo skill, plátno ani motion grafika.
 ---
 
 # EFEKTIVE 3D tutoriál (plátno + kamera + hlas)
 
 Nejsou to slidy. Je to **jedno obří plátno**, po kterém letí kamera, a všechno, co hlas řekne, se na plátně objeví přesně ve chvíli, kdy to zazní.
 Hotové vzory: Aktualita #1 (34,5 min, 19 kapitol), „Jak jsem se proměnil v Domču“ (6:05, 9 kapitol), „Výměna postavy ve videu“ (7:40, 9 kapitol, videa na výšku).
+
+## Nový chat: skill přišel jako soubor `.skill` (drag & drop)
+
+Soubor `efektive-3d-tutorial.skill` je obyčejný ZIP s celým balíkem: tento návod, `references/`, `scripts/new_project.py` a `template/` (engine, nástroje, šablony covers). Když ho uživatel přetáhne do chatu:
+
+1. Rozbal: `mkdir -p ~/skills && cd ~/skills && unzip -o <cesta>/efektive-3d-tutorial.skill` → `~/skills/efektive-3d-tutorial/` (= `<skill>` níže). Pokud běžíš v repu, můžeš ho dát do `.claude/skills/`, ať se načte i příště.
+2. Přečti tento SKILL.md celý, pak podle úkolu `references/pipeline.md` (cloud setup: `pip install playwright==<verze předinstalovaného chromia>`, ffmpeg, faster-whisper) a `references/covers.md`.
+3. Nový projekt: `python <skill>/scripts/new_project.py "<cesta>" --slug Nazev --empty` a jeď podle **Postupu**. Vzorové hotové tutoriály jsou v `references/examples/` (Aktualita #1, Domča – hlas ze tří částí, Výměna postavy – videa na výšku).
+4. Potřebné konektory: **ElevenLabs** (hlas Maty), volitelně **Higgsfield** (upscale fotek, fiktivní postava). Bez ElevenLabs hlas nevyrobíš – řekni to jednou a pokračuj vším ostatním.
 
 ## Jak uživatel pracuje (čti první)
 
@@ -52,7 +61,7 @@ Příkazy z kořene projektu (kromě `build.py` – ten z `tools/`). Podrobnosti
 9. **Zbytek jedním příkazem na pozadí:** `bash tools/run_all.sh 3` (render → mix → bed → master → kompaktní 1080p). Render v cloudu ~2 fps/proces, 3 procesy → 8 min videa ≈ 60 min. Po restartu kontejneru stačí spustit znovu.
 10. **Kontrola výsledku:** vzorky snímků (`ffmpeg select … tile`), hlasitost (`loudnorm` summary), poslední snímek (závěrečná karta). Vadný úsek: přejmenuj `out/chunks/c00N.mp4`, `build.py` (až nic neběží), znovu `run_all.sh`.
 11. **Předání:** `<slug>_1080p.mp4` přes SendUserFile **a** odkaz ke stažení: soubor (< 100 MB) commitni na samostatnou větev `tutorial-video` (jen videa, ne hlavní větev) a pošli `https://github.com/<owner>/<repo>/raw/tutorial-video/<soubor>`. Projekt (scénář, timeline, tools) commitni a pushni na pracovní větev.
-12. **Náhledovky** (na požádání): `references/covers.md` – thumbnail 16:9 a Instagram cover 9:16 ze šablon v `covers/`.
+12. **Náhledovky a Instagram** (na požádání): `references/covers.md` – thumbnail 16:9 (YouTube/Patreon), IG cover 9:16, storky (`--slides 1,2,3 --story`) a pozadí bez textu ze šablon v `covers/`. „Storka“ = jen 9:16, ne post.
 
 ## Když něco nejde
 
@@ -60,10 +69,10 @@ Příkazy z kořene projektu (kromě `build.py` – ten z `tools/`). Podrobnosti
 
 ## Soubory
 
-- `template/` – kostra projektu (engine, tools vč. `run_all.sh`, `synth_lib.py`, `cover.py`, k-layout, k00 s němým intrem, covers/, scénář, project.json). Kopíruje ji `scripts/new_project.py`.
+- `template/` – kostra projektu (engine, tools vč. `run_all.sh`, `synth_lib.py`, `cover.py`, k-layout, k00 s němým intrem, covers/ (thumb, cover, story, pozadí), scénář, project.json). Kopíruje ji `scripts/new_project.py`.
 - `references/engine-api.md` – uzly, widgety, kamera, `T`/`AT`, `L` helpery, recepty.
 - `references/pipeline.md` – příkazy, cloud setup, podklady z HTML, ElevenLabs, časy a ceny.
 - `references/design.md` – design tokeny, CSS třídy, hustota a tempo.
-- `references/covers.md` – thumbnail 16:9 a IG cover 9:16.
+- `references/covers.md` – thumbnail 16:9, IG cover 9:16, storky, pozadí, pasti (useknutý gradientový text, bezpečná zóna).
 - `references/gotchas.md` – chyby a jejich řešení.
-- `references/examples/` – reálné kapitoly a scénář Aktuality #1.
+- `references/examples/` – reálné kapitoly a scénáře: Aktualita #1, Domča (k06 hlas ze tří částí), Výměna postavy (k00–k08, videa na výšku).

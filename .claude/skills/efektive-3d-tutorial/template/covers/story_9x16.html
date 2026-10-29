@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- PŘÍKLAD: 3 storky (?s=1|2|3) z oznámení „tutoriál za 129 Kč, kupuj přes prohlížeč“. Texty a covers/thumb.png (thumbnail tutoriálu) přepiš. Render + kontrola zóny: python tools/cover.py covers/story_9x16.html --size 1080x1920 --slides 1,2,3 --story -->
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../engine/style.css">
+<style>
+  /* Instagram story 9:16 (1080×1920), ?s=1|2|3. Bezpečná zóna: y 260–1600 (nahoře profil/progress, dole odpověď/sticker), x 90–990. */
+  html, body { margin: 0; overflow: hidden; background: var(--paper); width: 1080px !important; height: 1920px !important; }
+  .slide { position: relative; width: 1080px; height: 1920px; overflow: hidden; display: none; }
+  .slide.on { display: block; }
+  .bg { position: absolute; inset: 0; background:
+      radial-gradient(700px 700px at 85% 22%, rgba(31,77,255,.16), transparent 70%),
+      radial-gradient(700px 700px at 10% 88%, rgba(19,185,122,.14), transparent 70%),
+      linear-gradient(rgba(31,77,255,.10) 2px, transparent 2px) 0 0 / 216px 216px,
+      linear-gradient(90deg, rgba(31,77,255,.10) 2px, transparent 2px) 0 0 / 216px 216px,
+      linear-gradient(rgba(31,77,255,.05) 1px, transparent 1px) 0 0 / 43.2px 43.2px,
+      linear-gradient(90deg, rgba(31,77,255,.05) 1px, transparent 1px) 0 0 / 43.2px 43.2px, var(--paper); }
+  .sph { position: absolute; border-radius: 50%; }
+  .sph.b { background: radial-gradient(circle at 32% 28%, #9DB4FF 0%, #1F4DFF 45%, #0A2BB8 100%); box-shadow: 0 40px 80px rgba(31,77,255,.35); }
+  .sph.g { background: radial-gradient(circle at 32% 28%, #8EF0C6 0%, #13B97A 48%, #0A7A4F 100%); box-shadow: 0 40px 80px rgba(19,185,122,.35); }
+  .pad { position: absolute; left: 90px; right: 90px; }
+  .kick { font: 600 36px var(--mono); }
+  .h { font: 800 124px/0.98 var(--sans); letter-spacing: -.055em; color: var(--ink); margin-top: 36px; }
+  /* gradientový text: inline-block + vnitřní okraj, jinak background-clip usekne kraj posledního písmene (useknutá „9“) */
+  .gr { display: inline-block; padding: 0 .08em .06em 0; margin-right: -.08em;
+        background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .p { font: 500 46px/1.32 var(--sans); color: var(--ink2); letter-spacing: -.02em; }
+  .p b { color: var(--ink); }
+  .card { background: #fff; border-radius: 40px; box-shadow: 0 40px 100px rgba(10,13,20,.16); border: 1px solid var(--line); }
+  .price { font: 800 300px/0.9 var(--sans); letter-spacing: -.06em; }
+  .step { display: flex; gap: 34px; align-items: center; padding: 42px 46px; }
+  .num { flex: none; width: 108px; height: 108px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font: 700 54px var(--mono); }
+  .st { font: 700 52px/1.1 var(--sans); letter-spacing: -.04em; }
+  .ss { font: 500 36px/1.3 var(--sans); color: var(--ink2); margin-top: 10px; }
+  .ss b { color: var(--ink); }
+  .brand { display: inline-block; background: #fff; border: 2px solid var(--line); border-radius: 60px; padding: 14px 34px;
+           font: 700 44px var(--sans); letter-spacing: -.04em; color: var(--blue); box-shadow: 0 18px 40px rgba(10,13,20,.10); }
+  .brand span { color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- 1: novinka + cena -->
+<div class="slide" id="s1"><div class="bg"></div>
+  <div class="sph b" style="width:150px;height:150px;left:840px;top:300px"></div>
+  <div class="sph g" style="width:100px;height:100px;left:880px;top:1010px"></div>
+  <div class="pad" style="top:300px">
+    <span class="kick g"><span class="d"></span>novinka na Patreonu</span>
+    <div class="h">Kup si jen<br><span class="gr">ten jeden</span><br>tutoriál.</div>
+    <div class="p" style="margin-top:34px">Žádné předplatné. Vybereš si post, zaplatíš <b>jednou</b> a máš ho.</div>
+  </div>
+  <div class="card" style="position:absolute;left:90px;width:760px;top:950px;padding:16px;transform:rotate(-2deg)">
+    <img src="thumb.png" onerror="this.style.background='#E3E9FF';this.style.height='430px'" style="display:block;width:100%;border-radius:28px">
+  </div>
+  <div style="position:absolute;left:90px;right:90px;top:1425px;display:flex;align-items:flex-end;justify-content:flex-end;gap:22px">
+    <span class="price gr" style="font-size:170px">129</span><span style="font:700 70px var(--sans);letter-spacing:-.04em;padding-bottom:22px">Kč</span>
+  </div>
+</div>
+
+<!-- 2: prohlížeč, ne appka -->
+<div class="slide" id="s2"><div class="bg"></div>
+  <div class="sph b" style="width:130px;height:130px;left:850px;top:300px"></div>
+  <div class="pad" style="top:300px">
+    <span class="kick r"><span class="d"></span>důležité</span>
+    <div class="h" style="font-size:118px">Kupuj přes<br><span class="gr">prohlížeč</span>,<br>ne v appce.</div>
+    <div class="p" style="margin-top:34px">V aplikaci na iPhonu jde platba přes <b>Apple</b> a ten si bere <b>poplatek</b>. V prohlížeči ho neplatíš.</div>
+  </div>
+  <div class="pad" style="top:1080px;display:flex;flex-direction:column;gap:30px">
+    <div class="card step"><span class="num" style="background:var(--red)">✕</span><div><div class="st">Appka Patreon</div><div class="ss">platba přes Apple + poplatek</div></div></div>
+    <div class="card step" style="border:3px solid var(--green)"><span class="num" style="background:var(--green)">✓</span><div><div class="st">Safari / Chrome</div><div class="ss">bez poplatku Apple</div></div></div>
+  </div>
+</div>
+
+<!-- 3: jak na to (dole volné místo na link sticker) -->
+<div class="slide" id="s3"><div class="bg"></div>
+  <div class="sph g" style="width:130px;height:130px;left:850px;top:300px"></div>
+  <div class="pad" style="top:300px">
+    <span class="kick b"><span class="d"></span>jak na to</span>
+    <div class="h" style="font-size:118px">3 kroky,<br><span class="gr">hotovo.</span></div>
+  </div>
+  <div class="pad" style="top:690px;display:flex;flex-direction:column;gap:28px">
+    <div class="card step"><span class="num">1</span><div><div class="st">Klikni na odkaz</div><div class="ss">tady ve storce nebo v bio</div></div></div>
+    <div class="card step"><span class="num">2</span><div><div class="st">Otevři v prohlížeči</div><div class="ss">vpravo nahoře <b>•••</b> → <b>Otevřít v prohlížeči</b></div></div></div>
+    <div class="card step"><span class="num">3</span><div><div class="st">Přihlas se a kup</div><div class="ss">vybraný tutoriál za <b>129 Kč</b></div></div></div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:1470px;text-align:center"><span class="brand">efektive<span>.cz</span></span></div>
+</div>
+
+<script>
+  document.getElementById('s' + (new URLSearchParams(location.search).get('s') || '1')).classList.add('on');
+</script>
+</body>
+</html>
