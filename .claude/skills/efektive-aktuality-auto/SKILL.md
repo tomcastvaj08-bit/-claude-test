@@ -122,7 +122,7 @@ Zdroje: <url>, <url>
 - Uživatel tuhle automatiku schválil, takže koncept v Canvě rovnou ulož.
 
 ### 10. Doručení (v 8:00)
-- Na Google Drive do složky **„EFEKTIVE Aktuality / <YYYY-MM-DD> – <téma>“** nahraj:
+- Na Google Drive (nadřazená složka **„EFEKTIVE Aktuality“**, id `1mg8yWVGh3Qp2lNcASiqcYfGXuNvrYw7V`) vytvoř podsložku **„<YYYY-MM-DD> – <téma>“** a nahraj do ní `popisek.txt` a `brief.txt` (s odkazem na Canva cover). **Binární soubory (mp4, png) Drive konektor neumí:** šly by jen jako base64 v konverzaci a reel má desítky MB. Video a cover proto pošli uživateli přes `SendUserFile` v závěrečné zprávě. Původní seznam souborů:
   - `reel_web.mp4`;
   - `thumbnail_9x16.png`;
   - `popisek.txt`;
@@ -137,6 +137,7 @@ Zdroje: <url>, <url>
 - Když něco selže (kredity, fronta, render), pošli aspoň to, co je hotové, a napiš přesně, co chybí.
 
 ## Co se naučilo (nepřekračovat)
+- **Render pouštěj odpojeně** (`setsid nohup … &`) a průběžně commituj. Restart workeru zabije proces na pozadí a render pak musí začít znovu. Celé video (~1000 snímků) trvá ~40 min.
 - **ElevenLabs workspace se 28. 10. 2026 změnil** (konektor teď míří na jiný workspace). Staré ID hlasů nefungují, platné jsou Aura `vHP4Az3ehXL47emKpHTK` a Efík `LeAUiEe2DARUVrjI6jCU` (znovu navržené se stejným popisem).
 - **Barva gagu nesmí připomínat krev.** Červená barva s kapkami na kalendáři vypadá jako krev, proto dej barvu v brandu (modrá #2f6bed).
 - **Scénu na míru tématu postav jako novou šablonu**, když se hodí lépe než existující. Příklad je `desktop` z dílu #2: computer use, sken obrazovky, kurzor po křivkách, klik, psaní a odeslání.
