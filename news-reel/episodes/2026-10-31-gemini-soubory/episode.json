@@ -182,8 +182,10 @@
   "voice": {
     "provider": "elevenlabs-mcp",
     "model": "eleven_v4",
-    "voiceId": "pq4dsKDG1xJYWPJUNn8d",
-    "voiceName": "Aura – Aktuality vypravěč"
+    "voiceId": "NKB9YCjftHpPbrUaMPkr",
+    "voiceName": "Aura – Aktuality vypravěč (workspace 8cdb7f4a)",
+    "flow": "4aQgkLSBLPfykdE67NrF",
+    "generation": "JIHCJ0tDs66vLdlGZ9wh"
   },
   "hookGag": "gum_ms",
   "tempo": 1.15,

@@ -79,7 +79,7 @@ Zdroje: <url>, <url>
 - **Schválení:** vyrenderuj nejdřív `--hook-only` a zkontroluj snímky kolem střihů (žádné duchy, žádný dron, značka sedí na dni).
 
 ### 5. Hlas vypravěče
-- **Aura** `vHP4Az3ehXL47emKpHTK` (hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.
+- **Aura** `NKB9YCjftHpPbrUaMPkr` (aktuální účet od 31. 10. 2026, workspace `8cdb7f4a…`; hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.
 - Scribe přepis → `node scripts/ingest-voice.mjs`. `"tempo": 1.15` v episode.json.
 
 ### 6. Motion grafika (laťka = lepší než #1)
@@ -170,6 +170,10 @@ Zdroje: <url>, <url>
   4. Každý díl přidej aspoň pár nových zvuků z Drivu.
 
 ## Co se naučilo (nepřekračovat)
+- **ElevenLabs od 31. 10. 2026: nový účet uživatele (workspace `8cdb7f4a…`, placený).**
+  - Aura je tu znovu navržená: `NKB9YCjftHpPbrUaMPkr`.
+  - **Efík tu zatím NENÍ.** Návrh „young nerdy … boy“ ElevenLabs zablokoval bezpečnostním filtrem (dětský hlas). Při dalším dílu zkus popis dospělého komického hlasu (např. „adult male cartoon sidekick voice, high nasal, squeaky, comedic“). Když to neprojde, použij pro repliku hotové nahrávky nebo hlas Aura s `[confused]`.
+  - Na začátku vždy `creative_list_voices` (search „Aktuality“) a podle toho vyber ID.
 - **Kredity zkontroluj hned na začátku (pokyn z dílu #3).**
   - ElevenLabs: `creative_generate_speech` s `estimate_only` a chybová hláška ukáže zůstatek.
   - Higgsfield: `balance`.
