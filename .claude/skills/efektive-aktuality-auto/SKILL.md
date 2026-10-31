@@ -170,6 +170,13 @@ Zdroje: <url>, <url>
   4. Každý díl přidej aspoň pár nových zvuků z Drivu.
 
 ## Co se naučilo (nepřekračovat)
+- **Kredity zkontroluj hned na začátku (pokyn z dílu #3).**
+  - ElevenLabs: `creative_generate_speech` s `estimate_only` a chybová hláška ukáže zůstatek.
+  - Higgsfield: `balance`.
+  - Když něco nestačí, pošli hned `PushNotification`, ať to uživatel stihne dobít do 8:00. Pak připrav všechno ostatní (hook, grafika s dočasným časováním, cover, popisek).
+- **ElevenLabs konektor 31. 10. 2026 zase míří na původní workspace** (4d079bb3). Fungují v něm původní hlasy Aura `pq4dsKDG1xJYWPJUNn8d` a Efík `81wovuU8h1mgIHLBNeBy`, ID `vHP4Az3e…`/`LeAUiEe2…` jen ve druhém workspace. Hlas vždycky ověř přes `creative_list_voices` (search „Aktuality“).
+- **Levná záloha pro krátké repliky:** `eleven_flash_v2_5` (Efíkova replika stojí 26 kr. místo 56).
+- **Dočasné časování bez hlasu:** tichá stopa s tónem + odhad slov (`voice/dev.words.json`), `ingest-voice.mjs` → stills. Po dodání hlasu stačí Scribe → ingest → render.
 - **Render pouštěj odpojeně** (`setsid nohup … &`) a průběžně commituj. Restart workeru zabije proces na pozadí a render pak musí začít znovu. Celé video (~1000 snímků) trvá ~40 min.
 - **ElevenLabs workspace se 28. 10. 2026 změnil** (konektor teď míří na jiný workspace). Staré ID hlasů nefungují, platné jsou Aura `vHP4Az3ehXL47emKpHTK` a Efík `LeAUiEe2DARUVrjI6jCU` (znovu navržené se stejným popisem).
 - **Barva gagu nesmí připomínat krev.** Červená barva s kapkami na kalendáři vypadá jako krev, proto dej barvu v brandu (modrá #2f6bed).

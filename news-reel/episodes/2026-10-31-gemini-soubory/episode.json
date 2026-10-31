@@ -1,0 +1,617 @@
+{
+  "id": "2026-10-31-gemini-soubory",
+  "number": 3,
+  "today": "2026-10-31",
+  "newsDate": "2026-10-29",
+  "title": "Gemini vyrobí a upraví soubory přímo v chatu",
+  "source": "📄 Gemini: dokumenty, PDF, prezentace a tabulky přímo v chatu — Novinka z 29. října.\nCo se změnilo: Aplikace Google Gemini teď umí soubory nejen vytvořit, ale i zobrazit a upravit přímo v konverzaci: dokumenty, PDF, prezentace, tabulky (a Markdown, TXT, kód). Soubor otevřeš na celou obrazovku a píšeš do něj, nebo označíš část a řekneš Gemini, ať ji přepíše. Zdarma pro všechny uživatele Gemini; na webu všechny formáty, v mobilu zatím jen PDF.\nPro klienty: Nabídku, ceník nebo prezentaci připravíš a doladíš během pár minut bez přepínání mezi aplikacemi.\nVyzkoušet: Otevři gemini.google.com, napiš „udělej mi nabídku na …“, pak označ odstavec a napiš „zkrať to“.\nZdroje: https://www.androidpolice.com/gemini-create-preview-edit-pdf-files-docs-directly-inside-your-chat/ , https://www.digitaltrends.com/computing/google-gemini-can-now-create-and-edit-pdfs-documents-and-more-right-inside-your-chat/",
+  "script": "[[intro]][confident, relaxed, brisk pace] Gúgl Džemini teď umí dělat soubory. [[files]]Přímo v chatu ti napíše dokument, pé dé efko, prezentaci nebo tabulku. [[boom]]A je to úplně zdarma! [[explain]]Pro ty pomalejší: řekneš, co potřebuješ, Džemini to vytvoří a ty to hned upravuješ. Označíš odstavec, napíšeš „zkrať to“… a hotovo. [[platform]]Na webu umí všechno, v mobilu zatím jen pé dé efka. [[joke]][deadpan] A ten tvůj pětistránkovej ceník ve Vordu… klidně zahoď. [[joke2]]Stejně ho nikdo nečetl. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená [[clients2]]nabídku nebo prezentaci za pár minut. [[try]]Tak to zkus: otevři Džemini, napiš „udělej mi nabídku“… a změř si, kolik času ušetříš.",
+  "scenes": [
+    {
+      "cue": "intro",
+      "template": "logo",
+      "props": {
+        "tag": "Google",
+        "word": "Gemini",
+        "tagAt": "gúgl",
+        "markAt": "džemini",
+        "filesAt": "soubory"
+      }
+    },
+    {
+      "cue": "files",
+      "template": "chatfiles",
+      "transition": "flash",
+      "props": {
+        "prompt": "Udělej mi nabídku pro klienta",
+        "items": [
+          {
+            "type": "doc",
+            "at": "dokument"
+          },
+          {
+            "type": "pdf",
+            "at": "pé"
+          },
+          {
+            "type": "slides",
+            "at": "prezentaci"
+          },
+          {
+            "type": "sheet",
+            "at": "tabulku"
+          }
+        ]
+      }
+    },
+    {
+      "cue": "boom",
+      "template": "bigtype",
+      "transition": "strobe",
+      "props": {
+        "word": "Zdarma",
+        "bg": "lime",
+        "meta": [
+          "Google Gemini",
+          "Pro všechny"
+        ],
+        "sub": "dokumenty · PDF · prezentace · tabulky"
+      }
+    },
+    {
+      "cue": "explain",
+      "template": "docedit",
+      "transition": "flash",
+      "props": {
+        "title": "Jak to **funguje**?",
+        "docTitle": "Nabídka – web pro kavárnu",
+        "ask": "Napiš nabídku na web pro kavárnu",
+        "cmd": "Zkrať to",
+        "askAt": "řekneš",
+        "makeAt": "vytvoří",
+        "selAt": "označíš",
+        "cmdAt": "napíšeš",
+        "doneAt": "hotovo",
+        "steps": [
+          {
+            "label": "Řekneš",
+            "at": "řekneš"
+          },
+          {
+            "label": "Vytvoří",
+            "at": "vytvoří"
+          },
+          {
+            "label": "Označíš",
+            "at": "označíš"
+          },
+          {
+            "label": "Hotovo",
+            "at": "hotovo"
+          }
+        ]
+      }
+    },
+    {
+      "cue": "platform",
+      "template": "iphone",
+      "transition": "streak",
+      "props": {
+        "kicker": "Kde to jede?",
+        "title": "Na webu **všechno**",
+        "sub": "V mobilu zatím jen PDF",
+        "app": "Poznámky",
+        "heading": "Gemini – soubory",
+        "date": "29. října 2026",
+        "items": [
+          {
+            "text": "Web – všechny formáty",
+            "at": "webu",
+            "done": true
+          },
+          {
+            "text": "Mobil – jen PDF",
+            "at": "mobilu"
+          }
+        ]
+      }
+    },
+    {
+      "cue": "joke",
+      "template": "words",
+      "transition": "strobe",
+      "props": {
+        "kicker": "A ten tvůj…",
+        "text": "Pětistránkovej ceník ve **Wordu**? Zahoď.",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "joke2",
+      "template": "words",
+      "transition": "blur",
+      "props": {
+        "kicker": "Upřímně",
+        "text": "Stejně ho nikdo **nečetl**.",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "clients",
+      "template": "timer",
+      "transition": "invert",
+      "props": {
+        "kicker": "Pro klienty",
+        "title": "Takže jedem **dál**!",
+        "from": 120,
+        "to": 5,
+        "sub": "nabídka hotová",
+        "runAt": "pro",
+        "runFor": 1.2
+      }
+    },
+    {
+      "cue": "clients2",
+      "template": "globe",
+      "transition": "flash",
+      "props": {
+        "kicker": "Pro klienty",
+        "ring": "NABÍDKA ZA PÁR MINUT",
+        "text": "Nabídka i prezentace za **pár minut**."
+      }
+    },
+    {
+      "cue": "try",
+      "template": "cta",
+      "transition": "whip",
+      "props": {
+        "kicker": "Vyzkoušej",
+        "steps": [
+          "Otevři **Gemini**",
+          "Napiš „udělej mi **nabídku**“",
+          "Změř čas vs. dosud"
+        ],
+        "stepsAt": [
+          "otevři",
+          "nabídku",
+          "změř"
+        ]
+      }
+    }
+  ],
+  "voice": {
+    "provider": "elevenlabs-mcp",
+    "model": "eleven_v4",
+    "voiceId": "pq4dsKDG1xJYWPJUNn8d",
+    "voiceName": "Aura – Aktuality vypravěč"
+  },
+  "hookGag": "gum_ms",
+  "tempo": 1.15,
+  "sfxExtra": [
+    {
+      "cue": "intro",
+      "at": -0.6,
+      "name": "music_bed",
+      "gain": -16,
+      "fi": 1.0,
+      "fo": 0.06,
+      "hp": 60,
+      "until": {
+        "cue": "joke",
+        "at": -0.08
+      }
+    },
+    {
+      "cue": "joke",
+      "at": -0.2,
+      "name": "dj_brake",
+      "gain": -9
+    },
+    {
+      "word": "zahoď",
+      "at": 0.05,
+      "name": "sheet_rustle",
+      "gain": -10
+    },
+    {
+      "word": "nečetl",
+      "at": 0.0,
+      "name": "record_scratch",
+      "gain": -16
+    },
+    {
+      "cue": "clients",
+      "at": -3.0,
+      "name": "riser_noise",
+      "gain": -17,
+      "dur": 3.0,
+      "fi": 0.9,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -2.5,
+      "name": "riser_tonal",
+      "gain": -16,
+      "dur": 2.5,
+      "fi": 0.5,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -2.2,
+      "name": "riser_swell_metallic_ring_01",
+      "ss": 0.4,
+      "gain": -18,
+      "dur": 2.2,
+      "fi": 0.6,
+      "fo": 0.02
+    },
+    {
+      "cue": "clients",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -13
+    },
+    {
+      "cue": "clients",
+      "at": 0.0,
+      "name": "music_bed",
+      "ss": 6.0,
+      "gain": -16,
+      "dur": 22,
+      "fi": 0.02,
+      "fo": 1.6,
+      "hp": 60
+    },
+    {
+      "word": "zdarma",
+      "at": -0.3,
+      "name": "swoosh_air",
+      "gain": -12
+    },
+    {
+      "word": "zdarma",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -16
+    },
+    {
+      "word": "zdarma",
+      "at": 0.0,
+      "name": "cash_register",
+      "gain": -12
+    },
+    {
+      "word": "nabídku",
+      "at": -0.18,
+      "name": "swoosh_air",
+      "gain": -13
+    },
+    {
+      "cue": "try",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -19
+    },
+    {
+      "word": "zkus",
+      "at": 0.0,
+      "name": "ui_chime",
+      "gain": -13
+    },
+    {
+      "word": "kolik",
+      "at": 0.0,
+      "name": "stopwatch",
+      "gain": -4
+    },
+    {
+      "cue": "files",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "files",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "explain",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "explain",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "platform",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "platform",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "joke2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "joke2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "clients2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "clients2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "try",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "try",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "word": "napíše",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "webu",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "mobilu",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "klienty",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "otevři",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "změř",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    }
+  ],
+  "camera": [
+    {
+      "cue": "intro",
+      "z": 1.0
+    },
+    {
+      "word": "džemini",
+      "at": -0.05,
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "džemini",
+      "at": 0.2,
+      "z": 1.06,
+      "ease": "outExpo"
+    },
+    {
+      "word": "soubory",
+      "z": 1.0,
+      "ease": "outQuart"
+    },
+    {
+      "cue": "files",
+      "at": -0.1,
+      "z": 1.03,
+      "ease": "linear"
+    },
+    {
+      "cue": "files",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "prezentaci",
+      "z": 1.05,
+      "ease": "outQuart"
+    },
+    {
+      "word": "tabulku",
+      "z": 1.08,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "boom",
+      "at": -0.1,
+      "z": 1.1,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "boom",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "cue": "boom",
+      "at": 0.27,
+      "z": 1.07,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "explain",
+      "at": -0.12,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "explain",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "vytvoří",
+      "z": 1.03,
+      "ease": "outQuart"
+    },
+    {
+      "word": "označíš",
+      "z": 1.07,
+      "ease": "outQuart"
+    },
+    {
+      "word": "hotovo",
+      "z": 1.1,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "platform",
+      "at": -0.15,
+      "z": 1.11,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "platform",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "mobilu",
+      "at": -0.1,
+      "z": 1.06,
+      "ease": "inOutQuad"
+    },
+    {
+      "cue": "joke",
+      "at": -0.12,
+      "z": 1.065,
+      "ease": "linear"
+    },
+    {
+      "cue": "joke",
+      "z": 1.12,
+      "snap": true
+    },
+    {
+      "cue": "joke2",
+      "at": -0.12,
+      "z": 1.11,
+      "ease": "linear"
+    },
+    {
+      "cue": "joke2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "nečetl",
+      "z": 1.09,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "clients",
+      "at": -0.12,
+      "z": 1.1,
+      "ease": "linear"
+    },
+    {
+      "cue": "clients",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "znamená",
+      "at": 0.6,
+      "z": 1.07,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "clients2",
+      "at": -0.12,
+      "z": 1.1,
+      "ease": "inOutCubic"
+    },
+    {
+      "cue": "clients2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "minut",
+      "z": 1.1,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "try",
+      "at": -0.12,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "try",
+      "z": 1.08,
+      "snap": true
+    },
+    {
+      "cue": "try",
+      "at": 1.2,
+      "z": 1.0,
+      "ease": "outCubic"
+    },
+    {
+      "word": "změř",
+      "at": -0.2,
+      "z": 1.04,
+      "ease": "inOutSine"
+    },
+    {
+      "word": "změř",
+      "at": 0.1,
+      "z": 1.08,
+      "ease": "outQuart"
+    },
+    {
+      "word": "ušetříš",
+      "at": 0.8,
+      "z": 1.0,
+      "ease": "inOutQuart"
+    }
+  ]
+}

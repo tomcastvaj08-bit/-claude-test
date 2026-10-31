@@ -1,0 +1,5 @@
+📄 Gemini: dokumenty, PDF, prezentace a tabulky přímo v chatu — Novinka z 29. října.
+Co se změnilo: Aplikace Google Gemini teď umí soubory nejen vytvořit, ale i zobrazit a upravit přímo v konverzaci: dokumenty, PDF, prezentace, tabulky (a Markdown, TXT, kód). Soubor otevřeš na celou obrazovku a píšeš do něj, nebo označíš část a řekneš Gemini, ať ji přepíše. Zdarma pro všechny uživatele Gemini; na webu všechny formáty, v mobilu zatím jen PDF.
+Pro klienty: Nabídku, ceník nebo prezentaci připravíš a doladíš během pár minut bez přepínání mezi aplikacemi.
+Vyzkoušet: Otevři gemini.google.com, napiš „udělej mi nabídku na …“, pak označ odstavec a napiš „zkrať to“.
+Zdroje: https://www.androidpolice.com/gemini-create-preview-edit-pdf-files-docs-directly-inside-your-chat/ , https://www.digitaltrends.com/computing/google-gemini-can-now-create-and-edit-pdfs-documents-and-more-right-inside-your-chat/

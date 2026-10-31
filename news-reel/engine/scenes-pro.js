@@ -691,3 +691,213 @@ Object.assign(proTemplates, {
     };
   },
 });
+
+// ===================== vocabulary added with episode #3 =====================
+// logo      – fast multi-beat intro (no dead air after the hook): brand tag snaps in, a 4-point star spins in
+//             with a light ring, the wordmark writes itself, then small file chips burst out around it
+// chatfiles – a chat bubble types a request; on each spoken file type a 3D file card flies out of the
+//             bubble on an arc and flips into a 2x2 grid
+// docedit   – a document page writes itself, a paragraph gets highlighted, an AI chip types "shorten it"
+//             and the paragraph collapses to its short version with a check
+// timer     – stopwatch dial draws on, the needle whips round, the minutes count down (120 -> 5), pulse
+const GEM = ["#4796E3", "#9177C7", "#CA6673"];
+const starPath = "M0,-46 C3,-14 14,-3 46,0 C14,3 3,14 0,46 C-3,14 -14,3 -46,0 C-14,-3 -3,-14 0,-46Z";
+const gemStar = (id) => `<svg viewBox="-50 -50 100 100"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${GEM[0]}"/><stop offset=".55" stop-color="${GEM[1]}"/><stop offset="1" stop-color="${GEM[2]}"/></linearGradient></defs><path d="${starPath}" fill="url(#${id})"/></svg>`;
+const FILE_T = { doc: ["Dokument", "#4285F4", "text"], pdf: ["PDF", "#E5484D", "text"], slides: ["Prezentace", "#F4B400", "play"], sheet: ["Tabulka", "#0F9D58", "table"] };
+
+Object.assign(proTemplates, {
+  logo(el, p, ctx) {
+    const files = p.files ?? ["doc", "pdf", "slides", "sheet"];
+    el.appendChild(h(`<div class="sc sc-logo">
+      <div class="lg-glow"></div>
+      <div class="lg-mark"><i class="lg-ring"></i><i class="lg-ring r2"></i>${gemStar("lgS")}</div>
+      <div class="lg-text"><div class="lg-tag">${esc(p.tag ?? "")}</div>${letters(p.word ?? "Gemini", "xl lg-word")}</div>
+      ${files.map((f, i) => `<div class="lg-chip" style="--c:${FILE_T[f][1]}">${icon(FILE_T[f][2])}<b>${esc(FILE_T[f][0])}</b></div>`).join("")}
+    </div>`));
+    const mark = el.querySelector(".lg-mark"), rings = [...el.querySelectorAll(".lg-ring")], tagEl = el.querySelector(".lg-tag");
+    const word = el.querySelector(".lg-word"), chips = [...el.querySelectorAll(".lg-chip")], glow = el.querySelector(".lg-glow");
+    const tTag = ctx.at(p.tagAt, 0.05), tMark = ctx.at(p.markAt, 0.4), tFiles = ctx.at(p.filesAt, 1.4);
+    const mix = (a, b, k) => { const pa = a.match(/\w\w/g).map((x) => parseInt(x, 16)), pb = b.match(/\w\w/g).map((x) => parseInt(x, 16)); return `rgb(${pa.map((v, i) => Math.round(v + (pb[i] - v) * k)).join(",")})`; };
+    const chs = [...word.querySelectorAll(".ch")];
+    chs.forEach((c, i) => { const k = chs.length > 1 ? i / (chs.length - 1) : 0; c.style.color = k < 0.55 ? mix(GEM[0], GEM[1], k / 0.55) : mix(GEM[1], GEM[2], (k - 0.55) / 0.45); });
+    const pos = [[-560, -230], [560, -230], [-560, 230], [560, 230]];
+    ctx.sfx("ui_softpop", tTag, -8);
+    ctx.sfx("whip_air", tMark - 0.15, -12);
+    ctx.sfx("impact_synthetic_hit_01", tMark, -14);
+    ctx.sfx("sparkle", tMark + 0.05, -12);
+    chips.forEach((_, i) => ctx.sfx("ui_pop", tFiles + i * 0.09, -9));
+    return (t, dur) => {
+      const tq = snapOut(prog(t, tTag - 0.05, 0.45));
+      tagEl.style.opacity = String(tq); tagEl.style.letterSpacing = `${lerp(0.6, 0.24, tq)}em`; tagEl.style.transform = `translateY(${(1 - tq) * 20}px)`;
+      const m = snapOut(prog(t, tMark - 0.08, 0.6));
+      const pulse = Math.sin(Math.PI * clamp((t - tFiles) / 0.3)) * (t > tFiles ? 1 : 0);
+      mark.style.transform = `scale(${m * (1 + 0.12 * pulse)}) rotate(${(1 - m) * -220 + t * 18}deg)`;
+      mark.style.opacity = String(clamp(m * 3));
+      rings.forEach((r, k) => {
+        const rr = prog(t, (k ? tFiles : tMark) - 0.02, 0.6);
+        r.style.opacity = String(rr > 0 && rr < 1 ? (1 - rr) * 0.9 : 0);
+        r.style.transform = `scale(${lerp(0.4, k ? 3.2 : 2.4, ease.outCubic(rr))})`;
+      });
+      glow.style.opacity = String(0.25 + 0.5 * m + 0.4 * pulse);
+      revealLetters(word, t, tMark + 0.12, { stagger: 0.035, dur: 0.6 });
+      chips.forEach((c, i) => {
+        const a = snapOut(prog(t, tFiles + i * 0.09, 0.55));
+        const drift = Math.sin(t * 1.6 + i) * 8;
+        c.style.opacity = String(clamp(a * 3));
+        c.style.transform = `translate(${pos[i][0] * a}px, ${pos[i][1] * a + drift}px) scale(${lerp(0.3, 1, a)}) rotate(${(1 - a) * (i % 2 ? 40 : -40)}deg)`;
+        c.style.filter = a < 0.98 ? `blur(${(1 - a) * 8}px)` : "none";
+      });
+      // the whole group pushes in slowly so nothing ever sits still
+      el.querySelector(".sc-logo").style.transform = `scale(${1 + brandInOut(prog(t, 0, Math.max(1, dur))) * 0.05})`;
+    };
+  },
+
+  chatfiles(el, p, ctx) {
+    const items = p.items ?? [];
+    el.appendChild(h(`<div class="sc sc-chatfiles">
+      <div class="cf-chat"><div class="cf-av">${gemStar("cfS")}</div><div class="cf-bub"><span class="ty"></span></div></div>
+      <div class="cf-grid">${items.map((it) => { const [lab, col, ic] = FILE_T[it.type]; return `<div class="cf-card" style="--c:${col}"><div class="cf-band">${icon(ic)}<b>${esc(it.label ?? lab)}</b></div><i></i><i></i><i class="s"></i><i></i></div>`; }).join("")}</div>
+    </div>`));
+    const typed = p.prompt ?? "", ty = el.querySelector(".cf-bub .ty"), bub = el.querySelector(".cf-chat"), cards = [...el.querySelectorAll(".cf-card")];
+    const T = items.map((it, i) => ctx.at(it.at, 0.6 + i * 0.5));
+    ctx.sfx("ui_softpop", 0.0, -8);
+    ctx.sfx("keyboard_typing", 0.05, -14);
+    T.forEach((tt, i) => { ctx.sfx("swoosh_air", tt - 0.2, -15); ctx.sfx("ui_tap", tt + 0.15, -7); });
+    return (t, dur) => {
+      const b = snapOut(prog(t, -0.05, 0.5));
+      bub.style.transform = `translateX(${(1 - b) * -300}px) scale(${lerp(0.9, 1, b)})`;
+      bub.style.opacity = String(clamp(b * 2));
+      ty.textContent = typed.slice(0, Math.max(0, Math.floor((t - 0.05) * 38)));
+      ty.classList.toggle("caret", t < 0.05 + typed.length / 38 + 0.4 && Math.floor(t * 2.6) % 2 === 0);
+      cards.forEach((c, i) => {
+        const a = prog(t, T[i] - 0.25, 0.55), e = snapOut(a);
+        // flies out of the bubble (left) on an arc into its grid slot, flipping on Y
+        const gx = (i % 2) * 330, gy = Math.floor(i / 2) * 290;
+        const sx = -760 - gx, sy = -40 - gy;
+        const x = lerp(sx, 0, e), y = lerp(sy, 0, e) - Math.sin(Math.PI * e) * 180;
+        c.style.opacity = String(clamp(a * 4));
+        c.style.transform = `translate(${x}px, ${y}px) rotateY(${(1 - e) * -160}deg) rotateZ(${(1 - e) * -20}deg) scale(${lerp(0.4, 1, e)})`;
+        c.style.filter = a > 0 && a < 0.9 ? `blur(${(1 - e) * 10}px)` : "none";
+        const land = Math.sin(Math.PI * clamp((t - T[i] - 0.25) / 0.25));
+        if (t > T[i] + 0.25) c.style.transform += ` translateY(${-land * 10}px)`;
+      });
+      el.querySelector(".sc-chatfiles").style.transform = `scale(${1 + brandInOut(prog(t, 0, Math.max(1, dur))) * 0.04})`;
+    };
+  },
+
+  docedit(el, p, ctx) {
+    const steps = p.steps ?? [];
+    const long = p.long ?? 4, short = p.short ?? 2;
+    el.appendChild(h(`<div class="sc sc-docedit">
+      <div class="de3d"><div class="de-page">
+        <div class="de-ask">${gemStar("deS")}<span class="ty"></span></div>
+        <div class="de-title">${esc(p.docTitle ?? "")}</div>
+        <div class="de-p p1">${[96, 88, 92, 60].map((w) => `<i style="width:${w}%"></i>`).join("")}</div>
+        <div class="de-p p2"><b class="de-hl"></b>${Array.from({ length: long }, (_, k) => `<i class="ln" style="width:${[94, 90, 96, 72, 85][k % 5]}%"></i>`).join("")}</div>
+        <div class="de-p p3">${[90, 94, 52].map((w) => `<i style="width:${w}%"></i>`).join("")}</div>
+        <div class="de-chip">${gemStar("deS2")}<span class="ty"></span></div>
+        <div class="de-ok">${icon("check")}</div>
+      </div></div>
+      <div class="dk-copy">${p.title ? kineticWords(p.title, "md") : ""}<div class="ph-legend">${steps.map((s, i) => `<div class="pl"><span>${String(i + 1).padStart(2, "0")}</span>${esc(s.label)}</div>`).join("")}</div></div>
+    </div>`));
+    const page = el.querySelector(".de-page"), ask = el.querySelector(".de-ask"), askTy = ask.querySelector(".ty");
+    const lines = [...el.querySelectorAll(".de-p i, .de-title")], p2 = el.querySelector(".p2"), hl = el.querySelector(".de-hl");
+    const lns = [...p2.querySelectorAll(".ln")], chip = el.querySelector(".de-chip"), chipTy = chip.querySelector(".ty"), ok = el.querySelector(".de-ok");
+    const leg = [...el.querySelectorAll(".pl")], title = el.querySelector(".kw-line");
+    const tAsk = ctx.at(p.askAt, 0.3), tMake = ctx.at(p.makeAt, tAsk + 0.9), tSel = ctx.at(p.selAt, tMake + 1.4), tCmd = ctx.at(p.cmdAt, tSel + 0.6), tDone = ctx.at(p.doneAt, tCmd + 0.8);
+    const askText = p.ask ?? "", cmd = p.cmd ?? "Zkrať to";
+    const stepT = steps.map((s, i) => ctx.at(s.at, 0.5 + i * 0.9));
+    ctx.sfx("phone_slide", -0.1, -7);
+    ctx.sfx("keyboard_typing", tAsk, -14);
+    ctx.sfx("reveal_shimmer", tMake, -12);
+    ctx.sfx("ui_swipe", tSel, -6);
+    ctx.sfx("ui_softpop", tCmd - 0.1, -8);
+    ctx.sfx("check_tick", tDone + 0.05, -5);
+    ctx.sfx("ui_chime", tDone + 0.1, -12);
+    let tw;
+    return (t, dur) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.15, 0.1); }
+      if (title) animateWords(title, t, tw);
+      const e = snapOut(prog(t, -0.05, 0.9)), d = brandInOut(prog(t, 0.8, Math.max(1, dur)));
+      page.style.transform = `translateY(${(1 - e) * 700}px) rotateY(${lerp(28, 10, e) - d * 4}deg) rotateX(${lerp(20, 5, e)}deg) rotateZ(${(1 - e) * 5}deg)`;
+      // prompt types, then the page builds line by line with a shimmer sweep
+      const a = snapOut(prog(t, tAsk - 0.2, 0.4));
+      ask.style.opacity = String(a);
+      askTy.textContent = askText.slice(0, Math.max(0, Math.floor((t - tAsk) * 34)));
+      lines.forEach((ln, k) => {
+        const q = snapOut(prog(t, tMake + k * 0.045, 0.4));
+        ln.style.opacity = String(q); ln.dataset.q = q;
+        ln.style.transform = `translateY(${(1 - q) * 18}px) scaleX(${lerp(0.6, 1, q)})`;
+        ln.classList.toggle("shim", t > tMake + k * 0.045 && t < tMake + k * 0.045 + 0.5);
+      });
+      // highlight sweeps over the long paragraph line by line
+      const hs = prog(t, tSel - 0.05, 0.45);
+      hl.style.opacity = String(t > tDone + 0.35 ? 1 - prog(t, tDone + 0.35, 0.3) : clamp(hs * 4));
+      hl.style.clipPath = `inset(0 ${(1 - brandInOut(hs)) * 100}% 0 0)`;
+      // AI chip types the command, paragraph collapses to the short version
+      const cq = snapOut(prog(t, tCmd - 0.15, 0.4));
+      chip.style.opacity = String(cq * (1 - prog(t, tDone + 0.3, 0.3)));
+      chip.style.transform = `translateY(${(1 - cq) * 20}px) scale(${lerp(0.8, 1, cq)})`;
+      chipTy.textContent = cmd.slice(0, Math.max(0, Math.floor((t - tCmd) * 30)));
+      const col = brandInOut(prog(t, tDone - 0.05, 0.45));
+      lns.forEach((l, k) => {
+        if (k >= short) { l.style.height = `${lerp(18, 0, col)}px`; l.style.marginTop = `${lerp(16, 0, col)}px`; l.style.opacity = String(+l.dataset.q * (1 - col)); }
+        else l.classList.toggle("new", col > 0.5);
+      });
+      const oq = prog(t, tDone + 0.1, 0.4);
+      ok.style.transform = `scale(${oq > 0 ? ease.outBack(oq, 2.2) : 0})`;
+      let idx = -1;
+      stepT.forEach((s, i) => t >= s - 0.08 && (idx = i));
+      leg.forEach((l, i) => {
+        const q = brandOut(prog(t, stepT[i] - 0.2, 0.5));
+        l.style.opacity = String(clamp(q * 1.5) * (i === idx ? 1 : 0.35));
+        l.style.transform = `translateX(${(1 - q) * -40}px)`;
+        l.classList.toggle("on", i === idx);
+      });
+    };
+  },
+
+  timer(el, p, ctx) {
+    const from = p.from ?? 120, to = p.to ?? 5;
+    el.appendChild(h(`<div class="sc sc-timer">
+      <div class="tm-copy">${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}${p.title ? kineticWords(p.title, "lg") : ""}</div>
+      <div class="tm-dial">
+        <svg viewBox="-260 -260 520 520">
+          <circle class="tm-track" r="220"/>
+          <circle class="tm-arc" r="220" pathLength="1"/>
+          ${Array.from({ length: 60 }, (_, k) => `<line class="tm-tick ${k % 5 ? "" : "big"}" x1="0" y1="${k % 5 ? -196 : -186}" x2="0" y2="-206" transform="rotate(${k * 6})"/>`).join("")}
+          <g class="tm-needle"><line x1="0" y1="24" x2="0" y2="-190"/><circle r="12"/></g>
+        </svg>
+        <div class="tm-num"><b>${from}</b><span>min</span></div>
+        <div class="tm-sub">${esc(p.sub ?? "")}</div>
+      </div>
+    </div>`));
+    const arc = el.querySelector(".tm-arc"), needle = el.querySelector(".tm-needle"), num = el.querySelector(".tm-num b"), dial = el.querySelector(".tm-dial");
+    const ticks = [...el.querySelectorAll(".tm-tick")], sub = el.querySelector(".tm-sub"), title = el.querySelector(".kw-line"), tagEl = el.querySelector(".tm-copy .tag");
+    const tRun = ctx.at(p.runAt, 0.5), RUN = p.runFor ?? 1.3;
+    ctx.sfx("stopwatch", tRun - 0.05, -6);
+    ctx.sfx("clock_tick", tRun, -12);
+    ctx.sfx("hook_impact", tRun + RUN, -14);
+    ctx.sfx("check_tick", tRun + RUN + 0.02, -8);
+    let tw;
+    return (t, dur) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.1, 0.1); }
+      if (title) animateWords(title, t, tw);
+      if (tagEl) { const q = brandOut(prog(t, 0, 0.6)); tagEl.style.opacity = q; tagEl.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
+      const e = snapOut(prog(t, -0.05, 0.8));
+      dial.style.transform = `scale(${lerp(0.6, 1, e)}) rotate(${(1 - e) * -40}deg)`;
+      dial.style.opacity = String(clamp(e * 2));
+      ticks.forEach((tk, k) => { tk.style.opacity = String(clamp((t * 3.2 - k / 60) * 3)); });
+      const r = ease.outCubic(prog(t, tRun, RUN));
+      needle.style.transform = `rotate(${r * 360 * 3 + (1 - e) * -90}deg)`;
+      arc.style.strokeDasharray = "1 1";
+      arc.style.strokeDashoffset = String(lerp(0, 1 - to / from, r) + (1 - e));
+      num.textContent = String(Math.round(lerp(from, to, r)));
+      const pulse = Math.sin(Math.PI * clamp((t - tRun - RUN) / 0.35));
+      dial.classList.toggle("done", t > tRun + RUN);
+      dial.style.transform += ` scale(${1 + pulse * 0.06})`;
+      const sq = brandOut(prog(t, tRun + RUN, 0.5));
+      sub.style.opacity = String(sq); sub.style.transform = `translateY(${(1 - sq) * 16}px)`;
+    };
+  },
+});

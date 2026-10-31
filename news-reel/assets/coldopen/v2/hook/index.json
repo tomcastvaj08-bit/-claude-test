@@ -507,5 +507,182 @@
   "start": 0.0,
   "end": 4.958,
   "twos": true
+ },
+ "gum_ms": {
+  "frames": 81,
+  "fps": 24,
+  "hold": 1.94,
+  "voice": "../../coldopen/voice/hook_gum_efik",
+  "line": 1.42,
+  "lineAt": 3.5,
+  "voiceGain": -3,
+  "markRect": [
+   -57,
+   -58,
+   100,
+   -6
+  ],
+  "sfx": [
+   {
+    "name": "steps_wood",
+    "at": 0.05,
+    "gain": -2,
+    "dur": 0.9,
+    "fo": 0.2
+   },
+   {
+    "name": "music_gag",
+    "at": 0,
+    "ss": 0.04,
+    "gain": -14,
+    "dur": 1.95,
+    "fo": 0.04
+   },
+   {
+    "name": "d_whoosh_s",
+    "at": 0.88,
+    "gain": -15,
+    "dur": 0.5
+   },
+   {
+    "name": "gum_stretch",
+    "at": 0.95,
+    "gain": -6,
+    "dur": 0.9,
+    "fo": 0.1
+   },
+   {
+    "name": "d_whoosh_s",
+    "at": 1.59,
+    "gain": -15,
+    "dur": 0.5
+   },
+   {
+    "name": "riser_noise",
+    "at": 0.6,
+    "gain": -15,
+    "dur": 2.2,
+    "fi": 0.6,
+    "fo": 0.01
+   },
+   {
+    "name": "riser_tonal",
+    "at": 1.0,
+    "gain": -15,
+    "dur": 1.8,
+    "fi": 0.4,
+    "fo": 0.01
+   },
+   {
+    "name": "riser",
+    "at": 1.2,
+    "gain": -14,
+    "dur": 1.6,
+    "fi": 0.6,
+    "fo": 0.01
+   },
+   {
+    "name": "ui_pop",
+    "at": 1.8,
+    "gain": 2,
+    "dur": 0.5
+   },
+   {
+    "name": "d_hit",
+    "at": 1.81,
+    "gain": -8,
+    "dur": 0.6
+   },
+   {
+    "name": "hook_impact",
+    "at": 1.82,
+    "gain": -12,
+    "lp": 400
+   },
+   {
+    "name": "music_gag",
+    "at": 1.9,
+    "ss": 1.94,
+    "gain": -17,
+    "dur": 0.92,
+    "fi": 0.03,
+    "fo": 0.03,
+    "lp": 500
+   },
+   {
+    "name": "slowmo_bed",
+    "at": 1.9,
+    "gain": -18,
+    "dur": 0.95,
+    "fi": 0.04,
+    "fo": 0.08
+   },
+   {
+    "name": "sip_gasp",
+    "at": 1.95,
+    "gain": -7,
+    "dur": 0.6,
+    "fo": 0.15
+   },
+   {
+    "name": "whip_air",
+    "at": 2.55,
+    "gain": -14,
+    "dur": 0.6
+   },
+   {
+    "name": "d_riser",
+    "at": 2.0,
+    "gain": -11,
+    "dur": 0.82,
+    "fo": 0.005
+   },
+   {
+    "name": "coffee_splat",
+    "at": 2.8,
+    "gain": 0,
+    "dur": 1.2,
+    "fo": 0.5
+   },
+   {
+    "name": "d_hit",
+    "at": 2.82,
+    "gain": -5,
+    "dur": 1.0
+   },
+   {
+    "name": "d_sub",
+    "at": 2.82,
+    "gain": -6,
+    "dur": 1.1
+   },
+   {
+    "name": "hook_impact",
+    "at": 2.82,
+    "gain": -8,
+    "lp": 220
+   },
+   {
+    "name": "music_gag",
+    "at": 2.82,
+    "ss": 3.78,
+    "gain": -11,
+    "dur": 3.2,
+    "fi": 0.02,
+    "fo": 1.0
+   }
+  ],
+  "src": "edited.mp4",
+  "cuts": [
+   0.904,
+   1.609,
+   1.9,
+   2.609
+  ],
+  "edit": "Seedance 2.5 multishot 048d874b (480p, 4 s, 12 credits): wide 0.20-1.375 x1.3 | side bubble 1.375-2.29 x1.3 | pop 2.29-2.58 | face slow-mo 2.58-3.29 | gum flies + calendar 3.29-4.04; lanczos upscaled to 1080p",
+  "note_voice": "hook_gum_efik = 'Dvacátýho devátýho… října?' Efík (eleven_flash_v2_5, ElevenLabs credits ran out for v4)",
+  "start": 0.0,
+  "end": 3.375,
+  "twos": true
  }
 }
