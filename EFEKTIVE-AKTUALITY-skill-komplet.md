@@ -75,10 +75,10 @@ Pokyn uživatele 2. 11. 2026: **retence v reelsech šla dolů → hooky přes Hi
   - vzor (#4): „Zatímco jsi o helouvínu kalil na párty… v á í se zase všechno změnilo. A ty se ztrácíš… dál a dál.“ Další nápady: „Zatímco sis v pátek dával pivko, v á í ti zase ujel vlak.“ / „Ty jsi v neděli spal do oběda… a á í mezitím zase posunulo hranice.“;
   - hlas **Aura**, eleven_v4, tagy `[teasing, playful, brisk]` (+ `[mock pity]` na pointu), výslovnost podle `docs/vyslovnost.md`;
   - po TTS: Scribe časy slov → vyřízni pauzy delší než ~0,1 s a zrychli `atempo=1.2`, časy slov přepočítej (cíl ≤ 6 s). Soubor `assets/coldopen/voice/hook_q_<id>.mp3` + `.words.json`.
-- **Slova v prostoru (3D, extrudovaná):** `ep.hookText = [{ text, w: [od, do], accent }]` (indexy slov hlášky), `ep.hookVoice = { file, at: 0.45, dur, gain: -3, words }`.
-  - každý kousek (1–3 slova) stojí jinde a v jiné hloubce, rozházeně kolem data, nikdy přes datum (sloty `SLOTS3`, engine je drží v záběru);
-  - slovo **naskočí ostré přesně ve chvíli, kdy ho vypravěč řekne**, a ~0,3 s po dořečení se **rozmaže do hloubky (depth blur)** a trochu ustoupí → vypadá to, že text opravdu visí v prostoru; poslední kousek zůstane ostrý;
-  - klíčová slova (svátek, „všechno změnilo“, pointa) dej jako `accent` (barva tématu, větší).
+- **Slova na stěně (tracking, ne overlay)** – pokyn uživatele: text je zasazený do prostoru, v rovině zdi jako papíry na ní, „trackovaný“ na stěnu: vůči stěně stojí, vůči kameře se hýbe (jede s ní při najezdu). Každý řádek je pár cm od zdi → jemná paralaxa + vržený stín na zeď, a **depth blur**: řádek naskočí ostrý přesně, když zazní, ~0,3 s po dořečení se rozostří (poslední zůstane ostrý).
+  - `ep.hookText = [{ text, w: [od, do], accent }]` (jeden kousek = jeden řádek, indexy slov hlášky), `ep.hookVoice = { file, at: 0.45, dur, gain: -3, words }`.
+  - **Layout = těsný typografický lockup** vpravo od kalendáře: malé mezery mezi slovy, řádky natlačené na sebe a do sebe **zacvaknuté** (nožička j/p/g zapadne nad nízká písmena dalšího řádku, d/l se přicvakne vedle; engine měří obrys každého písmene a pro každý řádek najde vodorovný posun s nejmenším řádkováním bez dotyku). Klíčová slova `accent` (barva tématu, větší).
+  - Kamera končí tak, že den je v levé třetině a lockup vpravo.
 - **Tematický kalendář:** na významné dny výzdoba kolem data a barva kroužku (`THEMES` v enginu): Halloween = dýně, netopýři, pavučina, oranžová; Vánoce/Silvestr = hvězdy; Valentýn = srdce. Nový svátek přidej do `SPECIAL` + `THEMES`. Nápady do zásoby: pátek 13. černá kočka, Black Friday cenovka „−90 %“, 1. dubna kalendář vzhůru nohama.
 - **Zvuk:** room beds od 0 s, camera glide + `whoosh_slow_swell` přes najezd, švih/pop na každý kousek textu, fix na kroužek, popy samolepek, tikání hodin, pak riser + whoosh do grafiky (vše v enginu).
 - **Schválení:** `--stills` po ~0,7 s přes celý hook (nic mimo záběr, text čitelný, nekryje datum), pak `--hook-only`.

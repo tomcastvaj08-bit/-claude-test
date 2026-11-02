@@ -165,6 +165,12 @@ export function buildBoardHook(root, ep, cfg) {
   T.arrow = SHORT ? [99, 1] : [T.circle[0] + 0.55, 0.36];
   T.end = SHORT ? T.out[0] + T.out[1] : T.dive[0] + T.dive[1];
 
+  // glide: the words live ON THE WALL (plate coordinates) right of the calendar, as one tight typographic
+  // lockup – the camera ends framing the circled day (left third) + the lockup (right)
+  const LOCK = { x: CAL.x + CAL.w / 2 + 50, y: DATE.y - 196, w: 520, h: 470 };
+  const CXF = (DATE.x - 110 + LOCK.x + LOCK.w + 10) / 2, CYF = DATE.y + 40;
+  const SF = Math.min(1.85, 1700 / (LOCK.x + LOCK.w + 10 - (DATE.x - 110)));
+
   // ---- DOM
   const strips = (S) => { let inner = ""; const sh = S.h / S.n; for (let i = S.n - 1; i >= 0; i--) inner = `<div class="strip" style="top:${i ? sh : 0}px;height:${sh + 1}px"><canvas></canvas><i class="strip-sh"></i>${inner}</div>`; return inner; };
   const sheet = (S, cls, extras = "", under = "") => `<div class="sh ${cls}" style="left:${S.x - S.w / 2}px;top:${S.y - S.h / 2}px;width:${S.w}px;height:${S.h}px;transform:rotate(${S.rot}deg)">
@@ -189,17 +195,14 @@ export function buildBoardHook(root, ep, cfg) {
       ${sheet(PAPER, "paper", paperExtras)}
       ${GAG ? (() => { const [mx, my, ms, mr] = GAG.markRect ?? [-74, -70, 124, -8]; return `<img class="bh-mark" src="../assets/coldopen/v2/hook/${GAG.id}/mark.png" style="left:${DATE.x + mx}px;top:${DATE.y + my}px;width:${ms}px;height:${ms}px;transform:rotate(${CAL.rot + mr}deg)">`; })() : ""}
       ${TH ? TH.deco.map(([dx, dy, sz, r, kind]) => `<div class="bh-deco ${kind}" style="left:${DATE.x + dx - sz / 2}px;top:${DATE.y + dy - sz / 2}px;width:${sz}px;height:${sz}px;--r:${r}deg">${DECO_SVG[kind]}</div>`).join("") : ""}
+      ${GLIDE ? `<div class="bh-lock" style="--acc:${TH.accent}"></div>` : ""}
       <svg class="chalk2-svg bh-arrow" style="left:0;top:0" width="${PLATE.w}" height="${PLATE.h}" viewBox="0 0 ${PLATE.w} ${PLATE.h}">
         <path pathLength="1" d="${arrowPath()}"/>
       </svg>
     </div></div>
     <div class="bh-leaves"></div>
     <div class="bh-haze"></div><div class="bh-leak"></div><div class="bh-vig"></div>
-    ${GLIDE ? (() => {
-      // extruded 3D letters: a front face + stacked darker slices behind it (real depth when it turns)
-      const letters = (str) => [...str].map((ch) => ch === " " ? '<span class="t3-sp"></span>' : `<span class="t3-l"><b>${ch}</b>${Array.from({ length: 9 }, (_, k) => `<i style="transform:translateZ(${-(k + 1) * 2.2}px)">${ch}</i>`).join("")}</span>`).join("");
-      return `<div class="bh-t3d" style="--acc:${TH.accent}"><div class="t3-space">${CHUNKS.map((c) => `<div class="t3-chunk${c.accent ? " acc" : ""}" style="--x:${c.slot[0]}px;--y:${c.slot[1]}px"><div class="t3-in">${letters(c.text)}</div></div>`).join("")}</div></div>`;
-    })() : ""}
+
     <div class="bh-white"></div>${GAG ? '<img class="bh-clip">' : ""}`;
   root.appendChild(layer);
 
@@ -222,8 +225,8 @@ export function buildBoardHook(root, ep, cfg) {
   const clipEl = layer.querySelector(".bh-clip");
   const markEl = layer.querySelector(".bh-mark");
   const decoEls = [...layer.querySelectorAll(".bh-deco")];
-  const t3Space = layer.querySelector(".t3-space");
-  const t3Chunks = [...layer.querySelectorAll(".t3-chunk")].map((el) => ({ el, inner: el.firstElementChild, ls: [...el.querySelectorAll(".t3-l")] }));
+  const lockEl = layer.querySelector(".bh-lock");
+  let lockLines = null;
   const clipSrc = (i) => `../assets/coldopen/v2/hook/${GAG.id}/clip/f${String(i + 1).padStart(4, "0")}.jpg`;
 
   // ------------------------------------------------------------ paper drawing (after fonts + images)
@@ -506,13 +509,79 @@ export function buildBoardHook(root, ep, cfg) {
     [SHEETS[0], SHEETS[1]].forEach(blit);
     // short hook: the date must read – only the leaf that crosses the left edge during the 3D move stays
     if (Q) await document.fonts.load('800 120px "Inter"', CHUNKS.map((c) => c.text).join(" "));
-    // keep every word fully in frame: clamp its spot by its measured size and its depth (perspective 1200)
-    CHUNKS.forEach((c, i) => {
-      const el = t3Chunks[i].el, z = c.slot[2], k = 1200 / (1200 - z), w = el.offsetWidth, h = el.offsetHeight;
-      const mx = Math.max(0, 900 / k - w / 2), my = Math.max(0, 500 / k - h / 2);
-      el.style.setProperty("--x", `${clamp(c.slot[0], -mx, mx)}px`); el.style.setProperty("--y", `${clamp(c.slot[1], -my, my)}px`);
-    });
+    if (GLIDE) { SHEETS[3].el.style.display = "none"; layoutLock(); }
     leafEls = LEAVES.map((L, i) => { if (GAG || (GLIDE ? i !== 0 : SHORT && i !== 2)) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
+  }
+
+  // ------------------------------------------------------------ glide lockup (words on the wall)
+  // Lines are stacked as tight as the glyphs allow: every glyph's ink box is measured (descenders of j/p/g,
+  // ascenders of d/l/k, háčky and čárky), and each new line is slid sideways to the spot where it can
+  // drop closest to ALL lines above without touching them – so an "a" tucks under a "j", a "d" clicks in
+  // before its stem. Smaller word spaces, tight letter fit.
+  function layoutLock() {
+    const cx = document.createElement("canvas").getContext("2d");
+    const setFont = (sz) => { cx.font = `800 ${sz}px "Inter"`; cx.letterSpacing = `${(-0.025 * sz).toFixed(2)}px`; };
+    const OFF = 24, BIN = 2;
+    const build = (c, k) => {
+      let size = (c.accent ? 96 : 64) * k;
+      // words laid out one by one (kerning inside a word from the font, a tight fixed word gap between)
+      const place = () => {
+        const out = []; let xw = 0;
+        c.text.split(" ").filter(Boolean).forEach((word) => {
+          [...word].forEach((ch, i, arr) => {
+            const x0 = xw + cx.measureText(arr.slice(0, i).join("")).width, m = cx.measureText(ch);
+            out.push({ ch, x: x0, l: x0 - m.actualBoundingBoxLeft, r: x0 + m.actualBoundingBoxRight, asc: m.actualBoundingBoxAscent, desc: m.actualBoundingBoxDescent });
+          });
+          xw += cx.measureText(word).width + 0.17 * size;
+        });
+        return { out, w: xw - 0.17 * size };
+      };
+      setFont(size); let pl = place();
+      if (pl.w > LOCK.w) { size *= LOCK.w / pl.w; setFont(size); pl = place(); }
+      const w = pl.w, glyphs = pl.out, fm = cx.measureText("Hg"), A = fm.fontBoundingBoxAscent, D = fm.fontBoundingBoxDescent;
+      const n = Math.ceil((w + 2 * OFF) / BIN), up = new Float32Array(n).fill(-1e9), dn = new Float32Array(n).fill(-1e9);
+      glyphs.forEach((g) => { for (let b = Math.max(0, Math.floor((g.l + OFF) / BIN) - 1); b <= Math.min(n - 1, Math.ceil((g.r + OFF) / BIN) + 1); b++) { up[b] = Math.max(up[b], g.asc); dn[b] = Math.max(dn[b], g.desc); } });
+      return { c, size, w, A, D, glyphs, up, dn, n, asc: Math.max(...glyphs.map((g) => g.asc)), desc: Math.max(...glyphs.map((g) => g.desc)) };
+    };
+    let lines, k = 1;
+    for (let pass = 0; pass < 5; pass++) {
+      lines = CHUNKS.map((c) => build(c, k));
+      lines[0].x = 0; lines[0].y = lines[0].asc;
+      for (let i = 1; i < lines.length; i++) {
+        const L = lines[i], gap = 0.03 * L.size + 2;
+        let best = null;
+        for (let dx = -40; dx <= Math.max(-40, LOCK.w - L.w + 20); dx += 4) {
+          let y = lines[i - 1].y + 0.3 * L.asc;                       // never above the previous baseline
+          for (let j = 0; j < i; j++) {
+            const P = lines[j];
+            for (let b = 0; b < L.n; b++) {
+              if (L.up[b] < -1e8) continue;
+              const bp = Math.round((dx + b * BIN - P.x) / BIN);
+              if (bp < 0 || bp >= P.n || P.dn[bp] < -1e8) continue;
+              y = Math.max(y, P.y + P.dn[bp] + L.up[b] + gap);
+            }
+          }
+          const score = y + 0.22 * Math.abs(dx);                       // prefer flush-left, but snap in
+          if (!best || score < best.score) best = { score, x: dx, y };
+        }
+        L.x = best.x; L.y = best.y;
+      }
+      const minX = Math.min(...lines.map((l) => l.x)); lines.forEach((l) => (l.x -= minX));
+      const hgt = Math.max(...lines.map((l) => l.y + l.desc));
+      if (hgt <= LOCK.h) break;
+      k *= (LOCK.h / hgt) * 0.99;
+    }
+    // each line floats a little off the wall (pz): slight parallax + its own cast shadow
+    const PZ = [0.05, 0.11, 0.03, 0.08, 0.13, 0.04, 0.09, 0.06];
+    lockLines = lines.map((l, i) => {
+      const el = document.createElement("div");
+      el.className = "lk-line" + (l.c.accent ? " acc" : "");
+      el.style.cssText = `left:${LOCK.x + l.x}px;top:${LOCK.y + l.y}px;font-size:${l.size.toFixed(2)}px`;
+      const top = -(l.size + l.A - l.D) / 2;
+      el.innerHTML = l.glyphs.map((g) => `<span class="lk-l" style="left:${g.x.toFixed(2)}px;top:${top.toFixed(2)}px">${g.ch}</span>`).join("");
+      lockEl.appendChild(el);
+      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length] };
+    });
   }
 
   // ------------------------------------------------------------ camera
@@ -536,7 +605,7 @@ export function buildBoardHook(root, ep, cfg) {
     if (GLIDE) {
       const a = glX(prog(t, 0, glideEnd)), z = glS(prog(t, 0, glideEnd + 0.1));
       const creep = Math.max(0, t - glideEnd) * 0.05;
-      return { cx: lerp(DATE.x - 820, DATE.x, a), cy: lerp(DATE.y + 150, DATE.y + 55, a), s: lerp(1.32, 2.05, z) + creep, rot: lerp(-1.1, 0, a) };
+      return { cx: lerp(DATE.x - 820, CXF, a), cy: lerp(DATE.y + 150, CYF, a), s: lerp(1.3, SF, z) + creep, rot: lerp(-1.1, 0, a) };
     }
     if (GAG) {
       // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
@@ -578,7 +647,7 @@ export function buildBoardHook(root, ep, cfg) {
   const wind = (t) => 0.3 + 0.7 * bump(t, 2.05, 1.6) + 0.6 * bump(t, 3.35, 1.2) + 0.25 * bump(t, 0.6, 1.2);
   function flutter(o, t) {
     const S = o.S, tl = t - (S.x / PLATE.w) * 0.35; // the gust travels from the window side
-    const A = S.amp * wind(tl) * (0.75 + 0.25 * Math.sin(tl * 2.1 + S.seed));
+    const A = S.amp * wind(tl) * (0.75 + 0.25 * Math.sin(tl * 2.1 + S.seed)) * (GLIDE ? 0.3 : 1);
     let prev = 0;
     o.strips.forEach((st, i) => {
       const u = (i + 1) / S.n;
@@ -618,27 +687,30 @@ export function buildBoardHook(root, ep, cfg) {
         el.style.opacity = String(clamp(p * 4));
         el.style.transform = `rotate(calc(var(--r) + ${(1 - e) * -30}deg)) scale(${e})`;
       });
-      // 3D question: letters fly in from depth one by one, the block hangs in front of the wall and turns
-      // a little with the camera (the closer the camera gets, the flatter it faces us)
-      // the space turns slowly (different depths slide past each other = parallax) and follows the truck
-      const a = glX(prog(t, 0, glideEnd));
-      t3Space.style.transform = `translate3d(${lerp(120, 0, a)}px, 0, 0) rotateY(${lerp(10, 0, a) + Math.sin(t * 0.55) * 3}deg) rotateX(${Math.sin(t * 0.4 + 1) * 2}deg)`;
-      CHUNKS.forEach((c, ci) => {
-        const o = t3Chunks[ci], [, , z, ry] = c.slot, last = ci === CHUNKS.length - 1;
-        const pin = prog(t, c.start - 0.08, 0.38), e = ease.outBack(pin, 1.7), f = ease.outCubic(pin);
-        // rack focus: sharp while said, then out of focus + pushed back a little (last chunk stays sharp)
-        const d = last ? 0 : ease.inOutSine(prog(t, c.end + 0.3, 0.4));
-        o.el.style.opacity = String(clamp(pin * 4) * (1 - d * 0.45));
-        o.el.style.filter = d > 0.01 ? `blur(${(d * (7 + Math.max(0, z) / 40)).toFixed(2)}px)` : "none";
-        o.el.style.transform = `translate(-50%, -50%) translate3d(var(--x), var(--y), ${(lerp(-900, z, f) - d * 120).toFixed(1)}px) rotateY(${ry + lerp(-35, 0, f)}deg) scale(${lerp(0.4, 1, e).toFixed(3)})`;
-        o.ls.forEach((l, li) => { const q = ease.outBack(prog(t, c.start - 0.08 + li * 0.018, 0.3), 2); l.style.transform = `translateY(${lerp(40, 0, q)}px) rotateX(${lerp(-80, 0, q)}deg)`; });
-      });
     }
     const c = camAt(t);
     const sh = shake(t, GLIDE ? 0.35 : GAG ? 0.5 : t < T.cut ? 0.3 : 0.75);
     const k = clampCam(c.cx + sh.x / c.s, c.cy + sh.y / c.s, c.s);
     plate.style.transform = `translate(${W / 2 - k.cx * k.s}px, ${H / 2 - k.cy * k.s}px) scale(${k.s})`;
     shot.style.transform = `rotate(${c.rot + sh.r}deg)`;
+    if (lockLines) {
+      // words are fixed to the wall (they ride with it as the camera trucks), each a few cm off the wall:
+      // parallax against the camera, a cast shadow that lands as the word "sticks", rack focus once said
+      lockLines.forEach((ln, i) => {
+        const c2 = ln.c, last = i === lockLines.length - 1;
+        const pin = prog(t, c2.start - 0.06, 0.3), f = ease.outCubic(pin);
+        const d = last ? 0 : ease.inOutSine(prog(t, c2.end + 0.3, 0.45));
+        ln.el.style.transform = `translate(${(-ln.pz * (k.cx - CXF)).toFixed(2)}px, ${(-ln.pz * (k.cy - CYF)).toFixed(2)}px)`;
+        const sd = 4 + ln.pz * 70 + (1 - f) * 26;
+        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(0.55 * f).toFixed(3)}))`;
+        ln.el.style.opacity = String(clamp(pin * 5) * (1 - d * 0.35));
+        ln.ls.forEach((l, li) => {
+          const q = ease.outBack(prog(t, c2.start - 0.06 + li * 0.014, 0.26), 1.8);
+          l.style.opacity = String(clamp(q * 3));
+          l.style.transform = `translate(${((1 - q) * -8).toFixed(2)}px, ${((1 - q) * -18).toFixed(2)}px) scale(${lerp(1.8, 1, q).toFixed(3)})`;
+        });
+      });
+    }
 
     SHEETS.forEach((o) => flutter(o, t));
     const p = brandInOut(prog(t, ...T.circle));
