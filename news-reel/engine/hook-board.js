@@ -153,9 +153,9 @@ export function buildBoardHook(root, ep, cfg) {
   // the engine holds the close-up while he says his line, then the 3D move
   const GAG = SHORT && !GLIDE && ep.hookGag ? { id: ep.hookGag, ...GAGS[ep.hookGag] } : null;
   const clipEnd = GAG ? GAG.frames / GAG.fps : 0;
-  const glideEnd = 2.15;
+  const glideEnd = 1.3; // the camera reaches the day + first paragraph (fast start, never stops after)
   const T = GLIDE
-    ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [1.25, 0.5], pan: [99, 1], write: [99, 1], dive: [99, 1], text: 0.35,
+    ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [1.05, 0.45], pan: [99, 1], write: [99, 1], dive: [99, 1], text: 0.35,
         out: [Math.max(glideEnd + 0.35, HV.at + HV.dur + 0.25), 0.62] }
     : GAG
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [99, 1], pan: [99, 1], write: [99, 1], dive: [99, 1], clip: clipEnd, out: [clipEnd + GAG.hold, 0.62] }
@@ -601,6 +601,7 @@ export function buildBoardHook(root, ep, cfg) {
       }
     }
     const lines = all;
+    camCache = null;
     // each line floats a little off the wall (pz): slight parallax + its own cast shadow
     const PZ = [0.05, 0.11, 0.03, 0.08, 0.13, 0.04, 0.09, 0.06];
     lockLines = lines.map((l, i) => {
@@ -610,7 +611,7 @@ export function buildBoardHook(root, ep, cfg) {
       const top = -(l.size + l.A - l.D) / 2;
       el.innerHTML = l.glyphs.map((g) => `<span class="lk-l" style="left:${g.x.toFixed(2)}px;top:${top.toFixed(2)}px">${g.ch}</span>`).join("");
       lockEl.appendChild(el);
-      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length], K: KEYS[l.c.p] };
+      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length], K: KEYS[l.c.p], size: l.size, anim: l.c.anim ?? ["pop", "up", "left", "down"][i % 4] };
     });
   }
 
@@ -631,18 +632,48 @@ export function buildBoardHook(root, ep, cfg) {
   // glide: x/y on a dolly curve that moves from frame 1 (no slow start = no dead time) and settles long;
   // the zoom lags behind it and does most of its work late, so the truck turns into a push onto the day
   const glX = bezier(0.22, 0.42, 0.18, 1), glS = bezier(0.5, 0, 0.18, 1);
+  let camCache = null;
+  function camPath() {
+    if (camCache) return camCache;
+    const pts = [{ t: 0, v: [DATE.x - 820, DATE.y + 150, Math.log(1.3)] }];
+    KEYS.forEach((K, i) => {
+      const ta = i === 0 ? glideEnd : K.t0 + K.dur, nx = KEYS[i + 1];
+      pts.push({ t: ta, v: [K.cx, K.cy, Math.log(K.s)] });
+      // linger point: keep drifting a little towards the next framing (or onwards) and pushing in
+      const tb = nx ? nx.t0 : T.out[0] + 0.3, dir = nx ? [nx.cx - K.cx, nx.cy - K.cy] : [60, 25];
+      if (tb - ta > 0.35) pts.push({ t: tb, v: [K.cx + dir[0] * 0.14, K.cy + dir[1] * 0.14, Math.log(K.s * 1.07)] });
+    });
+    // monotone cubic tangents (Fritsch–Carlson) per channel: no overshoot / zoom bumps between framings,
+    // smooth ease in & out at every framing; the move never stops as a whole (x, y, zoom never all flat)
+    const n = pts.length, dl = (i, k) => (pts[i + 1].v[k] - pts[i].v[k]) / (pts[i + 1].t - pts[i].t);
+    pts.forEach((p) => (p.m = [0, 0, 0]));
+    for (let k = 0; k < 3; k++) {
+      for (let i = 1; i < n - 1; i++) {
+        const d0 = dl(i - 1, k), d1 = dl(i, k), h0 = pts[i].t - pts[i - 1].t, h1 = pts[i + 1].t - pts[i].t;
+        if (d0 * d1 <= 0) { pts[i].m[k] = 0; continue; }
+        const w1 = 2 * h1 + h0, w2 = h1 + 2 * h0;
+        pts[i].m[k] = (w1 + w2) / (w1 / d0 + w2 / d1);
+      }
+      pts[0].m[k] = (k === 2 ? 1.1 : 2.6) * dl(0, k);                 // start at full speed
+      pts[n - 1].m[k] = dl(n - 2, k);                                // and keep going into the hand-off
+    }
+    return (camCache = pts);
+  }
   function camAt(t) {
     if (GLIDE) {
-      const a = glX(prog(t, 0, glideEnd)), z = glS(prog(t, 0, glideEnd + 0.1));
-      const creep = Math.max(0, t - glideEnd) * 0.05;
-      const K0 = KEYS[0];
-      let cx = lerp(DATE.x - 820, K0.cx, a), cy = lerp(DATE.y + 150, K0.cy, a), s = lerp(1.3, K0.s, z);
-      // focus moves on to the next paragraph (smooth truck + slight pull-out mid-move, like an operator)
-      for (let i = 1; i < KEYS.length; i++) {
-        const e = brandInOut(prog(t, KEYS[i].t0, KEYS[i].dur));
-        cx = lerp(cx, KEYS[i].cx, e); cy = lerp(cy, KEYS[i].cy, e); s = lerp(s, KEYS[i].s, e) - Math.sin(Math.PI * e) * 0.18;
+      // one continuous move: a cubic Hermite spline through the framings (time-based tangents), so the
+      // camera eases into each paragraph but NEVER stops; it starts at full speed (steep first tangent)
+      const P = camPath();
+      let i = 0; while (i < P.length - 2 && t > P[i + 1].t) i++;
+      const A = P[i], Bp = P[i + 1], h = Bp.t - A.t;
+      let out;
+      if (t >= P[P.length - 1].t) { const L = P[P.length - 1], d = t - L.t; out = L.v.map((v, k) => v + L.m[k] * d); }
+      else {
+        const u = clamp((t - A.t) / h), u2 = u * u, u3 = u2 * u;
+        const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+        out = A.v.map((v, k) => h00 * v + h10 * h * A.m[k] + h01 * Bp.v[k] + h11 * h * Bp.m[k]);
       }
-      return { cx, cy, s: s + creep, rot: lerp(-1.1, 0, a) };
+      return { cx: out[0], cy: out[1], s: Math.exp(out[2]), rot: lerp(-1.1, 0, ease.outCubic(prog(t, 0, glideEnd))) };
     }
     if (GAG) {
       // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
@@ -743,11 +774,23 @@ export function buildBoardHook(root, ep, cfg) {
         const sd = 4 + ln.pz * 70 + (1 - f) * 26;
         ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(0.55 * f).toFixed(3)}))`;
         ln.el.style.opacity = String(clamp(pin * 5) * (1 - d * 0.35));
-        ln.ls.forEach((l, li) => {
-          const q = ease.outBack(prog(t, c2.start - 0.06 + li * 0.014, 0.26), 1.8);
-          l.style.opacity = String(clamp(q * 3));
-          l.style.transform = `translate(${((1 - q) * -8).toFixed(2)}px, ${((1 - q) * -18).toFixed(2)}px) scale(${lerp(1.8, 1, q).toFixed(3)})`;
-        });
+        if (ln.anim === "pop") {
+          ln.ls.forEach((l, li) => {
+            const q = ease.outBack(prog(t, c2.start - 0.06 + li * 0.014, 0.26), 1.8);
+            l.style.opacity = String(clamp(q * 3));
+            l.style.transform = `translate(${((1 - q) * -8).toFixed(2)}px, ${((1 - q) * -18).toFixed(2)}px) scale(${lerp(1.8, 1, q).toFixed(3)})`;
+          });
+        } else {
+          // slide in (up / down / left): fastest at frame 0 while still invisible (opacity 0 → 1 by frame 2),
+          // ~90 % of the way after 4 frames, then an almost invisible settle over ~15 more frames
+          ln.ls.forEach((l, li) => {
+            const fr = (t - (c2.start - 0.06)) * 24 - li * 0.35;
+            const q = fr <= 0 ? 0 : Math.min(1, (1 - Math.exp(-0.576 * fr)) / (1 - Math.exp(-0.576 * 19)));
+            const D = ln.size * (ln.anim === "left" ? 1.5 : 1.05), off = (1 - q) * D;
+            l.style.opacity = String(clamp(fr / 2));
+            l.style.transform = ln.anim === "up" ? `translateY(${off.toFixed(2)}px)` : ln.anim === "down" ? `translateY(${(-off).toFixed(2)}px)` : `translateX(${(-off).toFixed(2)}px)`;
+          });
+        }
       });
     }
 
