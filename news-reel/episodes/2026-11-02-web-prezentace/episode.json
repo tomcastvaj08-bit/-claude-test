@@ -1,0 +1,539 @@
+{
+  "id": "2026-11-02-web-prezentace",
+  "number": 4,
+  "today": "2026-11-02",
+  "newsDate": "2026-10-31",
+  "title": "Z jakéhokoli webu prezentace jedním klikem (Presentations.AI)",
+  "source": "🖥️ Presentations.AI: z webové stránky prezentace jedním klikem — Novinka z 31. října.\nCo se změnilo: Presentations.AI spustilo bezplatné rozšíření do Chromu, které z otevřené webové stránky (článek, web firmy, nabídka) jedním kliknutím vytvoří strukturovanou prezentaci se slajdy, nadpisy, body a grafy. Současně rozšířilo převod Google Docs, Wordu a PDF na slajdy.\nPro klienty: Prezentaci z vlastního webu, ceníku nebo nabídky máš za minutu místo hodin ladění v PowerPointu.\nVyzkoušet: Nainstaluj rozšíření Presentations.AI z Chrome Web Store, otevři svůj web a klikni na ikonu rozšíření.\nZdroje: https://globenewswire.com/news-release/2026/11/01/3392775/0/en/presentations-ai-launches-white-label-ai-presentation-generator-and-editable-powerpoint-api-for-saas-companies-agencies-and-ai-agents-at-0-10-per-slide-with-a-50-launch-discount.html , https://www.presentations.ai/plugins/chrome-extension",
+  "script": "[[intro]][confident, relaxed, brisk pace] Prezentejšns á í vydalo doplněk do Kromu a ten ti z jakýkoliv webový stránky udělá prezentaci. [[boom]]Jedním kliknutím! A je to zdarma. [[explain]]Pro ty pomalejší: otevřeš článek, klikneš na ikonku… a á í ti ho rozseká do slajdů s nadpisy, body i grafama. Hotový, můžeš to rovnou ukázat. [[joke]][deadpan] A ty tři hodiny, co jsi minule ladil fonty v Pauerpointu… [[joke2]]no, to se stává. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená [[clients2]]prezentaci z tvýho webu nebo nabídky za minutu. [[try]]Tak to zkus: nainstaluj doplněk, otevři svůj web… a změř si, kolik času ušetříš.",
+  "scenes": [
+    {
+      "cue": "intro",
+      "template": "logo",
+      "props": {
+        "tag": "Presentations.AI",
+        "word": "Web → slajdy",
+        "letter": "P",
+        "colors": [
+          "#4b82f3",
+          "#7b5cf0",
+          "#c35cf0"
+        ],
+        "tagAt": "prezentejšns",
+        "markAt": "vydalo",
+        "filesAt": "prezentaci",
+        "files": [
+          {
+            "label": "Chrome",
+            "color": "#4285F4",
+            "icon": "grid"
+          },
+          {
+            "label": "1 klik",
+            "color": "#7b5cf0",
+            "icon": "arrow"
+          },
+          {
+            "label": "Zdarma",
+            "color": "#4ea51f",
+            "icon": "check"
+          },
+          {
+            "label": "Slajdy",
+            "color": "#F4B400",
+            "icon": "play"
+          }
+        ]
+      }
+    },
+    {
+      "cue": "boom",
+      "template": "bigtype",
+      "transition": "strobe",
+      "props": {
+        "word": "1 klik",
+        "bg": "blue",
+        "meta": [
+          "Presentations.AI",
+          "Chrome"
+        ],
+        "sub": "web → prezentace · zdarma"
+      }
+    },
+    {
+      "cue": "explain",
+      "template": "webslides",
+      "transition": "flash",
+      "props": {
+        "kicker": "Pro ty pomalejší",
+        "title": "Web → **slajdy**",
+        "url": "kavarna-umlyna.cz",
+        "extLetter": "P",
+        "openAt": "otevřeš",
+        "clickAt": "klikneš",
+        "splitAt": "rozseká",
+        "doneAt": "hotový",
+        "slides": [
+          {
+            "title": "Kavárna U Mlýna",
+            "kind": "cover"
+          },
+          {
+            "title": "Co nabízíme",
+            "points": [
+              "Výběrová káva",
+              "Domácí dorty",
+              "Snídaně"
+            ]
+          },
+          {
+            "title": "Tržby 2026",
+            "kind": "chart"
+          },
+          {
+            "title": "Recenze",
+            "points": [
+              "4,9 ★ Google",
+              "300+ hodnocení",
+              "Doporučují"
+            ]
+          },
+          {
+            "title": "Kontakt",
+            "points": [
+              "Mlýnská 12",
+              "Po–Ne 8–20",
+              "kavarna.cz"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cue": "joke",
+      "template": "words",
+      "transition": "strobe",
+      "props": {
+        "kicker": "A ty tři hodiny…",
+        "text": "Ladění fontů v **PowerPointu**?",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "joke2",
+      "template": "words",
+      "transition": "blur",
+      "props": {
+        "kicker": "Upřímně",
+        "text": "No… to se **stává**.",
+        "size": "lg"
+      }
+    },
+    {
+      "cue": "clients",
+      "template": "versus",
+      "transition": "invert",
+      "props": {
+        "kicker": "Pro klienty",
+        "title": "Takže jedem **dál**!",
+        "a": {
+          "label": "Ručně v PowerPointu",
+          "value": 180,
+          "unit": "min"
+        },
+        "b": {
+          "label": "Presentations.AI",
+          "value": 1,
+          "unit": "min"
+        },
+        "runAt": "pro",
+        "fastFor": 0.6
+      }
+    },
+    {
+      "cue": "clients2",
+      "template": "globe",
+      "transition": "flash",
+      "props": {
+        "kicker": "Pro klienty",
+        "ring": "PREZENTACE ZA MINUTU",
+        "text": "Prezentace z webu za **minutu**."
+      }
+    },
+    {
+      "cue": "try",
+      "template": "cta",
+      "transition": "flash",
+      "props": {
+        "kicker": "Vyzkoušej",
+        "steps": [
+          "Nainstaluj **doplněk**",
+          "Otevři svůj **web**",
+          "Změř čas vs. dosud"
+        ],
+        "stepsAt": [
+          "nainstaluj",
+          "otevři",
+          "změř"
+        ]
+      }
+    }
+  ],
+  "voice": {
+    "provider": "elevenlabs-mcp",
+    "model": "eleven_v4",
+    "voiceId": "NKB9YCjftHpPbrUaMPkr",
+    "voiceName": "Aura – Aktuality vypravěč",
+    "flow": "EPZDaFJftFQRzyCMtO5J",
+    "generation": "eFAADrHvTioYnaF10DJs"
+  },
+  "hookGag": "hl_ms",
+  "tempo": 1.15,
+  "sfxExtra": [
+    {
+      "cue": "intro",
+      "at": -0.6,
+      "name": "music_bed",
+      "gain": -16,
+      "fi": 1.0,
+      "fo": 0.06,
+      "hp": 60,
+      "until": {
+        "cue": "joke",
+        "at": -0.08
+      }
+    },
+    {
+      "cue": "joke",
+      "at": -0.2,
+      "name": "dj_brake",
+      "gain": -9
+    },
+    {
+      "word": "stává",
+      "at": 0.0,
+      "name": "record_scratch",
+      "gain": -16
+    },
+    {
+      "cue": "clients",
+      "at": -3.0,
+      "name": "riser_noise",
+      "gain": -17,
+      "dur": 3.0,
+      "fi": 0.9,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -2.5,
+      "name": "riser_tonal",
+      "gain": -16,
+      "dur": 2.5,
+      "fi": 0.5,
+      "fo": 0.01
+    },
+    {
+      "cue": "clients",
+      "at": -2.2,
+      "name": "riser_swell_metallic_ring_01",
+      "ss": 0.4,
+      "gain": -18,
+      "dur": 2.2,
+      "fi": 0.6,
+      "fo": 0.02
+    },
+    {
+      "cue": "clients",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -13
+    },
+    {
+      "cue": "clients",
+      "at": 0.0,
+      "name": "music_bed",
+      "ss": 6.0,
+      "gain": -16,
+      "dur": 22,
+      "fi": 0.02,
+      "fo": 1.6,
+      "hp": 60
+    },
+    {
+      "word": "kliknutím",
+      "at": -0.3,
+      "name": "swoosh_air",
+      "gain": -12
+    },
+    {
+      "word": "kliknutím",
+      "at": -0.04,
+      "name": "bass_drop",
+      "gain": -16
+    },
+    {
+      "word": "zdarma",
+      "at": 0.0,
+      "name": "cash_register",
+      "gain": -14
+    },
+    {
+      "word": "grafama",
+      "at": 0.05,
+      "name": "sparkle",
+      "gain": -14
+    },
+    {
+      "word": "minutu",
+      "at": 0.05,
+      "name": "stopwatch",
+      "gain": -8
+    },
+    {
+      "word": "zkus",
+      "at": 0.0,
+      "name": "ui_chime",
+      "gain": -13
+    },
+    {
+      "word": "kolik",
+      "at": 0.0,
+      "name": "stopwatch",
+      "gain": -4
+    },
+    {
+      "cue": "explain",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "explain",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "joke2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "joke2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "clients2",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "clients2",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "cue": "try",
+      "at": -0.14,
+      "name": "ui_swipe",
+      "gain": -5
+    },
+    {
+      "cue": "try",
+      "at": 0.0,
+      "name": "ui_tap",
+      "gain": -8
+    },
+    {
+      "word": "webový",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "klienty",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "nainstaluj",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    },
+    {
+      "word": "změř",
+      "at": -0.02,
+      "name": "ui_tick",
+      "gain": -8
+    }
+  ],
+  "camera": [
+    {
+      "cue": "intro",
+      "z": 1.0
+    },
+    {
+      "word": "vydalo",
+      "at": -0.05,
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "vydalo",
+      "at": 0.2,
+      "z": 1.06,
+      "ease": "outExpo"
+    },
+    {
+      "word": "prezentaci",
+      "z": 1.0,
+      "ease": "outQuart"
+    },
+    {
+      "cue": "boom",
+      "at": -0.1,
+      "z": 1.04,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "boom",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "cue": "boom",
+      "at": 0.27,
+      "z": 1.07,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "explain",
+      "at": -0.12,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "explain",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "klikneš",
+      "z": 1.05,
+      "ease": "outQuart"
+    },
+    {
+      "word": "rozseká",
+      "at": -0.05,
+      "z": 1.0,
+      "ease": "outExpo"
+    },
+    {
+      "word": "hotový",
+      "z": 1.08,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "joke",
+      "at": -0.12,
+      "z": 1.065,
+      "ease": "linear"
+    },
+    {
+      "cue": "joke",
+      "z": 1.12,
+      "snap": true
+    },
+    {
+      "cue": "joke2",
+      "at": -0.12,
+      "z": 1.11,
+      "ease": "linear"
+    },
+    {
+      "cue": "joke2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "stává",
+      "z": 1.09,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "clients",
+      "at": -0.12,
+      "z": 1.1,
+      "ease": "linear"
+    },
+    {
+      "cue": "clients",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "znamená",
+      "z": 1.06,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "clients2",
+      "at": -0.12,
+      "z": 1.1,
+      "ease": "inOutCubic"
+    },
+    {
+      "cue": "clients2",
+      "z": 1.0,
+      "snap": true
+    },
+    {
+      "word": "minutu",
+      "z": 1.1,
+      "ease": "outExpo"
+    },
+    {
+      "cue": "try",
+      "at": -0.12,
+      "z": 1.09,
+      "ease": "inOutSine"
+    },
+    {
+      "cue": "try",
+      "z": 1.08,
+      "snap": true
+    },
+    {
+      "cue": "try",
+      "at": 1.2,
+      "z": 1.0,
+      "ease": "outCubic"
+    },
+    {
+      "word": "změř",
+      "at": -0.2,
+      "z": 1.04,
+      "ease": "inOutSine"
+    },
+    {
+      "word": "změř",
+      "at": 0.1,
+      "z": 1.08,
+      "ease": "outQuart"
+    },
+    {
+      "word": "ušetříš",
+      "at": 0.8,
+      "z": 1.0,
+      "ease": "inOutQuart"
+    }
+  ]
+}

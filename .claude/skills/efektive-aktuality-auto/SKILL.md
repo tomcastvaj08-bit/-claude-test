@@ -170,6 +170,11 @@ Zdroje: <url>, <url>
   4. Každý díl přidej aspoň pár nových zvuků z Drivu.
 
 ## Co se naučilo (nepřekračovat)
+- **Záložní hook bez Higgsfieldu (díl #4).** Když na Seedance nejsou kredity a uživatel je nedobije do ~6:45:
+  1. Nakresli značku gagu sám (PIL, průhledné PNG, např. zvýrazňovač nebo fixa).
+  2. Do `hook/index.json` dej `frames: 0` a `"drawMark": [start, délka]`. Engine pak udělá rychlý push-in na kalendář a značku dokreslí zleva doprava.
+  3. Přidej SFX: whoosh, `marker_scratch`, hit.
+  4. Ve zprávě uživateli napiš, že hook je bez maskota kvůli kreditům.
 - **ElevenLabs od 31. 10. 2026: nový účet uživatele (workspace `8cdb7f4a…`, placený).**
   - Aura je tu znovu navržená: `NKB9YCjftHpPbrUaMPkr`.
   - **Efík tu zatím NENÍ.** Návrh „young nerdy … boy“ ElevenLabs zablokoval bezpečnostním filtrem (dětský hlas). Při dalším dílu zkus popis dospělého komického hlasu (např. „adult male cartoon sidekick voice, high nasal, squeaky, comedic“). Když to neprojde, použij pro repliku hotové nahrávky nebo hlas Aura s `[confused]`.

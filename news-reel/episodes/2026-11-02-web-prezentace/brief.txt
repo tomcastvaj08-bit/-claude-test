@@ -1,0 +1,5 @@
+🖥️ Presentations.AI: z webové stránky prezentace jedním klikem — Novinka z 31. října.
+Co se změnilo: Presentations.AI spustilo bezplatné rozšíření do Chromu, které z otevřené webové stránky (článek, web firmy, nabídka) jedním kliknutím vytvoří strukturovanou prezentaci se slajdy, nadpisy, body a grafy. Současně rozšířilo převod Google Docs, Wordu a PDF na slajdy.
+Pro klienty: Prezentaci z vlastního webu, ceníku nebo nabídky máš za minutu místo hodin ladění v PowerPointu.
+Vyzkoušet: Nainstaluj rozšíření Presentations.AI z Chrome Web Store, otevři svůj web a klikni na ikonu rozšíření.
+Zdroje: https://globenewswire.com/news-release/2026/11/01/3392775/0/en/presentations-ai-launches-white-label-ai-presentation-generator-and-editable-powerpoint-api-for-saas-companies-agencies-and-ai-agents-at-0-10-per-slide-with-a-50-launch-discount.html , https://www.presentations.ai/plugins/chrome-extension

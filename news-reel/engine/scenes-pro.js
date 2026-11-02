@@ -710,16 +710,17 @@ Object.assign(proTemplates, {
     const files = p.files ?? ["doc", "pdf", "slides", "sheet"];
     el.appendChild(h(`<div class="sc sc-logo">
       <div class="lg-glow"></div>
-      <div class="lg-mark"><i class="lg-ring"></i><i class="lg-ring r2"></i>${gemStar("lgS")}</div>
+      <div class="lg-mark"><i class="lg-ring"></i><i class="lg-ring r2"></i>${p.letter ? `<div class="lg-tile" style="background:linear-gradient(135deg, ${(p.colors ?? GEM).join(", ")})">${esc(p.letter)}</div>` : gemStar("lgS")}</div>
       <div class="lg-text"><div class="lg-tag">${esc(p.tag ?? "")}</div>${letters(p.word ?? "Gemini", "xl lg-word")}</div>
-      ${files.map((f, i) => `<div class="lg-chip" style="--c:${FILE_T[f][1]}">${icon(FILE_T[f][2])}<b>${esc(FILE_T[f][0])}</b></div>`).join("")}
+      ${files.map((f, i) => { const [lab, col, ic] = typeof f === "string" ? FILE_T[f] : [f.label, f.color, f.icon]; return `<div class="lg-chip" style="--c:${col}">${icon(ic)}<b>${esc(lab)}</b></div>`; }).join("")}
     </div>`));
     const mark = el.querySelector(".lg-mark"), rings = [...el.querySelectorAll(".lg-ring")], tagEl = el.querySelector(".lg-tag");
     const word = el.querySelector(".lg-word"), chips = [...el.querySelectorAll(".lg-chip")], glow = el.querySelector(".lg-glow");
     const tTag = ctx.at(p.tagAt, 0.05), tMark = ctx.at(p.markAt, 0.4), tFiles = ctx.at(p.filesAt, 1.4);
     const mix = (a, b, k) => { const pa = a.match(/\w\w/g).map((x) => parseInt(x, 16)), pb = b.match(/\w\w/g).map((x) => parseInt(x, 16)); return `rgb(${pa.map((v, i) => Math.round(v + (pb[i] - v) * k)).join(",")})`; };
     const chs = [...word.querySelectorAll(".ch")];
-    chs.forEach((c, i) => { const k = chs.length > 1 ? i / (chs.length - 1) : 0; c.style.color = k < 0.55 ? mix(GEM[0], GEM[1], k / 0.55) : mix(GEM[1], GEM[2], (k - 0.55) / 0.45); });
+    const G = p.colors ?? GEM;
+    chs.forEach((c, i) => { const k = chs.length > 1 ? i / (chs.length - 1) : 0; c.style.color = k < 0.55 ? mix(G[0], G[1], k / 0.55) : mix(G[1], G[2], (k - 0.55) / 0.45); });
     const pos = [[-560, -230], [560, -230], [-560, 230], [560, 230]];
     ctx.sfx("ui_softpop", tTag, -8);
     ctx.sfx("whip_air", tMark - 0.15, -12);
@@ -898,6 +899,117 @@ Object.assign(proTemplates, {
       dial.style.transform += ` scale(${1 + pulse * 0.06})`;
       const sq = brandOut(prog(t, tRun + RUN, 0.5));
       sub.style.opacity = String(sq); sub.style.transform = `translateY(${(1 - sq) * 16}px)`;
+    };
+  },
+});
+
+
+// ===================== vocabulary added with episode #4 =====================
+// webslides – a browser with a web article; the AI cursor clicks the extension icon, the page shatters into
+//             blocks that fold into slides and line up in a 3D coverflow row, the middle slide comes forward
+// versus    – two lanes race: "by hand" bar crawls and its clock keeps counting, the AI bar shoots to the end
+//             with a flash; numbers tick on both sides
+Object.assign(proTemplates, {
+  webslides(el, p, ctx) {
+    const slides = p.slides ?? [];
+    el.appendChild(h(`<div class="sc sc-webslides">
+      <div class="ws-copy">${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}${p.title ? kineticWords(p.title, "md") : ""}</div>
+      <div class="ws-stage">
+        <div class="ws-win">
+          <div class="ws-bar"><i></i><i></i><i></i><span class="ws-url">${esc(p.url ?? "")}</span><b class="ws-ext">${esc(p.extLetter ?? "P")}</b></div>
+          <div class="ws-page">
+            <div class="ws-h"></div><div class="ws-img"></div>
+            ${Array.from({ length: 6 }, (_, k) => `<i style="width:${[96, 88, 92, 70, 94, 60][k]}%"></i>`).join("")}
+          </div>
+        </div>
+        <div class="ws-flow">${slides.map((sl, i) => `<div class="ws-slide ${i === 0 ? "cover" : ""}"><b>${esc(sl.title)}</b>${sl.kind === "chart" ? `<div class="ws-chart">${[40, 70, 55, 90].map((v) => `<i style="height:${v}%"></i>`).join("")}</div>` : `<div class="ws-pts">${(sl.points ?? ["", "", ""]).map((t) => `<span><i></i>${esc(t)}</span>`).join("")}</div>`}<em>${String(i + 1).padStart(2, "0")}</em></div>`).join("")}</div>
+        <div class="dk-ring ws-ring"></div>
+        <div class="dk-cur ws-cur"><svg viewBox="0 0 28 36"><path d="M3 2 L3 29 L10 22.5 L14.5 33 L19 31 L14.7 20.8 L24 20.8 Z"/></svg><i class="dk-ai">AI</i></div>
+      </div>
+    </div>`));
+    const win = el.querySelector(".ws-win"), page = el.querySelector(".ws-page"), ext = el.querySelector(".ws-ext");
+    const parts = [...page.children], sls = [...el.querySelectorAll(".ws-slide")], cur = el.querySelector(".ws-cur"), ring = el.querySelector(".ws-ring");
+    const title = el.querySelector(".kw-line"), tagEl = el.querySelector(".ws-copy .tag");
+    const tOpen = ctx.at(p.openAt, 0.3), tClick = ctx.at(p.clickAt, tOpen + 1.0), tSplit = ctx.at(p.splitAt, tClick + 0.6), tDone = ctx.at(p.doneAt, tSplit + 1.6);
+    const n = sls.length, mid = (n - 1) / 2;
+    ctx.sfx("phone_slide", tOpen - 0.15, -6);
+    ctx.sfx("trackpad_click", tClick - 0.02, -3);
+    ctx.sfx("glitch", tSplit - 0.05, -14);
+    sls.forEach((_, i) => ctx.sfx("card_swipe", tSplit + 0.1 + i * 0.12, -8));
+    ctx.sfx("ui_chime", tDone, -12);
+    let tw;
+    // cursor path: from bottom right to the extension icon (window coords) on an arc
+    const P0 = [880, 640], P1 = [800, 26];
+    return (t, dur) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.15, 0.1); }
+      if (title) animateWords(title, t, tw);
+      if (tagEl) { const q = brandOut(prog(t, 0, 0.6)); tagEl.style.opacity = q; tagEl.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
+      // browser lands in 3D, then dissolves when the page splits
+      const e = snapOut(prog(t, tOpen - 0.2, 0.8)), out = brandInOut(prog(t, tSplit + 0.15, 0.5));
+      win.style.transform = `translateY(${(1 - e) * 600}px) rotateY(${lerp(24, 8, e)}deg) rotateX(${lerp(18, 4, e)}deg) scale(${1 - out * 0.15})`;
+      win.style.opacity = String(clamp(e * 2) * (1 - out));
+      // page blocks fly apart on the split (each block its own direction)
+      parts.forEach((b, k) => {
+        const s = ease.inCubic(prog(t, tSplit + k * 0.025, 0.45)), dir = k % 2 ? 1 : -1;
+        b.style.transform = `translate(${s * dir * (120 + k * 30)}px, ${s * (-60 + k * 25)}px) rotate(${s * dir * 18}deg)`;
+        b.style.opacity = String(1 - s);
+      });
+      // cursor glides on a curve to the extension, clicks (ripple), extension icon pulses
+      const cv = brandInOut(prog(t, tClick - 0.75, 0.75)), u = 1 - cv;
+      const cx = u * u * P0[0] + 2 * u * cv * (P0[0] - 40) + cv * cv * P1[0], cy = u * u * P0[1] + 2 * u * cv * 300 + cv * cv * P1[1];
+      const press = Math.sin(Math.PI * clamp((t - tClick + 0.06) / 0.2));
+      cur.style.opacity = String(clamp((t - tClick + 0.9) * 4) * (1 - out));
+      cur.style.transform = `translate(${cx + 210}px, ${cy + 150}px) scale(${1 - 0.16 * press})`;
+      const r = prog(t, tClick - 0.03, 0.55);
+      ring.style.opacity = String(r > 0 && r < 1 ? (1 - r) * 0.9 : 0);
+      ring.style.transform = `translate(${P1[0] + 210}px, ${P1[1] + 150}px) scale(${lerp(0.2, 2.2, brandOut(r))})`;
+      ext.classList.toggle("on", t > tClick);
+      ext.style.transform = `scale(${1 + 0.35 * Math.sin(Math.PI * clamp((t - tClick) / 0.3))})`;
+      // slides assemble into a 3D coverflow, the middle one comes forward; gentle drift afterwards
+      const drift = brandInOut(prog(t, tSplit + 0.8, Math.max(1, dur - tSplit))) * 0.6;
+      sls.forEach((sl, i) => {
+        const a = snapOut(prog(t, tSplit + 0.1 + i * 0.12, 0.7)), d = i - mid - drift;
+        const x = d * 205, z = -Math.abs(d) * 260, ry = -d * 26;
+        sl.style.opacity = String(clamp(a * 2.5));
+        sl.style.transform = `translate3d(${lerp(0, x, a)}px, ${(1 - a) * 160}px, ${lerp(-600, z, a)}px) rotateY(${lerp(0, ry, a)}deg) scale(${lerp(0.4, 1, a)})`;
+        sl.style.zIndex = String(100 - Math.round(Math.abs(d) * 10));
+        sl.style.filter = Math.abs(d) > 1.2 ? `blur(${(Math.abs(d) - 1.2) * 3}px)` : "none";
+      });
+    };
+  },
+
+  versus(el, p, ctx) {
+    const a = p.a ?? {}, b = p.b ?? {};
+    el.appendChild(h(`<div class="sc sc-versus">
+      <div class="vs-head">${p.kicker ? `<div class="tag">${esc(p.kicker)}</div>` : ""}${p.title ? kineticWords(p.title, "md") : ""}</div>
+      <div class="vs-lane slow"><span class="vs-lab">${esc(a.label ?? "")}</span><div class="vs-track"><b></b></div><span class="vs-num"><em>0</em>${esc(a.unit ?? "")}</span></div>
+      <div class="vs-lane fast"><span class="vs-lab">${esc(b.label ?? "")}</span><div class="vs-track"><b></b><i class="vs-flash"></i></div><span class="vs-num"><em>0</em>${esc(b.unit ?? "")}</span></div>
+    </div>`));
+    const [la, lb] = el.querySelectorAll(".vs-lane"), [ba, bb] = el.querySelectorAll(".vs-track b"), [na, nb] = el.querySelectorAll(".vs-num em");
+    const flash = el.querySelector(".vs-flash"), title = el.querySelector(".kw-line"), tagEl = el.querySelector(".vs-head .tag");
+    const tRun = ctx.at(p.runAt, 0.5), tWin = tRun + (p.fastFor ?? 0.5);
+    ctx.sfx("clock_tick", tRun, -12);
+    ctx.sfx("swoosh_air", tRun + 0.05, -10);
+    ctx.sfx("impact_synthetic_hit_01", tWin, -12);
+    ctx.sfx("check_tick", tWin + 0.05, -7);
+    let tw;
+    return (t, dur) => {
+      if (title && !tw) { measureWords(el); tw = timesForWords(title, ctx, 0.1, 0.1); }
+      if (title) animateWords(title, t, tw);
+      if (tagEl) { const q = brandOut(prog(t, 0, 0.6)); tagEl.style.opacity = q; tagEl.style.letterSpacing = `${lerp(0.5, 0.22, q)}em`; }
+      [la, lb].forEach((l, i) => { const q = snapOut(prog(t, 0.1 + i * 0.12, 0.6)); l.style.opacity = String(q); l.style.transform = `translateX(${(1 - q) * -120}px)`; });
+      // slow lane crawls for the whole scene, its number keeps counting minutes
+      const sa = ease.outCubic(prog(t, tRun, Math.max(1.5, dur - tRun))) * 0.42;
+      ba.style.transform = `scaleX(${sa})`;
+      na.textContent = String(Math.round(lerp(0, a.value ?? 180, sa / 0.42)));
+      // fast lane shoots to the end, flash on arrival, number snaps
+      const sb = ease.inOutCubic ? ease.inOutCubic(prog(t, tRun, tWin - tRun)) : brandInOut(prog(t, tRun, tWin - tRun));
+      bb.style.transform = `scaleX(${sb})`;
+      nb.textContent = String(Math.round(lerp(0, b.value ?? 1, sb)));
+      const f = prog(t, tWin, 0.5);
+      flash.style.opacity = String(f > 0 && f < 1 ? 1 - f : 0);
+      lb.classList.toggle("won", t > tWin);
+      lb.style.transform += ` scale(${1 + 0.04 * Math.sin(Math.PI * clamp((t - tWin) / 0.3))})`;
     };
   },
 });

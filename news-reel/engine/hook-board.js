@@ -142,6 +142,7 @@ export function buildBoardHook(root, ep, cfg) {
   });
   const calSheet = SHEETS[2];
   const clipEl = layer.querySelector(".bh-clip");
+  const markEl = layer.querySelector(".bh-mark");
   const clipSrc = (i) => `../assets/coldopen/v2/hook/${GAG.id}/clip/f${String(i + 1).padStart(4, "0")}.jpg`;
 
   // ------------------------------------------------------------ paper drawing (after fonts + images)
@@ -443,7 +444,9 @@ export function buildBoardHook(root, ep, cfg) {
     if (GAG) {
       // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
       const z = clamp((t - clipEnd) / (GAG.hold + 0.62));
-      return { cx: DATE.x, cy: DATE.y, s: lerp(2.25, 2.85, ease.inOutSine(z)), rot: 0 };
+      // no animated clip (drawn mark): fast push-in from a wider shot so the hook is never static
+      const pin = GAG.drawMark ? brandOut(prog(t, 0, 0.7)) : 1;
+      return { cx: DATE.x, cy: DATE.y, s: lerp(1.45, 2.25, pin) + 0.6 * ease.inOutSine(z), rot: lerp(-1.2, 0, pin) };
     }
     if (SHORT) {
       // push-in on the circled day, kept exactly in the middle of the frame (AE-style camera push: fast
@@ -504,6 +507,12 @@ export function buildBoardHook(root, ep, cfg) {
       if (inClip) { const src = clipSrc(Math.min(GAG.frames - 1, Math.floor(t * GAG.fps))); if (clipEl.dataset.src !== src) { clipEl.src = src; clipEl.dataset.src = src; } }
       // the clip's splash settles into the engine's mark: last 0.25 s cross-fade onto the real calendar
       clipEl.style.opacity = String(1 - ease.inOutSine(prog(t, clipEnd - 0.25, 0.25)));
+    }
+    if (GAG && GAG.drawMark && markEl) {
+      // the mark is drawn on like a highlighter stroke (left -> right), with a tiny overshoot wobble
+      const [d0, dd] = GAG.drawMark;
+      const q = ease.inOutCubic(prog(t, d0, dd));
+      markEl.style.clipPath = `inset(0 ${(1 - q) * 100}% 0 0)`;
     }
     const c = camAt(t);
     const sh = shake(t, GAG ? 0.5 : t < T.cut ? 0.3 : 0.75);

@@ -684,5 +684,64 @@
   "start": 0.0,
   "end": 3.375,
   "twos": true
+ },
+ "hl_ms": {
+  "frames": 0,
+  "fps": 24,
+  "hold": 2.3,
+  "markRect": [
+   -72,
+   -95,
+   150,
+   -8
+  ],
+  "sfx": [
+   {
+    "name": "whip_air",
+    "at": 0.0,
+    "gain": -12,
+    "dur": 0.6
+   },
+   {
+    "name": "riser_noise",
+    "at": 0.0,
+    "gain": -16,
+    "dur": 0.6,
+    "fi": 0.3,
+    "fo": 0.01
+   },
+   {
+    "name": "marker_scratch",
+    "at": 0.52,
+    "gain": -2,
+    "dur": 0.6,
+    "fo": 0.1
+   },
+   {
+    "name": "d_hit",
+    "at": 1.06,
+    "gain": -9,
+    "dur": 0.6
+   },
+   {
+    "name": "d_sub",
+    "at": 1.06,
+    "gain": -10,
+    "dur": 0.8
+   },
+   {
+    "name": "music_gag",
+    "at": 1.06,
+    "ss": 3.78,
+    "gain": -12,
+    "dur": 2.0,
+    "fi": 0.02,
+    "fo": 0.8
+   }
+  ],
+  "drawMark": [
+   0.55,
+   0.5
+  ]
  }
 }
