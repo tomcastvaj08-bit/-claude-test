@@ -1,6 +1,6 @@
 ---
 name: efektive-aktuality-komplet
-description: Plně automatická výroba dílu EFEKTIVE AKTUALITY obden (čt, so, po, st…, výroba od 4:40, doručení v 8:00 Praha), od researche AI novinek přes brief, nový Spider-Verse hook s maskotem (Seedance multishot), motion grafiku, hlas Aura, sound design, kameru a render až po popisek, thumbnail (Canva) a doručení na Google Drive. Použij, když se spustí plánovaná úloha „Aktuality obden“ nebo uživatel řekne „udělej další aktualitu sám“, „automatická aktualita“ nebo „jeď pipeline od researche“.
+description: Plně automatická výroba dílu EFEKTIVE AKTUALITY obden (čt, so, po, st…, výroba od 4:40, doručení v 8:00 Praha), od researche AI novinek přes brief, hook „glide“ (najezd na kalendář + šťouchací hláška a 3D slova v prostoru), motion grafiku, hlas Aura, sound design, kameru a render až po popisek, thumbnail (Canva) a doručení na Google Drive. Použij, když se spustí plánovaná úloha „Aktuality obden“ nebo uživatel řekne „udělej další aktualitu sám“, „automatická aktualita“ nebo „jeď pipeline od researche“.
 ---
 
 # EFEKTIVE AKTUALITY: kompletní skill v jednom souboru
@@ -66,30 +66,23 @@ Zdroje: <url>, <url>
 - **Výslovnost: všechno česky** (pravidlo uživatele, chyba se opakovala v #1 i #2). **AI = „á í“, NIKDY „ej aj“.** Zkratky čti česky po písmenech (GPT = gé pé té, API = á pé í), anglická slova piš foneticky česky (karusel, apka, mejl, vork). Před každým TTS projdi skript podle slovníku `news-reel/docs/vyslovnost.md` (hledej `\b[A-Z]{2,}\b` a anglická slova), co chybí, doplň. Tagy eleven_v4: `[confident, relaxed, brisk pace]` na začátek, `[deadpan]` před vtip, `[upbeat]` po něm.
 - **Cue značky:** `[[intro]] [[boom]] [[explain]] [[mix]] [[style]] [[platform]] [[joke]] [[clients]] [[clients2]] [[try]]`. Názvy a počet uprav podle tématu.
 
-### 4. Hook s maskotem (NOVÝ gag každý díl, stejně propracovaný jako kafe v #1)
-- **Lokace** je vždy tabule s kalendářem (fotoreál). Maskot je kluk z `news-reel/assets/coldopen/character_sheet.png` ve stylu **Spider-Verse**:
-  - on twos;
-  - tlusté obrysy;
-  - Ben-Day tečky;
-  - šrafování;
-  - CMYK posun místo motion bluru;
-  - smear frames;
-  - impact frames.
-- **Gag:** vymysli nehodu, která skončí přesně na **dni novinky** v kalendáři. Opakované nehody nepoužívej. Seznam použitých: kafe (#1). Další nápady: barva z pětky, šipka mimo terč, žvýkačka, papírová vlaštovka, kečup z hranolky, propiska co vystřelí, slepičí pírko…
-- **Postup:**
-  1. **End frame:** still z enginu, detail kalendáře se značkou gagu. Značku vyrob jako `v2/hook/<id>/mark.png`, průhledné PNG přes gpt_image.
-  2. **Keyframy:** 6–8 kusů přes gpt_image_2_5. Reference: character sheet + fotka tabule (media `fab790a9-…`, viz `assets/coldopen/v2/higgsfield-jobs.json`) + style frame kafe (`133d6bca-…`).
-  3. **Video:** Seedance 2.5 `omni_reference`, **multishot, 720p, 6 s, 16:9**. Prompt pišu podle šablony multishotu z tutoriálu (přesné časy v sekundách i framech, střídat typy kamer: ultra-wide, rozostřené popředí, makro, dutch angle, přes rameno; slow motion uprostřed, dopad normální rychlostí). Do promptu vždy napiš „No drone visible, no text, no captions, no speech bubbles“.
-  4. **Střih:** normální záběry na 1,3×, slow motion nechat, vadné záběry vyhodit (předčasná skvrna, nápisy, dron). Upscale na 1080p. Zapiš do `assets/coldopen/v2/hook/index.json` (`cuts`, `sfx`, `lineAt`, `hold`, `postCut`). Pečení snímků: `scripts/hook-gag-frames.py --twos`.
-  5. **Replika postavičky:** jen otázka s datem („<Dneška>… <měsíce>?“) hlasem **Efík** `LeAUiEe2DARUVrjI6jCU` (eleven_v4, `[confused, thinking out loud]`). Pauzu zkrať a celé zrychli tak, aby nepřekryla vypravěče.
-  6. **Zvuk hooku:**
-     - pískání a kroky;
-     - švihy na střihy;
-     - náraz nehody;
-     - hudba ve 3 částech (slow motion přes low-pass);
-     - **3 risery** (šum, tón, jemný), všechny vrcholí přesně na dopadu;
-     - dopad: šplouchnutí/úder + sub + impact.
-- **Schválení:** vyrenderuj nejdřív `--hook-only` a zkontroluj snímky kolem střihů (žádné duchy, žádný dron, značka sedí na dni).
+### 4. Hook „glide“ (OD DÍLU #5, nahrazuje maskota ze Seedance)
+Pokyn uživatele 2. 11. 2026: **retence v reelsech šla dolů → hooky přes Higgsfield/Seedance už nedělat.** Nový hook je v enginu (`hookBoard: "glide"`, `engine/hook-board.js`), stojí jen pár desítek kreditů ElevenLabs a nic z Higgsfieldu.
+- **Kamera:** jeden plynulý záběr BEZ střihu. Truck zleva doprava podél zdi, který se plynule změní v push-in a dosedne přímo na den novinky (den mírně nad středem, ať je místo na text). Pohyb od prvního snímku (žádný pomalý rozjezd), délka ~2,15 s, pak jen jemný creep. Pak klasický 3D přechod do grafiky (`handoff`).
+- **Hláška vypravěče = šťouchnutí do diváka** (pravidlo uživatele, vždycky):
+  - divákovi trochu rýpni, ať se probere: zatímco on dělal něco jiného (kalil, spal, scrolloval, byl na víkendu…), v á í se zase všechno změnilo a on se ztrácí / je pozadu;
+  - vazba na den novinky: významný den jmenuj („o Halloweenu“, „na Silvestra“, „o Vánocích“), jinak relativně k datu postu („tenhle pátek“, „tuhle středu“, „minulé pondělí“, „včera“);
+  - vzor (#4): „Zatímco jsi o helouvínu kalil na párty… v á í se zase všechno změnilo. A ty se ztrácíš… dál a dál.“ Další nápady: „Zatímco sis v pátek dával pivko, v á í ti zase ujel vlak.“ / „Ty jsi v neděli spal do oběda… a á í mezitím zase posunulo hranice.“;
+  - hlas **Aura**, eleven_v4, tagy `[teasing, playful, brisk]` (+ `[mock pity]` na pointu), výslovnost podle `docs/vyslovnost.md`;
+  - po TTS: Scribe časy slov → vyřízni pauzy delší než ~0,1 s a zrychli `atempo=1.2`, časy slov přepočítej (cíl ≤ 6 s). Soubor `assets/coldopen/voice/hook_q_<id>.mp3` + `.words.json`.
+- **Slova v prostoru (3D, extrudovaná):** `ep.hookText = [{ text, w: [od, do], accent }]` (indexy slov hlášky), `ep.hookVoice = { file, at: 0.45, dur, gain: -3, words }`.
+  - každý kousek (1–3 slova) stojí jinde a v jiné hloubce, rozházeně kolem data, nikdy přes datum (sloty `SLOTS3`, engine je drží v záběru);
+  - slovo **naskočí ostré přesně ve chvíli, kdy ho vypravěč řekne**, a ~0,3 s po dořečení se **rozmaže do hloubky (depth blur)** a trochu ustoupí → vypadá to, že text opravdu visí v prostoru; poslední kousek zůstane ostrý;
+  - klíčová slova (svátek, „všechno změnilo“, pointa) dej jako `accent` (barva tématu, větší).
+- **Tematický kalendář:** na významné dny výzdoba kolem data a barva kroužku (`THEMES` v enginu): Halloween = dýně, netopýři, pavučina, oranžová; Vánoce/Silvestr = hvězdy; Valentýn = srdce. Nový svátek přidej do `SPECIAL` + `THEMES`. Nápady do zásoby: pátek 13. černá kočka, Black Friday cenovka „−90 %“, 1. dubna kalendář vzhůru nohama.
+- **Zvuk:** room beds od 0 s, camera glide + `whoosh_slow_swell` přes najezd, švih/pop na každý kousek textu, fix na kroužek, popy samolepek, tikání hodin, pak riser + whoosh do grafiky (vše v enginu).
+- **Schválení:** `--stills` po ~0,7 s přes celý hook (nic mimo záběr, text čitelný, nekryje datum), pak `--hook-only`.
+- Starý maskot/Seedance postup je jen archiv (`docs/tutorial-aktualita-1-postup.md`); nepoužívat, dokud ho uživatel nevrátí.
 
 ### 5. Hlas vypravěče
 - **Aura** `vHP4Az3ehXL47emKpHTK` (hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.

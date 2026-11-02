@@ -1,6 +1,6 @@
 ---
 name: efektive-aktuality
-description: Technický engine série EFEKTIVE AKTUALITY – video 16:9 (1920×1080, 24 fps): hook s maskotem ve stylu Spider-Verse (gag na tabuli s kalendářem, Seedance multishot) → 3D kostka → motion grafika v brandu EFEKTIVE (Inter, chladně bílá, grafit, modrá + zelená) synchronizovaná na slova, hlas vypravěče Aura (ElevenLabs eleven_v4), hlas postavičky Efík, sound design navázaný na slova, kamerové pohyby jako post-pass, postCut, cover. Použij při ruční výrobě nebo úpravě dílu („udělej reel / aktualitu“, vložený brief „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“); plně automatický díl od researche řídí skill efektive-aktuality-auto.
+description: Technický engine série EFEKTIVE AKTUALITY – video 16:9 (1920×1080, 24 fps): hook „glide“ (plynulý najezd na kalendář, šťouchací hláška, 3D slova s depth blurem) → 3D kostka → motion grafika v brandu EFEKTIVE (Inter, chladně bílá, grafit, modrá + zelená) synchronizovaná na slova, hlas vypravěče Aura (ElevenLabs eleven_v4), hlas postavičky Efík, sound design navázaný na slova, kamerové pohyby jako post-pass, postCut, cover. Použij při ruční výrobě nebo úpravě dílu („udělej reel / aktualitu“, vložený brief „Novinka ze … / Co se změnilo / Pro klienty / Vyzkoušet“); plně automatický díl od researche řídí skill efektive-aktuality-auto.
 ---
 
 # AKTUALITY – automatická výroba Reelsu
@@ -147,6 +147,13 @@ Hook má vlastní zvukovou skupinu (`busGain`) ve čtyřech vrstvách. Podrobně
 Každá zvuková událost umí `{ dur, fi, fo, hp, lp, pan }`. Vzdálenost řeš ekvalizérem, polohu panoramou podle obrazu. Mastering je jeden statický zisk na −14 LUFS plus limiter −2 dBFS, ne dynamický loudnorm, aby hook zůstal o ~3 LU tišší než hlas. Kontrola: `ffmpeg -ss 0 -t 4.4 -i reel.mp4 -af ebur128` (hook ≈ −17,5 LUFS, tělo ≈ −14,5). Nové atmosféry generuj s `duration_seconds` a normalizuj na špičku −1 dBFS.
 
 ### Cold open – postavička před hookem (volitelné)
+### Hook „glide“ (VÝCHOZÍ od dílu #5, `"hookBoard": "glide"`)
+Jeden plynulý záběr bez střihu: truck zleva doprava podél zdi → plynulý push-in → dosedne na den novinky (mírně nad středem). Kamera `camAt` větev `GLIDE`: x/y po křivce `bezier(.22,.42,.18,1)` (hýbe se od 1. snímku), zoom `bezier(.5,0,.18,1)` (zpožděný = najezd), start `s 1.32`, konec `s 2.05`, délka `glideEnd = 2.15 s`, pak creep. Kroužek fixou při dosednutí, pak samolepky tématu (`THEMES`: halloween dýně/netopýři/pavučina, xmas, newyear, valentine; svátky v `SPECIAL`, override `ep.hookTheme`).
+- **3D slova v prostoru:** `ep.hookText = [{text, w:[i,j], accent}]` + `ep.hookVoice = {file, at, dur, gain, words}` (časy slov hlášky relativně k souboru). Každý kousek má slot `SLOTS3 [x, y, z, rotY]` kolem data, engine ho drží v záběru (měří šířku, perspektiva 1200). Pop přesně na první slovo (z hloubky −900, outBack), písmena extrudovaná (9 vrstev), **depth blur** 0,3 s po posledním slově kousku (blur + mírný ústup, poslední kousek zůstává ostrý), prostor se pomalu otáčí (paralaxa).
+- Bez `hookText` engine sám složí „Víš, co se stalo“ + „tenhle pátek? / na Halloween?“ (`hookQuestion`).
+- Hláška = šťouchnutí do diváka (viz auto skill §4), Aura eleven_v4, pauzy vyříznout + `atempo 1.2`, ≤ 6 s.
+- Starší varianty níže (`hookGag` se Seedance, „cut“, „full“) zůstávají v enginu jako archiv.
+
 ### Hook „nehoda u tabule“ (gag, od 20. 10.): nahrazuje úvodní scénky
 Jedna lokace, tabule z hooku. Postavička je kreslená ve stylu Spider-Verse (tlusté obrysy, rastrové tečky, posunuté barvy) a animovaná po dvou snímcích, prostředí zůstává fotoreálné. Kamera = **záběr z FPV dronu** (průlet kolem něj, šílené úhly). Dron samotný NIKDY nesmí být v záběru. Nehoda (max 5 s) vždy skončí na dni novinky v kalendáři. Pak řekne repliku („Ne! Na sedmičku ne!… Sedmýho… října…“), během ní kamera najíždí na den a během konce repliky se otočí kostka do motion grafiky.
 Postup (`"hookGag": "<id>"` v episode.json, data ve `v2/hook/index.json`):

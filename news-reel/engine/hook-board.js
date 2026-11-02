@@ -75,6 +75,9 @@ const THEMES = {
   newyear: { mark: ["rgba(214,170,30,.92)", "rgba(140,100,10,.4)"], accent: "#ffcf3d", deco: [[-86, -40, 60, -14, "star", 0], [90, 30, 56, 10, "star", 0.1], [64, -74, 40, 18, "star", 0.16]] },
   valentine: { mark: ["rgba(226,40,90,.9)", "rgba(140,10,50,.4)"], accent: "#ff5c8a", deco: [[-86, -40, 60, -14, "heart", 0], [90, 30, 56, 10, "heart", 0.1]] },
 };
+// spots for the words in space: [x, y (px from frame centre), z depth, rotateY] – around the news day,
+// never on it (the day sits a little above centre)
+const SLOTS3 = [[-470, -280, -120, 14], [430, 250, 140, -12], [-480, 250, 40, 10], [460, -270, -260, -14], [0, 390, 180, 4], [520, 30, -160, -16], [-560, 0, -40, 16], [80, -390, -220, -4]];
 const DECO_SVG = {
   pumpkin: `<svg viewBox="0 0 100 100"><path d="M50 22c-4-9 2-16 9-18" stroke="#3d6b22" stroke-width="7" fill="none" stroke-linecap="round"/>
     <ellipse cx="30" cy="60" rx="24" ry="30" fill="#e8741a"/><ellipse cx="70" cy="60" rx="24" ry="30" fill="#e8741a"/><ellipse cx="50" cy="60" rx="24" ry="33" fill="#f58a26"/>
@@ -133,6 +136,19 @@ export function buildBoardHook(root, ep, cfg) {
   const Q = GLIDE ? hookQuestion(ep, news) : null;
   const TH = GLIDE ? THEMES[Q.theme] ?? THEMES.none : null;
   const HV = GLIDE ? { at: 0.55, dur: 1.75, gain: -2, ...(ep.hookVoice ?? {}) } : null; // narrator's line
+  // words in space: ep.hookText = [{ text, w: [firstWord, lastWord], accent }] against ep.hookVoice.words
+  // (Scribe timings, relative to the voice file). Each chunk sits at its own spot and depth, pops in sharp
+  // the moment it is said and racks out of focus (depth blur) a beat after it has been said.
+  const CHUNKS = GLIDE ? (() => {
+    const W8 = HV.words ?? [], at = (i, k) => HV.at + (W8[i]?.[k] ?? 0);
+    const list = ep.hookText ?? [{ text: Q.l1, w: [0, 3] }, { text: Q.l2, w: [4, 99], accent: true }];
+    return list.map((c, i) => {
+      const a = Math.min(c.w[0], W8.length - 1), b = Math.min(c.w[1], W8.length - 1);
+      const start = W8.length ? at(a, "start") : HV.at + (i * HV.dur) / list.length;
+      const end = W8.length ? at(b, "end") : HV.at + ((i + 1) * HV.dur) / list.length;
+      return { ...c, start, end, slot: SLOTS3[(c.slot ?? i) % SLOTS3.length] };
+    });
+  })() : [];
   // gag (ep.hookGag): an animated accident clip lands on the news day (the mark replaces the marker circle),
   // the engine holds the close-up while he says his line, then the 3D move
   const GAG = SHORT && !GLIDE && ep.hookGag ? { id: ep.hookGag, ...GAGS[ep.hookGag] } : null;
@@ -140,7 +156,7 @@ export function buildBoardHook(root, ep, cfg) {
   const glideEnd = 2.15;
   const T = GLIDE
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [1.25, 0.5], pan: [99, 1], write: [99, 1], dive: [99, 1], text: 0.35,
-        out: [Math.max(glideEnd + 0.35, HV.at + HV.dur + 0.2), 0.62] }
+        out: [Math.max(glideEnd + 0.35, HV.at + HV.dur + 0.25), 0.62] }
     : GAG
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [99, 1], pan: [99, 1], write: [99, 1], dive: [99, 1], clip: clipEnd, out: [clipEnd + GAG.hold, 0.62] }
     : SHORT
@@ -179,10 +195,10 @@ export function buildBoardHook(root, ep, cfg) {
     </div></div>
     <div class="bh-leaves"></div>
     <div class="bh-haze"></div><div class="bh-leak"></div><div class="bh-vig"></div>
-    ${Q ? (() => {
-      // extruded 3D letters: a front face + stacked darker slices behind it (real depth when the block turns)
-      const word = (s, cls) => `<div class="t3-line ${cls}">${[...s].map((ch) => ch === " " ? '<span class="t3-sp"></span>' : `<span class="t3-l"><b>${ch}</b>${Array.from({ length: 9 }, (_, k) => `<i style="transform:translateZ(${-(k + 1) * 2.2}px)">${ch}</i>`).join("")}</span>`).join("")}</div>`;
-      return `<div class="bh-t3d" style="--acc:${TH.accent}"><div class="t3-block">${word(Q.l1, "l1")}${word(Q.l2, "l2")}</div></div>`;
+    ${GLIDE ? (() => {
+      // extruded 3D letters: a front face + stacked darker slices behind it (real depth when it turns)
+      const letters = (str) => [...str].map((ch) => ch === " " ? '<span class="t3-sp"></span>' : `<span class="t3-l"><b>${ch}</b>${Array.from({ length: 9 }, (_, k) => `<i style="transform:translateZ(${-(k + 1) * 2.2}px)">${ch}</i>`).join("")}</span>`).join("");
+      return `<div class="bh-t3d" style="--acc:${TH.accent}"><div class="t3-space">${CHUNKS.map((c) => `<div class="t3-chunk${c.accent ? " acc" : ""}" style="--x:${c.slot[0]}px;--y:${c.slot[1]}px"><div class="t3-in">${letters(c.text)}</div></div>`).join("")}</div></div>`;
     })() : ""}
     <div class="bh-white"></div>${GAG ? '<img class="bh-clip">' : ""}`;
   root.appendChild(layer);
@@ -206,8 +222,8 @@ export function buildBoardHook(root, ep, cfg) {
   const clipEl = layer.querySelector(".bh-clip");
   const markEl = layer.querySelector(".bh-mark");
   const decoEls = [...layer.querySelectorAll(".bh-deco")];
-  const t3Block = layer.querySelector(".t3-block");
-  const t3Lines = [...layer.querySelectorAll(".t3-line")].map((l) => [...l.querySelectorAll(".t3-l")]);
+  const t3Space = layer.querySelector(".t3-space");
+  const t3Chunks = [...layer.querySelectorAll(".t3-chunk")].map((el) => ({ el, inner: el.firstElementChild, ls: [...el.querySelectorAll(".t3-l")] }));
   const clipSrc = (i) => `../assets/coldopen/v2/hook/${GAG.id}/clip/f${String(i + 1).padStart(4, "0")}.jpg`;
 
   // ------------------------------------------------------------ paper drawing (after fonts + images)
@@ -489,7 +505,13 @@ export function buildBoardHook(root, ep, cfg) {
     SHEETS[0].master = drawSticky(); SHEETS[1].master = drawNote(); drawPaper(0); writeP = 0;
     [SHEETS[0], SHEETS[1]].forEach(blit);
     // short hook: the date must read – only the leaf that crosses the left edge during the 3D move stays
-    if (Q) await document.fonts.load('800 120px "Inter"', Q.l1 + Q.l2);
+    if (Q) await document.fonts.load('800 120px "Inter"', CHUNKS.map((c) => c.text).join(" "));
+    // keep every word fully in frame: clamp its spot by its measured size and its depth (perspective 1200)
+    CHUNKS.forEach((c, i) => {
+      const el = t3Chunks[i].el, z = c.slot[2], k = 1200 / (1200 - z), w = el.offsetWidth, h = el.offsetHeight;
+      const mx = Math.max(0, 900 / k - w / 2), my = Math.max(0, 500 / k - h / 2);
+      el.style.setProperty("--x", `${clamp(c.slot[0], -mx, mx)}px`); el.style.setProperty("--y", `${clamp(c.slot[1], -my, my)}px`);
+    });
     leafEls = LEAVES.map((L, i) => { if (GAG || (GLIDE ? i !== 0 : SHORT && i !== 2)) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
   }
 
@@ -598,13 +620,19 @@ export function buildBoardHook(root, ep, cfg) {
       });
       // 3D question: letters fly in from depth one by one, the block hangs in front of the wall and turns
       // a little with the camera (the closer the camera gets, the flatter it faces us)
-      t3Lines.forEach((ls, li) => ls.forEach((el, i) => {
-        const p = prog(t, T.text + li * 0.32 + i * 0.03, 0.55), e = ease.outCubic(p), o = ease.outBack(p, 1.4);
-        el.style.opacity = String(clamp(p * 3.5));
-        el.style.transform = `translate3d(0, ${lerp(70, 0, o)}px, ${lerp(-1100, 0, e)}px) rotateX(${lerp(-85, 0, o)}deg) rotateY(${lerp(-40, 0, e)}deg)`;
-      }));
+      // the space turns slowly (different depths slide past each other = parallax) and follows the truck
       const a = glX(prog(t, 0, glideEnd));
-      t3Block.style.transform = `translate3d(${lerp(160, 0, a) + Math.sin(t * 0.9) * 6}px, ${Math.sin(t * 1.3) * 5}px, 0) rotateY(${lerp(28, 9, a) + Math.sin(t * 0.7) * 1.5}deg) rotateX(${lerp(10, 5, a)}deg)`;
+      t3Space.style.transform = `translate3d(${lerp(120, 0, a)}px, 0, 0) rotateY(${lerp(10, 0, a) + Math.sin(t * 0.55) * 3}deg) rotateX(${Math.sin(t * 0.4 + 1) * 2}deg)`;
+      CHUNKS.forEach((c, ci) => {
+        const o = t3Chunks[ci], [, , z, ry] = c.slot, last = ci === CHUNKS.length - 1;
+        const pin = prog(t, c.start - 0.08, 0.38), e = ease.outBack(pin, 1.7), f = ease.outCubic(pin);
+        // rack focus: sharp while said, then out of focus + pushed back a little (last chunk stays sharp)
+        const d = last ? 0 : ease.inOutSine(prog(t, c.end + 0.3, 0.4));
+        o.el.style.opacity = String(clamp(pin * 4) * (1 - d * 0.45));
+        o.el.style.filter = d > 0.01 ? `blur(${(d * (7 + Math.max(0, z) / 40)).toFixed(2)}px)` : "none";
+        o.el.style.transform = `translate(-50%, -50%) translate3d(var(--x), var(--y), ${(lerp(-900, z, f) - d * 120).toFixed(1)}px) rotateY(${ry + lerp(-35, 0, f)}deg) scale(${lerp(0.4, 1, e).toFixed(3)})`;
+        o.ls.forEach((l, li) => { const q = ease.outBack(prog(t, c.start - 0.08 + li * 0.018, 0.3), 2); l.style.transform = `translateY(${lerp(40, 0, q)}px) rotateX(${lerp(-80, 0, q)}deg)`; });
+      });
     }
     const c = camAt(t);
     const sh = shake(t, GLIDE ? 0.35 : GAG ? 0.5 : t < T.cut ? 0.3 : 0.75);
@@ -709,8 +737,7 @@ export function buildBoardHook(root, ep, cfg) {
       { name: "camera_glide", at: 0, gain: -8, hp: 45 },
       { name: "whoosh_slow_swell", at: 0, ss: 0.6, gain: -9, dur: glideEnd, fi: 0.05, fo: 0.5 },
       { name: "leaf_passby", at: 0.1, gain: -14, dur: 1.2, fo: 0.4, pan: -0.25, hp: 120 },
-      { name: "d_whoosh_s", at: T.text + 0.05, gain: -13, dur: 0.5, pan: -0.2 },
-      { name: "d_whoosh_s", at: T.text + 0.37, gain: -11, dur: 0.5, pan: 0.2 },
+      ...CHUNKS.map((c, i) => ({ name: i % 2 ? "ui_pop" : "d_whoosh_s", at: c.start - 0.1, gain: i % 2 ? -9 : -14, dur: 0.45, pan: clamp(c.slot[0] / 700, -1, 1) * 0.6 })),
       { name: "clock_tick", at: glideEnd - 0.4, gain: -14, dur: O - glideEnd + 0.6, fi: 0.05, fo: 0.2, hp: 500, lp: 7000, pan: 0.35 },
       { name: "marker_scratch", at: c0 - 0.02, gain: 1.5 },
       { name: "d_hit", at: c0 + 0.45, gain: -11, dur: 0.6 },

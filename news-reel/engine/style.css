@@ -807,15 +807,15 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .bhook .bh-deco { position: absolute; pointer-events: none; transform-origin: 50% 60%; filter: drop-shadow(3px 5px 4px rgba(20, 10, 0, .45)); }
 .bhook .bh-deco svg { width: 100%; height: 100%; display: block; }
 .bhook .bh-deco.web { filter: none; opacity: .8; }
-.bhook .bh-t3d { position: absolute; left: 0; right: 0; top: 650px; height: 400px; perspective: 1300px; perspective-origin: 50% 30%; pointer-events: none; }
-.bhook .t3-block { position: absolute; left: 0; right: 0; top: 0; transform-style: preserve-3d; text-align: center; }
-.bhook .t3-line { transform-style: preserve-3d; display: flex; justify-content: center; font-family: "Inter", sans-serif; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
-.bhook .t3-line.l1 { font-size: 74px; color: #f4f6fb; margin-bottom: 8px; }
-.bhook .t3-line.l2 { font-size: 138px; color: var(--acc); }
+.bhook .bh-t3d { position: absolute; inset: 0; perspective: 1200px; perspective-origin: 50% 45%; pointer-events: none; }
+.bhook .t3-space { position: absolute; inset: 0; transform-style: preserve-3d; }
+.bhook .t3-chunk { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; white-space: nowrap; font-family: "Inter", sans-serif; font-weight: 800; letter-spacing: -.02em; line-height: 1; font-size: 96px; color: #f4f6fb; opacity: 0; will-change: transform, filter; }
+.bhook .t3-chunk.acc { font-size: 128px; color: var(--acc); }
+.bhook .t3-in { display: flex; transform-style: preserve-3d; }
 .bhook .t3-sp { width: .28em; }
 .bhook .t3-l { position: relative; display: inline-block; transform-style: preserve-3d; }
-.bhook .t3-l b { position: relative; display: block; font-weight: 800; text-shadow: 0 0 1px rgba(0,0,0,.2); }
+.bhook .t3-l b { position: relative; display: block; font-weight: 800; text-shadow: 0 3px 16px rgba(10,8,6,.6), 0 0 3px rgba(10,8,6,.5); }
 .bhook .t3-l i { position: absolute; left: 0; top: 0; font-style: normal; color: #14161c; filter: brightness(.9); }
-.bhook .t3-line.l2 .t3-l i { color: color-mix(in srgb, var(--acc) 35%, #120a04); }
-.bhook .t3-line.l1 .t3-l i { color: #3a3f4c; }
-.bhook .t3-line.l1 .t3-l i:last-child, .bhook .t3-line.l2 .t3-l i:last-child { text-shadow: 6px 18px 22px rgba(0,0,0,.55); }
+.bhook .t3-chunk .t3-l i { color: #3a3f4c; }
+.bhook .t3-chunk.acc .t3-l i { color: color-mix(in srgb, var(--acc) 35%, #120a04); }
+.bhook .t3-chunk .t3-l i:last-child { text-shadow: 6px 18px 22px rgba(0,0,0,.55); }
