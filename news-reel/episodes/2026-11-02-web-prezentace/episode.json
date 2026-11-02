@@ -535,5 +535,12 @@
       "z": 1.0,
       "ease": "inOutQuart"
     }
-  ]
+  ],
+  "hookBoard": "glide",
+  "hookVoice": {
+    "file": "../../coldopen/voice/hook_q_halloween",
+    "at": 0.5,
+    "dur": 1.91,
+    "gain": -3
+  }
 }

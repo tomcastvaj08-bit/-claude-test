@@ -44,6 +44,49 @@ function holidays(y) {
   H[`${em.getUTCMonth() + 1}-${em.getUTCDate()}`] = "Velikonoční pondělí";
   return H;
 }
+// ---- glide hook: the spoken / 3D question and the calendar theme of the news day
+// notable days get their name ("na Halloween") and a themed calendar; other days are relative to the post
+// day ("tenhle pátek", "minulou středu", "včera"). ep.hookLine / ep.hookTheme override.
+const SPECIAL = {
+  "1-1": ["na Nový rok", "newyear"], "2-14": ["na Valentýna", "valentine"], "10-31": ["na Halloween", "halloween"],
+  "12-24": ["na Štědrý den", "xmas"], "12-25": ["o Vánocích", "xmas"], "12-26": ["o Vánocích", "xmas"], "12-31": ["na Silvestra", "newyear"],
+};
+const WD_THIS = ["tohle pondělí", "tohle úterý", "tuhle středu", "tenhle čtvrtek", "tenhle pátek", "tuhle sobotu", "tuhle neděli"];
+const WD_LAST = ["minulé pondělí", "minulé úterý", "minulou středu", "minulý čtvrtek", "minulý pátek", "minulou sobotu", "minulou neděli"];
+function hookQuestion(ep, news) {
+  const md = `${news.getUTCMonth() + 1}-${news.getUTCDate()}`;
+  let when, theme = "none";
+  if (SPECIAL[md]) [when, theme] = SPECIAL[md];
+  else {
+    const today = parse(ep.today ?? ep.id.slice(0, 10)), diff = Math.round((+today - +news) / dayMs);
+    const wd = (news.getUTCDay() + 6) % 7, sameWeek = isoWeek(today) === isoWeek(news) && diff < 7;
+    when = diff === 0 ? "dneska" : diff === 1 ? "včera" : sameWeek ? WD_THIS[wd] : diff < 14 ? WD_LAST[wd] : `${news.getUTCDate()}. ${["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"][news.getUTCMonth()]}`;
+  }
+  const [l1, l2] = ep.hookLine ? ep.hookLine.split("|") : ["Víš, co se stalo", `${when}?`];
+  return { l1, l2, theme: ep.hookTheme ?? theme };
+}
+// themed calendar: marker colour, accent of the 3D question, stickers drawn around the day
+const THEMES = {
+  none: { mark: ["rgba(206,32,24,.88)", "rgba(150,12,10,.35)"], accent: "#4b8bff", deco: [] },
+  halloween: { mark: ["rgba(238,110,16,.92)", "rgba(150,60,8,.4)"], accent: "#ff8a1f",
+    // [dx, dy, size, rot, kind, delay] in plate px around the day (cell ≈ 75×81)
+    deco: [[-100, -66, 70, -14, "pumpkin", 0], [92, 34, 92, 10, "pumpkin", 0.08], [64, -74, 52, 18, "pumpkin", 0.16], [-70, 64, 46, -6, "bat", 0.2], [30, 92, 40, 12, "bat", 0.26], [-120, -110, 120, 0, "web", 0.04]] },
+  xmas: { mark: ["rgba(200,30,40,.9)", "rgba(120,10,20,.4)"], accent: "#ff4d5e", deco: [[-86, -40, 60, -14, "star", 0], [90, 30, 56, 10, "star", 0.1]] },
+  newyear: { mark: ["rgba(214,170,30,.92)", "rgba(140,100,10,.4)"], accent: "#ffcf3d", deco: [[-86, -40, 60, -14, "star", 0], [90, 30, 56, 10, "star", 0.1], [64, -74, 40, 18, "star", 0.16]] },
+  valentine: { mark: ["rgba(226,40,90,.9)", "rgba(140,10,50,.4)"], accent: "#ff5c8a", deco: [[-86, -40, 60, -14, "heart", 0], [90, 30, 56, 10, "heart", 0.1]] },
+};
+const DECO_SVG = {
+  pumpkin: `<svg viewBox="0 0 100 100"><path d="M50 22c-4-9 2-16 9-18" stroke="#3d6b22" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <ellipse cx="30" cy="60" rx="24" ry="30" fill="#e8741a"/><ellipse cx="70" cy="60" rx="24" ry="30" fill="#e8741a"/><ellipse cx="50" cy="60" rx="24" ry="33" fill="#f58a26"/>
+    <path d="M38 30c-6 18-6 42 0 60M62 30c6 18 6 42 0 60" stroke="#c75a10" stroke-width="2.5" fill="none" opacity=".7"/>
+    <path d="M30 50l9-10 9 10zM52 50l9-10 9 10z" fill="#3b1a06"/><path d="M28 68l6 8 6-7 6 8 6-8 6 8 6-7 6 7-4 8H32z" fill="#3b1a06"/></svg>`,
+  bat: `<svg viewBox="0 0 100 60"><path d="M50 22c-3-8-1-14 0-16 1 2 3 8 0 16 6-2 10 2 12 6 6-10 20-14 34-8-8 4-10 12-10 20-6-6-14-6-18 0-2-6-8-8-12-4-2 8-4 12-6 16-2-4-4-8-6-16-4-4-10-2-12 4-4-6-12-6-18 0 0-8-2-16-10-20 14-6 28-2 34 8 2-4 6-8 12-6z" fill="#1a1416"/></svg>`,
+  web: `<svg viewBox="0 0 100 100" fill="none" stroke="rgba(245,245,245,.85)" stroke-width="1.2"><path d="M0 0L100 100M0 0L100 40M0 0L40 100M0 0L100 0M0 0L0 100"/>
+    <path d="M20 0Q16 8 20 20Q8 16 0 20M45 0Q38 18 45 45Q18 38 0 45M72 0Q62 30 70 70Q30 62 0 72"/></svg>`,
+  star: `<svg viewBox="0 0 100 100"><path d="M50 4l13 30 33 3-25 22 8 33-29-18-29 18 8-33L4 37l33-3z" fill="#ffcf3d" stroke="#b8860b" stroke-width="2"/></svg>`,
+  heart: `<svg viewBox="0 0 100 100"><path d="M50 88C10 60 4 40 14 24c10-14 28-12 36 4 8-16 26-18 36-4 10 16 4 36-36 64z" fill="#e8285a"/></svg>`,
+};
+
 const isoWeek = (d) => { const t = new Date(+d); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7) + 3); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - y0) / dayMs - 3 + ((y0.getUTCDay() + 6) % 7)) / 7); };
 const monthCells = (y, m) => { const first = new Date(Date.UTC(y, m, 1)); const off = (first.getUTCDay() + 6) % 7; return Array.from({ length: 42 }, (_, k) => new Date(+first + (k - off) * dayMs)); };
 
@@ -80,12 +123,25 @@ export function buildBoardHook(root, ep, cfg) {
   // mode "cut" (default since v4): no truck along the wall, no paper. Hard cut straight onto the calendar,
   // the news day dead centre, a push-in while the marker circles it, then a 3D camera move to the right
   // that carries the motion graphics in (engine: hook.handoff). Mode "full" = the original long take.
-  const SHORT = (ep.hookBoard ?? cfg.series.hookBoard ?? "cut") !== "full";
+  // mode "glide" (since #5): ONE continuous move – truck left → right along the wall that turns into a
+  // push-in and lands on the news day (no cut). A 3D question floats in front of the board ("Víš, co se
+  // stalo tenhle pátek?" / "…na Halloween?"), the narrator asks it, the day gets circled (themed on
+  // notable days – pumpkins for Halloween…), then the usual 3D move into the graphics.
+  const MODE = ep.hookBoard ?? cfg.series.hookBoard ?? "cut";
+  const GLIDE = MODE === "glide";
+  const SHORT = MODE !== "full";
+  const Q = GLIDE ? hookQuestion(ep, news) : null;
+  const TH = GLIDE ? THEMES[Q.theme] ?? THEMES.none : null;
+  const HV = GLIDE ? { at: 0.55, dur: 1.75, gain: -2, ...(ep.hookVoice ?? {}) } : null; // narrator's line
   // gag (ep.hookGag): an animated accident clip lands on the news day (the mark replaces the marker circle),
   // the engine holds the close-up while he says his line, then the 3D move
-  const GAG = SHORT && ep.hookGag ? { id: ep.hookGag, ...GAGS[ep.hookGag] } : null;
+  const GAG = SHORT && !GLIDE && ep.hookGag ? { id: ep.hookGag, ...GAGS[ep.hookGag] } : null;
   const clipEnd = GAG ? GAG.frames / GAG.fps : 0;
-  const T = GAG
+  const glideEnd = 2.15;
+  const T = GLIDE
+    ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [1.25, 0.5], pan: [99, 1], write: [99, 1], dive: [99, 1], text: 0.35,
+        out: [Math.max(glideEnd + 0.35, HV.at + HV.dur + 0.2), 0.62] }
+    : GAG
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [99, 1], pan: [99, 1], write: [99, 1], dive: [99, 1], clip: clipEnd, out: [clipEnd + GAG.hold, 0.62] }
     : SHORT
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [0.3, 0.42], pan: [99, 1], write: [99, 1], dive: [99, 1], out: [1.0, 0.62] }
@@ -116,12 +172,18 @@ export function buildBoardHook(root, ep, cfg) {
       ${sheet(CAL, "cal", calExtras, calUnder)}
       ${sheet(PAPER, "paper", paperExtras)}
       ${GAG ? (() => { const [mx, my, ms, mr] = GAG.markRect ?? [-74, -70, 124, -8]; return `<img class="bh-mark" src="../assets/coldopen/v2/hook/${GAG.id}/mark.png" style="left:${DATE.x + mx}px;top:${DATE.y + my}px;width:${ms}px;height:${ms}px;transform:rotate(${CAL.rot + mr}deg)">`; })() : ""}
+      ${TH ? TH.deco.map(([dx, dy, sz, r, kind]) => `<div class="bh-deco ${kind}" style="left:${DATE.x + dx - sz / 2}px;top:${DATE.y + dy - sz / 2}px;width:${sz}px;height:${sz}px;--r:${r}deg">${DECO_SVG[kind]}</div>`).join("") : ""}
       <svg class="chalk2-svg bh-arrow" style="left:0;top:0" width="${PLATE.w}" height="${PLATE.h}" viewBox="0 0 ${PLATE.w} ${PLATE.h}">
         <path pathLength="1" d="${arrowPath()}"/>
       </svg>
     </div></div>
     <div class="bh-leaves"></div>
     <div class="bh-haze"></div><div class="bh-leak"></div><div class="bh-vig"></div>
+    ${Q ? (() => {
+      // extruded 3D letters: a front face + stacked darker slices behind it (real depth when the block turns)
+      const word = (s, cls) => `<div class="t3-line ${cls}">${[...s].map((ch) => ch === " " ? '<span class="t3-sp"></span>' : `<span class="t3-l"><b>${ch}</b>${Array.from({ length: 9 }, (_, k) => `<i style="transform:translateZ(${-(k + 1) * 2.2}px)">${ch}</i>`).join("")}</span>`).join("")}</div>`;
+      return `<div class="bh-t3d" style="--acc:${TH.accent}"><div class="t3-block">${word(Q.l1, "l1")}${word(Q.l2, "l2")}</div></div>`;
+    })() : ""}
     <div class="bh-white"></div>${GAG ? '<img class="bh-clip">' : ""}`;
   root.appendChild(layer);
 
@@ -143,6 +205,9 @@ export function buildBoardHook(root, ep, cfg) {
   const calSheet = SHEETS[2];
   const clipEl = layer.querySelector(".bh-clip");
   const markEl = layer.querySelector(".bh-mark");
+  const decoEls = [...layer.querySelectorAll(".bh-deco")];
+  const t3Block = layer.querySelector(".t3-block");
+  const t3Lines = [...layer.querySelectorAll(".t3-line")].map((l) => [...l.querySelectorAll(".t3-l")]);
   const clipSrc = (i) => `../assets/coldopen/v2/hook/${GAG.id}/clip/f${String(i + 1).padStart(4, "0")}.jpg`;
 
   // ------------------------------------------------------------ paper drawing (after fonts + images)
@@ -288,7 +353,8 @@ export function buildBoardHook(root, ep, cfg) {
     if (p > 0) {
       const n = Math.max(2, Math.round(p * (loop.length - 1)) + 1);
       x.save(); x.globalCompositeOperation = "multiply"; x.lineCap = "round"; x.lineJoin = "round";
-      [[6.2, "rgba(206,32,24,.88)", 0], [3, "rgba(150,12,10,.35)", 0.8]].forEach(([lw, col, off]) => {
+      const mc = TH ? TH.mark : THEMES.none.mark;
+      [[6.2, mc[0], 0], [3, mc[1], 0.8]].forEach(([lw, col, off]) => {
         x.beginPath(); x.lineWidth = lw; x.strokeStyle = col;
         loop.slice(0, n).forEach(([px, py], i) => (i ? x.lineTo(px + off, py + off) : x.moveTo(px + off, py + off)));
         x.stroke();
@@ -423,7 +489,8 @@ export function buildBoardHook(root, ep, cfg) {
     SHEETS[0].master = drawSticky(); SHEETS[1].master = drawNote(); drawPaper(0); writeP = 0;
     [SHEETS[0], SHEETS[1]].forEach(blit);
     // short hook: the date must read – only the leaf that crosses the left edge during the 3D move stays
-    leafEls = LEAVES.map((L, i) => { if (GAG || (SHORT && i !== 2)) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
+    if (Q) await document.fonts.load('800 120px "Inter"', Q.l1 + Q.l2);
+    leafEls = LEAVES.map((L, i) => { if (GAG || (GLIDE ? i !== 0 : SHORT && i !== 2)) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
   }
 
   // ------------------------------------------------------------ camera
@@ -440,7 +507,15 @@ export function buildBoardHook(root, ep, cfg) {
   };
   // close-up framing: month name + the news day both in shot
   const closeC = (() => { const sy = Math.max((150 + dateCell.y) / 2, dateCell.y - 190); const p = toPlate(CAL, lerp(CAL.w / 2, dateCell.x, 0.4), sy); return { x: p.x, y: p.y }; })();
+  // glide: x/y on a dolly curve that moves from frame 1 (no slow start = no dead time) and settles long;
+  // the zoom lags behind it and does most of its work late, so the truck turns into a push onto the day
+  const glX = bezier(0.22, 0.42, 0.18, 1), glS = bezier(0.5, 0, 0.18, 1);
   function camAt(t) {
+    if (GLIDE) {
+      const a = glX(prog(t, 0, glideEnd)), z = glS(prog(t, 0, glideEnd + 0.1));
+      const creep = Math.max(0, t - glideEnd) * 0.05;
+      return { cx: lerp(DATE.x - 820, DATE.x, a), cy: lerp(DATE.y + 150, DATE.y + 55, a), s: lerp(1.32, 2.05, z) + creep, rot: lerp(-1.1, 0, a) };
+    }
     if (GAG) {
       // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
       const z = clamp((t - clipEnd) / (GAG.hold + 0.62));
@@ -514,8 +589,25 @@ export function buildBoardHook(root, ep, cfg) {
       const q = ease.inOutCubic(prog(t, d0, dd));
       markEl.style.clipPath = `inset(0 ${(1 - q) * 100}% 0 0)`;
     }
+    if (GLIDE) {
+      // stickers pop onto the calendar right after the circle (stagger, overshoot)
+      decoEls.forEach((el, i) => {
+        const p = prog(t, T.circle[0] + 0.3 + TH.deco[i][5], 0.42), e = p > 0 ? ease.outBack(p, 2.2) : 0;
+        el.style.opacity = String(clamp(p * 4));
+        el.style.transform = `rotate(calc(var(--r) + ${(1 - e) * -30}deg)) scale(${e})`;
+      });
+      // 3D question: letters fly in from depth one by one, the block hangs in front of the wall and turns
+      // a little with the camera (the closer the camera gets, the flatter it faces us)
+      t3Lines.forEach((ls, li) => ls.forEach((el, i) => {
+        const p = prog(t, T.text + li * 0.32 + i * 0.03, 0.55), e = ease.outCubic(p), o = ease.outBack(p, 1.4);
+        el.style.opacity = String(clamp(p * 3.5));
+        el.style.transform = `translate3d(0, ${lerp(70, 0, o)}px, ${lerp(-1100, 0, e)}px) rotateX(${lerp(-85, 0, o)}deg) rotateY(${lerp(-40, 0, e)}deg)`;
+      }));
+      const a = glX(prog(t, 0, glideEnd));
+      t3Block.style.transform = `translate3d(${lerp(160, 0, a) + Math.sin(t * 0.9) * 6}px, ${Math.sin(t * 1.3) * 5}px, 0) rotateY(${lerp(28, 9, a) + Math.sin(t * 0.7) * 1.5}deg) rotateX(${lerp(10, 5, a)}deg)`;
+    }
     const c = camAt(t);
-    const sh = shake(t, GAG ? 0.5 : t < T.cut ? 0.3 : 0.75);
+    const sh = shake(t, GLIDE ? 0.35 : GAG ? 0.5 : t < T.cut ? 0.3 : 0.75);
     const k = clampCam(c.cx + sh.x / c.s, c.cy + sh.y / c.s, c.s);
     plate.style.transform = `translate(${W / 2 - k.cx * k.s}px, ${H / 2 - k.cy * k.s}px) scale(${k.s})`;
     shot.style.transform = `rotate(${c.rot + sh.r}deg)`;
@@ -606,6 +698,32 @@ export function buildBoardHook(root, ep, cfg) {
     ];
     return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out, cuts: GAG.cuts ?? [], postCut: GAG.postCut ?? null,
       cues: { impact: clipEnd, whoosh: O, ticks: [], riser: [0, clipEnd] }, sfx: sfxG };
+  }
+  if (GLIDE) {
+    // continuous move: room beds from frame 1, a camera glide that swells into the push, whoosh per text
+    // line, the narrator's question (ep.hookVoice.file), marker + sticker pops, then the usual hand-off
+    const O = T.out[0], L = T.out[1], c0 = T.circle[0];
+    const sfxL = [
+      { name: "amb_city", at: 0, gain: -18, dur: O + L + 0.3, fi: 0.05, fo: 0.4, hp: 160, lp: 5200, pan: -0.25 },
+      { name: "wind_bed", at: 0, gain: -7, dur: O + L + 0.2, fi: 0.05, fo: 0.4, hp: 120, pan: -0.15 },
+      { name: "camera_glide", at: 0, gain: -8, hp: 45 },
+      { name: "whoosh_slow_swell", at: 0, ss: 0.6, gain: -9, dur: glideEnd, fi: 0.05, fo: 0.5 },
+      { name: "leaf_passby", at: 0.1, gain: -14, dur: 1.2, fo: 0.4, pan: -0.25, hp: 120 },
+      { name: "d_whoosh_s", at: T.text + 0.05, gain: -13, dur: 0.5, pan: -0.2 },
+      { name: "d_whoosh_s", at: T.text + 0.37, gain: -11, dur: 0.5, pan: 0.2 },
+      { name: "clock_tick", at: glideEnd - 0.4, gain: -14, dur: O - glideEnd + 0.6, fi: 0.05, fo: 0.2, hp: 500, lp: 7000, pan: 0.35 },
+      { name: "marker_scratch", at: c0 - 0.02, gain: 1.5 },
+      { name: "d_hit", at: c0 + 0.45, gain: -11, dur: 0.6 },
+      ...TH.deco.map((d, i) => ({ name: "ui_pop", at: c0 + 0.3 + d[5] + 0.08, gain: -4 - i * 1.5, dur: 0.4, pan: Math.sign(d[0]) * 0.3 })),
+      ...(Q.theme === "halloween" ? [{ name: "music_gag", at: c0 + 0.3, ss: 3.78, gain: -16, dur: 1.4, fi: 0.02, fo: 0.6 }] : []),
+      ...(HV.file ? [{ name: HV.file, at: HV.at, gain: HV.gain, dur: HV.dur + 0.3, fo: 0.08 }] : []),
+      { name: "d_riser", at: O - 0.55, gain: -9, dur: 0.75, ss: 0.15, fi: 0.05, fo: 0.05 },
+      { name: "d_whoosh_pan", at: O + L * 0.5 - 0.52, gain: -5, dur: 0.8, fo: 0.2 },
+      { name: "hook_impact", at: O + L - 0.04, gain: -11, lp: 180 },
+      { name: "reveal_shimmer", at: O + L - 0.2, gain: -13 },
+    ];
+    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out,
+      cues: { impact: c0, whoosh: O, ticks: [], riser: [0, c0] }, sfx: sfxL };
   }
   if (SHORT) {
     // short hook: room + marker on the push-in, then the 3D move right (designed whoosh peaking mid-move,
