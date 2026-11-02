@@ -146,7 +146,7 @@ export function buildBoardHook(root, ep, cfg) {
       const a = Math.min(c.w[0], W8.length - 1), b = Math.min(c.w[1], W8.length - 1);
       const start = W8.length ? at(a, "start") : HV.at + (i * HV.dur) / list.length;
       const end = W8.length ? at(b, "end") : HV.at + ((i + 1) * HV.dur) / list.length;
-      return { ...c, start, end, slot: SLOTS3[(c.slot ?? i) % SLOTS3.length] };
+      return { ...c, start, end, p: c.p ?? Math.min(2, Math.floor((i * 3) / list.length)), slot: SLOTS3[(c.slot ?? i) % SLOTS3.length] };
     });
   })() : [];
   // gag (ep.hookGag): an animated accident clip lands on the news day (the mark replaces the marker circle),
@@ -167,9 +167,18 @@ export function buildBoardHook(root, ep, cfg) {
 
   // glide: the words live ON THE WALL (plate coordinates) right of the calendar, as one tight typographic
   // lockup – the camera ends framing the circled day (left third) + the lockup (right)
-  const LOCK = { x: CAL.x + CAL.w / 2 + 50, y: DATE.y - 196, w: 520, h: 470 };
-  const CXF = (DATE.x - 110 + LOCK.x + LOCK.w + 10) / 2, CYF = DATE.y + 40;
-  const SF = Math.min(1.85, 1700 / (LOCK.x + LOCK.w + 10 - (DATE.x - 110)));
+  // 2–3 paragraphs zig-zag over the wall: #1 up right of the day, #2 further right and lower, #3 under the
+  // calendar. The camera lands on day + #1, then moves its focus to each next paragraph as it is spoken.
+  const PARAS = [{ dx: 180, dy: -330, w: 470, h: 300 }, { dx: 300, dy: 20, w: 520, h: 260 }, { dx: -330, dy: 250, w: 560, h: 260 }]
+    .map((r) => ({ x: DATE.x + r.dx, y: DATE.y + r.dy, w: r.w, h: r.h }));
+  const NP = GLIDE ? Math.max(...CHUNKS.map((c) => c.p)) + 1 : 0;
+  const KEYS = Array.from({ length: NP }, (_, pi) => {
+    const R = PARAS[pi], cs = CHUNKS.filter((c) => c.p === pi);
+    let x0 = R.x - 30, x1 = R.x + R.w + 30, y0 = R.y - 30, y1 = R.y + R.h + 30;
+    if (pi === 0) { x0 = Math.min(x0, DATE.x - 120); y1 = Math.max(y1, DATE.y + 100); }   // the day stays in the first framing
+    const sc = Math.min(pi ? 1.5 : 1.9, 1760 / (x1 - x0), 1000 / (y1 - y0));
+    return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, s: sc, t0: (cs[0]?.start ?? 0) - 0.32, dur: 0.62, end: cs[cs.length - 1]?.end ?? 0 };
+  });
 
   // ---- DOM
   const strips = (S) => { let inner = ""; const sh = S.h / S.n; for (let i = S.n - 1; i >= 0; i--) inner = `<div class="strip" style="top:${i ? sh : 0}px;height:${sh + 1}px"><canvas></canvas><i class="strip-sh"></i>${inner}</div>`; return inner; };
@@ -522,7 +531,7 @@ export function buildBoardHook(root, ep, cfg) {
     const cx = document.createElement("canvas").getContext("2d");
     const setFont = (sz) => { cx.font = `800 ${sz}px "Inter"`; cx.letterSpacing = `${(-0.025 * sz).toFixed(2)}px`; };
     const OFF = 24, BIN = 2;
-    const build = (c, k) => {
+    const build = (c, k, RW) => {
       let size = (c.accent ? 96 : 64) * k;
       // words laid out one by one (kerning inside a word from the font, a tight fixed word gap between)
       const place = () => {
@@ -537,50 +546,71 @@ export function buildBoardHook(root, ep, cfg) {
         return { out, w: xw - 0.17 * size };
       };
       setFont(size); let pl = place();
-      if (pl.w > LOCK.w) { size *= LOCK.w / pl.w; setFont(size); pl = place(); }
+      if (pl.w > RW) { size *= RW / pl.w; setFont(size); pl = place(); }
       const w = pl.w, glyphs = pl.out, fm = cx.measureText("Hg"), A = fm.fontBoundingBoxAscent, D = fm.fontBoundingBoxDescent;
       const n = Math.ceil((w + 2 * OFF) / BIN), up = new Float32Array(n).fill(-1e9), dn = new Float32Array(n).fill(-1e9);
       glyphs.forEach((g) => { for (let b = Math.max(0, Math.floor((g.l + OFF) / BIN) - 1); b <= Math.min(n - 1, Math.ceil((g.r + OFF) / BIN) + 1); b++) { up[b] = Math.max(up[b], g.asc); dn[b] = Math.max(dn[b], g.desc); } });
       return { c, size, w, A, D, glyphs, up, dn, n, asc: Math.max(...glyphs.map((g) => g.asc)), desc: Math.max(...glyphs.map((g) => g.desc)) };
     };
-    let lines, k = 1;
-    for (let pass = 0; pass < 5; pass++) {
-      lines = CHUNKS.map((c) => build(c, k));
-      lines[0].x = 0; lines[0].y = lines[0].asc;
-      for (let i = 1; i < lines.length; i++) {
-        const L = lines[i], gap = 0.03 * L.size + 2;
-        let best = null;
-        for (let dx = -40; dx <= Math.max(-40, LOCK.w - L.w + 20); dx += 4) {
-          let y = lines[i - 1].y + 0.3 * L.asc;                       // never above the previous baseline
-          for (let j = 0; j < i; j++) {
+    // one paragraph = one tight lockup in its region. A line that cannot interlock with the one above
+    // (descenders above + ascenders/háčky below = no gain) goes AFTER it on the same baseline if it fits.
+    const all = [];
+    for (let pi = 0; pi < NP; pi++) {
+      const R = PARAS[pi], cs = CHUNKS.filter((c) => c.p === pi);
+      let lines, k = 1;
+      for (let pass = 0; pass < 5; pass++) {
+        lines = cs.map((c) => build(c, k, R.w));
+        lines[0].x = 0; lines[0].y = lines[0].asc;
+        const need = (L, dx, upto) => {                                  // lowest baseline that touches nothing above
+          let y = -1e9;
+          for (let j = 0; j < upto; j++) {
             const P = lines[j];
             for (let b = 0; b < L.n; b++) {
               if (L.up[b] < -1e8) continue;
               const bp = Math.round((dx + b * BIN - P.x) / BIN);
               if (bp < 0 || bp >= P.n || P.dn[bp] < -1e8) continue;
-              y = Math.max(y, P.y + P.dn[bp] + L.up[b] + gap);
+              y = Math.max(y, P.y + P.dn[bp] + L.up[b] + 0.03 * L.size + 2);
             }
           }
-          const score = y + 0.22 * Math.abs(dx);                       // prefer flush-left, but snap in
-          if (!best || score < best.score) best = { score, x: dx, y };
+          return y;
+        };
+        for (let i = 1; i < lines.length; i++) {
+          const L = lines[i], prev = lines[i - 1];
+          let best = null;
+          for (let dx = -40; dx <= Math.max(-40, R.w - L.w + 20); dx += 4) {
+            const y = Math.max(prev.y + 0.3 * L.asc, need(L, dx, i));
+            const score = y + 0.22 * Math.abs(dx);
+            if (!best || score < best.score) best = { score, x: dx, y };
+          }
+          const naive = prev.y + prev.desc + L.asc + 0.03 * L.size + 2, gain = (naive - best.y) / (naive - prev.y);
+          const ax = prev.x + prev.w + 0.22 * L.size;
+          if (gain < 0.06 && ax + L.w <= R.w + 60 && need(L, ax, i - 1) <= prev.y + (L.asc - prev.asc) * 0.5) { L.x = ax; L.y = prev.y + (L.asc - prev.asc) * 0.5; }
+          else { L.x = best.x; L.y = best.y; }
         }
-        L.x = best.x; L.y = best.y;
+        const minX = Math.min(...lines.map((l) => l.x)); lines.forEach((l) => (l.x -= minX));
+        const hgt = Math.max(...lines.map((l) => l.y + l.desc));
+        if (hgt <= R.h) break;
+        k *= (R.h / hgt) * 0.99;
       }
-      const minX = Math.min(...lines.map((l) => l.x)); lines.forEach((l) => (l.x -= minX));
-      const hgt = Math.max(...lines.map((l) => l.y + l.desc));
-      if (hgt <= LOCK.h) break;
-      k *= (LOCK.h / hgt) * 0.99;
+      lines.forEach((l) => { l.R = R; all.push(l); });
+      // re-aim the camera key of paragraphs 2+ at the text actually laid out (centred, the calendar peeking in)
+      if (pi > 0) {
+        const bx0 = R.x + Math.min(...lines.map((l) => l.x)), bx1 = R.x + Math.max(...lines.map((l) => l.x + l.w));
+        const by0 = R.y + Math.min(...lines.map((l) => l.y - l.asc)), by1 = R.y + Math.max(...lines.map((l) => l.y + l.desc));
+        Object.assign(KEYS[pi], { cx: lerp((bx0 + bx1) / 2, DATE.x, 0.18), cy: lerp((by0 + by1) / 2, DATE.y, 0.12), s: Math.min(1.55, 1500 / (bx1 - bx0 + 200)) });
+      }
     }
+    const lines = all;
     // each line floats a little off the wall (pz): slight parallax + its own cast shadow
     const PZ = [0.05, 0.11, 0.03, 0.08, 0.13, 0.04, 0.09, 0.06];
     lockLines = lines.map((l, i) => {
       const el = document.createElement("div");
       el.className = "lk-line" + (l.c.accent ? " acc" : "");
-      el.style.cssText = `left:${LOCK.x + l.x}px;top:${LOCK.y + l.y}px;font-size:${l.size.toFixed(2)}px`;
+      el.style.cssText = `left:${l.R.x + l.x}px;top:${l.R.y + l.y}px;font-size:${l.size.toFixed(2)}px`;
       const top = -(l.size + l.A - l.D) / 2;
       el.innerHTML = l.glyphs.map((g) => `<span class="lk-l" style="left:${g.x.toFixed(2)}px;top:${top.toFixed(2)}px">${g.ch}</span>`).join("");
       lockEl.appendChild(el);
-      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length] };
+      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length], K: KEYS[l.c.p] };
     });
   }
 
@@ -605,7 +635,14 @@ export function buildBoardHook(root, ep, cfg) {
     if (GLIDE) {
       const a = glX(prog(t, 0, glideEnd)), z = glS(prog(t, 0, glideEnd + 0.1));
       const creep = Math.max(0, t - glideEnd) * 0.05;
-      return { cx: lerp(DATE.x - 820, CXF, a), cy: lerp(DATE.y + 150, CYF, a), s: lerp(1.3, SF, z) + creep, rot: lerp(-1.1, 0, a) };
+      const K0 = KEYS[0];
+      let cx = lerp(DATE.x - 820, K0.cx, a), cy = lerp(DATE.y + 150, K0.cy, a), s = lerp(1.3, K0.s, z);
+      // focus moves on to the next paragraph (smooth truck + slight pull-out mid-move, like an operator)
+      for (let i = 1; i < KEYS.length; i++) {
+        const e = brandInOut(prog(t, KEYS[i].t0, KEYS[i].dur));
+        cx = lerp(cx, KEYS[i].cx, e); cy = lerp(cy, KEYS[i].cy, e); s = lerp(s, KEYS[i].s, e) - Math.sin(Math.PI * e) * 0.18;
+      }
+      return { cx, cy, s: s + creep, rot: lerp(-1.1, 0, a) };
     }
     if (GAG) {
       // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
@@ -647,7 +684,7 @@ export function buildBoardHook(root, ep, cfg) {
   const wind = (t) => 0.3 + 0.7 * bump(t, 2.05, 1.6) + 0.6 * bump(t, 3.35, 1.2) + 0.25 * bump(t, 0.6, 1.2);
   function flutter(o, t) {
     const S = o.S, tl = t - (S.x / PLATE.w) * 0.35; // the gust travels from the window side
-    const A = S.amp * wind(tl) * (0.75 + 0.25 * Math.sin(tl * 2.1 + S.seed)) * (GLIDE ? 0.3 : 1);
+    const A = S.amp * wind(tl) * (0.75 + 0.25 * Math.sin(tl * 2.1 + S.seed)) * (GLIDE ? 0.08 : 1);
     let prev = 0;
     o.strips.forEach((st, i) => {
       const u = (i + 1) / S.n;
@@ -699,8 +736,10 @@ export function buildBoardHook(root, ep, cfg) {
       lockLines.forEach((ln, i) => {
         const c2 = ln.c, last = i === lockLines.length - 1;
         const pin = prog(t, c2.start - 0.06, 0.3), f = ease.outCubic(pin);
-        const d = last ? 0 : ease.inOutSine(prog(t, c2.end + 0.3, 0.45));
-        ln.el.style.transform = `translate(${(-ln.pz * (k.cx - CXF)).toFixed(2)}px, ${(-ln.pz * (k.cy - CYF)).toFixed(2)}px)`;
+        // focus leaves a line ~1 s after it was said, or as soon as the camera moves on to the next paragraph
+        const nextK = KEYS[c2.p + 1], away = Math.min(c2.end + 1.0, nextK ? nextK.t0 + 0.1 : 1e9);
+        const d = last ? 0 : ease.inOutSine(prog(t, away, 0.5));
+        ln.el.style.transform = `translate(${(-ln.pz * (k.cx - ln.K.cx)).toFixed(2)}px, ${(-ln.pz * (k.cy - ln.K.cy)).toFixed(2)}px)`;
         const sd = 4 + ln.pz * 70 + (1 - f) * 26;
         ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(0.55 * f).toFixed(3)}))`;
         ln.el.style.opacity = String(clamp(pin * 5) * (1 - d * 0.35));

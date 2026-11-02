@@ -657,7 +657,8 @@
       "w": [
         0,
         1
-      ]
+      ],
+      "p": 0
     },
     {
       "text": "o Halloweenu",
@@ -665,21 +666,24 @@
         2,
         3
       ],
-      "accent": true
+      "accent": true,
+      "p": 0
     },
     {
       "text": "kalil na párty",
       "w": [
         4,
         6
-      ]
+      ],
+      "p": 0
     },
     {
       "text": "v AI se zase",
       "w": [
         7,
         11
-      ]
+      ],
+      "p": 1
     },
     {
       "text": "všechno změnilo",
@@ -687,14 +691,16 @@
         12,
         13
       ],
-      "accent": true
+      "accent": true,
+      "p": 1
     },
     {
       "text": "a ty se ztrácíš…",
       "w": [
         14,
         17
-      ]
+      ],
+      "p": 2
     },
     {
       "text": "dál",
@@ -702,7 +708,8 @@
         18,
         18
       ],
-      "accent": true
+      "accent": true,
+      "p": 2
     },
     {
       "text": "a dál.",
@@ -710,7 +717,8 @@
         19,
         20
       ],
-      "accent": true
+      "accent": true,
+      "p": 2
     }
   ]
 }
