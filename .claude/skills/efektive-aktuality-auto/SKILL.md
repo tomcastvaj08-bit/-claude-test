@@ -9,6 +9,35 @@ Vzor dílu je **Aktualita #1** (`news-reel/episodes/2026-10-13-instagram-edits/`
 
 **Laťka:** každý díl musí být aspoň tak propracovaný jako #1, ideálně lepší. Lepší křivky, víc vizuálního vysvětlování, žádná statická scéna, čistší zvuk. Na nic se neptej. Uživatel tuhle automatiku schválil včetně útraty kreditů (Higgsfield, ElevenLabs) v rozpočtu níže.
 
+## Zpětná vazba k dílu #4 (3. 11. 2026, platí od #5, POVINNÉ)
+Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všechno ostatní níže.
+
+**1. Žádné šablony, pokaždé nová animace (nejdůležitější).**
+- V #4 byl „bigtype“ (modré pozadí, jeden velký text „1 klik“, za ním stejný layout) a „webslides“ (web → slajdy) jen přepsaný text minulé grafiky. To už NIKDY.
+- Ukládej si **strukturu** (pořadí beatů: logo/značka → velké slovo → vysvětlení pojmu → vtip → pro klienty → zkus), **ne vzhled**. Každý díl strukturu autenticky přetvoř: jiné barvy pozadí, prohozené strany, jiný layout, jiný typ pohybu, nově vymyšlené logo/značka, nová vysvětlovací animace.
+- Před stavbou grafiky otevři `news-reel/docs/motion-evolution.md` a stills minulého dílu a vypiš si, co tam bylo. Nic z toho neopakuj ve stejné podobě (stejné pozadí + stejný layout + jiný text = chyba).
+- Co se líbilo a může zůstat jako princip: točící se/poskakující logo s čipy na slova, dynamika, motion grafika obecně.
+
+**2. Glow na oranžových slovech v hooku.** Teď vypadá spíš jako drop shadow. Chce víc svítit: **víc gainu (jas jádra a blízké záře), méně spreadu (menší, ne tak široký měkký halo)**, nic tmavého pod písmem. Hodnoty v `engine/hook-board.js` (glow drop-shadows) uprav a ověř na stills.
+
+**3. Bug ve webslides (#4, ~19,5–21 s):** karty/bannery se překrývají a při přepnutí aktivní karty skáče pořadí vrstev, text karty prosvítá a ořezává se. Při každé nové kartové grafice zkontroluj snímky po 0,1 s kolem každého přepnutí (z-index, překryv, ořez).
+
+**4. Vtip je dlouhý** → zkrať (max ~1 věta + pointa) a minimálně zrychli.
+
+**5. Hlas (nejvíc vadí):**
+- Zní moc AI a je pomalý. **Tempo nahoru všude**: hook výrazně rychleji, vysvětlování taky, nikde se nevleče („chceme fakt bomby“). Vyřezávej pauzy > ~0,08 s v celém voiceoveru, nejen v hooku; cíl tempa vypravěče ≥ 1,25–1,3 (měř slova/s, cíl ≥ 3,3 slova/s).
+- **Vyber lepší, kvalitnější, ČESKÝ hlas** (rodilý čeština, přirozený, ne syntetický). Aura (navržený hlas) se nahrazuje. Postup: `creative_list_voices` (hledej czech / čeština / cs, native), vyber 2–3 kandidáty, namluv stejnou testovací větu včetně „AI“ a „Chrome“, poslechni přes Scribe a porovnej přirozenost; vyber nejlepší a zapiš ID sem. Když knihovna nic dobrého nemá, navrhni nový hlas (`creative_design_voice`, popis: rodilý český mluvčí, přirozený, energický moderátor, rychlé tempo).
+- **Výslovnost cizích názvů tak, jak to říkají Češi**, ne po písmenech / ne foneticky divně. V #4 hlas četl „AI“ jako dvě písmena a „Chrome“ s „K“ na začátku – obojí špatně. Přesná podoba viz `news-reel/docs/vyslovnost.md` (aktualizuj po potvrzení uživatelem) a vždy ověř poslechem/Scribe před renderem.
+
+**6. Sound design nesmí být pořád stejný.**
+- V #4 byly SFX skoro stejné jako od začátku série. Každý díl **jiné zvuky**: cykluj knihovnu na Drivu „SFX AI final“ (`1_ov-XY7iJkn3LAjMd5ohhzJZuouVsdKn`, ~10 000 zvuků), každý díl stáhni nové whooshe/impacty/UI/foley a ty minulé nepoužívej znovu na stejná místa (veď si seznam použitých v `motion-evolution.md`).
+- **Zvuk jen tam, kde se v obraze něco děje.** Žádný riser, když nic negraduje. Nejdřív video „navnímej“ (contact sheet / stills), pochop, co se kde děje, a teprve pak stackuj SFX na správné snímky (dopad, klik, otočka, flash, nástup textu). Struktura zvukového designu zůstává, konkrétní zvuky a jejich umístění se mění.
+
+**7. Maskot (Efík, kluk z `news-reel/assets/coldopen/character_sheet.png`) patří do KAŽDÉ aktuality – do motion grafiky, ne do hooku.**
+- Negeneruj ho přes Higgsfield. Udělej z něj **2D cut-out loutku**: rozsekej ho (Canva / PIL) na ~15 dílů (hlava, oči/brýle, pusa – víc tvarů, vlasy, trup, horní a dolní ruce, dlaně, nohy, boty, hrnek…) jako průhledná PNG s pivoty v kloubech, ulož do `news-reel/assets/mascot/` a animuj je v enginu (rotace kolem kloubů, squash & stretch, mrkání, změny pusy na slova, sekundární pohyb).
+- Ve 2–3 scénách motion grafiky reaguje na obsah (ukazuje, diví se, ťuká na tlačítko, směje se u vtipu). Styl ostatní grafiky zůstává (3D / klasická motion grafika), jen maskot je 2D.
+- Hotovou loutku znovu používej, ale pózy a akce vymýšlej každý díl nové.
+
 ## Harmonogram
 - **Obden:** čt 29. 10. 2026, so 31. 10., po 2. 11., st 4. 11., … (každých 48 h od 29. 10. 2026).
 - Plánovaná úloha se spouští **denně ve 4:40 (Europe/Prague)** v hlavní session (ta má konektory Higgsfield, ElevenLabs, Canva, Google Drive). Nejdřív spočítej `(dnešní datum − 2026-10-29) v dnech`. Je-li číslo **liché**, napiš jen „Dnes se aktualita nedělá (obden).“ a skonči.
@@ -44,7 +73,7 @@ Zdroje: <url>, <url>
 - **Jeden vtip:** drzý, ne zlý, ideálně o konkurenci nebo o zbytečné práci. Za ním „Takže jedem dál!“.
 - **Konec:** „Pro klienty to znamená…“ a „Tak to zkus: …“.
 - **Délka:** 80–95 slov (≈ 34 s hlasu při tempu 1,15). Celé video 38–45 s.
-- **Výslovnost: všechno česky** (pravidlo uživatele, chyba se opakovala v #1 i #2). **AI = „á í“, NIKDY „ej aj“.** Zkratky čti česky po písmenech (GPT = gé pé té, API = á pé í), anglická slova piš foneticky česky (karusel, apka, mejl, vork). Před každým TTS projdi skript podle slovníku `news-reel/docs/vyslovnost.md` (hledej `\b[A-Z]{2,}\b` a anglická slova), co chybí, doplň. Tagy eleven_v4: `[confident, relaxed, brisk pace]` na začátek, `[deadpan]` před vtip, `[upbeat]` po něm.
+- **Výslovnost: všechno česky** (pravidlo uživatele, chyba se opakovala v #1 i #2). **AI a cizí názvy: viz „Zpětná vazba k dílu #4“ bod 5 a `docs/vyslovnost.md` (v #4 „á í“ znělo špatně).** Zkratky čti česky po písmenech (GPT = gé pé té, API = á pé í), anglická slova piš foneticky česky (karusel, apka, mejl, vork). Před každým TTS projdi skript podle slovníku `news-reel/docs/vyslovnost.md` (hledej `\b[A-Z]{2,}\b` a anglická slova), co chybí, doplň. Tagy eleven_v4: `[confident, relaxed, brisk pace]` na začátek, `[deadpan]` před vtip, `[upbeat]` po něm.
 - **Cue značky:** `[[intro]] [[boom]] [[explain]] [[mix]] [[style]] [[platform]] [[joke]] [[clients]] [[clients2]] [[try]]`. Názvy a počet uprav podle tématu.
 
 ### 4. Hook „glide“ (OD DÍLU #5, nahrazuje maskota ze Seedance)
@@ -76,8 +105,8 @@ Pokyn uživatele 2. 11. 2026: **retence v reelsech šla dolů → hooky přes Hi
 - Starý maskot/Seedance postup je jen archiv (`docs/tutorial-aktualita-1-postup.md`); nepoužívat, dokud ho uživatel nevrátí.
 
 ### 5. Hlas vypravěče
-- **Aura** `NKB9YCjftHpPbrUaMPkr` (aktuální účet od 31. 10. 2026, workspace `8cdb7f4a…`; hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.
-- Scribe přepis → `node scripts/ingest-voice.mjs`. `"tempo": 1.15` v episode.json.
+- **Od #5 nový český hlas (viz Zpětná vazba k #4, bod 5).** Do té doby záloha: **Aura** `NKB9YCjftHpPbrUaMPkr` (aktuální účet od 31. 10. 2026, workspace `8cdb7f4a…`; hluboký, zastřený, sebevědomý), eleven_v4, 2 verze. Vyber tu, ve které se nic nepřeřekne a je kratší.
+- Scribe přepis → `node scripts/ingest-voice.mjs`. `"tempo"` v episode.json min. 1,25 a vyřezat pauzy (od #5).
 
 ### 6. Motion grafika (laťka = lepší než #1)
 - **Scény:**

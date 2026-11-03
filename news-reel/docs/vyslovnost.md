@@ -4,7 +4,7 @@ Pravidlo uživatele: **všechno se říká česky.** Zkratky se čtou česky po 
 
 | na obrazovce | do scénáře (TTS) | poznámka |
 |---|---|---|
-| AI | **á í** | NIKDY „ej aj“ (chyba v #1 i #2) |
+| AI | **⚠ ČEKÁ NA POTVRZENÍ UŽIVATELE** | v #4 „á í“ znělo jako dvě písmena = špatně (3. 11.) |
 | ChatGPT | čet gé pé té | GPT česky po písmenech |
 | GPT-6.1 | gé pé té šest celá jedna | |
 | OpenAI | oupn á í | AI i tady česky |
@@ -32,3 +32,4 @@ Pravidlo uživatele: **všechno se říká česky.** Zkratky se čtou česky po 
 1. Projdi skript a najdi každé slovo psané latinkou, které není česky, a každou zkratku z VELKÝCH písmen (regex `\b[A-Z]{2,}\b` a anglická slova).
 2. Nahraď je podle tabulky. Co v tabulce chybí, přepiš česky (zkratky po písmenech česky: á, bé, cé, dé, é, ef, gé, há, í, jé, ká, el, em, en, ó, pé, kvé, er, es, té, ú, vé, iks, ypsilon, zet) a doplň do tabulky.
 3. Po vygenerování zkontroluj v přepisu ze Scribe, že tam není „ej aj“, „ej pí aj“ apod.
+| Chrome | **⚠ ČEKÁ NA POTVRZENÍ** | v #4 „Kromu“ s K znělo špatně (3. 11.) |
