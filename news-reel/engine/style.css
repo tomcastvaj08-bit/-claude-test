@@ -819,10 +819,14 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .bhook .t3-chunk .t3-l i { color: #3a3f4c; }
 .bhook .t3-chunk.acc .t3-l i { color: color-mix(in srgb, var(--acc) 35%, #120a04); }
 .bhook .t3-chunk .t3-l i:last-child { text-shadow: 6px 18px 22px rgba(0,0,0,.55); }
+@font-face { font-family: "Heros"; font-weight: 700; src: url("../assets/fonts/texgyreheros-bold.otf") format("opentype"); }
+@font-face { font-family: "Heros"; font-weight: 400; src: url("../assets/fonts/texgyreheros-regular.otf") format("opentype"); }
 /* glide lockup: words mounted on the wall (plate space), extruded towards the light from the window */
 .bhook .bh-lock { position: absolute; left: 0; top: 0; pointer-events: none; }
-.bhook .lk-line { position: absolute; width: 0; height: 0; font-family: "Inter", sans-serif; font-weight: 800; line-height: 1; color: #f3f1ec; will-change: transform, filter, opacity; opacity: 0; }
+.bhook .lk-line { position: absolute; width: 0; height: 0; font-family: "Inter", sans-serif; font-weight: 800; letter-spacing: -.035em; line-height: 1; color: #f3f1ec; will-change: transform, filter, opacity; opacity: 0; }
 .bhook .lk-l { position: absolute; display: block; white-space: pre; transform-origin: 50% 70%;
   text-shadow: .6px .8px 0 #b9b4aa, 1.2px 1.6px 0 #9d988e, 1.8px 2.4px 0 #858076, 2.4px 3.2px 0 #6f6a61, 3px 4px 0 #5c574f; }
 .bhook .lk-line.acc { color: var(--acc); }
 .bhook .lk-line.acc .lk-l { text-shadow: .6px .8px 0 color-mix(in srgb, var(--acc) 80%, #000), 1.2px 1.6px 0 color-mix(in srgb, var(--acc) 70%, #000), 1.8px 2.4px 0 color-mix(in srgb, var(--acc) 60%, #000), 2.4px 3.2px 0 color-mix(in srgb, var(--acc) 50%, #000), 3px 4px 0 color-mix(in srgb, var(--acc) 42%, #000); }
+.bhook .lk-line.helv { font-family: "Heros", "Helvetica", sans-serif; font-weight: 700; letter-spacing: -.015em; }
+.bhook .lk-line.acc { color: color-mix(in srgb, var(--acc) 82%, #fff3dc); }

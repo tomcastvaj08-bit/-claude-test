@@ -653,21 +653,21 @@
   },
   "hookText": [
     {
-      "text": "Zatímco jsi",
+      "text": "Zatímco jsi o",
       "w": [
         0,
-        1
+        2
       ],
       "p": 0
     },
     {
-      "text": "o Halloweenu",
+      "text": "Halloweenu",
       "w": [
-        2,
+        3,
         3
       ],
-      "accent": true,
-      "p": 0
+      "p": 0,
+      "key": true
     },
     {
       "text": "kalil na párty",
@@ -686,12 +686,20 @@
       "p": 1
     },
     {
-      "text": "všechno změnilo",
+      "text": "všechno",
       "w": [
         12,
+        12
+      ],
+      "p": 1,
+      "key": true
+    },
+    {
+      "text": "změnilo",
+      "w": [
+        13,
         13
       ],
-      "accent": true,
       "p": 1
     },
     {
@@ -708,8 +716,8 @@
         18,
         18
       ],
-      "accent": true,
-      "p": 2
+      "p": 2,
+      "key": true
     },
     {
       "text": "a dál.",
@@ -717,8 +725,8 @@
         19,
         20
       ],
-      "accent": true,
-      "p": 2
+      "p": 2,
+      "accent": true
     }
   ]
 }

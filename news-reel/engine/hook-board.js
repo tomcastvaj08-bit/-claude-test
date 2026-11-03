@@ -517,7 +517,7 @@ export function buildBoardHook(root, ep, cfg) {
     SHEETS[0].master = drawSticky(); SHEETS[1].master = drawNote(); drawPaper(0); writeP = 0;
     [SHEETS[0], SHEETS[1]].forEach(blit);
     // short hook: the date must read – only the leaf that crosses the left edge during the 3D move stays
-    if (Q) await document.fonts.load('800 120px "Inter"', CHUNKS.map((c) => c.text).join(" "));
+    if (Q) { const tx = CHUNKS.map((c) => c.text).join(" "); await Promise.all([document.fonts.load('800 120px "Inter"', tx), document.fonts.load('700 120px "Heros"', tx)]); }
     if (GLIDE) { SHEETS[3].el.style.display = "none"; layoutLock(); }
     leafEls = LEAVES.map((L, i) => { if (GAG || (GLIDE ? i !== 0 : SHORT && i !== 2)) return null; const c = leafSprite(L, i); leavesEl.appendChild(c); return c; });
   }
@@ -529,10 +529,17 @@ export function buildBoardHook(root, ep, cfg) {
   // before its stem. Smaller word spaces, tight letter fit.
   function layoutLock() {
     const cx = document.createElement("canvas").getContext("2d");
-    const setFont = (sz) => { cx.font = `800 ${sz}px "Inter"`; cx.letterSpacing = `${(-0.025 * sz).toFixed(2)}px`; };
+    // type pairing: key + accent words in a display grotesk (SF Pro Display stand-in: Inter, display optical
+    // size), the rest in a Helvetica (TeX Gyre Heros). CSS mirrors these settings exactly.
+    let fam = "sf";
+    const setFont = (sz) => {
+      cx.font = fam === "sf" ? `800 ${sz}px "Inter"` : `700 ${sz}px "Heros"`;
+      cx.letterSpacing = `${((fam === "sf" ? -0.035 : -0.015) * sz).toFixed(2)}px`;
+    };
     const OFF = 24, BIN = 2;
     const build = (c, k, RW) => {
-      let size = (c.accent ? 96 : 64) * k;
+      fam = c.key || c.accent ? "sf" : "helv";
+      let size = (c.key ? 175 : c.accent ? 92 : 58) * k;
       // words laid out one by one (kerning inside a word from the font, a tight fixed word gap between)
       const place = () => {
         const out = []; let xw = 0;
@@ -550,7 +557,7 @@ export function buildBoardHook(root, ep, cfg) {
       const w = pl.w, glyphs = pl.out, fm = cx.measureText("Hg"), A = fm.fontBoundingBoxAscent, D = fm.fontBoundingBoxDescent;
       const n = Math.ceil((w + 2 * OFF) / BIN), up = new Float32Array(n).fill(-1e9), dn = new Float32Array(n).fill(-1e9);
       glyphs.forEach((g) => { for (let b = Math.max(0, Math.floor((g.l + OFF) / BIN) - 1); b <= Math.min(n - 1, Math.ceil((g.r + OFF) / BIN) + 1); b++) { up[b] = Math.max(up[b], g.asc); dn[b] = Math.max(dn[b], g.desc); } });
-      return { c, size, w, A, D, glyphs, up, dn, n, asc: Math.max(...glyphs.map((g) => g.asc)), desc: Math.max(...glyphs.map((g) => g.desc)) };
+      return { c, size, w, A, D, glyphs, up, dn, n, fam, asc: Math.max(...glyphs.map((g) => g.asc)), desc: Math.max(...glyphs.map((g) => g.desc)) };
     };
     // one paragraph = one tight lockup in its region. A line that cannot interlock with the one above
     // (descenders above + ascenders/háčky below = no gain) goes AFTER it on the same baseline if it fits.
@@ -606,12 +613,12 @@ export function buildBoardHook(root, ep, cfg) {
     const PZ = [0.05, 0.11, 0.03, 0.08, 0.13, 0.04, 0.09, 0.06];
     lockLines = lines.map((l, i) => {
       const el = document.createElement("div");
-      el.className = "lk-line" + (l.c.accent ? " acc" : "");
+      el.className = "lk-line " + l.fam + (l.c.accent || l.c.key ? " acc" : "") + (l.c.key ? " key" : "");
       el.style.cssText = `left:${l.R.x + l.x}px;top:${l.R.y + l.y}px;font-size:${l.size.toFixed(2)}px`;
       const top = -(l.size + l.A - l.D) / 2;
       el.innerHTML = l.glyphs.map((g) => `<span class="lk-l" style="left:${g.x.toFixed(2)}px;top:${top.toFixed(2)}px">${g.ch}</span>`).join("");
       lockEl.appendChild(el);
-      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length], K: KEYS[l.c.p], size: l.size, anim: l.c.anim ?? ["pop", "up", "left", "down"][i % 4] };
+      return { c: l.c, el, ls: [...el.children], pz: PZ[i % PZ.length], K: KEYS[l.c.p], size: l.size, anim: l.c.anim ?? (l.c.key ? "pop" : ["up", "left", "down"][i % 3]), acc: !!(l.c.accent || l.c.key) };
     });
   }
 
@@ -633,6 +640,7 @@ export function buildBoardHook(root, ep, cfg) {
   // the zoom lags behind it and does most of its work late, so the truck turns into a push onto the day
   const glX = bezier(0.22, 0.42, 0.18, 1), glS = bezier(0.5, 0, 0.18, 1);
   let camCache = null;
+  const PUNCH = GLIDE ? [...CHUNKS.filter((c) => c.key).map((c) => [c.start - 0.03, 0.07]), ...KEYS.slice(1).map((K) => [K.t0 + 0.05, -0.05])] : [];
   function camPath() {
     if (camCache) return camCache;
     const pts = [{ t: 0, v: [DATE.x - 820, DATE.y + 150, Math.log(1.3)] }];
@@ -673,7 +681,10 @@ export function buildBoardHook(root, ep, cfg) {
         const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
         out = A.v.map((v, k) => h00 * v + h10 * h * A.m[k] + h01 * Bp.v[k] + h11 * h * Bp.m[k]);
       }
-      return { cx: out[0], cy: out[1], s: Math.exp(out[2]), rot: lerp(-1.1, 0, ease.outCubic(prog(t, 0, glideEnd))) };
+      // short zoom punches: in on every key word, a quick breath out when the focus jumps to the next paragraph
+      let zp = 0;
+      PUNCH.forEach(([t0, amp]) => { const x = t - t0; if (x > 0) zp += amp * (x < 0.1 ? ease.outQuad(x / 0.1) : Math.exp(-(x - 0.1) / 0.2)); });
+      return { cx: out[0], cy: out[1], s: Math.exp(out[2]) * (1 + zp), rot: lerp(-1.1, 0, ease.outCubic(prog(t, 0, glideEnd))) + zp * 6 };
     }
     if (GAG) {
       // hold on the marked day (the clip's last frame is rendered from exactly this framing), slow creep
@@ -772,7 +783,10 @@ export function buildBoardHook(root, ep, cfg) {
         const d = last ? 0 : ease.inOutSine(prog(t, away, 0.5));
         ln.el.style.transform = `translate(${(-ln.pz * (k.cx - ln.K.cx)).toFixed(2)}px, ${(-ln.pz * (k.cy - ln.K.cy)).toFixed(2)}px)`;
         const sd = 4 + ln.pz * 70 + (1 - f) * 26;
-        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(0.55 * f).toFixed(3)}))`;
+        // orange words glow like Fusion Soft Glow + Reactor XGlow: hot core, wide soft halo, flare on landing
+        const fl = ln.acc ? 1 + 1.6 * Math.exp(-Math.max(0, t - c2.start) / 0.22) * f : 0;
+        const glow = ln.acc ? ` drop-shadow(0 0 ${(3 * fl).toFixed(1)}px rgba(255,214,150,${(0.9 * f).toFixed(2)})) drop-shadow(0 0 ${(12 * fl).toFixed(1)}px rgba(255,140,40,${(0.7 * f).toFixed(2)})) drop-shadow(0 0 ${(30 * fl).toFixed(1)}px rgba(255,100,15,${(0.45 * f).toFixed(2)}))` : "";
+        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(0.55 * f).toFixed(3)}))${glow}`;
         ln.el.style.opacity = String(clamp(pin * 5) * (1 - d * 0.35));
         if (ln.anim === "pop") {
           ln.ls.forEach((l, li) => {
