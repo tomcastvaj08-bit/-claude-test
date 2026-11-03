@@ -51,6 +51,8 @@ Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všech
 - Ve 2–3 scénách motion grafiky reaguje na obsah (ukazuje, diví se, ťuká na tlačítko, směje se u vtipu). Styl ostatní grafiky zůstává (3D / klasická motion grafika), jen maskot je 2D.
 - Hotovou loutku znovu používej, ale pózy a akce vymýšlej každý díl nové.
 
+**8. Thumbnail VŽDY s maskotem** (v #4 chyběl). Samolepka maskota (Efík z `character_sheet.png`) je na každém thumbnailu a je zasazená do tématu dne: svátek → v jeho stylu (Halloween = dýně/kostým), jinak podle novinky (téma slajdy → maskot vykukuje ze slajdu / drží slajd apod.). Bez maskota thumbnail neodevzdávat.
+
 ## Vstup
 Text od ChatGPT, obvykle několik aktualit (`🎬 1. Titulek / Novinka ze 7. října / Co se změnilo / Pro klienty / Vyzkoušet`). **Jedna aktualita = jeden Reel.** `number` = pořadí aktuality v týdnu (zobrazí se jako „Aktualita 01“).
 

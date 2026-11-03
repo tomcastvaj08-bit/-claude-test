@@ -38,6 +38,8 @@ Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všech
 - Ve 2–3 scénách motion grafiky reaguje na obsah (ukazuje, diví se, ťuká na tlačítko, směje se u vtipu). Styl ostatní grafiky zůstává (3D / klasická motion grafika), jen maskot je 2D.
 - Hotovou loutku znovu používej, ale pózy a akce vymýšlej každý díl nové.
 
+**8. Thumbnail VŽDY s maskotem** (v #4 chyběl). Samolepka maskota (Efík z `character_sheet.png`) je na každém thumbnailu a je zasazená do tématu dne: svátek → v jeho stylu (Halloween = dýně/kostým), jinak podle novinky (téma slajdy → maskot vykukuje ze slajdu / drží slajd apod.). Bez maskota thumbnail neodevzdávat.
+
 ## Harmonogram
 - **Obden:** čt 29. 10. 2026, so 31. 10., po 2. 11., st 4. 11., … (každých 48 h od 29. 10. 2026).
 - Plánovaná úloha se spouští **denně ve 4:40 (Europe/Prague)** v hlavní session (ta má konektory Higgsfield, ElevenLabs, Canva, Google Drive). Nejdřív spočítej `(dnešní datum − 2026-10-29) v dnech`. Je-li číslo **liché**, napiš jen „Dnes se aktualita nedělá (obden).“ a skonči.
@@ -145,7 +147,7 @@ Pokyn uživatele 2. 11. 2026: **retence v reelsech šla dolů → hooky přes Hi
 ### 9. Thumbnail (cover)
 - **Formát:** 9:16 1080×1920, všechno důležité ve středu 3:4 (y 240–1680). Pozadí `#0C0F14`.
 - **Bílá karta** se zaoblenými rohy (874×1049 px, střed v 540×940): tag „AKTUALITA · <datum>“ se značkou gagu na čísle dne, „#N“, nadpis tématu (2 řádky, druhý modře), podtitul (od koho, zdarma), vizuál tématu, CTA.
-- **Samolepka maskota** v dnešním gagu (gpt_image, prompt jako v tutoriálu, jen jiná nehoda). Bílý die-cut okraj, přesahuje pravý dolní roh karty do pozadí.
+- **Samolepka maskota – POVINNĚ na každém thumbnailu** v tématu dne (svátek nebo téma novinky, viz Zpětná vazba k #4 bod 8) (gpt_image, prompt jako v tutoriálu, jen jiná nehoda). Bílý die-cut okraj, přesahuje pravý dolní roh karty do pozadí.
 - **Postup:**
   1. HTML karta (`news-reel/assets/thumbnail/card.html` jako vzor);
   2. render Playwrightem;
