@@ -66,6 +66,8 @@ Pokyn uživatele 2. 11. 2026: **retence v reelsech šla dolů → hooky přes Hi
   - **V každém odstavci jedno klíčové slovo velké** (`key: true`, vlastní kousek, ~175 px na stěně, max šířka odstavce), ostatní menší kolem něj (nad / pod / vedle). Vzor #4: „Halloweenu“, „všechno“, „dál“.
   - **Oranžová slova = glow jako v DaVinci** (Fusion Soft Glow + Reactor XGlow): horké jádro, oranžový halo, široká měkká záře, při dopadu záblesk, který doznívá ~0,2 s.
   - **Zoom puchy:** na každé klíčové slovo krátký zoom in (+7 %, 0,1 s nájezd, ~0,2 s dozvuk), při přeskoku na další odstavec krátký zoom out (−5 %). Kamera přitom pořád jede po spline.
+  - **Mezery mezi písmeny těsné:** SF −0,058 em, Helvetica −0,042 em (písmena skoro nalepená, místy se lehce dotknou, ale čitelné).
+  - **Přechod kostkou rychlý a hned s akcí:** otočka 0,45 s, grafika + vypravěč startují už s otočkou (`duration = out + 0,04`) a první scéna má první beat na 0 s (např. `logo`: `tagAt: 0`, `markAt: 0.06`), takže na nové stěně se něco děje už během otáčení.
   - **Když se slova nedají zacvaknout** (nahoře hodně nožiček, dole hodně vysokých písmen / háčků / čárek), nenutit je pod sebe: dej kousek **za** předchozí řádek (dál doprava), pokud se vejde.
 - **Tematický kalendář:** na významné dny výzdoba kolem data a barva kroužku (`THEMES` v enginu): Halloween = dýně, netopýři, pavučina, oranžová; Vánoce/Silvestr = hvězdy; Valentýn = srdce. Nový svátek přidej do `SPECIAL` + `THEMES`. Nápady do zásoby: pátek 13. černá kočka, Black Friday cenovka „−90 %“, 1. dubna kalendář vzhůru nohama.
 - **Zvuk:** room beds od 0 s, camera glide + `whoosh_slow_swell` přes najezd, švih/pop na každý kousek textu, fix na kroužek, popy samolepek, tikání hodin, pak riser + whoosh do grafiky (vše v enginu).

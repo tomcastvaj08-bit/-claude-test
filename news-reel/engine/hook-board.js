@@ -156,7 +156,7 @@ export function buildBoardHook(root, ep, cfg) {
   const glideEnd = 1.3; // the camera reaches the day + first paragraph (fast start, never stops after)
   const T = GLIDE
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [1.05, 0.45], pan: [99, 1], write: [99, 1], dive: [99, 1], text: 0.35,
-        out: [Math.max(glideEnd + 0.35, HV.at + HV.dur + 0.25), 0.62] }
+        out: [Math.max(glideEnd + 0.35, HV.at + HV.dur + 0.2), 0.45] } // fast cube turn
     : GAG
     ? { truck: [-9, 0.1], push: [-9, 0.1], cut: 0, circle: [99, 1], pan: [99, 1], write: [99, 1], dive: [99, 1], clip: clipEnd, out: [clipEnd + GAG.hold, 0.62] }
     : SHORT
@@ -534,7 +534,7 @@ export function buildBoardHook(root, ep, cfg) {
     let fam = "sf";
     const setFont = (sz) => {
       cx.font = fam === "sf" ? `800 ${sz}px "Inter"` : `700 ${sz}px "Heros"`;
-      cx.letterSpacing = `${((fam === "sf" ? -0.035 : -0.015) * sz).toFixed(2)}px`;
+      cx.letterSpacing = `${((fam === "sf" ? -0.058 : -0.042) * sz).toFixed(2)}px`; // tight: letters nearly touch
     };
     const OFF = 24, BIN = 2;
     const build = (c, k, RW) => {
@@ -917,7 +917,8 @@ export function buildBoardHook(root, ep, cfg) {
       { name: "hook_impact", at: O + L - 0.04, gain: -11, lp: 180 },
       { name: "reveal_shimmer", at: O + L - 0.2, gain: -13 },
     ];
-    return { update, prepare, busGain: 1.5, duration: O + 0.3, end: T.end, handoff: T.out,
+    // graphics (first scene + narration) start WITH the cube turn, so the new face is already in motion
+    return { update, prepare, busGain: 1.5, duration: O + 0.04, end: T.end, handoff: T.out,
       cues: { impact: c0, whoosh: O, ticks: [], riser: [0, c0] }, sfx: sfxL };
   }
   if (SHORT) {
