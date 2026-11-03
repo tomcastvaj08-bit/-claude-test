@@ -43,6 +43,12 @@
             "color": "#F4B400",
             "icon": "play"
           }
+        ],
+        "chipsAt": [
+          "doplněk",
+          "kromu",
+          "webový",
+          "prezentaci"
         ]
       }
     },

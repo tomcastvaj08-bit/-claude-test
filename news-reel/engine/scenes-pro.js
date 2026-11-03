@@ -721,17 +721,22 @@ Object.assign(proTemplates, {
     const chs = [...word.querySelectorAll(".ch")];
     const G = p.colors ?? GEM;
     chs.forEach((c, i) => { const k = chs.length > 1 ? i / (chs.length - 1) : 0; c.style.color = k < 0.55 ? mix(G[0], G[1], k / 0.55) : mix(G[1], G[2], (k - 0.55) / 0.45); });
-    const pos = [[-560, -230], [560, -230], [-560, 230], [560, 230]];
+    const pos = p.chipsAt ? [[-600, -240], [600, -240], [-640, 330], [640, 330]] : [[-560, -230], [560, -230], [-560, 230], [560, 230]];
     ctx.sfx("ui_softpop", tTag, -8);
     ctx.sfx("whip_air", tMark - 0.15, -12);
     ctx.sfx("impact_synthetic_hit_01", tMark, -14);
     ctx.sfx("sparkle", tMark + 0.05, -12);
-    chips.forEach((_, i) => ctx.sfx("ui_pop", tFiles + i * 0.09, -9));
+    // optional word-bound beats: each chip lands on its own word (p.chipsAt), every beat = zoom punch +
+    // tile bump + a small tilt, so the logo never sits still between the hook and the next scene
+    const tChip = chips.map((_, i) => (p.chipsAt ? ctx.at(p.chipsAt[i], tFiles + i * 0.09) : tFiles + i * 0.09));
+    const beats = p.chipsAt ? tChip : [];
+    tChip.forEach((tc) => ctx.sfx("ui_pop", tc, -9));
+    beats.forEach((tb, i) => ctx.sfx(i % 2 ? "d_whoosh_s" : "whip_air", tb - 0.08, -15));
     return (t, dur) => {
       const tq = snapOut(prog(t, tTag - 0.05, 0.45));
       tagEl.style.opacity = String(tq); tagEl.style.letterSpacing = `${lerp(0.6, 0.24, tq)}em`; tagEl.style.transform = `translateY(${(1 - tq) * 20}px)`;
       const m = snapOut(prog(t, tMark - 0.08, 0.6));
-      const pulse = Math.sin(Math.PI * clamp((t - tFiles) / 0.3)) * (t > tFiles ? 1 : 0);
+      const pulse = Math.max(Math.sin(Math.PI * clamp((t - tFiles) / 0.3)) * (t > tFiles ? 1 : 0), ...beats.map((tb) => (t > tb ? Math.sin(Math.PI * clamp((t - tb) / 0.28)) : 0)));
       mark.style.transform = `scale(${m * (1 + 0.12 * pulse)}) rotate(${(1 - m) * -220 + t * 18}deg)`;
       mark.style.opacity = String(clamp(m * 3));
       rings.forEach((r, k) => {
@@ -742,14 +747,16 @@ Object.assign(proTemplates, {
       glow.style.opacity = String(0.25 + 0.5 * m + 0.4 * pulse);
       revealLetters(word, t, tMark + 0.12, { stagger: 0.035, dur: 0.6 });
       chips.forEach((c, i) => {
-        const a = snapOut(prog(t, tFiles + i * 0.09, 0.55));
+        const a = snapOut(prog(t, tChip[i], 0.45));
         const drift = Math.sin(t * 1.6 + i) * 8;
         c.style.opacity = String(clamp(a * 3));
         c.style.transform = `translate(${pos[i][0] * a}px, ${pos[i][1] * a + drift}px) scale(${lerp(0.3, 1, a)}) rotate(${(1 - a) * (i % 2 ? 40 : -40)}deg)`;
         c.style.filter = a < 0.98 ? `blur(${(1 - a) * 8}px)` : "none";
       });
       // the whole group pushes in slowly so nothing ever sits still
-      el.querySelector(".sc-logo").style.transform = `scale(${1 + brandInOut(prog(t, 0, Math.max(1, dur))) * 0.05})`;
+      let zp = 0, tilt = 0;
+      beats.forEach((tb, i) => { const x = t - tb; if (x > 0) { const k = x < 0.08 ? ease.outQuad(x / 0.08) : Math.exp(-(x - 0.08) / 0.22); zp += 0.07 * k; tilt += (i % 2 ? 1 : -1) * 1.6 * k; } });
+      el.querySelector(".sc-logo").style.transform = `scale(${1 + brandInOut(prog(t, 0, Math.max(1, dur))) * (beats.length ? 0.14 : 0.05) + zp}) rotate(${tilt}deg)`;
     };
   },
 
