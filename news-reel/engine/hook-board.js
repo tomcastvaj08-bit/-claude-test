@@ -169,8 +169,11 @@ export function buildBoardHook(root, ep, cfg) {
   // lockup – the camera ends framing the circled day (left third) + the lockup (right)
   // 2–3 paragraphs zig-zag over the wall: #1 up right of the day, #2 further right and lower, #3 under the
   // calendar. The camera lands on day + #1, then moves its focus to each next paragraph as it is spoken.
+  const ACC = ((hx) => [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16)).join(","))(TH?.accent ?? "#ff8a1f");
   const PARAS = [{ dx: 180, dy: -330, w: 470, h: 300 }, { dx: 300, dy: 20, w: 520, h: 260 }, { dx: -330, dy: 250, w: 560, h: 260 }]
-    .map((r) => ({ x: DATE.x + r.dx, y: DATE.y + r.dy, w: r.w, h: r.h }));
+    // keep the words on free wall: #1/#2 right of the calendar sheet, #3 below it (a day in the top rows
+    // would otherwise put #1 over the month header and #3 inside the grid)
+    .map((r, i) => ({ x: i < 2 ? Math.max(DATE.x + r.dx, CAL.x + CAL.w / 2 + 40) : DATE.x + r.dx, y: i === 2 ? Math.max(DATE.y + r.dy, CAL.y + CAL.h / 2 + 30) : DATE.y + r.dy, w: r.w, h: r.h }));
   const NP = GLIDE ? Math.max(...CHUNKS.map((c) => c.p)) + 1 : 0;
   const KEYS = Array.from({ length: NP }, (_, pi) => {
     const R = PARAS[pi], cs = CHUNKS.filter((c) => c.p === pi);
@@ -784,9 +787,12 @@ export function buildBoardHook(root, ep, cfg) {
         ln.el.style.transform = `translate(${(-ln.pz * (k.cx - ln.K.cx)).toFixed(2)}px, ${(-ln.pz * (k.cy - ln.K.cy)).toFixed(2)}px)`;
         const sd = 4 + ln.pz * 70 + (1 - f) * 26;
         // orange words glow like Fusion Soft Glow + Reactor XGlow: hot core, wide soft halo, flare on landing
-        const fl = ln.acc ? 1 + 1.6 * Math.exp(-Math.max(0, t - c2.start) / 0.22) * f : 0;
-        const glow = ln.acc ? ` drop-shadow(0 0 ${(3 * fl).toFixed(1)}px rgba(255,214,150,${(0.9 * f).toFixed(2)})) drop-shadow(0 0 ${(12 * fl).toFixed(1)}px rgba(255,140,40,${(0.7 * f).toFixed(2)})) drop-shadow(0 0 ${(30 * fl).toFixed(1)}px rgba(255,100,15,${(0.45 * f).toFixed(2)}))` : "";
-        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(0.55 * f).toFixed(3)}))${glow}`;
+        // accent words GLOW (Fusion Soft Glow + XGlow): high gain, tight spread – a hot near-white core and a
+        // bright halo in the accent colour hugging the letters; no dark shadow under them (read as a drop shadow)
+        const fl = ln.acc ? 1 + 1.2 * Math.exp(-Math.max(0, t - c2.start) / 0.22) * f : 0;
+        const glow = ln.acc ? ` brightness(${(1 + 0.22 * f * fl).toFixed(3)}) drop-shadow(0 0 ${(1.5 * fl).toFixed(1)}px rgba(255,250,235,${(1 * f).toFixed(2)})) drop-shadow(0 0 ${(5 * fl).toFixed(1)}px rgba(${ACC},${(1 * f).toFixed(2)})) drop-shadow(0 0 ${(11 * fl).toFixed(1)}px rgba(${ACC},${(0.75 * f).toFixed(2)}))` : "";
+        const shA = ln.acc ? 0.18 : 0.55;
+        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(shA * f).toFixed(3)}))${glow}`;
         ln.el.style.opacity = String(clamp(pin * 5) * (1 - d * 0.35));
         if (ln.anim === "pop") {
           ln.ls.forEach((l, li) => {

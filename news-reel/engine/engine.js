@@ -6,7 +6,8 @@ import { buildBoardHook } from "./hook-board.js";
 import { buildColdOpen } from "./coldopen.js";
 import { templates as baseTemplates, icon, letters, revealLetters, buildOutro } from "./scenes.js";
 import { proTemplates, kineticWords, animateWords, snapOut } from "./scenes-pro.js";
-const templates = { ...baseTemplates, ...proTemplates };
+import { v5Templates } from "./scenes-v5.js";
+const templates = { ...baseTemplates, ...proTemplates, ...v5Templates };
 
 const lib = { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, icon, letters, revealLetters, kineticWords, animateWords, snapOut };
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9%]/g, "");

@@ -54,6 +54,14 @@ Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všech
 
 **8. Thumbnail VŽDY s maskotem** (v #4 chyběl). Samolepka maskota (Efík z `character_sheet.png`) je na každém thumbnailu a je zasazená do tématu dne: svátek → v jeho stylu (Halloween = dýně/kostým), jinak podle novinky (téma slajdy → maskot vykukuje ze slajdu / drží slajd apod.). Bez maskota thumbnail neodevzdávat.
 
+
+**Zavedeno v #5 (4. 11. 2026):**
+- **Hlas vypravěče = Karel** (`wNYzYiprejHCPi4voSeA`, „Karel – Czech Broadcast Reporter“, rodilý český, rychlý, energický), eleven_v4, tagy `[energetic, fast, confident]`. Aura jen záloha. Výslovnost cizích slov foneticky česky jako mluví Češi: Kanva, Afiniti, ajpad, Fotošop, Ilustrátor, InDizajn, Ep Stór, Adobi. „AI“ a „Chrome“ zatím ve skriptu NEPOUŽÍVAT (čeká na potvrzení výslovnosti uživatelem) – opsat („umělá inteligence“, „prohlížeč“).
+- **Tempo:** po TTS vždy `python3 news-reel/scripts/voice-tighten.py take.mp3 scribe.words.json out.mp3 out.words.json 1.2 0.06` (voiceover) a `… 1.35 0.04` (hook). Pak `ingest-voice.mjs` s `"tempo": 1.0`. Cíl ≥ 3,3 slova/s.
+- **2D maskot:** `engine/mascot.js` (`mascot()` → `.pose({x,y,s,lean,bob,sq,armL,armR,head,expr,legs})`, `.prop("L"|"R", html)` = věc v ruce), díly v `assets/mascot/` (hlava ×4 výrazy: head, head_grin, head_shock, head_wow; trup, ruce, nohy, ukazovací ruka) řeže `scripts/mascot-parts.py` z character sheetu. Ve scénách #5: `puppetdraw` (kreslí na tablet), `cutout` (je na fotce), `receipt` (směje se), `todo` (ukazuje). Pózy a akce každý díl nové.
+- **Thumbnail se samolepkou maskota:** `episodes/<id>/thumbnail/sticker.py` poskládá loutku do pózy + bílý die-cut okraj; karta v `card.html`; do Canvy 3 vrstvy (tmavý obdélník, karta, samolepka).
+- **Hook:** odstavce se drží na volné zdi (1.–2. vpravo od kalendáře, 3. pod ním), takže funguje i den v horních řádcích; glow = barva akcentu tématu, vysoký gain, malý spread.
+
 ## Harmonogram
 - **Obden:** čt 29. 10. 2026, so 31. 10., po 2. 11., st 4. 11., … (každých 48 h od 29. 10. 2026).
 - Plánovaná úloha se spouští **denně ve 4:40 (Europe/Prague)** v hlavní session (ta má konektory Higgsfield, ElevenLabs, Canva, Google Drive). Nejdřív spočítej `(dnešní datum − 2026-10-29) v dnech`. Je-li číslo **liché**, napiš jen „Dnes se aktualita nedělá (obden).“ a skonči.

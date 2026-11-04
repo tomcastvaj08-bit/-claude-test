@@ -1,0 +1,445 @@
+{
+ "id": "2026-11-04-affinity-ipad",
+ "number": 5,
+ "today": "2026-11-04",
+ "newsDate": "2026-11-03",
+ "title": "Affinity na iPad zdarma (Canva)",
+ "source": "🎨 Affinity od Canvy je na iPadu – a zdarma — Novinka ze 3. listopadu.\nCo se změnilo: Canva vydala Affinity pro iPad. Jedna profi aplikace na úpravu fotek, vektorovou grafiku i sazbu (místo Photoshopu, Illustratoru a InDesignu), pro jednotlivce zdarma, bez předplatného. Stačí App Store a bezplatný účet. AI nástroje (generativní vyplnění/rozšíření, odstranění pozadí) jsou za Canva Pro.\nPro klienty: Grafiku na sociální sítě a jednoduché tiskoviny uděláš na iPadu kdekoli a bez dalšího měsíčního poplatku.\nVyzkoušet: Stáhni Affinity z App Storu, přihlas se účtem Canva a předělej v něm jeden příspěvek.\nZdroje: https://9to5mac.com/2026/11/02/affinity-for-ipad-all-in-one-design-app-now-available-free-for-individuals/ , https://www.thurrott.com/?p=343278",
+ "script": "[[intro]][energetic, fast, confident] Kanva včera pustila Afiniti na ajpad. A je to zdarma! [[boom]]Fotky, vektory i sazba v jedný apce, žádný předplatný. [[explain]]Pro ty pomalejší: Afiniti je jako Fotošop, Ilustrátor a InDizajn v jednom. [[steps]]Stáhneš to z Ep Stóru, přihlásíš se a kreslíš prstem nebo tužkou. [[ai]]Chytrý nástroje, jako mazání pozadí nebo dogenerování fotky, ale chtějí Kanvu Pro. [[joke]][deadpan] Adobi teď asi brečí do svýho vyúčtování. [[clients]][upbeat] Takže jedem dál! Pro klienty to znamená: grafiku na sítě uděláš na gauči a bez faktury navíc. [[try]]Tak to zkus: stáhni Afiniti a předělej s ním tenhle tejden jeden příspěvek.",
+ "voice": {
+  "provider": "elevenlabs-mcp",
+  "model": "eleven_v4",
+  "voiceId": "wNYzYiprejHCPi4voSeA",
+  "voiceName": "Karel - Czech Broadcast Reporter",
+  "flow": "ywIFtI5xmBQfPB2yt9f8",
+  "generation": "kCNerNLGObHkB3aGBBg6",
+  "post": "pauzy vyříznuté (≤0,06 s), atempo 1.2"
+ },
+ "tempo": 1.0,
+ "hookBoard": "glide",
+ "hookVoice": {
+  "file": "../../coldopen/voice/hook_q_affinity",
+  "at": 0.45,
+  "dur": 6.64,
+  "gain": -3,
+  "words": [
+   {
+    "text": "Zatímco",
+    "start": 0.015,
+    "end": 0.311
+   },
+   {
+    "text": "sis",
+    "start": 0.37,
+    "end": 0.489
+   },
+   {
+    "text": "včera",
+    "start": 0.519,
+    "end": 0.726
+   },
+   {
+    "text": "platil",
+    "start": 0.785,
+    "end": 1.022
+   },
+   {
+    "text": "předplatný",
+    "start": 1.042,
+    "end": 1.437
+   },
+   {
+    "text": "za",
+    "start": 1.496,
+    "end": 1.556
+   },
+   {
+    "text": "Fotošop…",
+    "start": 1.622,
+    "end": 2.067
+   },
+   {
+    "text": "Kanva",
+    "start": 2.133,
+    "end": 2.311
+   },
+   {
+    "text": "rozdala",
+    "start": 2.37,
+    "end": 2.667
+   },
+   {
+    "text": "profi",
+    "start": 2.726,
+    "end": 2.904
+   },
+   {
+    "text": "grafiku",
+    "start": 2.97,
+    "end": 3.178
+   },
+   {
+    "text": "na",
+    "start": 3.207,
+    "end": 3.237
+   },
+   {
+    "text": "ajpad",
+    "start": 3.296,
+    "end": 3.593
+   },
+   {
+    "text": "úplně",
+    "start": 3.652,
+    "end": 3.948
+   },
+   {
+    "text": "zadarmo.",
+    "start": 4.007,
+    "end": 4.553
+   },
+   {
+    "text": "A",
+    "start": 4.619,
+    "end": 4.631
+   },
+   {
+    "text": "ty",
+    "start": 4.69,
+    "end": 4.75
+   },
+   {
+    "text": "pořád",
+    "start": 4.809,
+    "end": 5.046
+   },
+   {
+    "text": "platíš…",
+    "start": 5.105,
+    "end": 5.727
+   },
+   {
+    "text": "dál",
+    "start": 5.757,
+    "end": 6.053
+   },
+   {
+    "text": "a",
+    "start": 6.113,
+    "end": 6.172
+   },
+   {
+    "text": "dál.",
+    "start": 6.231,
+    "end": 6.646
+   }
+  ],
+  "line": "Zatímco sis včera platil předplatný za Fotošop… Kanva rozdala profi grafiku na ajpad úplně zadarmo. A ty pořád platíš… dál a dál."
+ },
+ "hookText": [
+  {
+   "text": "Zatímco sis včera",
+   "w": [
+    0,
+    2
+   ],
+   "p": 0
+  },
+  {
+   "text": "platil předplatné za",
+   "w": [
+    3,
+    5
+   ],
+   "p": 0
+  },
+  {
+   "text": "Photoshop",
+   "w": [
+    6,
+    6
+   ],
+   "p": 0,
+   "key": true
+  },
+  {
+   "text": "Canva rozdala",
+   "w": [
+    7,
+    8
+   ],
+   "p": 1
+  },
+  {
+   "text": "profi grafiku na iPad úplně",
+   "w": [
+    9,
+    13
+   ],
+   "p": 1
+  },
+  {
+   "text": "zadarmo",
+   "w": [
+    14,
+    14
+   ],
+   "p": 1,
+   "key": true
+  },
+  {
+   "text": "a ty pořád",
+   "w": [
+    15,
+    17
+   ],
+   "p": 2
+  },
+  {
+   "text": "platíš…",
+   "w": [
+    18,
+    18
+   ],
+   "p": 2,
+   "key": true
+  },
+  {
+   "text": "dál a dál.",
+   "w": [
+    19,
+    21
+   ],
+   "p": 2,
+   "accent": true
+  }
+ ],
+ "scenes": [
+  {
+   "cue": "intro",
+   "template": "tablet",
+   "props": {
+    "brand": "Canva",
+    "name": "Affinity",
+    "sub": "na iPad · od včera",
+    "price": "ZDARMA",
+    "at": {
+     "brand": "kanva",
+     "name": "afiniti",
+     "sub": "ajpad",
+     "price": "zdarma"
+    }
+   }
+  },
+  {
+   "cue": "boom",
+   "template": "trinity",
+   "transition": "whip",
+   "props": {
+    "tiles": [
+     {
+      "label": "Fotky",
+      "icon": "photo",
+      "at": "fotky"
+     },
+     {
+      "label": "Vektory",
+      "icon": "pen",
+      "at": "vektory"
+     },
+     {
+      "label": "Sazba",
+      "icon": "layout",
+      "at": "sazba"
+     }
+    ],
+    "mergeAt": "jedný",
+    "app": "1 apka",
+    "subAt": "žádný",
+    "sub": "Předplatné"
+   }
+  },
+  {
+   "cue": "explain",
+   "template": "equation",
+   "transition": "flash",
+   "props": {
+    "kicker": "Pro ty pomalejší",
+    "result": "Affinity",
+    "resultAt": 0.12,
+    "eqAt": "afiniti",
+    "items": [
+     {
+      "abbr": "Ps",
+      "label": "Photoshop",
+      "at": "fotošop"
+     },
+     {
+      "abbr": "Ai",
+      "label": "Illustrator",
+      "at": "ilustrátor"
+     },
+     {
+      "abbr": "Id",
+      "label": "InDesign",
+      "at": "indizajn"
+     }
+    ],
+    "mergeAt": "jednom"
+   }
+  },
+  {
+   "cue": "steps",
+   "template": "puppetdraw",
+   "transition": "streak",
+   "props": {
+    "kicker": "Jak na to",
+    "steps": [
+     {
+      "text": "App Store",
+      "at": "stáhneš"
+     },
+     {
+      "text": "Přihlásit se",
+      "at": "přihlásíš"
+     },
+     {
+      "text": "Kreslit prstem",
+      "at": "kreslíš"
+     }
+    ],
+    "drawAt": "kreslíš",
+    "wowAt": "stáhneš"
+   }
+  },
+  {
+   "cue": "ai",
+   "template": "cutout",
+   "transition": "flash",
+   "props": {
+    "chips": [
+     {
+      "text": "Mazání pozadí",
+      "at": "mazání"
+     },
+     {
+      "text": "Dogenerování",
+      "at": "dogenerování"
+     }
+    ],
+    "removeAt": "mazání",
+    "fillAt": "dogenerování",
+    "lockAt": "kanvu",
+    "lock": "Canva Pro"
+   }
+  },
+  {
+   "cue": "joke",
+   "template": "receipt",
+   "transition": "invert",
+   "props": {
+    "rows": [
+     [
+      "leden",
+      "1 499 Kč"
+     ],
+     [
+      "únor",
+      "1 499 Kč"
+     ],
+     [
+      "březen",
+      "1 499 Kč"
+     ],
+     [
+      "duben",
+      "1 499 Kč"
+     ],
+     [
+      "květen",
+      "1 499 Kč"
+     ],
+     [
+      "červen",
+      "1 499 Kč"
+     ],
+     [
+      "…",
+      "…"
+     ]
+    ],
+    "total": "17 988 Kč",
+    "cryAt": "brečí"
+   }
+  },
+  {
+   "cue": "clients",
+   "template": "postgrid",
+   "transition": "flash",
+   "props": {
+    "kicker": "Pro klienty",
+    "title": "Takže jedem **dál**! Grafika na sítě z **gauče**.",
+    "titleAt": [
+     "takže",
+     "jedem",
+     "dál",
+     "grafiku",
+     "grafiku",
+     "sítě",
+     "sítě",
+     "gauči"
+    ],
+    "posts": [
+     {
+      "text": "SALE",
+      "bg": "#ff5a5f"
+     },
+     {
+      "text": "NOVÉ",
+      "bg": "#2f6bed"
+     },
+     {
+      "text": "−20 %",
+      "bg": "#ffb000",
+      "fg": "#2a1c00"
+     },
+     {
+      "text": "TIP",
+      "bg": "#4ea51f"
+     },
+     {
+      "text": "☕",
+      "bg": "#7b3cff"
+     },
+     {
+      "text": "Q&A",
+      "bg": "#00b3c7"
+     }
+    ],
+    "flipAt": "grafiku",
+    "stamp": "0 Kč navíc",
+    "stampAt": "faktury"
+   }
+  },
+  {
+   "cue": "try",
+   "template": "todo",
+   "transition": "whip",
+   "props": {
+    "kicker": "Tak to zkus",
+    "items": [
+     {
+      "text": "Stáhni Affinity",
+      "at": "stáhni"
+     },
+     {
+      "text": "Předělej 1 příspěvek",
+      "at": "příspěvek"
+     }
+    ]
+   }
+  }
+ ],
+ "camera": [],
+ "sfxExtra": []
+}
