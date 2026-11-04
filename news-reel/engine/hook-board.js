@@ -170,17 +170,27 @@ export function buildBoardHook(root, ep, cfg) {
   // 2–3 paragraphs zig-zag over the wall: #1 up right of the day, #2 further right and lower, #3 under the
   // calendar. The camera lands on day + #1, then moves its focus to each next paragraph as it is spoken.
   const ACC = ((hx) => [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16)).join(","))(TH?.accent ?? "#ff8a1f");
-  const PARAS = [{ dx: 180, dy: -330, w: 470, h: 300 }, { dx: 300, dy: 20, w: 520, h: 260 }, { dx: -330, dy: 250, w: 560, h: 260 }]
-    // keep the words on free wall: #1/#2 right of the calendar sheet, #3 below it (a day in the top rows
-    // would otherwise put #1 over the month header and #3 inside the grid)
-    .map((r, i) => ({ x: i < 2 ? Math.max(DATE.x + r.dx, CAL.x + CAL.w / 2 + 40) : DATE.x + r.dx, y: i === 2 ? Math.max(DATE.y + r.dy, CAL.y + CAL.h / 2 + 30) : DATE.y + r.dy, w: r.w, h: r.h }));
+  // layout presets – the text must sit differently every episode (ep.hookLayout), always on free wall:
+  // chalkboard ≈ x 1440–3800 / y 160–1800 in plate px; calendar CAL, sticky note left of it, NOTE right of it
+  const CL = CAL.x - CAL.w / 2, CR = CAL.x + CAL.w / 2, CT = CAL.y - CAL.h / 2, CB = CAL.y + CAL.h / 2;
+  const LAYOUTS = {
+    // #4/#5a: up-right of the day, further right and lower, under the calendar
+    zigzag: () => [{ dx: 180, dy: -330, w: 470, h: 300 }, { dx: 300, dy: 20, w: 520, h: 260 }, { dx: -330, dy: 250, w: 560, h: 260 }]
+      .map((r, i) => ({ x: i < 2 ? Math.max(DATE.x + r.dx, CR + 40) : DATE.x + r.dx, y: i === 2 ? Math.max(DATE.y + r.dy, CB + 30) : DATE.y + r.dy, w: r.w, h: r.h })),
+    // crown: #1 above the calendar, #2 far right past the pinned note, #3 low left – one big diagonal sweep
+    crown: () => [{ x: CL + 20, y: CT - 340, w: 560, h: 270 }, { x: CR + 420, y: CT + 250, w: 520, h: 290 }, { x: CL - 470, y: CB + 40, w: 620, h: 260 }],
+    // leftside: #1 left of the calendar under the sticky note, #2 above, #3 right-bottom
+    leftside: () => [{ x: CL - 470, y: CT + 330, w: 430, h: 320 }, { x: CL + 60, y: CT - 400, w: 600, h: 300 }, { x: CR + 420, y: CB - 240, w: 520, h: 300 }],
+  };
+  const ZIG = !LAYOUTS[ep.hookLayout] || ep.hookLayout === "zigzag";
+  const PARAS = (LAYOUTS[ep.hookLayout] ?? LAYOUTS.zigzag)();
   const NP = GLIDE ? Math.max(...CHUNKS.map((c) => c.p)) + 1 : 0;
   const KEYS = Array.from({ length: NP }, (_, pi) => {
     const R = PARAS[pi], cs = CHUNKS.filter((c) => c.p === pi);
     let x0 = R.x - 30, x1 = R.x + R.w + 30, y0 = R.y - 30, y1 = R.y + R.h + 30;
-    if (pi === 0) { x0 = Math.min(x0, DATE.x - 120); y1 = Math.max(y1, DATE.y + 100); }   // the day stays in the first framing
-    const sc = Math.min(pi ? 1.5 : 1.9, 1760 / (x1 - x0), 1000 / (y1 - y0));
-    return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, s: sc, t0: (cs[0]?.start ?? 0) - 0.32, dur: 0.62, end: cs[cs.length - 1]?.end ?? 0 };
+    if (pi === 0) { x0 = Math.min(x0, DATE.x - 120); x1 = Math.max(x1, DATE.x + 120); y0 = Math.min(y0, DATE.y - 100); y1 = Math.max(y1, DATE.y + 100); }   // the day stays in the first framing
+    const sc = Math.min(pi ? 1.5 : (ZIG ? 1.9 : 1.45), 1760 / (x1 - x0), 1000 / (y1 - y0));
+    return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, s: sc, t0: (cs[0]?.start ?? 0) - (ZIG ? 0.32 : 0.16), dur: 0.62, end: cs[cs.length - 1]?.end ?? 0 };
   });
 
   // ---- DOM
@@ -207,7 +217,7 @@ export function buildBoardHook(root, ep, cfg) {
       ${sheet(PAPER, "paper", paperExtras)}
       ${GAG ? (() => { const [mx, my, ms, mr] = GAG.markRect ?? [-74, -70, 124, -8]; return `<img class="bh-mark" src="../assets/coldopen/v2/hook/${GAG.id}/mark.png" style="left:${DATE.x + mx}px;top:${DATE.y + my}px;width:${ms}px;height:${ms}px;transform:rotate(${CAL.rot + mr}deg)">`; })() : ""}
       ${TH ? TH.deco.map(([dx, dy, sz, r, kind]) => `<div class="bh-deco ${kind}" style="left:${DATE.x + dx - sz / 2}px;top:${DATE.y + dy - sz / 2}px;width:${sz}px;height:${sz}px;--r:${r}deg">${DECO_SVG[kind]}</div>`).join("") : ""}
-      ${GLIDE ? `<div class="bh-lock" style="--acc:${TH.accent}"></div>` : ""}
+      ${GLIDE ? `<div class="bh-lock" style="--acc:${TH.accent};--accrgb:${ACC.replace(/,/g, " ")}"></div>` : ""}
       <svg class="chalk2-svg bh-arrow" style="left:0;top:0" width="${PLATE.w}" height="${PLATE.h}" viewBox="0 0 ${PLATE.w} ${PLATE.h}">
         <path pathLength="1" d="${arrowPath()}"/>
       </svg>
@@ -598,16 +608,18 @@ export function buildBoardHook(root, ep, cfg) {
           else { L.x = best.x; L.y = best.y; }
         }
         const minX = Math.min(...lines.map((l) => l.x)); lines.forEach((l) => (l.x -= minX));
-        const hgt = Math.max(...lines.map((l) => l.y + l.desc));
-        if (hgt <= R.h) break;
-        k *= (R.h / hgt) * 0.99;
+        const hgt = Math.max(...lines.map((l) => l.y + l.desc)), wid = Math.max(...lines.map((l) => l.x + l.w));
+        // fit the region in BOTH directions (a wide key word must not spill onto the calendar)
+        const fit = Math.min(R.h / hgt, (R.w + 40) / wid);
+        if (fit >= 1) break;
+        k *= fit * 0.99;
       }
       lines.forEach((l) => { l.R = R; all.push(l); });
       // re-aim the camera key of paragraphs 2+ at the text actually laid out (centred, the calendar peeking in)
       if (pi > 0) {
         const bx0 = R.x + Math.min(...lines.map((l) => l.x)), bx1 = R.x + Math.max(...lines.map((l) => l.x + l.w));
         const by0 = R.y + Math.min(...lines.map((l) => l.y - l.asc)), by1 = R.y + Math.max(...lines.map((l) => l.y + l.desc));
-        Object.assign(KEYS[pi], { cx: lerp((bx0 + bx1) / 2, DATE.x, 0.18), cy: lerp((by0 + by1) / 2, DATE.y, 0.12), s: Math.min(1.55, 1500 / (bx1 - bx0 + 200)) });
+        Object.assign(KEYS[pi], { cx: lerp((bx0 + bx1) / 2, DATE.x, ZIG ? 0.18 : 0.04), cy: lerp((by0 + by1) / 2, DATE.y, ZIG ? 0.12 : 0.03), s: Math.min(1.55, 1500 / (bx1 - bx0 + 200)) });
       }
     }
     const lines = all;
@@ -787,12 +799,12 @@ export function buildBoardHook(root, ep, cfg) {
         ln.el.style.transform = `translate(${(-ln.pz * (k.cx - ln.K.cx)).toFixed(2)}px, ${(-ln.pz * (k.cy - ln.K.cy)).toFixed(2)}px)`;
         const sd = 4 + ln.pz * 70 + (1 - f) * 26;
         // orange words glow like Fusion Soft Glow + Reactor XGlow: hot core, wide soft halo, flare on landing
-        // accent words GLOW (Fusion Soft Glow + XGlow): high gain, tight spread – a hot near-white core and a
-        // bright halo in the accent colour hugging the letters; no dark shadow under them (read as a drop shadow)
-        const fl = ln.acc ? 1 + 1.2 * Math.exp(-Math.max(0, t - c2.start) / 0.22) * f : 0;
-        const glow = ln.acc ? ` brightness(${(1 + 0.22 * f * fl).toFixed(3)}) drop-shadow(0 0 ${(1.5 * fl).toFixed(1)}px rgba(255,250,235,${(1 * f).toFixed(2)})) drop-shadow(0 0 ${(5 * fl).toFixed(1)}px rgba(${ACC},${(1 * f).toFixed(2)})) drop-shadow(0 0 ${(11 * fl).toFixed(1)}px rgba(${ACC},${(0.75 * f).toFixed(2)}))` : "";
-        const shA = ln.acc ? 0.18 : 0.55;
-        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(shA * f).toFixed(3)}))${glow}`;
+        // accent words GLOW: the letters light up and the light fades out smoothly into the wall (layered
+        // text-shadows with growing radius / falling alpha – a gradient, never a hard outline ring)
+        const fl = ln.acc ? 1 + 0.9 * Math.exp(-Math.max(0, t - c2.start) / 0.25) * f : 0;
+        if (ln.acc) { ln.el.style.setProperty("--gk", fl.toFixed(3)); ln.el.style.setProperty("--ga", (f * (1 - d * 0.6)).toFixed(3)); }
+        const shA = ln.acc ? 0.12 : 0.55;
+        ln.el.style.filter = `${d > 0.01 ? `blur(${(d * (2.6 + ln.pz * 30)).toFixed(2)}px) ` : ""}drop-shadow(${(sd * 0.75).toFixed(1)}px ${sd.toFixed(1)}px ${(3 + sd * 0.45).toFixed(1)}px rgba(14,9,4,${(shA * f).toFixed(3)}))${ln.acc ? ` brightness(${(1 + 0.12 * f * fl).toFixed(3)})` : ""}`;
         ln.el.style.opacity = String(clamp(pin * 5) * (1 - d * 0.35));
         if (ln.anim === "pop") {
           ln.ls.forEach((l, li) => {
@@ -913,7 +925,7 @@ export function buildBoardHook(root, ep, cfg) {
       { name: "leaf_passby", at: 0.1, gain: -14, dur: 1.2, fo: 0.4, pan: -0.25, hp: 120 },
       ...CHUNKS.map((c, i) => ({ name: i % 2 ? "ui_pop" : "d_whoosh_s", at: c.start - 0.1, gain: i % 2 ? -9 : -14, dur: 0.45, pan: clamp(c.slot[0] / 700, -1, 1) * 0.6 })),
       { name: "clock_tick", at: glideEnd - 0.4, gain: -14, dur: O - glideEnd + 0.6, fi: 0.05, fo: 0.2, hp: 500, lp: 7000, pan: 0.35 },
-      { name: "marker_scratch", at: c0 - 0.02, gain: 1.5 },
+      { name: "pen_scribble", at: c0 - 0.02, gain: -10, dur: 0.6, fo: 0.2 },
       { name: "d_hit", at: c0 + 0.45, gain: -11, dur: 0.6 },
       ...TH.deco.map((d, i) => ({ name: "ui_pop", at: c0 + 0.3 + d[5] + 0.08, gain: -4 - i * 1.5, dur: 0.4, pan: Math.sign(d[0]) * 0.3 })),
       ...(Q.theme === "halloween" ? [{ name: "music_gag", at: c0 + 0.3, ss: 3.78, gain: -16, dur: 1.4, fi: 0.02, fo: 0.6 }] : []),

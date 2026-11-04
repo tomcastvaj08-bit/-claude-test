@@ -2,113 +2,68 @@
 "words": [
 {
 "text": "Zatímco",
-"start": 0.015,
-"end": 0.311
+"start": 0.017,
+"end": 0.365
 },
 {
 "text": "sis",
-"start": 0.37,
-"end": 0.489
-},
-{
-"text": "včera",
-"start": 0.519,
-"end": 0.726
+"start": 0.435,
+"end": 0.574
 },
 {
 "text": "platil",
-"start": 0.785,
-"end": 1.022
-},
-{
-"text": "předplatný",
-"start": 1.042,
-"end": 1.437
-},
-{
-"text": "za",
-"start": 1.496,
-"end": 1.556
+"start": 0.67,
+"end": 0.913
 },
 {
 "text": "Fotošop…",
-"start": 1.622,
-"end": 2.067
+"start": 1.009,
+"end": 1.53
 },
 {
 "text": "Kanva",
-"start": 2.133,
-"end": 2.311
+"start": 1.626,
+"end": 1.904
 },
 {
 "text": "rozdala",
-"start": 2.37,
-"end": 2.667
+"start": 1.974,
+"end": 2.322
 },
 {
 "text": "profi",
-"start": 2.726,
-"end": 2.904
+"start": 2.417,
+"end": 2.591
 },
 {
 "text": "grafiku",
-"start": 2.97,
-"end": 3.178
-},
-{
-"text": "na",
-"start": 3.207,
-"end": 3.237
-},
-{
-"text": "ajpad",
-"start": 3.296,
-"end": 3.593
-},
-{
-"text": "úplně",
-"start": 3.652,
-"end": 3.948
+"start": 2.661,
+"end": 3.009
 },
 {
 "text": "zadarmo.",
-"start": 4.007,
-"end": 4.553
+"start": 3.043,
+"end": 3.565
 },
 {
 "text": "A",
-"start": 4.619,
-"end": 4.631
+"start": 3.661,
+"end": 3.678
 },
 {
 "text": "ty",
-"start": 4.69,
-"end": 4.75
+"start": 3.748,
+"end": 3.887
 },
 {
-"text": "pořád",
-"start": 4.809,
-"end": 5.046
+"text": "furt",
+"start": 3.983,
+"end": 4.087
 },
 {
-"text": "platíš…",
-"start": 5.105,
-"end": 5.727
-},
-{
-"text": "dál",
-"start": 5.757,
-"end": 6.053
-},
-{
-"text": "a",
-"start": 6.113,
-"end": 6.172
-},
-{
-"text": "dál.",
-"start": 6.231,
-"end": 6.646
+"text": "platíš.",
+"start": 4.157,
+"end": 4.922
 }
 ]
 }

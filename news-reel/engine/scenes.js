@@ -396,14 +396,14 @@ export function buildOutro(stage, cfg) {
   stage.appendChild(el);
   const pill = el.querySelector(".o-pill"), kick = el.querySelector(".o-kicker"), s1 = el.querySelector(".o-s1"), s2 = el.querySelector(".o-s2");
   return (t) => {
-    const p = brandOut(prog(t, 0.05, 1.0));
+    const p = brandOut(prog(t, 0.0, 0.4));
     pill.style.transform = `translateY(${(1 - p) * 80}px) scale(${lerp(0.9, 1, p)})`;
     pill.style.opacity = clamp(p * 2);
     pill.style.filter = p < 0.99 ? `blur(${(1 - p) * 10}px)` : "none";
-    const k = brandOut(prog(t, 0.35, 0.8));
+    const k = brandOut(prog(t, 0.12, 0.4));
     kick.style.opacity = k;
     kick.style.transform = `translateY(${(1 - k) * 24}px)`;
-    const a = brandOut(prog(t, 0, 1.4)), b = brandOut(prog(t, 0.15, 1.4));
+    const a = brandOut(prog(t, 0, 0.7)), b = brandOut(prog(t, 0.08, 0.7));
     s1.style.transform = `translate(${(1 - a) * 500}px, ${(1 - a) * -300 + Math.sin(t * 1.4) * 14}px) scale(${lerp(0.4, 1, a)})`;
     s2.style.transform = `translate(${(1 - b) * -500}px, ${(1 - b) * 300 + Math.cos(t * 1.2) * 14}px) scale(${lerp(0.4, 1, b)})`;
   };

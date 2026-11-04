@@ -1,6 +1,6 @@
 ---
 name: efektive-aktuality-auto
-description: Plně automatická výroba dílu EFEKTIVE AKTUALITY obden (čt, so, po, st…, výroba od 4:40, doručení v 8:00 Praha), od researche AI novinek přes brief, hook „glide“ (najezd na kalendář + šťouchací hláška a 3D slova v prostoru), motion grafiku, hlas Aura, sound design, kameru a render až po popisek, thumbnail (Canva) a doručení na Google Drive. Použij, když se spustí plánovaná úloha „Aktuality obden“ nebo uživatel řekne „udělej další aktualitu sám“, „automatická aktualita“ nebo „jeď pipeline od researche“.
+description: Plně automatická výroba dílu EFEKTIVE AKTUALITY každý třetí den (4. 11., 7. 11., 10. 11.…, výroba od 4:40, doručení v 8:00 Praha), od researche AI novinek přes brief, hook „glide“ (najezd na kalendář + šťouchací hláška a 3D slova v prostoru), motion grafiku, hlas Aura, sound design, kameru a render až po popisek, thumbnail (Canva) a doručení na Google Drive. Použij, když se spustí plánovaná úloha „Aktuality obden“ nebo uživatel řekne „udělej další aktualitu sám“, „automatická aktualita“ nebo „jeď pipeline od researche“.
 ---
 
 # AKTUALITY: automat od researche po doručení
@@ -41,6 +41,18 @@ Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všech
 **8. Thumbnail VŽDY s maskotem** (v #4 chyběl). Samolepka maskota (Efík z `character_sheet.png`) je na každém thumbnailu a je zasazená do tématu dne: svátek → v jeho stylu (Halloween = dýně/kostým), jinak podle novinky (téma slajdy → maskot vykukuje ze slajdu / drží slajd apod.). Bez maskota thumbnail neodevzdávat.
 
 
+**Zpětná vazba k #5 (4. 11. 2026, platí od teď, POVINNÉ):**
+- **Design EFEKTIVE vždy:** bílé pozadí s našimi kolečky/blobami (engine `.bg`) v KAŽDÉ scéně grafiky. Měnit se mají animace a layouty, ne pozadí – žádné černé, tmavé ani celobarevné pozadí scén.
+- **Nové animace a 2D maskot se líbí** (tablet, trinity, equation, puppetdraw, cutout, receipt, postgrid, todo) – tenhle směr držet, ale každý díl zase jiné.
+- **Hook hláška kratší** (max ~12–14 slov), aby se nemusela tolik zrychlovat: hook jen `atempo ≈ 1.15`, ne 1.35 (bylo moc rychlé).
+- **Vypravěč ve vysvětlování nesmí ztrácet tempo:** voiceover `voice-tighten` s tempem ~1.28 a pauzy ≤ 0,05 s.
+- **Glow na slovech v hooku = plynulý gradient:** text svítí a záře se postupně úplně ztratí do okolí (několik vrstev s rostoucím rozmazáním a klesající sytostí). ŽÁDNÝ ostrý obrys/outline kolem písmen (malý blur s vysokou opacitou = outline, to nechce).
+- **Layout textu v hooku se mění každý díl** (nejen barva): jiné umístění odstavců na zdi a jiné uspořádání (zarovnání, pořadí velikostí, kde je klíčové slovo, náklon). Engine má předvolby `ep.hookLayout` – nikdy nepoužít stejnou jako minulý díl (zapiš do `motion-evolution.md`).
+- **SFX v hooku:** „DJ scratch/rewind“ (marker_scratch) byl moc nahlas → tlumeně a jen kde to dává smysl.
+- **Outro efektive.cz jen ~1 s.** Text: „Další aktuality každý třetí den“.
+- **Kreslení maskota:** tužka hrotem k tabletu, ruka u tabletu (ne nad ním).
+- **Frekvence: aktuality každý TŘETÍ den** (od 4. 11. 2026: 4. 11., 7. 11., 10. 11. …). Popisek: „Každej treti den ti sem hazim…“.
+
 **Zavedeno v #5 (4. 11. 2026):**
 - **Hlas vypravěče = Karel** (`wNYzYiprejHCPi4voSeA`, „Karel – Czech Broadcast Reporter“, rodilý český, rychlý, energický), eleven_v4, tagy `[energetic, fast, confident]`. Aura jen záloha. Výslovnost cizích slov foneticky česky jako mluví Češi: Kanva, Afiniti, ajpad, Fotošop, Ilustrátor, InDizajn, Ep Stór, Adobi. „AI“ a „Chrome“ zatím ve skriptu NEPOUŽÍVAT (čeká na potvrzení výslovnosti uživatelem) – opsat („umělá inteligence“, „prohlížeč“).
 - **Tempo:** po TTS vždy `python3 news-reel/scripts/voice-tighten.py take.mp3 scribe.words.json out.mp3 out.words.json 1.2 0.06` (voiceover) a `… 1.35 0.04` (hook). Pak `ingest-voice.mjs` s `"tempo": 1.0`. Cíl ≥ 3,3 slova/s.
@@ -50,7 +62,7 @@ Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všech
 
 ## Harmonogram
 - **Obden:** čt 29. 10. 2026, so 31. 10., po 2. 11., st 4. 11., … (každých 48 h od 29. 10. 2026).
-- Plánovaná úloha se spouští **denně ve 4:40 (Europe/Prague)** v hlavní session (ta má konektory Higgsfield, ElevenLabs, Canva, Google Drive). Nejdřív spočítej `(dnešní datum − 2026-10-29) v dnech`. Je-li číslo **liché**, napiš jen „Dnes se aktualita nedělá (obden).“ a skonči.
+- Plánovaná úloha se spouští **denně ve 4:40 (Europe/Prague)** v hlavní session (ta má konektory Higgsfield, ElevenLabs, Canva, Google Drive). Nejdřív spočítej `(dnešní datum − 2026-11-04) v dnech`. Když číslo **není dělitelné 3**, napiš jen „Dnes se aktualita nedělá (každý 3. den).“ a skonči. (Od 4. 11. 2026 každý třetí den – pokyn uživatele.)
 - **Doručení přesně v 8:00 Praha.** Když je hotovo dřív, naplánuj si `send_later` na 08:00 a doruč až na ni. Rezerva na výrobu je přes 3 h (generování ~30 min, render ~50 min).
 
 ## Rozpočet na díl (strop)
@@ -149,7 +161,7 @@ Pokyn uživatele 2. 11. 2026: **retence v reelsech šla dolů → hooky přes Hi
 ### 8. Popisek (hlasem uživatele)
 - **První řádek ≤ 45 znaků**, nejúdernější: „AKTUALITA #N 🤖 …“.
 - Text zhruba z 80 % bez diakritiky a **přesně 2 překlepy**. Tón kámoše podnikatele.
-- **Struktura:** co to je → proč to podnikatele zajímá → „každej druhej den novinky z AI“ → výzva ke sdílení kamošovi.
+- **Struktura:** co to je → proč to podnikatele zajímá → „každej treti den novinky z AI“ → výzva ke sdílení kamošovi.
 - **5 hashtagů:** #claudeai #ai #instagramtips #podnikani + 1 tematický.
 
 ### 9. Thumbnail (cover)

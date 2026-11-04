@@ -830,3 +830,11 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
 .bhook .lk-line.acc .lk-l { text-shadow: .6px .8px 0 color-mix(in srgb, var(--acc) 80%, #000), 1.2px 1.6px 0 color-mix(in srgb, var(--acc) 70%, #000), 1.8px 2.4px 0 color-mix(in srgb, var(--acc) 60%, #000), 2.4px 3.2px 0 color-mix(in srgb, var(--acc) 50%, #000), 3px 4px 0 color-mix(in srgb, var(--acc) 42%, #000); }
 .bhook .lk-line.helv { font-family: "Heros", "Helvetica", sans-serif; font-weight: 700; letter-spacing: -.015em; }
 .bhook .lk-line.acc { color: color-mix(in srgb, var(--acc) 82%, #fff3dc); }
+
+/* hook glow (since #5b): smooth light falloff around accent words – independent text-shadows (no ring) */
+.bhook .lk-line.acc .lk-l { text-shadow:
+  0 0 calc(4px * var(--gk, 1)) rgb(255 248 232 / calc(.45 * var(--ga, 1))),
+  0 0 calc(12px * var(--gk, 1)) rgb(var(--accrgb, 255 138 31) / calc(.55 * var(--ga, 1))),
+  0 0 calc(28px * var(--gk, 1)) rgb(var(--accrgb, 255 138 31) / calc(.36 * var(--ga, 1))),
+  0 0 calc(56px * var(--gk, 1)) rgb(var(--accrgb, 255 138 31) / calc(.2 * var(--ga, 1))),
+  0 0 calc(110px * var(--gk, 1)) rgb(var(--accrgb, 255 138 31) / calc(.1 * var(--ga, 1))); }

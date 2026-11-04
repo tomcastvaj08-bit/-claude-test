@@ -32,7 +32,7 @@ function css() {
   .v5 { position:absolute; inset:0; overflow:hidden; font-family:var(--sans); }
   .v5 .abs { position:absolute; }
   .v5 .kick { font-weight:700; font-size:26px; letter-spacing:.24em; text-transform:uppercase; }
-  .v5-dark { background:radial-gradient(1200px 800px at 70% 40%, #2a1a52 0%, #120b26 45%, #07060f 100%); color:#fff; }
+  .v5-dark { color:var(--ink); }
   .v5-orb { position:absolute; border-radius:50%; filter:blur(60px); opacity:.55; }
   .ipad { position:absolute; width:880px; height:620px; border-radius:54px; background:#0d0d12; box-shadow:0 60px 120px -30px rgba(0,0,0,.7), inset 0 0 0 3px #2b2b36; transform-style:preserve-3d; }
   .ipad .scr { position:absolute; inset:20px; border-radius:36px; overflow:hidden; background:#1c1c24; }
@@ -74,9 +74,11 @@ const ICON = {
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>`,
   lock: `<svg viewBox="0 0 24 24" fill="none" stroke="#3a2a00" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="#3a2a00" stroke="none"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
 };
+// EFEKTIVE design rule (#5 feedback): every scene keeps the brand stage – white paper bg with the soft
+// spheres/blobs (engine .bg) – only the animations/layouts change, never a dark or full-colour background.
 // one app icon = three colour wedges meeting (abstract, not any real logo)
 const APP_ICON = (size = 300) => `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><defs><linearGradient id="ai5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b1b5c"/><stop offset="1" stop-color="#0f0b24"/></linearGradient></defs><rect width="100" height="100" rx="24" fill="url(#ai5)"/><path d="M50 18 L80 72 L50 60 Z" fill="#ffb000"/><path d="M50 18 L50 60 L20 72 Z" fill="#a259ff"/><path d="M20 72 L50 60 L80 72 Z" fill="#00c2d1"/></svg>`;
-const PENCIL = `<svg width="60" height="190" viewBox="0 0 60 190" style="position:absolute;left:-30px;top:-20px;transform:rotate(200deg);transform-origin:30px 30px"><rect x="18" y="20" width="24" height="130" rx="4" fill="#ffcf3a" stroke="#222" stroke-width="3"/><path d="M18 150 L30 182 L42 150 Z" fill="#f2d2a0" stroke="#222" stroke-width="3"/><path d="M26 170 L30 182 L34 170 Z" fill="#222"/><rect x="18" y="8" width="24" height="16" rx="4" fill="#ff7a9a" stroke="#222" stroke-width="3"/></svg>`;
+const PENCIL = `<svg width="60" height="190" viewBox="0 0 60 190" style="position:absolute;left:-30px;top:-40px;transform:rotate(-12deg);transform-origin:30px 30px"><rect x="18" y="20" width="24" height="130" rx="4" fill="#ffcf3a" stroke="#222" stroke-width="3"/><path d="M18 150 L30 182 L42 150 Z" fill="#f2d2a0" stroke="#222" stroke-width="3"/><path d="M26 170 L30 182 L34 170 Z" fill="#222"/><rect x="18" y="8" width="24" height="16" rx="4" fill="#ff7a9a" stroke="#222" stroke-width="3"/></svg>`;
 
 export const v5Templates = {
   // props: { brand, name, sub, price, at: { brand, name, sub, price } }
@@ -86,13 +88,10 @@ export const v5Templates = {
     const tB = ctx.at(A.brand, 0.0), tN = ctx.at(A.name, 0.8), tS = ctx.at(A.sub, 1.4), tP = ctx.at(A.price, 2.1);
     const name = p.name ?? "Affinity";
     el.appendChild(h(`<div class="v5 v5-dark">
-      <i class="v5-orb" style="left:-120px;top:520px;width:620px;height:620px;background:#7b3cff"></i>
-      <i class="v5-orb" style="left:1380px;top:-160px;width:640px;height:640px;background:#00b8d4"></i>
-      <i class="v5-orb" style="left:900px;top:700px;width:520px;height:520px;background:#ff8a00;opacity:.35"></i>
-      <div class="abs t5-l" style="left:150px;top:250px;width:760px">
+            <div class="abs t5-l" style="left:150px;top:250px;width:760px">
         <div class="chip5 t5-chip" style="background:linear-gradient(90deg,#00c4cc,#7d2ae8);color:#fff">${esc(p.brand ?? "Canva")}</div>
         <div class="wm t5-wm" style="margin-top:34px">${[...name].map((c) => `<span>${esc(c)}</span>`).join("")}</div>
-        <div class="t5-sub" style="margin-top:22px;font-weight:700;font-size:54px;color:#b9b2ff;letter-spacing:-.02em">${esc(p.sub ?? "na iPad")}</div>
+        <div class="t5-sub" style="margin-top:22px;font-weight:700;font-size:54px;color:var(--blue);letter-spacing:-.02em">${esc(p.sub ?? "na iPad")}</div>
       </div>
       <div class="abs t5-pv" style="left:930px;top:200px;width:880px;height:620px;perspective:2000px">
         <div class="ipad"><div class="scr"><div class="tb"></div>
@@ -155,7 +154,7 @@ export const v5Templates = {
     const T = p.tiles ?? [];
     const cols = [["#b06bff", "#6a3df0"], ["#ffbe2e", "#ff6a00"], ["#19d3e0", "#0a76f0"]];
     const from = [[-1100, 60, -30], [0, -900, 20], [1100, 60, 30]];
-    el.appendChild(h(`<div class="v5" style="background:radial-gradient(1400px 900px at 50% 30%, #fbf9ff, #ece7ff)">
+    el.appendChild(h(`<div class="v5">
       ${T.map((x, i) => `<div class="tile5 tr-t" style="left:${370 + i * 440}px;top:250px;background:linear-gradient(140deg,${cols[i][0]},${cols[i][1]})">${ICON[x.icon] ?? ""}</div><div class="lab5 tr-l" style="left:${370 + i * 440}px;top:580px">${esc(x.label)}</div>`).join("")}
       <div class="abs tr-app" style="left:810px;top:220px;width:300px;height:300px">${APP_ICON(300)}</div>
       <div class="abs tr-name" style="left:560px;top:560px;width:800px;text-align:center;font-weight:800;font-size:64px;letter-spacing:-.04em;color:#221c3a">${esc(p.app ?? "1 apka")}</div>
@@ -197,7 +196,7 @@ export const v5Templates = {
   equation(el, p, ctx) {
     css();
     const I = p.items ?? [];
-    el.appendChild(h(`<div class="v5" style="background:#0e0e13;color:#fff">
+    el.appendChild(h(`<div class="v5">
       <div class="abs kick eq-k" style="left:0;right:0;top:150px;text-align:center;color:#7fd858">${esc(p.kicker ?? "Pro ty pomalejší")}</div>
       ${I.map((x, i) => `<div class="eqt eq-i" style="left:${150 + i * 360}px;top:360px"><b>${esc(x.abbr)}</b><span>${esc(x.label)}</span></div>${i < I.length - 1 ? `<div class="eqs eq-p" style="left:${420 + i * 360}px;top:395px">+</div>` : ""}`).join("")}
       <div class="eqs eq-eq" style="left:1235px;top:385px">=</div>
@@ -243,8 +242,7 @@ export const v5Templates = {
   puppetdraw(el, p, ctx) {
     css();
     const S = p.steps ?? [];
-    el.appendChild(h(`<div class="v5" style="background:linear-gradient(180deg,#f4fbef,#e3f3d6)">
-      <div class="abs" style="left:0;right:0;bottom:0;height:250px;background:#d5ebc4"></div>
+    el.appendChild(h(`<div class="v5">
       <div class="abs kick" style="left:1250px;top:170px;color:#3d8f17">${esc(p.kicker ?? "Jak na to")}</div>
       <div class="abs pd-tab" style="left:560px;top:250px;width:620px;height:460px;border-radius:44px;background:#151519;box-shadow:0 50px 80px -40px rgba(20,50,10,.6);transform:rotate(-4deg)">
         <div class="abs" style="inset:18px;border-radius:28px;background:#fffdf7;overflow:hidden">
@@ -276,7 +274,7 @@ export const v5Templates = {
         lean: lerp(4, 0, w) - draw * 4,
         head: Math.sin(t * 2.4) * 3 + draw * 6,
         armL: 8 + Math.sin(t * 13) * 14 * walking,
-        armR: lerp(-6 - Math.sin(t * 13) * 14 * walking, -118 + Math.sin(t * 9) * 8 * prog(t, tD, 0.2), draw),
+        armR: lerp(-6 - Math.sin(t * 13) * 14 * walking, -78 + Math.sin(t * 9) * 8 * prog(t, tD, 0.2), draw),
         expr: t > tD ? "head_grin" : t > tW ? "head_wow" : "head",
         sq: 0.04 * pulse(t, tD - 0.1, 0.25),
       });
@@ -297,7 +295,7 @@ export const v5Templates = {
   cutout(el, p, ctx) {
     css();
     const C = p.chips ?? [];
-    el.appendChild(h(`<div class="v5" style="background:radial-gradient(1200px 800px at 60% 50%, #1d2130, #0b0d14)">
+    el.appendChild(h(`<div class="v5">
       ${C.map((x, i) => `<div class="chip5 co-c" style="position:absolute;left:120px;top:${330 + i * 120}px;background:#22283a;color:#e8ecff;border:2px solid #39415c">✦ ${esc(x.text)}</div>`).join("")}
       <div class="card5 co-card" style="left:700px;top:200px;width:820px;height:560px">
         <div class="abs checker" style="inset:0"></div>
@@ -348,7 +346,7 @@ export const v5Templates = {
   receipt(el, p, ctx) {
     css();
     const R = p.rows ?? [];
-    el.appendChild(h(`<div class="v5" style="background:radial-gradient(1000px 700px at 50% 30%, #3a1414, #120606)">
+    el.appendChild(h(`<div class="v5">
       <div class="abs" style="left:620px;top:96px;width:680px;height:46px;border-radius:23px;background:#2a2a2e;box-shadow:inset 0 -8px 0 #111"></div>
       <div class="rc rc-p" style="left:690px;top:120px">
         <div style="justify-content:center;border:0;font-size:34px">PŘEDPLATNÉ</div>
@@ -386,7 +384,7 @@ export const v5Templates = {
   postgrid(el, p, ctx) {
     css();
     const P = p.posts ?? [];
-    el.appendChild(h(`<div class="v5" style="background:linear-gradient(160deg,#f6f8ff,#e6ecff)">
+    el.appendChild(h(`<div class="v5">
       <div class="abs pg-head" style="left:150px;top:300px;width:780px;text-align:left">
         <div class="tag" style="font-size:28px">${esc(p.kicker ?? "Pro klienty")}</div>
         <div style="margin-top:26px">${kineticWords(p.title ?? "", p.size ?? "md")}</div>
@@ -433,7 +431,7 @@ export const v5Templates = {
   todo(el, p, ctx) {
     css();
     const I = p.items ?? [];
-    el.appendChild(h(`<div class="v5" style="background:radial-gradient(1400px 900px at 30% 40%, #5b8cf5, #2f6bed 55%, #1f4fc4)">
+    el.appendChild(h(`<div class="v5">
       <div class="todo5 td-c" style="left:170px;top:260px">
         <div class="kick" style="color:#2f6bed">${esc(p.kicker ?? "Tak to zkus")}</div>
         ${I.map((x) => `<div class="row td-r"><div class="bx"><span class="td-ck" style="display:flex;width:64px;height:64px;border-radius:16px;background:#4ea51f;align-items:center;justify-content:center;opacity:0">${ICON.check}</span></div><span class="td-t" style="position:relative">${esc(x.text)}<i class="td-u" style="position:absolute;left:0;right:0;bottom:-6px;height:10px;border-radius:6px;background:#7fd858;transform-origin:0 50%;transform:scaleX(0)"></i></span></div>`).join("")}

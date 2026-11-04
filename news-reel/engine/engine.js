@@ -11,7 +11,7 @@ const templates = { ...baseTemplates, ...proTemplates, ...v5Templates };
 
 const lib = { clamp, lerp, prog, ease, spring, brandOut, brandInOut, bezier, icon, letters, revealLetters, kineticWords, animateWords, snapOut };
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9%]/g, "");
-const OUTRO = 2.3; // seconds of brand end card after the voice
+const OUTRO = 1.0; // seconds of brand end card after the voice (user: efektive.cz only ~1 s)
 
 async function loadJSON(url, fallback) {
   try {
