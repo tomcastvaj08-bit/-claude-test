@@ -41,6 +41,17 @@ Hook glide (layout textu, animace nástupu, kamera) je validní, nech ho. Všech
 **8. Thumbnail VŽDY s maskotem** (v #4 chyběl). Samolepka maskota (Efík z `character_sheet.png`) je na každém thumbnailu a je zasazená do tématu dne: svátek → v jeho stylu (Halloween = dýně/kostým), jinak podle novinky (téma slajdy → maskot vykukuje ze slajdu / drží slajd apod.). Bez maskota thumbnail neodevzdávat.
 
 
+**Schváleno uživatelem: #5 v2 (4. 11. 2026) = nová laťka.** „Takhle je to OK, ale každou další aktualitu měň ty různé věci.“
+Co zůstává (styl): bílé EFEKTIVE pozadí s kolečky, 2D maskot v grafice i na thumbnailu, hlas Karel s tempem ~1,28 (hook ~1,15), krátká šťouchací hook hláška, glow jako plynulý gradient, outro 1 s, struktura scénáře.
+Co se MĚNÍ v každém dílu (kontrolní seznam před renderem, zapiš do `motion-evolution.md`):
+1. Všechny scény motion grafiky = nové animace a layouty (žádná šablona z minula s jiným textem).
+2. Hook: jiná předvolba `ep.hookLayout` než minule (nebo nová) a jinak poskládaný text (klíčová slova, pořadí velikostí).
+3. Barvy/akcenty podle tématu (pozadí zůstává bílé).
+4. Pózy a akce maskota (jiné výrazy, rekvizity, co dělá).
+5. Sound design: jiné zvuky z Drivu, jen tam, kde se v obraze něco děje.
+6. Thumbnail: jiná kompozice karty a maskot v tématu dne.
+7. Typ přechodů mezi scénami.
+
 **Zpětná vazba k #5 (4. 11. 2026, platí od teď, POVINNÉ):**
 - **Design EFEKTIVE vždy:** bílé pozadí s našimi kolečky/blobami (engine `.bg`) v KAŽDÉ scéně grafiky. Měnit se mají animace a layouty, ne pozadí – žádné černé, tmavé ani celobarevné pozadí scén.
 - **Nové animace a 2D maskot se líbí** (tablet, trinity, equation, puppetdraw, cutout, receipt, postgrid, todo) – tenhle směr držet, ale každý díl zase jiné.
