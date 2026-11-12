@@ -2,6 +2,10 @@
 
 E-shop s dárky z kostek, kde všechno vypadá jako kostky: tlačítka, karty, pozadí (podložka s výstupky), písmo i ikonky (mozaika z 1×1 placek). Je to zatím jen ukázka, nic se neprodává.
 
+Hlavní stránka je **3D galerie v pohledu první osoby**: nekonečná bílá chodba, ve které stojí střídavě vpravo a vlevo obří květiny (zhruba výška člověka) a auta v životní velikosti. Exponáty se skládají z kostek, jak k nim přicházíš. Pohyb: scroll, swipe nahoru/dolů, šipky ▲/▼ (klepnutí = k dalšímu exponátu, podržení = chůze) nebo klávesy ↑/↓/W/S. Klepnutí na exponát (nebo jeho štítek) otočí kameru k němu a vyjede panel s popisem, barvami a košíkem; ←/→ přepíná exponáty, Esc zavře.
+
+Klasická scrollovací verze s katalogem a filtry zůstala jako **Přehled kolekce** (`prehled.html`).
+
 ## Spuštění
 
 Jde o statický web bez build kroku. Stačí ho servírovat přes libovolný HTTP server (ES moduly přes `file://` nefungují):
@@ -16,13 +20,13 @@ python3 -m http.server 8765
 
 | Soubor | Co dělá |
 | --- | --- |
-| `index.html` | hlavní stránka: hero, pro koho, scény produktů, jak to funguje, katalog, výhody, newsletter |
+| `index.html` + `js/gallery.js` + `css/gallery.css` | 3D galerie (pohled první osoby, nekonečná chodba, detail exponátu) |
+| `prehled.html` + `js/main.js` | přehled kolekce: scrollovací scény produktů, pro koho, katalog s filtry, newsletter |
 | `obchodni-podminky.html`, `ochrana-osobnich-udaju.html`, `cookies.html` | právní stránky (vzorové texty, údaje v `[závorkách]` doplnit) |
 | `css/style.css` | celý vizuální systém kostek (`.brick`, `.brick-btn`, `.brick-card`, `.tile-print`, výstupky) |
 | `js/models.js` | procedurální 3D modely složené z kostek (orchidej, mini orchidej, růže, tulipány, srdce, auta) |
 | `js/figures.js` | kostičkoví panáčci (kluk ukazuje, holka má srdíčka místo očí) |
-| `js/stage3d.js` | jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
-| `js/main.js` | scroll choreografie, katalog, varianty barev, přidání do košíku |
+| `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
 | `js/products.js` | ukázková data produktů (ceny, počty dílků, varianty) |
 | `vendor/three/` | three.js r170 (MIT) – lokálně, bez CDN |
@@ -41,6 +45,12 @@ python3 -m http.server 8765
 Modely se dají později nahradit exportem z Blenderu (`.glb`). Ve `stage3d.js` stačí ve funkci `create` slotu vrátit načtenou scénu (`GLTFLoader`) místo `createModel(...)`. Animace skládání pak potřebuje, aby každá kostka byla samostatný objekt.
 
 ## Ověřeno (headless Chromium, 390×844 a 1440×900)
+
+Galerie:
+* vstup, chůze šipkou, kolečkem i swipem, klik na štítek i exponát → detail, změna barvy se projeví na 3D modelu, přidání do košíku, další/předchozí exponát, návrat do chodby – bez chyb v konzoli
+* při chůzi: JS ~2 ms na snímek (~10 ms při 4× zpomaleném CPU), žádné dlouhé úlohy; ~155 draw callů a ~240 tis. trojúhelníků v záběru
+
+Přehled kolekce:
 
 * žádné chyby v konzoli; košík, varianty barev, filtry, cookie lišta i nastavení, mobilní menu a právní stránky fungují
 * žádné horizontální přetečení na mobilu

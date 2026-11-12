@@ -10,8 +10,10 @@ const store = {
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const BASE = document.documentElement.dataset.base || '';
-// na hlavní stránce stačí kotvy (#…), aby se stránka nenačítala znovu
-const HOME = document.body.dataset.page === 'home' ? '' : BASE + 'index.html';
+// na stránce s přehledem stačí kotvy (#…), aby se stránka nenačítala znovu
+const PAGE = document.body.dataset.page || '';
+const LIST = PAGE === 'list' ? '' : BASE + 'prehled.html';
+const GAL = BASE + 'index.html';
 
 // ---------- pixelové ikonky (mozaika z 1×1 placek) ----------
 const PAL = { r: '#D01012', p: '#FC97AC', P: '#E4569A', y: '#F5C518', g: '#00852B', G: '#A5CA18', b: '#0055BF', w: '#FFFFFF', k: '#1B1D22', o: '#FE8A18', t: '#E4CD9E', s: '#8E9AB8' };
@@ -43,24 +45,24 @@ function injectChrome() {
   const h = $('#lb-header');
   if (h) h.outerHTML = `
   <header class="site-header" id="header">
-    <a class="logo" href="${HOME}#top" aria-label="Love Bricks – domů">
+    <a class="logo" href="${GAL}" aria-label="Love Bricks – 3D galerie">
       <span class="logo-brick brick" data-studs>${HEART_SVG}</span>
       <span class="logo-text">Love<b>Bricks</b></span>
     </a>
     <nav class="nav" aria-label="Hlavní menu">
-      <a href="${HOME}#showcase">Květiny</a>
-      <a href="${HOME}#auta">Auta</a>
-      <a href="${HOME}#pro-koho">Pro koho</a>
-      <a href="${HOME}#kolekce">Kolekce</a>
+      <a href="${GAL}">3D galerie</a>
+      <a href="${LIST}#showcase">Květiny</a>
+      <a href="${LIST}#auta">Auta</a>
+      <a href="${LIST}#kolekce">Kolekce</a>
     </nav>
     <button class="brick-btn cart-btn" data-studs data-open-cart aria-label="Košík">${BAG_SVG}<span class="cart-count" data-cart-count>0</span></button>
     <button class="brick-btn menu-btn" data-studs aria-label="Menu" aria-expanded="false" aria-controls="mmenu"><span class="burger"></span></button>
   </header>
   <nav class="mobile-menu" id="mmenu" aria-label="Mobilní menu">
-    <a class="brick-btn" data-studs href="${HOME}#showcase">Květiny</a>
-    <a class="brick-btn" data-studs href="${HOME}#auta">Auta z kostek</a>
-    <a class="brick-btn" data-studs href="${HOME}#pro-koho">Pro koho</a>
-    <a class="brick-btn" data-studs href="${HOME}#kolekce">Celá kolekce</a>
+    <a class="brick-btn" data-studs href="${GAL}">3D galerie</a>
+    <a class="brick-btn" data-studs href="${LIST}#showcase">Květiny</a>
+    <a class="brick-btn" data-studs href="${LIST}#auta">Auta z kostek</a>
+    <a class="brick-btn" data-studs href="${LIST}#kolekce">Celá kolekce</a>
     <a class="brick-btn" data-studs href="${BASE}obchodni-podminky.html">Obchodní podmínky</a>
   </nav>`;
   const f = $('#lb-footer');
@@ -68,7 +70,7 @@ function injectChrome() {
   <footer class="footer">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a class="logo" href="${HOME}#top"><span class="logo-brick brick" data-studs>${HEART_SVG}</span><span class="logo-text">Love<b>Bricks</b></span></a>
+        <a class="logo" href="${GAL}"><span class="logo-brick brick" data-studs>${HEART_SVG}</span><span class="logo-text">Love<b>Bricks</b></span></a>
         <p>Dárky z kostek pro ty, které máš rád. Květiny, které nezvadnou, a auta, která nezestárnou.</p>
       </div>
       <div><h4>Nákup</h4><ul>
@@ -155,6 +157,26 @@ export function toast(msg) {
   const t = $('#toast'); if (!t) return;
   t.textContent = msg; t.classList.add('is-on');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('is-on'), 2200);
+}
+
+// ---------- kostka letí do košíku ----------
+export function flyBrick(from, color) {
+  const header = $('#header'); header?.classList.remove('is-hidden');
+  const target = $('.cart-btn');
+  const a = from.getBoundingClientRect(), b = target.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'fly-brick brick'; el.dataset.studs = '';
+  el.style.setProperty('--c', color);
+  el.style.left = a.left + a.width / 2 - 17 + 'px'; el.style.top = a.top + a.height / 2 - 11 + 'px';
+  document.body.appendChild(el); studify(document.body);
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+  const done = () => { el.remove(); target.classList.remove('bump'); void target.offsetWidth; target.classList.add('bump'); };
+  if (reduceMotion || !el.animate) return done();
+  el.animate([
+    { transform: 'translate(0,0) rotate(0) scale(1)' },
+    { transform: `translate(${dx * 0.45}px, ${Math.min(dy * 0.5, 0) - 160}px) rotate(200deg) scale(1.3)`, offset: 0.5 },
+    { transform: `translate(${dx}px, ${dy}px) rotate(360deg) scale(.55)` }
+  ], { duration: 780, easing: 'cubic-bezier(.4,0,.6,1)' }).onfinish = done;
 }
 
 // ---------- overlay/modaly ----------
