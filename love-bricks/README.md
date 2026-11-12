@@ -2,7 +2,7 @@
 
 E-shop s dárky z kostek, kde všechno vypadá jako kostky: tlačítka, karty, pozadí (podložka s výstupky), písmo i ikonky (mozaika z 1×1 placek). Je to zatím jen ukázka, nic se neprodává.
 
-Hlavní stránka je **3D galerie v pohledu první osoby**: nekonečná chodba s podlahou z bílých lesklých hladkých dílků 2×1. Exponáty stojí vždy ve **dvojicích naproti sobě** (květina + auto, strany se střídají). Po načtení všechno napadá z nebe a poskládá se a shora sjede na tenkém drátku blikající tlačítko **Dál** – klik tě s rozmazáním „teleportuje“ k další dvojici. Chodit jde i scrollem, swipem nebo klávesami ↑/↓/W/S. Klepnutí na exponát otočí kameru k němu a vyjede panel s popisem, barvami a košíkem; ←/→ přepíná exponáty, Esc zavře.
+Hlavní stránka je **3D galerie v pohledu první osoby**: nekonečná chodba s podlahou z bílých lesklých hladkých dílků 2×1. Exponáty stojí vždy ve **dvojicích naproti sobě** (květina + auto, strany se střídají). Vidět je jen to, co je blízko: dvojice se objeví, spadne z nebe a poskládá se, až k ní dojdeš (dál je chodba prázdná). Shora sjede na tenkém drátku blikající tlačítko **Dál** – klik tě s rozmazáním „teleportuje“ k další dvojici. Chodit jde i scrollem, swipem nebo klávesami ↑/↓/W/S. Klepnutí na exponát otočí kameru k němu a vyjede panel s popisem, barvami a košíkem; ←/→ přepíná exponáty, Esc zavře.
 
 Klasická scrollovací verze s katalogem a filtry zůstala jako **Přehled kolekce** (`prehled.html`).
 
@@ -25,10 +25,11 @@ python3 -m http.server 8765
 | `obchodni-podminky.html`, `ochrana-osobnich-udaju.html`, `cookies.html` | právní stránky (vzorové texty, údaje v `[závorkách]` doplnit) |
 | `css/style.css` | celý vizuální systém kostek (`.brick`, `.brick-btn`, `.brick-card`, `.tile-print`, výstupky) |
 | `js/models.js` | jádro 3D stavebnice: dílky, materiály, animace skládání |
-| `js/flowers.js` | květiny: orchidej, mini orchidej, kytice tulipánů, malé rostlinky, kvetoucí kaktus, chryzantéma, lopatkovec, kvetoucí slivoň, bonsaj |
-| `js/builders.js` | registr všech modelů (květiny procedurálně, auta ze souborů `.glb`) |
-| `js/ldmodel.js`, `js/ldbake.worker.js` | načítání aut z originálních dílků, skládání po dílcích, spojení složeného auta do jedné geometrie |
-| `models/*.glb` | auta převedená z LDraw a zjednodušená v Blenderu (Porsche 911, Lamborghini Sián, Bugatti Chiron); `*-lite.glb` = odlehčená verze pro mobil – viz `tools/ldraw/README.md` |
+| `js/flowers.js` | květiny z kostek: orchidej, mini orchidej, kytice tulipánů, malé rostlinky, kvetoucí kaktus, chryzantéma, lopatkovec, kvetoucí slivoň |
+| `js/builders.js` | registr všech modelů (květiny procedurálně, auta a bonsaj ze souborů `.glb`) |
+| `js/solid.js` | načte `.glb` z Blenderu a jednou ho slije do jednoho modelu (pár draw callů, za běhu se nic nepřepočítává) |
+| `js/ldmodel.js`, `js/ldbake.worker.js` | starší načítání po dílcích – používá ho jen nástroj `tools/ldraw/cull.html` |
+| `models/*.glb` | auta a bonsaj převedené z LDraw a zjednodušené v Blenderu (Porsche 911, Lamborghini Sián, Bugatti Chiron, Bonsaj 10281); `*-lite.glb` = odlehčená verze pro mobil – viz `tools/ldraw/README.md` |
 | `js/figures.js` + `models/figure.json` | panáček z originálních dílků figurky (boky, nohy, trup, ruce, dlaně, hlava, vlasy) v bílém tričku a modrých kalhotách, s namalovaným obličejem |
 | `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
