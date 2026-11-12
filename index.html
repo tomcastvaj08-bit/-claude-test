@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <script>/* /love-bricks → /love-bricks/ (relativní cesty) */ if (/\/love-bricks$/.test(location.pathname)) location.replace(location.pathname + '/' + location.search + location.hash);</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Love Bricks – dárky z kostek pro ty, které máš rád</title>
+  <meta name="description" content="Květiny, které nezvadnou, a auta, která nezestárnou. Dárky z kostek pro páry, maminky i celé rodiny.">
+  <meta name="theme-color" content="#FFE9EE">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='9' width='28' height='20' rx='3' fill='%23D01012'/%3E%3Crect x='6' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Crect x='18' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Cpath d='M16 25s-6-3.6-6-7.6c0-2 1.5-3.4 3.2-3.4 1.2 0 2.2.7 2.8 1.7.6-1 1.6-1.7 2.8-1.7 1.7 0 3.2 1.4 3.2 3.4 0 4-6 7.6-6 7.6z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/bungee-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+  <link rel="modulepreload" href="vendor/three/three.module.min.js">
+</head>
+<body data-page="home">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div id="lb-header"></div>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero baseplate" id="top">
+      <div class="hero-inner">
+        <span class="tile-print hero-kicker">Dárky z kostek · s láskou</span>
+        <h1 class="hero-title" aria-label="Love Bricks">
+          <span class="row" aria-hidden="true">
+            <span class="hl brick" data-studs style="--c:#D01012;--d:0">L</span><span class="hl brick" data-studs style="--c:#E4569A;--d:1">O</span><span class="hl brick" data-studs style="--c:#D01012;--d:2">V</span><span class="hl brick light" data-studs style="--c:#FC97AC;--d:3">E</span>
+          </span>
+          <span class="row" aria-hidden="true">
+            <span class="hl brick light" data-studs style="--c:#F5C518;--d:4">B</span><span class="hl brick" data-studs style="--c:#0055BF;--d:5">R</span><span class="hl brick" data-studs style="--c:#00852B;--d:6">I</span><span class="hl brick light" data-studs style="--c:#FFFFFF;--d:7">C</span><span class="hl brick" data-studs style="--c:#FE8A18;--d:8">K</span><span class="hl brick" data-studs style="--c:#26292F;--d:9">S</span>
+          </span>
+        </h1>
+        <p class="hero-lead">Květiny, které nezvadnou. Auta, která nezestárnou. Dárky z kostek pro páry, maminky i celé rodiny – vybrané s láskou, zabalené jako dárek.</p>
+        <div class="hero-cta">
+          <a class="brick-btn" data-studs href="#showcase">Vybrat dárek</a>
+          <a class="brick-btn white" data-studs href="#pro-koho">Pro koho?</a>
+        </div>
+      </div>
+      <div class="hero-3d">
+        <div class="hero-heart" id="hero-heart" role="img" aria-label="Srdce z kostek – klepni a postav ho znovu"></div>
+        <div class="hero-fig boy" id="hero-boy" title="Ahoj!"></div>
+        <div class="hero-fig girl" id="hero-girl" title="♥"></div>
+      </div>
+      <span class="hint hero-hint">Klepni na srdce ♥</span>
+      <div class="scroll-cue" aria-hidden="true"><span class="brick" data-studs></span>Scrolluj</div>
+    </section>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Den matek</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Výročí</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Valentýn</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Narozeniny</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Vánoce</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Jen tak</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Den matek</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Výročí</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Valentýn</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Narozeniny</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Vánoce</span>
+        <span class="tile-print"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6.1 4.2 4.5 7.8C19.5 16.4 12 21 12 21z"/></svg>Jen tak</span>
+      </div>
+    </div>
+
+    <!-- PRO KOHO -->
+    <section class="section occasions baseplate" id="pro-koho">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="tile-print eyebrow">Univerzální dárek</span>
+          <h2>Pro koho skládáš?</h2>
+          <p>Kostky potěší kohokoli – stačí vybrat tu správnou stavbu.</p>
+        </div>
+        <div class="occ-grid">
+          <button class="occ brick" data-studs data-occ="pary" data-reveal style="--i:0"><span data-pix="heart" data-label="srdce"></span><span><h3>Pro páry</h3><p>Výročí, Valentýn, rande doma</p></span></button>
+          <button class="occ brick c2" data-studs data-occ="maminka" data-reveal style="--i:1"><span data-pix="flower" data-label="květina"></span><span><h3>Pro maminku</h3><p>Květiny, které vydrží roky</p></span></button>
+          <button class="occ brick c3" data-studs data-occ="rodina" data-reveal style="--i:2"><span data-pix="house" data-label="domek"></span><span><h3>Pro rodinu</h3><p>Společné odpoledne u stolu</p></span></button>
+          <button class="occ brick c4" data-studs data-occ="auta" data-reveal style="--i:3"><span data-pix="car" data-label="auto"></span><span><h3>Pro milovníky aut</h3><p>Supersporty do poličky</p></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCÉNY PRODUKTŮ (generuje js/main.js) -->
+    <div id="showcase"></div>
+
+    <!-- JAK TO FUNGUJE -->
+    <section class="section how baseplate" id="jak">
+      <div class="section-head">
+        <span class="tile-print eyebrow">Jednoduché jako 1–2–3</span>
+        <h2>Jak to funguje</h2>
+      </div>
+      <div class="steps">
+        <div class="step brick" data-studs data-reveal style="--i:0"><div class="step-n">01</div><h3>Vyber stavbu</h3><p>Květiny pro maminku, růže pro lásku, auto pro tátu. Nevíš? Napiš nám, poradíme.</p></div>
+        <div class="step brick" data-studs data-reveal style="--i:1"><div class="step-n">02</div><h3>Zabalíme s láskou</h3><p>Dárkové balení a ručně psané přání zdarma. Stačí napsat věnování do poznámky.</p></div>
+        <div class="step brick" data-studs data-reveal style="--i:2"><div class="step-n">03</div><h3>Doručíme</h3><p>Odesíláme do 24 hodin. Výdejní místa, Zásilkovna i kurýr až ke dveřím.</p></div>
+      </div>
+    </section>
+
+    <!-- KATALOG -->
+    <section class="section catalog baseplate" id="kolekce">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="tile-print eyebrow">Celá kolekce</span>
+          <h2>Postav si dárek</h2>
+          <p>Každý model se ti tu postaví naživo. Na počítači najeď myší, na mobilu ho otoč prstem.</p>
+        </div>
+        <div class="filters" role="group" aria-label="Filtr kolekce">
+          <button class="brick-btn sm filter" data-studs data-filter="all" aria-pressed="true">Vše</button>
+          <button class="brick-btn sm filter" data-studs data-filter="pary" aria-pressed="false">Pro páry</button>
+          <button class="brick-btn sm filter" data-studs data-filter="maminka" aria-pressed="false">Pro maminku</button>
+          <button class="brick-btn sm filter" data-studs data-filter="rodina" aria-pressed="false">Pro rodinu</button>
+          <button class="brick-btn sm filter" data-studs data-filter="auta" aria-pressed="false">Auta</button>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </section>
+
+    <!-- VÝHODY -->
+    <section class="usp" aria-label="Výhody nákupu">
+      <div class="usp-grid">
+        <div class="usp-item tile-print"><span data-pix="gift" data-label="dárek"></span><span><b>Dárkové balení</b>a přání zdarma</span></div>
+        <div class="usp-item tile-print"><span data-pix="truck" data-label="doprava"></span><span><b>Doprava zdarma</b>od 1 500 Kč</span></div>
+        <div class="usp-item tile-print"><span data-pix="cal" data-label="kalendář"></span><span><b>14 dní</b>na vrácení</span></div>
+        <div class="usp-item tile-print"><span data-pix="mail" data-label="dopis"></span><span><b>Věnování</b>napíšeme ručně</span></div>
+      </div>
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="section news baseplate">
+      <div class="section-head">
+        <span class="tile-print eyebrow">Novinky</span>
+        <h2>Ať ti neuteče žádný svátek</h2>
+        <p>Připomeneme Den matek, Valentýna i Vánoce – a přibalíme slevu.</p>
+      </div>
+      <form id="news-form">
+        <label class="sr-only" for="news-email">E-mail</label>
+        <input id="news-email" type="email" required placeholder="tvuj@email.cz" autocomplete="email">
+        <button class="brick-btn" data-studs type="submit">Chci novinky</button>
+      </form>
+      <small>Odesláním souhlasíš se <a href="ochrana-osobnich-udaju.html">zpracováním osobních údajů</a>. Odhlásit se můžeš kdykoli.</small>
+    </section>
+  </main>
+
+  <div id="lb-footer"></div>
+  <noscript><p style="text-align:center;padding:20px">Pro 3D ukázky a košík zapni prosím JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
