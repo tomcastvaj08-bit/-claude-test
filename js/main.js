@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
-import { createModel } from './models.js';
+import { createModel } from './builders.js';
 import { Figure } from './figures.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -21,7 +21,7 @@ ALL.forEach(p => { selected[p.id] = 0; });
 function stageHTML(p, i) {
   const from = i % 2 === 0 ? 1 : -1;
   const v = p.variant;
-  return `<section class="stage ${p.dark ? 'dark' : ''}" id="${p.id === 'lambo' ? 'auta' : 'p-' + p.id}" data-id="${p.id}" data-from="${from}"
+  return `<section class="stage ${p.dark ? 'dark' : ''}" id="${p.id === 'huracan' ? 'auta' : 'p-' + p.id}" data-id="${p.id}" data-from="${from}"
     style="--bg:${p.bg};--ink:${p.ink};--accent:${p.accent};--accent-ink:${p.accentInk || '#fff'};--from:${from}" aria-label="${p.name}">
     <div class="stage-back baseplate">
       <div class="stage-word" aria-hidden="true">${p.word}</div>
@@ -46,7 +46,7 @@ function stageHTML(p, i) {
 }
 $('#showcase').innerHTML = PRODUCTS.map(stageHTML).join('');
 
-const TINT = { orchid: '#EFE6F8', miniorchid: '#FFF4D6', roses: '#FFE4E8', tulips: '#E5F3DC', lambo: '#E7EEDA', porsche: '#E8EBEE', ferrari: '#FBE3DF', audi: '#E3E8F0', heart: '#FFE4E8' };
+const TINT = Object.fromEntries(ALL.map(p => [p.id, p.dark ? '#E9ECEF' : p.bg]));
 $('#grid').innerHTML = ALL.map((p) => `
   <article class="gcard brick-card" data-studs data-tags="${p.tags.join(' ')}" data-product="${p.id}">
     <div class="gcard-slot" data-gmodel="${p.model}" style="--tint:${TINT[p.id] || '#F3EEE6'}" role="img" aria-label="3D model: ${p.name}"></div>
@@ -105,7 +105,7 @@ function figSlot(el, girl, side, opts = {}) {
     const f = new Figure({ girl });
     f.state.side = side;
     el.__fig = f;
-    return { object: f.root, fit: { center: V(0, 2.4, 0), height: 5.8, radius: 3.0, floor: -0.4 }, update(dt, t) { f.update(dt, t); } };
+    return { object: f.root, fit: { center: V(0, 2.2, 0), height: 5.0, radius: 2.8, floor: 0 }, update(dt, t) { f.update(dt, t); } };
   }, { swing: 0.12, elevation: 0.12, ...opts });
   el.addEventListener('click', (e) => {
     e.stopPropagation();

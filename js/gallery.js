@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt, OCCASIONS } from './products.js';
-import { createModel } from './models.js';
+import { createModel } from './builders.js';
 import { Figure } from './figures.js';
 
 initCommon();
@@ -19,9 +19,10 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
 
 // pořadí v chodbě: květina, auto, květina, auto…
-const ORDER = ['orchid', 'lambo', 'miniorchid', 'porsche', 'roses', 'ferrari', 'tulips', 'audi', 'heart'];
+const ORDER = ['orchid', 'huracan', 'tulips', 'sian', 'bonsai', 'daytona', 'miniorchid', 'mclaren', 'chrysanthemum', 'chiron', 'peacelily', 'mercedes', 'plum', 'visiongt', 'cactus', 'tinyplants'];
 // velikost v metrech: květiny ~ výška člověka, auta v životní velikosti (délka)
-const SIZE = { orchid: 1.95, miniorchid: 1.6, roses: 1.85, tulips: 1.55, heart: 1.9, lambo: 4.95, porsche: 4.55, ferrari: 4.7, audi: 4.7 };
+const SIZE = { orchid: 1.95, miniorchid: 1.6, tulips: 1.75, tinyplants: 1.25, cactus: 1.6, chrysanthemum: 1.85, peacelily: 1.75, plum: 2.1, bonsai: 1.45,
+  chiron: 4.54, huracan: 4.55, sian: 4.98, daytona: 4.69, mclaren: 4.59, mercedes: 4.95, visiongt: 4.6 };
 const N = ORDER.length;
 const SPACING = 7.5, START = 9, EYE = 1.62, WINDOW = 8;
 const BG = '#F6F4F1';
@@ -115,7 +116,7 @@ function place(ex, k) {
   ex.slot = k;
   const side = k % 2 === 0 ? 1 : -1;
   ex.side = side;
-  ex.root.position.set(side * (sideX() + (ex.car ? 1.1 : 0.35)), 0, -slotS(k));
+  ex.root.position.set(side * (sideX() + (ex.car ? ex.D / 2 - 0.2 : 0.35)), 0, -slotS(k));
   if (ex.car) { // auto podél chodby, předkem k příchozímu a lehce do středu
     const dx = -side * 0.42, dz = 1;
     ex.base.rotation.y = Math.atan2(-dz, dx);
@@ -131,18 +132,17 @@ function place(ex, k) {
 // panáčci u vchodu (v životní velikosti)
 const figs = [false, true].map((girl) => {
   const f = new Figure({ girl });
-  f.root.scale.setScalar(0.5);
   const g = new THREE.Group(); g.add(f.root);
-  g.position.set(girl ? 2.5 : -2.5, 0.1, -3.6);
+  g.position.set(girl ? 3.1 : -3.1, 0, -5.4);
   g.rotation.y = girl ? -0.35 : 0.35;
   f.state.side = girl ? -1 : 1;
   scene.add(g);
-  const hit = new THREE.Mesh(new THREE.BoxGeometry(3.2, 4.6, 2.4), hitMat); hit.position.y = 2.3; g.add(hit);
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(2.6, 4.2, 1.8), hitMat); hit.position.y = 2.1; g.add(hit);
   hit.userData.fig = f;
   return { f, g, hit };
 });
 // Figure.update řídí měřítko rootu (pop-in); měřítko 0.5 držíme na rodičovské skupině
-figs.forEach(({ f, g }) => { g.scale.setScalar(0.5); f.root.scale.setScalar(1); });
+figs.forEach(({ g }) => { g.scale.setScalar(0.64); });
 
 // ------------------------------------------------------------ pohyb
 const state = { s: -3, v: 0, target: null, walk: 0, hold: 0, yaw: 0, yawT: 0, pitchT: 0, phase: 0, entered: false };

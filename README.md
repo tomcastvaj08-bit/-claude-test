@@ -24,8 +24,11 @@ python3 -m http.server 8765
 | `prehled.html` + `js/main.js` | přehled kolekce: scrollovací scény produktů, pro koho, katalog s filtry, newsletter |
 | `obchodni-podminky.html`, `ochrana-osobnich-udaju.html`, `cookies.html` | právní stránky (vzorové texty, údaje v `[závorkách]` doplnit) |
 | `css/style.css` | celý vizuální systém kostek (`.brick`, `.brick-btn`, `.brick-card`, `.tile-print`, výstupky) |
-| `js/models.js` | procedurální 3D modely složené z kostek (orchidej, mini orchidej, růže, tulipány, srdce, auta) |
-| `js/figures.js` | kostičkoví panáčci (kluk ukazuje, holka má srdíčka místo očí) |
+| `js/models.js` | jádro 3D stavebnice: dílky, materiály, animace skládání |
+| `js/flowers.js` | květiny: orchidej, mini orchidej, kytice tulipánů, malé rostlinky, kvetoucí kaktus, chryzantéma, lopatkovec, kvetoucí slivoň, bonsaj |
+| `js/cars.js` | auta z panelů: Bugatti Chiron, Lamborghini Huracán Tecnica, Lamborghini Sián (růžové), Ferrari Daytona SP3, McLaren P1, Mercedes-AMG G 63 & SL 63, Bugatti Vision GT |
+| `js/builders.js` | registr všech modelů |
+| `js/figures.js` | panáčci: blondýnka v růžových šatech (srdíčka místo očí) a kluk s tetováním kotvy, který ukazuje do galerie |
 | `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
 | `js/products.js` | ukázková data produktů (ceny, počty dílků, varianty) |
@@ -48,7 +51,7 @@ Modely se dají později nahradit exportem z Blenderu (`.glb`). Ve `stage3d.js` 
 
 Galerie:
 * vstup, chůze šipkou, kolečkem i swipem, klik na štítek i exponát → detail, změna barvy se projeví na 3D modelu, přidání do košíku, další/předchozí exponát, návrat do chodby – bez chyb v konzoli
-* při chůzi: JS ~2 ms na snímek (~10 ms při 4× zpomaleném CPU), žádné dlouhé úlohy; ~155 draw callů a ~240 tis. trojúhelníků v záběru
+* při chůzi: JS ~2,6 ms na snímek (~11 ms při 4× zpomaleném CPU); ~200 draw callů a ~170 tis. trojúhelníků v záběru
 
 Přehled kolekce:
 
@@ -61,4 +64,4 @@ Přehled kolekce:
 
 * doplnit firemní údaje do právních stránek a nechat je zkontrolovat právníkem
 * napojit skutečný košík/pokladnu, platby a dopravce
-* ověřit, jak smí přeprodejce používat značku LEGO® a podobu figurek (fair play pravidla LEGO) a názvy automobilek
+* ověřit u právníka používání názvů automobilek u prodávaných modelů
