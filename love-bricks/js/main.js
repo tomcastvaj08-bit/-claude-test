@@ -4,8 +4,8 @@ import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } 
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
 import { createModel, ready } from './builders.js';
-await ready();
-import { Figure } from './figures.js';
+await Promise.all([ready(), loadFigureKit()]);
+import { Figure, loadFigureKit } from './figures.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -106,7 +106,7 @@ function figSlot(el, girl, side, opts = {}) {
     const f = new Figure({ girl });
     f.state.side = side;
     el.__fig = f;
-    return { object: f.root, fit: { center: V(0, 2.2, 0), height: 5.0, radius: 2.8, floor: 0 }, update(dt, t) { f.update(dt, t); } };
+    return { object: f.root, fit: { center: V(0, 3.1, 0), height: 6.6, radius: 2.4, floor: 0 }, update(dt, t) { f.update(dt, t); } };
   }, { swing: 0.12, elevation: 0.12, ...opts });
   el.addEventListener('click', (e) => {
     e.stopPropagation();
