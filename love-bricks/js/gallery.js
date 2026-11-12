@@ -163,7 +163,7 @@ function place(ex, k) {
 const figs = [false, true].map((girl) => {
   const f = new Figure({ girl });
   const g = new THREE.Group(); g.add(f.root);
-  g.position.set(girl ? 2.7 : -2.7, 0, -5.2);
+  g.position.set(girl ? 2.1 : -2.1, 0, -3.9);
   g.rotation.y = girl ? -0.45 : 0.45;
   f.state.side = girl ? -1 : 1;
   scene.add(g);
