@@ -153,10 +153,12 @@ export function car(spec) {
     for (const [j0, j1, band] of bands) {
       if (band === 'under') continue;
       const mat = band === 'under' ? '#1d1f22' : paint(um, band);
-      const g = shrink(gridGeo(P, i0, i1, j0, j1, flipB), 0.997);
+      const g = shrink(gridGeo(P, i0, i1, j0, j1, flipB), spec.gap ?? 0.986);
       b.put(g, mat, new THREE.Matrix4(), 1 + (band === 'under' ? 0 : band.startsWith('side') ? 1 : 2) + k * 0.05);
     }
   }
+  // černý rám pod panely – prosvítá spárami jako u skutečné stavebnice
+  b.put(shrink(gridGeo(P, 0, NS, 4, 22, flipB), 0.975), '#1d1f22', new THREE.Matrix4(), 0.8);
   // spodek jako dva velké díly (není vidět, ušetří vykreslování)
   b.put(gridGeo(P, 0, NS, 0, 5, flipB), '#1d1f22', new THREE.Matrix4(), 0.9);
   b.put(gridGeo(P, 0, NS, 21, 26, flipB), '#1d1f22', new THREE.Matrix4(), 0.9);
@@ -210,12 +212,48 @@ export function car(spec) {
   }
   // povrchový bod pro detaily: u (0 záď → 1 příď), j index po obvodu (0..M)
   const surf = (u, j) => { const r = S.ring(u)[Math.round(j)]; return V((u - 0.5) * L, r[0], r[1]); };
+  if (spec.technic) {
+    // nosníky s dírkami podél prahů
+    const w0 = S.wheels[0], w1 = S.wheels[S.wheels.length - 1];
+    const x0 = w0.x + w0.r * 1.2, x1 = w1.x - w1.r * 1.2, len = x1 - x0;
+    const key = beamMat(len);
+    for (const s of [-1, 1]) {
+      const u = 0.5 + ((x0 + x1) / 2) / L;
+      const z = s * (S.hw(u) - 0.25);
+      b.at('tile:1:1:1', key, (x0 + x1) / 2, S.clear + 0.55, z, { sx: len, sy: 0.9, sz: 0.5, o: 1.6 });
+    }
+    // kolíky ve spárách mezi panely (světle šedé hlavičky)
+    for (const u of cutsU.slice(1, -1)) for (const j of [8, 18]) {
+      const p = surf(u, j), s = p.z > 0 ? 1 : -1;
+      b.at('cyl:12', '#A0A5A9', p.x, p.y - 0.4, p.z + s * 0.05, { rx: PI / 2, sx: 0.32, sy: 0.22, sz: 0.32, o: 19 });
+      b.at('cyl:12', '#A0A5A9', p.x, p.y - 1.4, p.z + s * 0.02, { rx: PI / 2, sx: 0.32, sy: 0.22, sz: 0.32, o: 19 });
+    }
+  }
+  if (spec.studs) {
+    // výstupky na zádi a kapotě jako u menších modelů
+    for (const [u0, u1] of spec.studs) for (let u = u0; u <= u1; u += 0.028) for (const j of [11, 12, 14, 15]) {
+      const p = surf(u, j);
+      b.at('cyl:12', 'var:' + (spec.studsMat ?? 'body'), p.x, p.y + 0.12, p.z, { sx: 0.3, sy: 0.24, sz: 0.3, o: 20 });
+    }
+  }
   const decor = { surf, S, L };
   spec.details?.(b, decor);
   return b;
 }
 
 // ------------------------------------------------------------ společné detaily
+// nosník s dírkami (textura se opakuje podle délky)
+function beamMat(len) {
+  const key = 'beam:' + len.toFixed(1);
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#2a2c30'; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = '#0c0d0f'; g.beginPath(); g.arc(32, 32, 17, 0, 7); g.fill();
+  g.strokeStyle = '#4a4e55'; g.lineWidth = 3; g.beginPath(); g.arc(32, 32, 19, 0, 7); g.stroke();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.set(Math.round(len / 0.9), 1);
+  registerMat(key, new THREE.MeshStandardMaterial({ map: t, roughness: 0.45 }));
+  return key;
+}
 function wing(b, x, y, w, chord, h, mat = '#1d1f22', o = 20, struts = 2) {
   b.tile(chord, w, 0.25, mat, x, y + h, 0, { o: o + 0.2, rz: 0.05 });
   for (const s of [-1, 1]) b.tile(chord * 1.1, 0.15, 1.1, mat, x, y + h - 0.35, s * w / 2, { o: o + 0.3 });
@@ -254,7 +292,7 @@ function horseshoe(b, x, y, h, o = 16) {
 // ============================================================ MODELY
 // 1) Bugatti Chiron – oranžová/černá
 export function buildChiron() {
-  const b = car({
+  const b = car({ technic: true,
     L: 45.4, clear: 1.1, wheelR: 3.4, tireW: 2.6,
     top: [[0, 8.0], [0.05, 9.0], [0.18, 9.5], [0.3, 9.3], [0.62, 8.6], [0.8, 8.0], [0.93, 6.6], [1, 4.4]],
     hw: [[0, 9.0], [0.08, 9.9], [0.22, 10.2], [0.45, 9.7], [0.75, 10.0], [0.92, 9.5], [1, 8.0]],
@@ -286,7 +324,7 @@ export function buildChiron() {
 
 // 2) Lamborghini Huracán Tecnica – zelená
 export function buildHuracan() {
-  const b = car({
+  const b = car({ technic: true,
     L: 45.5, clear: 1.2, wheelR: 3.3,
     top: [[0, 8.0], [0.08, 8.6], [0.24, 8.8], [0.34, 8.8], [0.62, 7.9], [0.8, 7.4], [0.95, 5.6], [1, 3.8]],
     hw: [[0, 9.0], [0.15, 9.65], [0.4, 9.2], [0.72, 9.5], [1, 7.8]], nTop: 3.2,
@@ -314,7 +352,7 @@ export function buildHuracan() {
 
 // 3) Lamborghini Sián – růžové
 export function buildSian() {
-  const b = car({
+  const b = car({ technic: true,
     L: 49.8, clear: 1.1, wheelR: 3.4,
     top: [[0, 8.2], [0.1, 8.6], [0.28, 8.7], [0.6, 7.6], [0.8, 7.1], [0.92, 5.5], [1, 3.5]],
     hw: [[0, 9.6], [0.15, 10.4], [0.42, 9.8], [0.75, 10.0], [1, 8.0]], nTop: 3.4,
@@ -342,7 +380,7 @@ export function buildSian() {
 
 // 4) Ferrari Daytona SP3 – červené
 export function buildDaytona() {
-  const b = car({
+  const b = car({ technic: true,
     L: 46.9, clear: 1.0, wheelR: 3.35, nTop: 2.4,
     top: [[0, 8.4], [0.08, 8.9], [0.25, 8.9], [0.55, 7.8], [0.8, 7.4], [0.95, 5.5], [1, 3.7]],
     hw: [[0, 9.4], [0.18, 10.25], [0.45, 9.5], [0.78, 10.1], [1, 8.4]],
@@ -369,7 +407,7 @@ export function buildDaytona() {
 
 // 5) McLaren P1 – žluto-oranžová s černou
 export function buildMcLaren() {
-  const b = car({
+  const b = car({ technic: true,
     L: 45.9, clear: 1.0, wheelR: 3.3, nTop: 2.6,
     top: [[0, 8.6], [0.1, 9.0], [0.26, 8.8], [0.56, 7.8], [0.8, 7.3], [0.95, 5.4], [1, 3.7]],
     hw: [[0, 9.0], [0.18, 9.75], [0.45, 9.0], [0.78, 9.6], [1, 7.8]],
@@ -397,7 +435,7 @@ export function buildMcLaren() {
 
 // 6) Mercedes-AMG G 63 + SL 63 – dvojbalení
 function buildG63() {
-  return car({
+  return car({ studs: [[0.74, 0.92]], studsMat: 'g', gap: 0.992,
     L: 48.7, clear: 2.4, wheelR: 4.0, tireW: 2.8, nTop: 12, nBot: 10,
     top: [[0, 11.2], [0.04, 11.6], [0.68, 11.6], [0.72, 11.0], [0.97, 10.8], [1, 9.8]],
     hw: [[0, 9.4], [0.05, 9.9], [0.95, 9.9], [1, 9.4]], belt: 0.55,
@@ -420,7 +458,7 @@ function buildG63() {
   });
 }
 function buildSL63() {
-  return car({
+  return car({ studs: [[0.06, 0.2]], gap: 0.992,
     L: 47.0, clear: 1.2, wheelR: 3.3,
     top: [[0, 8.8], [0.12, 9.3], [0.3, 9.2], [0.55, 8.6], [0.8, 7.6], [0.95, 6.8], [1, 5.6]],
     hw: [[0, 9.0], [0.2, 9.6], [0.5, 9.3], [0.8, 9.55], [1, 8.0]],
@@ -451,7 +489,7 @@ export function buildMercedes() {
 
 // 7) Bugatti Vision Gran Turismo – modrá
 export function buildVisionGT() {
-  const b = car({
+  const b = car({ studs: [[0.08, 0.22], [0.66, 0.8]], studsMat: 'dark', gap: 0.992,
     L: 46, clear: 0.9, wheelR: 3.3, nTop: 2.4,
     top: [[0, 7.8], [0.1, 8.4], [0.3, 8.6], [0.58, 7.4], [0.8, 7.0], [0.92, 5.2], [1, 3.4]],
     hw: [[0, 9.8], [0.2, 10.5], [0.45, 9.6], [0.78, 10.4], [1, 8.4]],

@@ -19,24 +19,6 @@ body.gallery #gl:active { cursor: grabbing; }
 .ex-label.is-hover, .ex-label:hover { --c: var(--yellow); }
 body.is-focus .ex-label { pointer-events: none !important; }
 
-/* úvod */
-.intro {
-  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: calc(var(--header-h) + 30px) 20px 70px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(246,244,241,.55), rgba(246,244,241,.94) 70%);
-  transition: opacity .8s ease, transform .9s cubic-bezier(.5,0,.2,1); overflow: auto;
-}
-.intro.is-gone { opacity: 0; transform: scale(1.08); pointer-events: none; }
-.intro-inner { max-width: 720px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.intro .hero-title { align-items: center; }
-.intro-lead { font-size: clamp(16px, 2.2vw, 20px); color: var(--ink-2); max-width: 540px; margin: 0 0 26px; }
-.intro .hero-cta { justify-content: center; }
-.intro .brick-btn svg { width: 20px; height: 20px; }
-.intro-hint { margin: 22px 0 0; font-family: var(--display); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .45; } }
-.intro-legal { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; font-size: 12.5px; padding: 0 12px; }
-.intro-legal a, .intro-legal .link { color: var(--ink-2); text-decoration: none; font-size: 12.5px; }
-.intro-legal a:hover, .intro-legal .link:hover { text-decoration: underline; }
-
 /* HUD */
 .hud { position: fixed; z-index: 10; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; opacity: 0; transform: translateY(30px); transition: opacity .5s .3s, transform .6s .3s var(--ease-snap); }
 body.is-in .hud { opacity: 1; transform: none; }
@@ -94,3 +76,45 @@ body.is-focus .hud * { pointer-events: none !important; }
   .hud-hint { display: none; }
   .walk-btn { min-height: 58px; }
 }
+
+/* ---------- uvítání ---------- */
+.welcome { position: fixed; z-index: 4; left: 50%; top: calc(var(--header-h) + 30px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; opacity: 0; animation: welcomeIn .8s 2.2s var(--ease-snap) forwards; transition: opacity .5s, transform .5s; }
+.welcome .tile-print { font-size: clamp(13px, 2vw, 17px); --c: #fff; }
+.welcome b { font-weight: 400; color: var(--red); }
+.welcome small { font-family: var(--display); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+body.is-moved .welcome, body.is-focus .welcome { opacity: 0 !important; transform: translate(-50%, -20px); }
+@keyframes welcomeIn { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.corner-legal { position: fixed; z-index: 4; left: 14px; bottom: calc(10px + env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; max-width: 40vw; }
+.corner-legal a { color: var(--ink-2); text-decoration: none; opacity: .8; }
+.corner-legal a:hover { opacity: 1; text-decoration: underline; }
+body.is-focus .corner-legal { opacity: 0; pointer-events: none; }
+@media (max-width: 900px), (max-aspect-ratio: 9/10) { .corner-legal { display: none; } }
+
+/* ---------- tlačítko na drátku ---------- */
+.hang { position: fixed; z-index: 12; left: 50%; top: 0; height: 72vh; height: 72dvh; width: 0; pointer-events: none;
+  transform: translateY(-110%); transform-origin: 50% 0; }
+body.is-ready .hang { animation: hangDrop 1.4s cubic-bezier(.25, 1.4, .45, 1) forwards, hangSwing 3.2s 1.4s ease-in-out infinite; }
+body.is-focus .hang { opacity: 0; transition: opacity .3s; }
+body.is-focus .hang * { pointer-events: none !important; }
+.hang-wire { position: absolute; left: -1px; top: 0; bottom: 34px; width: 2px; background: linear-gradient(#9a958e, #3b3a38); border-radius: 1px; }
+.hang-btn { position: absolute; left: 0; bottom: 0; transform: translateX(-50%); pointer-events: auto; min-height: 64px; padding: 16px 30px 14px; font-size: 18px; gap: 10px;
+  --stud-w: 18px; --stud-h: 7px; --stud-cap: 7px; animation: beat 1.6s 3.8s ease-in-out infinite; }
+.hang-btn:hover { transform: translateX(-50%) translateY(-2px); }
+.hang-btn:active, .hang-btn.is-pressed { transform: translateX(-50%) translateY(5px); }
+.hang-btn svg { width: 24px; height: 24px; }
+.hang-btn::after { content: ''; position: absolute; inset: -6px; border-radius: 8px; border: 3px solid var(--red); opacity: 0; animation: ring 1.6s 3.8s ease-out infinite; pointer-events: none; }
+.hang.is-pulled .hang-btn { animation: tug .5s ease; }
+@keyframes hangDrop { 0% { transform: translateY(-110%); } 100% { transform: translateY(0); } }
+@keyframes hangSwing { 0%, 100% { transform: rotate(1.6deg); } 50% { transform: rotate(-1.6deg); } }
+@keyframes beat { 0%, 100% { filter: brightness(1); } 15% { filter: brightness(1.35); } 30% { filter: brightness(1); } 45% { filter: brightness(1.35); } }
+@keyframes ring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes tug { 0% { transform: translateX(-50%) translateY(0); } 35% { transform: translateX(-50%) translateY(26px); } 100% { transform: translateX(-50%) translateY(0); } }
+@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: 64vh; height: 64dvh; } }
+
+/* ---------- teleport: rozmazání ---------- */
+body.is-warp #gl { animation: warpBlur .8s cubic-bezier(.45, 0, .3, 1); }
+@keyframes warpBlur { 0% { filter: none; transform: none; } 40% { filter: blur(20px) brightness(1.15) saturate(1.25); transform: scale(1.16); } 100% { filter: none; transform: none; } }
+.warp-flash { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 15%, rgba(255,255,255,.9) 75%); }
+body.is-warp .warp-flash { animation: warpFlash .8s ease; }
+@keyframes warpFlash { 0%, 100% { opacity: 0; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body.is-warp #gl { filter: none; transform: none; } .hang { animation: none !important; transform: none; } }
