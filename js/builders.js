@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BrickModel, buildHeart } from './models.js';
 import { buildOrchid, buildMiniOrchid, buildTulips, buildTinyPlants, buildCactus, buildChrysanthemum, buildPeaceLily, buildPlumBlossom, buildBonsai } from './flowers.js';
-import { loadLDraw, LDrawModel } from './ldmodel.js';
+import { loadLDraw, loadCarGLB, LDrawModel } from './ldmodel.js';
 
 export const BUILDERS = {
   orchid: buildOrchid, miniorchid: buildMiniOrchid, tulips: buildTulips, tinyplants: buildTinyPlants, cactus: buildCactus,
@@ -21,8 +21,14 @@ export const LD_CARS = {
 };
 const ldData = new Map();
 // načte data aut (volitelně jen vybraná) – voláme před stavbou scény
+// na mobilu se načítá odlehčená verze z Blenderu (méně ploch), na počítači plná
+export const LITE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 820;
 export function ready(ids = Object.keys(LD_CARS)) {
-  return Promise.all(ids.filter((id) => LD_CARS[id]).map((id) => loadLDraw(new URL(LD_CARS[id].file, BASE).href).then((d) => ldData.set(id, d))));
+  return Promise.all(ids.filter((id) => LD_CARS[id]).map((id) => {
+    const spec = LD_CARS[id];
+    const p = spec.glb ? loadCarGLB(new URL(LITE ? spec.glb.replace('.glb', '-lite.glb') : spec.glb, BASE).href) : loadLDraw(new URL(spec.file, BASE).href);
+    return p.then((d) => ldData.set(id, d));
+  }));
 }
 
 class LDCar {
