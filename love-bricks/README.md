@@ -30,7 +30,7 @@ python3 -m http.server 8765
 | `js/solid.js` | načte `.glb` z Blenderu a jednou ho slije do jednoho modelu (pár draw callů, za běhu se nic nepřepočítává) |
 | `js/ldmodel.js`, `js/ldbake.worker.js` | starší načítání po dílcích – používá ho jen nástroj `tools/ldraw/cull.html` |
 | `models/*.glb` | auta a bonsaj převedené z LDraw a zjednodušené v Blenderu (Porsche 911, Lamborghini Sián, Bugatti Chiron, Bonsaj 10281); `*-lite.glb` = odlehčená verze pro mobil – viz `tools/ldraw/README.md` |
-| `js/figures.js` + `models/figure.json` | figurky z originálních dílků: kluk v bílém tričku a modrých kalhotách, holka s culíky (vlasy 35701), krátkýma nohama (41879a) a v růžovo-modré mikině; potisk trupu a obličeje je namalovaný |
+| `js/figures.js` + `models/figure.json` | figurky z originálních dílků: kluk v bílém tričku a modrých kalhotách, holka s culíky (vlasy 35701), krátkýma nohama (41879a) a v růžové mikině; potisk trupu a obličeje je namalovaný |
 | `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
 | `js/products.js` | ukázková data produktů (ceny, počty dílků, varianty) |

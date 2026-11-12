@@ -1,6 +1,6 @@
 // Love Bricks – figurky složené z originálních dílků (LDraw): boky, nohy, trup, ruce, dlaně,
 // hlava a vlasy. Potisk trupu a obličeje je namalovaný podle předloh:
-// kluk v bílém tričku a tmavě modrých kalhotách, holka v růžovo-modré mikině s culíky a krátkýma nohama.
+// kluk v bílém tričku a tmavě modrých kalhotách, holka v růžové mikině s culíky a krátkýma nohama.
 import * as THREE from 'three';
 
 const PI = Math.PI;
@@ -100,22 +100,14 @@ function faceTex(happy) {
   });
 }
 
-// ---------- holka: světle růžová mikina s modrým pásem, bílým zigzagem a tkaničkami kapuce ----------
+// ---------- holka: celá světle růžová mikina s kapucí a tkaničkami ----------
 function girlTorsoTex() {
   return canvasTex(800, 640, (g, W, H) => {
-    const pink = LOOKS.girl.shirt, blue = '#3E8EDE', ink = '#1B2A4A';
+    const pink = LOOKS.girl.shirt, ink = '#1B2A4A';
     g.fillStyle = pink; g.fillRect(0, 0, W, H);
-    // modrý pás: šikmý horní okraj (vlevo výš), dole až k lemu
-    g.fillStyle = blue;
-    g.beginPath(); g.moveTo(0, 300); g.lineTo(W, 215); g.lineTo(W, H); g.lineTo(0, H); g.closePath(); g.fill();
-    // bílo-růžový zigzag přes modrou
-    const zig = (y0, y1, col, w) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'butt'; g.beginPath(); g.moveTo(-20, y0); g.lineTo(330, y1); g.lineTo(W + 20, y0 - 60); g.stroke(); };
-    zig(340, 440, '#F7F4F6', 44); zig(394, 494, pink, 28);
-    g.strokeStyle = ink; g.lineWidth = 5; g.beginPath(); g.moveTo(0, 300); g.lineTo(W, 215); g.stroke();
-    // žebrovaný lem dole
-    g.fillStyle = '#2F78C4'; g.fillRect(0, 568, W, 72);
-    g.strokeStyle = ink; g.lineWidth = 4; g.beginPath(); g.moveTo(0, 568); g.lineTo(W, 568); g.stroke();
-    g.lineWidth = 3; for (let x = 12; x < W; x += 26) { g.beginPath(); g.moveTo(x, 580); g.lineTo(x, 628); g.stroke(); }
+    // žebrovaný lem dole (o odstín tmavší růžová)
+    g.fillStyle = '#D69CC8'; g.fillRect(0, 572, W, 68);
+    g.strokeStyle = 'rgba(0,0,0,.14)'; g.lineWidth = 3; for (let x = 12; x < W; x += 26) { g.beginPath(); g.moveTo(x, 584); g.lineTo(x, 628); g.stroke(); }
     // výstřih kapuce se šňůrkami
     g.strokeStyle = ink; g.lineWidth = 6; g.lineCap = 'round';
     g.beginPath(); g.moveTo(250, 10); g.lineTo(400, 70); g.lineTo(550, 10); g.stroke();
