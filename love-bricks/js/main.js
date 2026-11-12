@@ -147,21 +147,24 @@ const stages = $$('.stage').map((el, i) => {
   figSlot(st.girlEl, true, -1, { phase: i + 2 });
   return st;
 });
-function updateStages() {
+// Scéna se složí sama a rychle, jakmile se objeví (nečeká se na další scroll):
+// b = postup skládání, c = vyjetí karty a panáčků.
+function updateStages(now) {
   const vh = innerHeight;
   for (const st of stages) {
     const r = st.el.getBoundingClientRect();
     if (r.bottom < -60 || r.top > vh + 60) continue;
-    let b = clamp((vh * 0.55 - r.top) / vh);
-    let c = clamp((vh * 0.55 - r.top - vh * 0.92) / (vh * 0.45));
-    if (reduceMotion) { b = r.top < vh * 0.6 ? 1 : 0; c = b; }
+    if (!st.t0 && r.top < vh * 0.65) st.t0 = now;
+    const k = st.t0 ? (now - st.t0) / 1000 : 0;
+    const b = reduceMotion ? (st.t0 ? 1 : 0) : clamp(k / 0.9);
+    const c = reduceMotion ? b : clamp((k - 0.55) / 0.6);
     if (Math.abs(b - st.b) > 1e-4) {
       st.b = b; st.el.style.setProperty('--sb', b.toFixed(4));
       st.count.textContent = b >= 1 ? `Hotovo · ${st.p.pieces} dílků ♥` : `Skládám… ${Math.round(b * st.p.pieces)} / ${st.p.pieces}`;
     }
     if (Math.abs(c - st.c) > 1e-4) { st.c = c; st.el.style.setProperty('--sc', c.toFixed(4)); }
     const ctl = st.modelEl.__ctl;
-    if (ctl && !ctl.auto) ctl.model.setProgress(b);
+    if (ctl && !ctl.auto) ctl.model.setProgress(easeInOut(b));
     const boy = st.boyEl.__fig, girl = st.girlEl.__fig;
     if (boy) { boy.set('show', c > 0.1); boy.set('point', c > 0.55); }
     if (girl) { girl.set('show', c > 0.22); girl.set('love', c > 0.85); }
@@ -174,7 +177,7 @@ $$('.gcard').forEach((card, i) => {
   slot.dataset.pid = card.dataset.product;
   const car = byId(card.dataset.product).tags.includes('auta');
   modelSlot(slot, slot.dataset.gmodel, { startProgress: 0, swing: 0.5, rotY: car ? -0.6 : 0, phase: i * 0.7, margin: 1.12, elevation: car ? 0.35 : 0.2, radiusK: car ? 0.9 : 1, shadow: true }, (ctl) => {
-    ctl.onUpdate = () => { if (!ctl.started) { ctl.started = true; ctl.auto = { from: 0, to: 1, dur: reduceMotion ? 0.01 : 1.9, t: -0.15 }; } };
+    ctl.onUpdate = () => { if (!ctl.started) { ctl.started = true; ctl.auto = { from: 0, to: 1, dur: reduceMotion ? 0.01 : 0.9, t: 0 }; } };
   });
   card.addEventListener('pointerenter', (e) => {
     if (e.pointerType !== 'mouse') return;
@@ -233,7 +236,7 @@ window.__lb.perf = perf;
 function loop(now) {
   const t0 = performance.now();
   if (stage) stage.measure();
-  updateStages();
+  updateStages(now);
   if (stage) { updateHero(); stage.render(now); }
   const d = performance.now() - t0;
   perf.n++; perf.sum += d; if (d > perf.max) perf.max = d;

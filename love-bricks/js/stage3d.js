@@ -1,6 +1,6 @@
-// Jeden WebGL canvas přes celou obrazovku, který kreslí 3D jen do "slotů" –
-// HTML prvků na stránce (scissor rendering). Díky tomu je na stránce
-// jediný WebGL kontext a 3D přesně sedí v layoutu.
+// Jeden (skrytý) WebGL kontext pro celou stránku. Každý 3D „slot“ (HTML prvek) má vlastní 2D plátno:
+// scéna se vykreslí do WebGL a hned zkopíruje do plátna ve slotu. Plátno je součástí stránky,
+// takže při scrollu jede přesně se zbytkem obsahu a nikdy se neopožďuje.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 
@@ -11,6 +11,7 @@ export class Stage3D {
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
     const r = this.renderer;
+    canvas.style.display = 'none'; // kreslí se mimo obrazovku, výsledek se kopíruje do slotů
     r.setClearColor(0x000000, 0);
     r.autoClear = false;
     r.outputColorSpace = THREE.SRGBColorSpace;
@@ -58,6 +59,11 @@ export class Stage3D {
   // create(slot) → { object, fit:{center:Vector3, height, radius}, update?(dt,t,slot) }
   add(el, create, opts = {}) {
     const slot = { el, create, opts, created: false, near: false, rect: null, rotY: opts.rotY ?? 0, user: 0, vel: 0, aspect: 0, visible: false };
+    const out = document.createElement('canvas');
+    out.className = 'slot-canvas'; out.setAttribute('aria-hidden', 'true');
+    out.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block';
+    el.prepend(out);
+    slot.out = out; slot.ctx = out.getContext('2d');
     el.__slot = slot;
     this.slots.push(slot);
     this.io.observe(el);
@@ -164,9 +170,8 @@ export class Stage3D {
     const t = now / 1000;
     const r = this.renderer, W = this.W, H = this.H;
     r.info.reset();
-    r.setScissorTest(false);
-    r.clear(true, true, false);
     r.setScissorTest(true);
+    const dpr = this.dpr;
     let vis = 0;
     for (const s of this.slots) {
       const rc = s.rect;
@@ -178,15 +183,19 @@ export class Stage3D {
       s.pivot.rotation.y = s.rotY + s.user + (spin ? t * spin : Math.sin(t * 0.45 + (s.opts.phase ?? 0)) * swing);
       s.res.update?.(dt, t, s, rawDt);
       if (s.shadow) { const k = s.res.object.visible === false ? 0 : s.res.object.scale.x; s.shadow.visible = k > 0.01; s.shadow.scale.setScalar(s.shadow.userData.base * Math.min(1, k)); }
-      const aspect = rc.width / rc.height;
+      // velikost slotu (nejvýš velikost okna) a jeho plátna
+      const w = Math.min(W, Math.round(rc.width)), h = Math.min(H, Math.round(rc.height));
+      const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+      if (s.out.width !== pw || s.out.height !== ph) { s.out.width = pw; s.out.height = ph; }
+      const aspect = w / h;
       if (Math.abs(aspect - s.aspect) > 1e-3) this._frame(s, aspect);
-      r.setViewport(rc.left, H - rc.bottom, rc.width, rc.height);
-      const x0 = Math.max(0, rc.left), y0 = Math.max(0, H - rc.bottom);
-      const x1 = Math.min(W, rc.right), y1 = Math.min(H, H - rc.top);
-      r.setScissor(x0, y0, x1 - x0, y1 - y0);
-      r.clearDepth();
+      r.setViewport(0, 0, w, h); r.setScissor(0, 0, w, h);
+      r.clear(true, true, false);
       r.render(s.scene, s.camera);
+      s.ctx.clearRect(0, 0, pw, ph);
+      s.ctx.drawImage(this.canvas, 0, this.canvas.height - ph, pw, ph, 0, 0, pw, ph);
     }
+    r.setScissorTest(false);
     // statistiky + adaptivní rozlišení
     this.frameTimes.push(dt);
     if (this.frameTimes.length >= 90) {

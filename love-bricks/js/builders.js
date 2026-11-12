@@ -1,18 +1,13 @@
 // Registr všech modelů Love Bricks.
-// Květiny se staví procedurálně z kostek, auta a bonsaj jsou skutečné stavby z originálních
-// dílků (LDraw → Blender → .glb), které se po načtení slijí do jednoho modelu (js/solid.js).
+// Auta, bonsaj i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
+// které se po načtení slijí do jednoho modelu (js/solid.js). Procedurálně zůstalo jen srdce.
 import * as THREE from 'three';
 import { BrickModel, buildHeart } from './models.js';
-import { buildOrchid, buildMiniOrchid, buildTulips, buildTinyPlants, buildCactus, buildChrysanthemum, buildPeaceLily, buildPlumBlossom } from './flowers.js';
 import { loadSolid, SolidModel } from './solid.js';
 
-export const BUILDERS = {
-  orchid: buildOrchid, miniorchid: buildMiniOrchid, tulips: buildTulips, tinyplants: buildTinyPlants, cactus: buildCactus,
-  chrysanthemum: buildChrysanthemum, peacelily: buildPeaceLily, plum: buildPlumBlossom,
-  heart: buildHeart
-};
+export const BUILDERS = { heart: buildHeart }; // procedurální modely (srdce v úvodu přehledu)
 
-// auta a bonsaj: hotové modely z originálních dílků (LDraw), v Blenderu slité do jednoho modelu
+// hotové modely z originálních dílků (LDraw), v Blenderu zjednodušené a po načtení slité do jednoho modelu
 // body = kódy barev laku pro varianty, fixed = pevné přebarvení, looks = sady přebarvení podle varianty
 const BASE = new URL('../models/', import.meta.url);
 export const LD_CARS = {
@@ -20,7 +15,16 @@ export const LD_CARS = {
   sian: { file: 'sian', body: [27], fixed: { 82: '#C2309A' } },          // růžová verze: purpurové disky
   chiron: { file: 'chiron', body: [321], fixed: { 272: '#1B1D22', 1: '#1B1D22' } }, // oranžová s černou
   // bonsaj 10281: varianta Sakura přebarví listy (zelená, světle zelená) na růžové květy
-  bonsai: { file: 'bonsai', flower: true, key: 'foliage', looks: { '#F59BC0': { 2: '#F59BC0', 10: '#FFD3E4' } } }
+  bonsai: { file: 'bonsai', flower: true, key: 'foliage', looks: { '#F59BC0': { 2: '#F59BC0', 10: '#FFD3E4' } } },
+  // květiny složené z dílků (tools/flowers); looks = přebarvení podle zvolené varianty (první varianta = původní barvy)
+  orchid: { file: 'orchid', flower: true, key: 'pot', looks: { '#F2F3F2': { 379: '#F2F3F2' }, '#3E4347': { 379: '#3E4347' } } },
+  miniorchid: { file: 'miniorchid', flower: true, key: 'petal', looks: { '#F2F3F2': { 78: '#F2F3F2' }, '#FC97AC': { 78: '#FC97AC' } } },
+  tulips: { file: 'tulips', flower: true },
+  tinyplants: { file: 'tinyplants', flower: true, key: 'pot', looks: { '#F2F3F2': { 484: '#F2F3F2' }, '#3E4347': { 484: '#3E4347' } } },
+  cactus: { file: 'cactus', flower: true, key: 'pot', looks: { '#FC97AC': { 212: '#FC97AC' }, '#F2F3F2': { 212: '#F2F3F2' } } },
+  chrysanthemum: { file: 'chrysanthemum', flower: true, key: 'flower', looks: { '#F5C518': { 25: '#F5C518', 484: '#E0A800' }, '#E4569A': { 25: '#E4569A', 484: '#C2307A' } } },
+  peacelily: { file: 'peacelily', flower: true, key: 'pot', looks: { '#F2F3F2': { 78: '#F2F3F2' }, '#A3501E': { 78: '#A3501E' } } },
+  plum: { file: 'plum', flower: true, key: 'flower', looks: { '#FC97AC': { 4: '#FC97AC', 320: '#E87FA0' }, '#F2F3F2': { 4: '#F2F3F2', 320: '#E4E4E4' } } }
 };
 const solidData = new Map();
 // na mobilu se načítá odlehčená verze (méně ploch), na počítači plná

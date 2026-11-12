@@ -45,7 +45,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.05; margin: 0; letter-spacing: .01em; }
 .baseplate { background-image: var(--plate); background-size: var(--plate-size); }
 
-#gl { position: fixed; left: 0; top: 0; z-index: 5; pointer-events: none; display: block; }
+#gl { display: none; } /* skrytý WebGL kontext – 3D se kopíruje do plátna v každém slotu */
 
 /* ---------- výstupky (studs) ---------- */
 .studs {
@@ -209,7 +209,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.05; m
 .occ.c2 { --c: var(--hotpink); } .occ.c3 { --c: var(--blue); } .occ.c4 { --c: #26292F; }
 
 /* ---------- scéna produktu ---------- */
-.stage { position: relative; height: 270vh; background-color: var(--bg); color: var(--ink); }
+.stage { position: relative; height: 150vh; background-color: var(--bg); color: var(--ink); }
 .stage.dark .tile-print { --c: #2F343A; color: #fff; }
 .stage-back, .stage-front { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
 .stage-front { margin-top: -100vh; margin-top: -100svh; z-index: 6; pointer-events: none; }
@@ -263,7 +263,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.05; m
 .perks li::before { content: ''; width: 9px; height: 9px; border-radius: 2px; background: var(--green); box-shadow: inset 0 -2px 0 rgba(0,0,0,.2); }
 
 @media (max-width: 900px) {
-  .stage { height: 250vh; }
+  .stage { height: 140vh; }
   .stage-model, .stage[data-from="-1"] .stage-model { left: 0; right: 0; width: auto; top: calc(var(--header-h) + 22px); bottom: auto; height: 52svh; }
   .fig { width: 30%; height: 44%; bottom: -4%; }
   .stage-meta, .stage[data-from="-1"] .stage-meta { left: 14px; right: auto; top: calc(var(--header-h) + 22px); }
