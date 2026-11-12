@@ -231,6 +231,14 @@ export class Figure {
       h.userData = { a: (i / 7) * PI * 2, r: 1.7 + (i % 3) * 0.3, y: 1.6 + (i % 4) * 0.6, s: 0.2 + (i % 3) * 0.06, sp: 0.5 + (i % 2) * 0.25 };
       this.root.add(h); this.hearts.push(h);
     }
+    // štíhlejší postava: trup, boky, nohy a sukně užší, hlava a ruce beze změny tvaru
+    const shoulders = new Set(this.arms.map((x) => x.shoulder));
+    for (const ch of this.body.children) {
+      if (ch === this.head) continue;
+      if (shoulders.has(ch)) { ch.position.x *= 0.8; continue; }
+      ch.scale.x *= 0.78; ch.scale.z *= 0.9; ch.position.x *= 0.78;
+    }
+    for (const a of this.arms) a.shoulder.scale.setScalar(0.92);
     this.state = { show: false, point: false, love: false, side: 1, wave: 0 };
     this.anim = { show: 0, point: 0, love: 0, jump: 0 };
     this.root.scale.setScalar(0.0001);
