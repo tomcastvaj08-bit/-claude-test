@@ -99,7 +99,7 @@ function makeGeo(key) {
   switch (p[0]) {
     case 'brick': case 'tile': {
       const w = n(1), d = n(2), h = n(3);
-      const box = new RoundedBoxGeometry(w - 0.04, h - 0.02, d - 0.04, 2, Math.min(0.07, h * 0.2));
+      const box = new RoundedBoxGeometry(w - 0.04, h - 0.02, d - 0.04, h <= 0.4 ? 1 : 2, Math.min(0.07, h * 0.2));
       if (p[0] === 'tile') return box;
       const parts = [ni(box), ...studParts(w, d, h / 2 - 0.01).map(ni)];
       return mergeGeometries(parts);

@@ -1,6 +1,6 @@
 // Love Bricks – hlavní stránka: 3D scény, scroll choreografie, katalog, košík.
 import * as THREE from 'three';
-import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion } from './common.js';
+import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
 import { createModel } from './models.js';
@@ -214,25 +214,6 @@ document.addEventListener('click', (e) => {
   const hl = e.target.closest('.hl');
   if (hl) { hl.style.animation = 'none'; void hl.offsetWidth; hl.style.animation = 'hop .45s var(--ease-snap)'; }
 });
-
-function flyBrick(from, color) {
-  const header = $('#header'); header.classList.remove('is-hidden');
-  const target = $('.cart-btn');
-  const a = from.getBoundingClientRect(), b = target.getBoundingClientRect();
-  const el = document.createElement('div');
-  el.className = 'fly-brick brick'; el.dataset.studs = '';
-  el.style.setProperty('--c', color);
-  el.style.left = a.left + a.width / 2 - 17 + 'px'; el.style.top = a.top + a.height / 2 - 11 + 'px';
-  document.body.appendChild(el); studify(document.body);
-  const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
-  const done = () => { el.remove(); target.classList.remove('bump'); void target.offsetWidth; target.classList.add('bump'); };
-  if (reduceMotion || !el.animate) return done();
-  el.animate([
-    { transform: 'translate(0,0) rotate(0) scale(1)' },
-    { transform: `translate(${dx * 0.45}px, ${Math.min(dy * 0.5, 0) - 160}px) rotate(200deg) scale(1.3)`, offset: 0.5 },
-    { transform: `translate(${dx}px, ${dy}px) rotate(360deg) scale(.55)` }
-  ], { duration: 780, easing: 'cubic-bezier(.4,0,.6,1)' }).onfinish = done;
-}
 
 function setFilter(tag) {
   $$('[data-filter]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.filter === tag)));
