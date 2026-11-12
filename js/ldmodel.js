@@ -133,6 +133,10 @@ export class LDrawModel {
     if (!codes) return;
     const c = new THREE.Color(hex);
     for (const code of codes) this.recolor.set(code, c);
+    this.refresh();
+  }
+  // po změně this.recolor: přebarví dílky a znovu spojí složený model
+  refresh() {
     this.applyColors();
     this.bakeVersion++;
     if (this.baked) { this.group.remove(this.baked); this.baked = null; }

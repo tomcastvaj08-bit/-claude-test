@@ -17,6 +17,8 @@ const BASE = new URL('../models/', import.meta.url);
 export const LD_CARS = {
   porsche911: { glb: 'porsche911.glb', body: [15] },
   sian: { glb: 'sian.glb', body: [27], fixed: { 82: '#C2309A' } },          // růžová verze: purpurové disky
+  // bonsaj 10281: varianta Sakura přebarví listy (zelená, světle zelená) na růžové květy
+  bonsai: { glb: 'bonsai.glb', flower: true, key: 'foliage', looks: { '#F59BC0': { 2: '#F59BC0', 10: '#FFD3E4' } } },
   chiron: { glb: 'chiron.glb', body: [321], fixed: { 272: '#1B1D22', 1: '#1B1D22' } } // oranžová s černou
 };
 const ldData = new Map();
@@ -38,16 +40,25 @@ class LDCar {
     for (const [code, hex] of Object.entries(spec.fixed || {})) this.m.recolor.set(+code, new THREE.Color(hex));
     this.spec = spec;
     this.group = new THREE.Group();
-    const inner = new THREE.Group(); inner.rotation.y = Math.PI / 2; inner.add(this.m.group); // příď do +x
+    const inner = new THREE.Group(); inner.rotation.y = spec.flower ? 0 : Math.PI / 2; inner.add(this.m.group); // příď do +x
     this.group.add(inner);
-    this.box = this.m.box.clone().applyMatrix4(new THREE.Matrix4().makeRotationY(Math.PI / 2));
+    this.box = this.m.box.clone().applyMatrix4(new THREE.Matrix4().makeRotationY(spec.flower ? 0 : Math.PI / 2));
     this.m.applyColors();
   }
   get progress() { return this.m.progress; }
   get items() { return this.m.items; }
   get meshes() { return this.m.meshes; }
   setProgress(t) { this.m.setProgress(t); }
-  setVariant(key, hex) { if (key === 'body') this.m.setVariant(key, hex, this.spec.body); }
+  setVariant(key, hex) {
+    const s = this.spec;
+    if (s.looks) { // pevné sady přebarvení (původní barvy = bez přebarvení)
+      if (key !== s.key) return;
+      const all = new Set(Object.values(s.looks).flatMap((l) => Object.keys(l)));
+      for (const code of all) if (!(s.fixed && code in s.fixed)) this.m.recolor.delete(+code);
+      for (const [code, h] of Object.entries(s.looks[hex] || {})) this.m.recolor.set(+code, new THREE.Color(h));
+      this.m.refresh();
+    } else if (key === 'body') this.m.setVariant(key, hex, s.body);
+  }
 }
 
 const defCache = new Map();

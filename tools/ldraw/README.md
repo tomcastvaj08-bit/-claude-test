@@ -36,6 +36,7 @@ zjednoduší (meshoptimizer), tvar zůstává.
 * Porsche 911 (10295) – Ulrich Röder
 * Lamborghini Sián FKP 37 (42115) – Jens Brühl (na webu přebarveno na růžovou)
 * Bugatti Chiron (42083) – Philippe Hurbain (na webu přebarveno na oranžovo-černou)
+* Bonsaj (10281) – Orion Pobursky (varianta Sakura = přebarvené listy)
 * Knihovna dílků – LDraw.org Parts Library
 
 ## Velikosti (plná / mobilní verze)
@@ -45,3 +46,4 @@ zjednoduší (meshoptimizer), tvar zůstává.
 | Porsche 911 | 1 128 | 189 tis. / 101 tis. | 1,04 MB / 0,74 MB |
 | Lamborghini Sián | 2 728 | 490 tis. / 246 tis. | 1,51 MB / 1,21 MB |
 | Bugatti Chiron | 2 370 | 410 tis. / 213 tis. | 1,37 MB / 1,08 MB |
+| Bonsaj | 610 | 97 tis. / 61 tis. | 0,41 MB / 0,33 MB |
