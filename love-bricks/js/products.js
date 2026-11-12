@@ -37,28 +37,16 @@ export const ALL = [
   { id: 'bonsai', model: 'bonsai', name: 'Bonsaj', line: BOT, price: 1399, pieces: 878, size: '18 cm', age: '18+', tags: ['rodina', 'pary'], featured: true,
     kicker: 'Zelená nebo v květu', desc: 'Kroucený kmen v černé misce s oblázky na dřevěném stojánku. Listy můžeš vyměnit za růžové květy sakury – dva stromky v jednom.',
     variant: { key: 'foliage', label: 'Koruna', options: [['Zelená', '#4B9F4A'], ['Sakura', '#F59BC0']] }, bg: '#EAF2E1', ink: '#1A2A10', accent: '#4B9F4A', word: 'BONSAJ' },
-  // ------------------------------------------------ auta
-  { id: 'chiron', model: 'chiron', name: 'Bugatti Chiron', line: CAR, price: 1599, pieces: 771, size: '33 cm', age: '9+', tags: ['auta', 'rodina'],
-    kicker: 'Podkova a C-linka', desc: 'Legendární hypersport s typickou podkovou masky, C-linkou na boku a vysunutým zadním křídlem. Oranžová s černou.',
-    variant: { key: 'body', label: 'Lak', options: [['Oranžová', '#F57C1F'], ['Modrá', '#1E5AA8'], ['Černá', '#26292F']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#F57C1F', accentInk: '#1B1D22', word: 'CHIRON', dark: true },
-  { id: 'huracan', model: 'huracan', name: 'Lamborghini Huracán Tecnica', line: CAR, price: 1299, pieces: 806, size: '31 cm', age: '9+', tags: ['auta', 'rodina'], featured: true,
-    kicker: 'Pro něj, pro ni, pro tátu', desc: 'Ostrá klínovitá silueta, světla do Y, šestiúhelníkové detaily a pevné zadní křídlo. Zářivě zelená jako originál.',
-    variant: { key: 'body', label: 'Lak', options: [['Verde', '#9BCB1B'], ['Arancio', '#FE8A18'], ['Bianco', '#F2F3F2']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#9BCB1B', accentInk: '#1B1D22', word: 'HURACÁN', dark: true },
-  { id: 'sian', model: 'sian', name: 'Lamborghini Sián – růžové', line: CAR, price: 1999, pieces: 1280, size: '40 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
-    kicker: 'Pro holky, co milují rychlost', desc: 'Růžový supersport s obřím zadním křídlem, purpurovými disky a šesti výfuky. Dárek, ze kterého se tají dech.',
-    variant: { key: 'body', label: 'Lak', options: [['Rosa', '#F7A8C8'], ['Bianco', '#F2F3F2'], ['Verde', '#9BCB1B']] }, bg: '#FFE4EF', ink: '#3B0A22', accent: '#D3359D', word: 'SIÁN' },
-  { id: 'daytona', model: 'daytona', name: 'Ferrari Daytona SP3', line: BIG, price: 9999, pieces: 3778, size: '59 cm', age: '18+', tags: ['auta'], featured: true,
-    kicker: 'Velký model pro sběratele', desc: 'Oblé svalnaté blatníky, černá targa střecha, žaluzie na zádi a stříbrná pětipaprsková kola. Výstavní kousek v měřítku 1:8.',
-    variant: { key: 'body', label: 'Lak', options: [['Rosso', '#D01012'], ['Giallo', '#F5C518'], ['Nero', '#26292F']] }, bg: '#3A0D10', ink: '#FFF3E6', accent: '#F5C518', accentInk: '#1B1D22', word: 'SP3', dark: true },
-  { id: 'mclaren', model: 'mclaren', name: 'McLaren P1', line: BIG, price: 11499, pieces: 3893, size: '58 cm', age: '18+', tags: ['auta'],
-    kicker: 'Hybridní legenda', desc: 'Žlutooranžová karoserie s černou střechou, „bumerangová“ světla, velké zadní křídlo a centrální výfuk. Model 1:8 pro opravdové fanoušky.',
-    variant: { key: 'body', label: 'Lak', options: [['Volcano Yellow', '#F6A81C'], ['Papaya', '#FF7A1A'], ['Šedá', '#8C9096']] }, bg: '#14171B', ink: '#F4F6F8', accent: '#F6A81C', accentInk: '#1B1D22', word: 'P1', dark: true },
-  { id: 'mercedes', model: 'mercedes', name: 'Mercedes-AMG G 63 & SL 63', line: CAR, price: 1599, pieces: 808, size: '2 auta', age: '10+', tags: ['auta', 'rodina', 'pary'],
-    kicker: 'Dvě auta v jedné krabici', desc: 'Hranatý černý G 63 s rezervou na zádi a žlutý kabriolet SL 63 s otevřenou střechou. Pro dva – nebo pro jednoho, kdo chce obojí.',
-    variant: { key: 'body', label: 'SL 63', options: [['Žlutá', '#F5C518'], ['Červená', '#D01012'], ['Stříbrná', '#C9CCD0']] }, bg: '#EDEDED', ink: '#1A1D21', accent: '#F5C518', accentInk: '#1B1D22', word: 'AMG' },
-  { id: 'visiongt', model: 'visiongt', name: 'Bugatti Vision Gran Turismo', line: CAR, price: 549, pieces: 284, size: '17 cm', age: '9+', tags: ['auta', 'rodina'],
-    kicker: 'Malý dárek, velká rychlost', desc: 'Dvoubarevná modrá závodní vize s podkovou, číslem 16 a obrovským zadním křídlem. Ideální drobnost k narozeninám.',
-    variant: { key: 'body', label: 'Lak', options: [['Modrá', '#3F9BE8'], ['Oranžová', '#F57C1F'], ['Bílá', '#F2F3F2']] }, bg: '#E3EEFA', ink: '#0B2342', accent: '#0E2A55', word: 'VISION GT' }
+  // ------------------------------------------------ auta (skutečné modely z originálních dílků)
+  { id: 'porsche911', model: 'porsche911', name: 'Porsche 911', line: BIG, price: 4199, pieces: 1458, size: '45 cm', age: '18+', tags: ['auta', 'pary'], featured: true,
+    kicker: 'Ikona v měřítku 1:12', desc: 'Klasická devětsetjedenáctka s kulatými světly, oranžovými blinkry a střechou targa, kterou jde sundat. Do posledního dílku jako originál.',
+    variant: { key: 'body', label: 'Lak', options: [['Bílá', '#F2F3F2'], ['Stříbrná', '#A0A5A9'], ['Červená', '#C91A09'], ['Černá', '#1B2A34']] }, bg: '#ECEEF0', ink: '#1A1D21', accent: '#C91A09', word: '911' },
+  { id: 'sian', model: 'sian', name: 'Lamborghini Sián – růžové', line: BIG, price: 1999, pieces: 3696, size: '60 cm', age: '18+', tags: ['auta', 'pary'], featured: true,
+    kicker: 'Pro holky, co milují rychlost', desc: 'Růžový supersport s purpurovými disky, nůžkovými dveřmi a obřím zadním křídlem. Model 1:8 složený z technických panelů.',
+    variant: { key: 'body', label: 'Lak', options: [['Rosa', '#F59AC4'], ['Verde', '#A5CA18'], ['Bianco', '#F2F3F2']] }, bg: '#FFE4EF', ink: '#3B0A22', accent: '#D3359D', word: 'SIÁN' },
+  { id: 'chiron', model: 'chiron', name: 'Bugatti Chiron', line: BIG, price: 7999, pieces: 3599, size: '56 cm', age: '16+', tags: ['auta', 'rodina'], featured: true,
+    kicker: 'Podkova a C-linka', desc: 'Legendární hypersport v měřítku 1:8 – podkova masky, C-linka na boku, zadní křídlo a motor W16 uvnitř. Oranžová s černou.',
+    variant: { key: 'body', label: 'Lak', options: [['Oranžová', '#F57C1F'], ['Modrá', '#2E7DD1'], ['Černá', '#26292F']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#F57C1F', accentInk: '#1B1D22', word: 'CHIRON', dark: true }
 ];
 
 export const PRODUCTS = ALL.filter(p => p.featured);

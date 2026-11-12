@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt, OCCASIONS } from './products.js';
-import { createModel } from './builders.js';
+import { createModel, ready } from './builders.js';
 import { Figure } from './figures.js';
 
 initCommon();
@@ -19,11 +19,11 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
 
 // pořadí v chodbě: květina, auto, květina, auto…
-const ORDER = ['orchid', 'huracan', 'tulips', 'sian', 'bonsai', 'daytona', 'miniorchid', 'mclaren', 'chrysanthemum', 'chiron', 'peacelily', 'mercedes', 'plum', 'visiongt', 'cactus', 'tinyplants'];
+const ORDER = ['orchid', 'porsche911', 'tulips', 'sian', 'bonsai', 'chiron', 'miniorchid', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'tinyplants'];
 // velikost v metrech: květiny ~ výška člověka, auta v životní velikosti (délka)
 // obří exponáty: květiny 3–4 m, auta zhruba 1,4× skutečné velikosti
 const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
-  chiron: 6.4, huracan: 6.4, sian: 7.0, daytona: 6.6, mclaren: 6.5, mercedes: 6.9, visiongt: 6.5 };
+  porsche911: 6.2, sian: 6.8, chiron: 6.6 };
 const N = ORDER.length;
 const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10;
 const BG = '#F6F4F1';
@@ -109,6 +109,7 @@ const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: tru
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 
 // ------------------------------------------------------------ exponáty
+await ready();
 const selected = {};
 const labelsEl = $('#labels');
 const exhibits = ORDER.map((id) => {
@@ -523,7 +524,7 @@ function frame(now) {
   for (const ex of exhibits) {
     if (!ex.inWindow) continue;
     const d = slotS(ex.slot) - state.s;
-    ex.root.visible = d > -12 && d < 42;
+    ex.root.visible = d > -12 && d < (ex.car ? 31 : 42); // auta (stovky tisíc ploch) jen zblízka, v dálce je stejně skryje mlha
     if (!ex.root.visible) continue;
     if (ex !== focusEx) {
       let p = clamp((40 - d) / 16);

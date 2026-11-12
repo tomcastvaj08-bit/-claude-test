@@ -112,11 +112,10 @@ export class Figure {
   buildHair(m) {
     const H = this.head;
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.56, 28, 16, 0, PI * 2, 0, PI * 0.52), m); cap.scale.set(1.04, 0.78, 1.06); cap.position.y = 0.74; H.add(cap);
-    const side = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.54, 0.66, 28, 1, true, PI * 0.36, PI * 1.28), m); side.position.y = 0.54; H.add(side);
+    const side = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.54, 0.6, 28, 1, true, PI * 0.62, PI * 0.76), m); side.position.y = 0.57; H.add(side); // jen vzadu, žádné kotlety
     side.material = m; side.geometry.computeVertexNormals();
     const fringe = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.7, 6, 12), m); fringe.rotation.set(0.2, 0.15, PI / 2 - 0.22); fringe.position.set(0.04, 0.9, 0.42); H.add(fringe);
     const sweep = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.5, 6, 12), m); sweep.rotation.set(0.1, 0, PI / 2 + 0.35); sweep.position.set(-0.3, 0.98, 0.32); H.add(sweep);
-    for (const s of [-1, 1]) { const temple = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.3), m); temple.position.set(s * 0.53, 0.6, 0.1); H.add(temple); }
     const tuft = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.42, 10), m); tuft.rotation.set(-1.9, 0, 0.5); tuft.position.set(0.28, 1.0, -0.42); H.add(tuft);
     const tuft2 = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.34, 10), m); tuft2.rotation.set(-1.7, 0, -0.3); tuft2.position.set(0.05, 1.06, -0.48); H.add(tuft2);
   }
