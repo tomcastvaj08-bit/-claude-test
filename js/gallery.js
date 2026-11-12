@@ -7,7 +7,7 @@ import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt, OCCASIONS } from './products.js';
 import { createModel, ready } from './builders.js';
-import { Figure } from './figures.js';
+import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
 
@@ -109,7 +109,7 @@ const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: tru
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 
 // ------------------------------------------------------------ exponáty
-await ready();
+await Promise.all([ready(), loadFigureKit()]);
 const selected = {};
 const labelsEl = $('#labels');
 const exhibits = ORDER.map((id) => {
@@ -173,7 +173,7 @@ const figs = [false, true].map((girl) => {
   return { f, g, hit };
 });
 // Figure.update řídí měřítko rootu (pop-in); měřítko 0.5 držíme na rodičovské skupině
-figs.forEach(({ g }) => { g.scale.setScalar(0.46); });
+figs.forEach(({ g }) => { g.scale.setScalar(0.36); }); // figurka ~6,2 výstupku → ~2,2 m
 
 // ------------------------------------------------------------ pohyb
 const state = { autoPitch: 0, s: -3, v: 0, target: null, walk: 0, hold: 0, yaw: 0, yawT: 0, pitchT: 0, phase: 0, entered: false };
