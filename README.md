@@ -26,8 +26,9 @@ python3 -m http.server 8765
 | `css/style.css` | celý vizuální systém kostek (`.brick`, `.brick-btn`, `.brick-card`, `.tile-print`, výstupky) |
 | `js/models.js` | jádro 3D stavebnice: dílky, materiály, animace skládání |
 | `js/flowers.js` | květiny: orchidej, mini orchidej, kytice tulipánů, malé rostlinky, kvetoucí kaktus, chryzantéma, lopatkovec, kvetoucí slivoň, bonsaj |
-| `js/cars.js` | auta z panelů: Bugatti Chiron, Lamborghini Huracán Tecnica, Lamborghini Sián (růžové), Ferrari Daytona SP3, McLaren P1, Mercedes-AMG G 63 & SL 63, Bugatti Vision GT |
-| `js/builders.js` | registr všech modelů |
+| `js/builders.js` | registr všech modelů (květiny procedurálně, auta ze souborů `.lbm`) |
+| `js/ldmodel.js`, `js/ldbake.worker.js` | načítání aut z originálních dílků, skládání po dílcích, spojení složeného auta do jedné geometrie |
+| `models/*.lbm` | auta převedená z LDraw (Porsche 911, Lamborghini Sián, Bugatti Chiron) – viz `tools/ldraw/README.md` |
 | `js/figures.js` | panáček v klasickém stylu: červené tričko a ruce, modré kalhoty, žlutá hlava s tečkami a úsměvem, hnědé vlasy sčesané na stranu |
 | `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |

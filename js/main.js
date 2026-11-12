@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
-import { createModel } from './builders.js';
+import { createModel, ready } from './builders.js';
+await ready();
 import { Figure } from './figures.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -21,7 +22,7 @@ ALL.forEach(p => { selected[p.id] = 0; });
 function stageHTML(p, i) {
   const from = i % 2 === 0 ? 1 : -1;
   const v = p.variant;
-  return `<section class="stage ${p.dark ? 'dark' : ''}" id="${p.id === 'huracan' ? 'auta' : 'p-' + p.id}" data-id="${p.id}" data-from="${from}"
+  return `<section class="stage ${p.dark ? 'dark' : ''}" id="${p.id === 'porsche911' ? 'auta' : 'p-' + p.id}" data-id="${p.id}" data-from="${from}"
     style="--bg:${p.bg};--ink:${p.ink};--accent:${p.accent};--accent-ink:${p.accentInk || '#fff'};--from:${from}" aria-label="${p.name}">
     <div class="stage-back baseplate">
       <div class="stage-word" aria-hidden="true">${p.word}</div>
