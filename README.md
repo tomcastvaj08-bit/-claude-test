@@ -25,13 +25,12 @@ python3 -m http.server 8765
 | `obchodni-podminky.html`, `ochrana-osobnich-udaju.html`, `cookies.html` | právní stránky (vzorové texty, údaje v `[závorkách]` doplnit) |
 | `css/style.css` | celý vizuální systém kostek (`.brick`, `.brick-btn`, `.brick-card`, `.tile-print`, výstupky) |
 | `js/models.js` | jádro 3D stavebnice: dílky, materiály, animace skládání |
-| `js/flowers.js` | květiny z kostek: orchidej, mini orchidej, kytice tulipánů, malé rostlinky, kvetoucí kaktus, chryzantéma, lopatkovec, kvetoucí slivoň |
-| `js/builders.js` | registr všech modelů (květiny procedurálně, auta a bonsaj ze souborů `.glb`) |
+| `js/builders.js` | registr všech modelů (auta, bonsaj i květiny ze souborů `.glb`, procedurálně jen srdce) |
 | `js/solid.js` | načte `.glb` z Blenderu a jednou ho slije do jednoho modelu (pár draw callů, za běhu se nic nepřepočítává) |
 | `js/ldmodel.js`, `js/ldbake.worker.js` | starší načítání po dílcích – používá ho jen nástroj `tools/ldraw/cull.html` |
-| `models/*.glb` | auta a bonsaj převedené z LDraw a zjednodušené v Blenderu (Porsche 911, Lamborghini Sián, Bugatti Chiron, Bonsaj 10281); `*-lite.glb` = odlehčená verze pro mobil – viz `tools/ldraw/README.md` |
+| `models/*.glb` | auta a bonsaj převedené z LDraw (Porsche 911, Lamborghini Sián, Bugatti Chiron, Bonsaj 10281) a květiny složené z dílků (`tools/flowers`), vše přes Blender; `*-lite.glb` = odlehčená verze pro mobil – viz `tools/ldraw/README.md` |
 | `js/figures.js` + `models/figure.json` | figurky z originálních dílků: kluk v bílém tričku a modrých kalhotách, holka s culíky (vlasy 35701), krátkýma nohama (41879a) a v růžové mikině; potisk trupu a obličeje je namalovaný |
-| `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
+| `js/stage3d.js` | (přehled) jeden skrytý WebGL kontext; každý 3D slot má vlastní plátno, do kterého se scéna zkopíruje – při scrollu nic nezaostává |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
 | `js/products.js` | ukázková data produktů (ceny, počty dílků, varianty) |
 | `vendor/three/` | three.js r170 (MIT) – lokálně, bez CDN |
@@ -39,9 +38,10 @@ python3 -m http.server 8765
 
 ## Jak funguje 3D
 
-* Žádné fotky ani předrenderovaná videa: každý model je seznam kostek, které se ve skutečném čase skládají v prohlížeči.
+* Žádné fotky ani předrenderovaná videa: všechno jsou 3D modely z dílků, vykreslované v prohlížeči.
+* Na přehledu se každá scéna složí sama za necelou vteřinu, jakmile se objeví – není potřeba „doscrollovat“ skládání.
 * Kostky stejného tvaru a barvy se kreslí jedním `InstancedMesh`, takže model se stovkami dílků stojí jen 10–30 draw callů.
-* Celá stránka má **jediný WebGL kontext**. 3D se kreslí do obdélníků HTML prvků (scissor rendering), takže sedí přesně v layoutu a funguje i na mobilu.
+* Celá stránka má **jediný WebGL kontext**. Každý 3D prvek má vlastní 2D plátno přímo v obsahu stránky, do kterého se scéna po vykreslení zkopíruje – při scrollu proto jede přesně s textem a nikdy se neopožďuje.
 * Po načtení se všechny scény v nečinnosti předpřipraví (shadery a GPU buffery), aby při scrollu nevznikaly záseky.
 * Pokud zařízení nestíhá, renderer si sám sníží rozlišení. Respektuje se i `prefers-reduced-motion`.
 
