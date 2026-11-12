@@ -91,7 +91,7 @@ function injectChrome() {
       </ul></div>
     </div>
     <div class="legal-note">
-      <p>LEGO® je ochranná známka skupiny LEGO, která tento web nesponzoruje, neautorizuje ani neschvaluje. Love Bricks je nezávislý prodejce. Názvy Lamborghini, Porsche, Ferrari a Audi jsou ochranné známky svých vlastníků a jsou uvedeny pouze pro označení prodávaných stavebnic.</p>
+      <p>Love Bricks je nezávislý prodejce stavebnic. Názvy Lamborghini, Ferrari, Bugatti, McLaren a Mercedes-AMG jsou ochranné známky svých vlastníků a slouží pouze k označení prodávaných modelů.</p>
       <p>© 2026 Love Bricks · ukázková verze webu – zatím nic neprodáváme, ceny a parametry jsou orientační.</p>
     </div>
   </footer>`;

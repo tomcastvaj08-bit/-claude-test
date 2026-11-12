@@ -1,138 +1,236 @@
-// Kostičkoví panáčci Love Bricks – kluk a holka se srdíčky kolem.
+// Love Bricks – kostičkoví panáčci: blondýnka v růžových šatech a kluk s tetováním kotvy.
+// Proporce podle klasické figurky (výška ~4 jednotky, 1 j. ≈ 1 cm figurky).
 import * as THREE from 'three';
 import { getGeo } from './models.js';
 
-const SKIN = '#F6C342';
-const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.32, ...extra });
+const SKIN = '#F2C531';
+const PI = Math.PI;
+const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.28, ...extra });
 
-function faceTexture({ girl = false, love = false }) {
-  const c = document.createElement('canvas');
-  c.width = 256; c.height = 168;
-  const g = c.getContext('2d');
-  g.lineCap = 'round';
-  const heart = (x, y, s, col) => {
-    g.save(); g.translate(x, y); g.scale(s, s); g.fillStyle = col;
-    g.beginPath(); g.moveTo(0, 9);
-    g.bezierCurveTo(-4, 5, -12, 1, -12, -5); g.bezierCurveTo(-12, -11, -4, -13, 0, -7);
-    g.bezierCurveTo(4, -13, 12, -11, 12, -5); g.bezierCurveTo(12, 1, 4, 5, 0, 9);
-    g.fill(); g.restore();
-  };
-  if (love) {
-    heart(96, 66, 1.65, '#E0182D'); heart(160, 66, 1.65, '#E0182D');
-    g.fillStyle = 'rgba(255,255,255,.75)'; g.beginPath(); g.arc(90, 58, 4, 0, 7); g.arc(154, 58, 4, 0, 7); g.fill();
-  } else {
-    g.fillStyle = '#16161a';
-    g.beginPath(); g.ellipse(98, 68, 9, 12, 0, 0, 7); g.ellipse(158, 68, 9, 12, 0, 0, 7); g.fill();
-    g.fillStyle = '#fff'; g.beginPath(); g.arc(101, 63, 3.4, 0, 7); g.arc(161, 63, 3.4, 0, 7); g.fill();
-  }
-  g.strokeStyle = '#16161a'; g.lineWidth = 5;
-  g.beginPath(); g.moveTo(84, 44); g.quadraticCurveTo(97, 36, 110, 42); g.stroke();
-  g.beginPath(); g.moveTo(146, 42); g.quadraticCurveTo(159, 36, 172, 44); g.stroke();
-  if (girl && !love) {
-    g.lineWidth = 3.5;
-    for (const [x, d] of [[88, -1], [168, 1]]) { g.beginPath(); g.moveTo(x, 62); g.lineTo(x + d * 8, 56); g.stroke(); }
-  }
-  if (girl || love) {
-    g.fillStyle = 'rgba(255,110,140,.45)';
-    g.beginPath(); g.ellipse(72, 100, 14, 8, 0, 0, 7); g.ellipse(184, 100, 14, 8, 0, 0, 7); g.fill();
-  }
-  if (love) {
-    g.fillStyle = '#16161a'; g.beginPath(); g.moveTo(98, 104); g.quadraticCurveTo(128, 150, 158, 104); g.closePath(); g.fill();
-    g.fillStyle = '#ff6f87'; g.beginPath(); g.ellipse(128, 126, 14, 7, 0, 0, 7); g.fill();
-  } else {
-    g.strokeStyle = girl ? '#c2183a' : '#16161a'; g.lineWidth = 6;
-    g.beginPath(); g.arc(128, 92, 32, 0.18 * Math.PI, 0.82 * Math.PI); g.stroke();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.lineCap = 'round'; g.lineJoin = 'round';
+  draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
 }
+function heartPath(g, x, y, s) {
+  g.beginPath(); g.moveTo(x, y + 9 * s);
+  g.bezierCurveTo(x - 4 * s, y + 5 * s, x - 12 * s, y + 1 * s, x - 12 * s, y - 5 * s);
+  g.bezierCurveTo(x - 12 * s, y - 11 * s, x - 4 * s, y - 13 * s, x, y - 7 * s);
+  g.bezierCurveTo(x + 4 * s, y - 13 * s, x + 12 * s, y - 11 * s, x + 12 * s, y - 5 * s);
+  g.bezierCurveTo(x + 12 * s, y + 1 * s, x + 4 * s, y + 5 * s, x, y + 9 * s); g.fill();
+}
 
-const torsoGeo = (() => {
-  const g = new THREE.CylinderGeometry(0.72, 0.9, 1.25, 4, 1);
-  g.rotateY(Math.PI / 4);
-  g.scale(1, 1, 0.62);
-  g.computeVertexNormals();
-  return g;
+// ---------- obličej (potisk) ----------
+function faceTex({ girl, love }) {
+  return canvasTex(512, 320, (g) => {
+    const ink = '#1d1a1a';
+    const eye = (x, flip) => {
+      if (love) { g.fillStyle = '#E0182D'; heartPath(g, x, 150, 2.6); g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.arc(x - 10, 136, 6, 0, 7); g.fill(); return; }
+      g.fillStyle = ink; g.beginPath(); g.ellipse(x, 150, 17, 21, 0, 0, 7); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 5, 141, 6.5, 0, 7); g.fill();
+      if (girl) { // řasy
+        g.strokeStyle = ink; g.lineWidth = 6;
+        for (const [dx, dy] of [[-15, -14], [-6, -20], [4, -22]]) { g.beginPath(); g.moveTo(x + flip * dx * 0.6, 132 + dy * 0.2); g.lineTo(x + flip * (dx - 10), 130 + dy); g.stroke(); }
+      }
+    };
+    eye(196, -1); eye(316, 1);
+    g.strokeStyle = girl ? '#7a4a12' : '#3a2512'; g.lineWidth = girl ? 7 : 10;
+    g.beginPath(); g.moveTo(166, girl ? 104 : 108); g.quadraticCurveTo(194, girl ? 88 : 94, 222, 100); g.stroke();
+    g.beginPath(); g.moveTo(290, 100); g.quadraticCurveTo(318, girl ? 88 : 94, 346, girl ? 104 : 108); g.stroke();
+    // tváře
+    g.fillStyle = girl || love ? 'rgba(255,105,140,.45)' : 'rgba(230,120,60,.18)';
+    g.beginPath(); g.ellipse(150, 210, 30, 16, 0, 0, 7); g.ellipse(362, 210, 30, 16, 0, 0, 7); g.fill();
+    if (!girl) { // pihy
+      g.fillStyle = 'rgba(150,80,20,.55)';
+      for (const [x, y] of [[140, 198], [156, 206], [146, 216], [356, 198], [372, 206], [362, 216]]) { g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); }
+    }
+    // pusa
+    if (love) {
+      g.fillStyle = ink; g.beginPath(); g.moveTo(206, 222); g.quadraticCurveTo(256, 300, 306, 222); g.closePath(); g.fill();
+      g.fillStyle = '#ff7c93'; g.beginPath(); g.ellipse(256, 262, 26, 13, 0, 0, 7); g.fill();
+    } else if (girl) {
+      g.fillStyle = '#d6335a'; g.beginPath(); g.moveTo(218, 228); g.quadraticCurveTo(256, 268, 294, 228); g.quadraticCurveTo(256, 240, 218, 228); g.fill();
+      g.strokeStyle = '#a3203f'; g.lineWidth = 4; g.beginPath(); g.moveTo(218, 228); g.quadraticCurveTo(256, 262, 294, 228); g.stroke();
+    } else {
+      g.strokeStyle = ink; g.lineWidth = 9; g.beginPath(); g.arc(256, 196, 56, 0.2 * PI, 0.8 * PI); g.stroke();
+      g.lineWidth = 6; g.beginPath(); g.moveTo(196, 222); g.lineTo(204, 230); g.stroke();
+    }
+  });
+}
+
+// ---------- potisk trupu ----------
+function torsoTex(girl) {
+  return canvasTex(256, 256, (g, w, h) => {
+    if (girl) {
+      g.fillStyle = '#F06EAA'; g.fillRect(0, 0, w, h);
+      // výstřih a ramínka
+      g.fillStyle = SKIN; g.beginPath(); g.moveTo(70, 0); g.quadraticCurveTo(128, 90, 186, 0); g.fill();
+      g.strokeStyle = '#d14b8c'; g.lineWidth = 6; g.beginPath(); g.moveTo(70, 0); g.quadraticCurveTo(128, 90, 186, 0); g.stroke();
+      // náhrdelník se srdíčkem
+      g.strokeStyle = '#f7e2a0'; g.lineWidth = 4; g.beginPath(); g.moveTo(84, 4); g.quadraticCurveTo(128, 70, 172, 4); g.stroke();
+      g.fillStyle = '#E0182D'; heartPath(g, 128, 72, 0.9);
+      // pas s mašlí
+      g.fillStyle = '#fff'; g.fillRect(0, 196, w, 22);
+      g.fillStyle = '#fff'; g.beginPath(); g.moveTo(128, 207); g.lineTo(100, 190); g.lineTo(100, 226); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(128, 207); g.lineTo(156, 190); g.lineTo(156, 226); g.closePath(); g.fill();
+      g.fillStyle = '#ffd4e7'; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(30 + (i % 3) * 90 + (i > 2 ? 40 : 0), 110 + Math.floor(i / 3) * 30, 4, 0, 7); g.fill(); }
+    } else {
+      g.fillStyle = '#1F3A5F'; g.fillRect(0, 0, w, h);
+      g.fillStyle = SKIN; g.beginPath(); g.moveTo(92, 0); g.lineTo(128, 52); g.lineTo(164, 0); g.fill();
+      g.strokeStyle = '#2d5180'; g.lineWidth = 7; g.beginPath(); g.moveTo(92, 0); g.lineTo(128, 52); g.lineTo(164, 0); g.stroke();
+      // srdce na hrudi
+      g.fillStyle = '#E0182D'; heartPath(g, 170, 120, 1.4);
+      g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 3; g.beginPath(); g.moveTo(128, 60); g.lineTo(128, 256); g.stroke();
+    }
+  });
+}
+function tattooTex() {
+  return canvasTex(128, 128, (g) => {
+    g.strokeStyle = '#1d3a6b'; g.fillStyle = '#1d3a6b'; g.lineWidth = 7;
+    g.beginPath(); g.arc(64, 22, 10, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(64, 32); g.lineTo(64, 108); g.stroke();
+    g.beginPath(); g.moveTo(40, 50); g.lineTo(88, 50); g.stroke();
+    g.beginPath(); g.arc(64, 72, 36, 0.15 * PI, 0.85 * PI); g.stroke();
+    g.beginPath(); g.moveTo(26, 82); g.lineTo(36, 94); g.lineTo(24, 98); g.fill();
+    g.beginPath(); g.moveTo(102, 82); g.lineTo(92, 94); g.lineTo(104, 98); g.fill();
+    g.fillStyle = '#c4202f'; heartPath(g, 64, 70, 0.5);
+  });
+}
+
+// ---------- geometrie dílů ----------
+const G = (() => {
+  // trup – lichoběžník s mírným zúžením do hloubky
+  const torso = (() => {
+    const s = new THREE.Shape();
+    s.moveTo(-0.78, 0); s.lineTo(0.78, 0); s.lineTo(0.6, 1.28); s.lineTo(-0.6, 1.28); s.closePath();
+    const g = new THREE.ExtrudeGeometry(s, { depth: 0.74, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 });
+    g.translate(0, 0, -0.37); return g;
+  })();
+  const torsoFront = (() => {
+    const s = new THREE.Shape();
+    s.moveTo(-0.78, 0); s.lineTo(0.78, 0); s.lineTo(0.6, 1.28); s.lineTo(-0.6, 1.28); s.closePath();
+    const g = new THREE.ShapeGeometry(s);
+    const p = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + 0.78) / 1.56, p.getY(i) / 1.28);
+    return g;
+  })();
+  const head = new THREE.LatheGeometry([[0, 0], [0.36, 0], [0.46, 0.08], [0.48, 0.18], [0.48, 0.74], [0.46, 0.84], [0.36, 0.92], [0, 0.92]].map(([x, y]) => new THREE.Vector2(x, y)), 28);
+  const face = new THREE.CylinderGeometry(0.483, 0.483, 0.8, 24, 1, true, -1.1, 2.2);
+  const leg = (() => { // noha s chodidlem
+    const s = new THREE.Shape();
+    s.moveTo(-0.4, 0); s.lineTo(0.5, 0); s.lineTo(0.5, 0.34); s.lineTo(0.4, 0.4); s.lineTo(0.4, 1.12); s.lineTo(-0.4, 1.12); s.closePath();
+    const g = new THREE.ExtrudeGeometry(s, { depth: 0.74, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1 });
+    g.rotateY(-PI / 2); g.translate(0.37, 0, 0); return g;
+  })();
+  const hand = new THREE.TorusGeometry(0.17, 0.075, 10, 20, PI * 1.55);
+  const upperArm = new THREE.CylinderGeometry(0.17, 0.2, 0.62, 14);
+  const foreArm = new THREE.CylinderGeometry(0.15, 0.17, 0.5, 14);
+  const armDecal = new THREE.CylinderGeometry(0.205, 0.175, 0.42, 12, 1, true, -0.9, 1.8);
+  return { torso, torsoFront, head, face, leg, hand, upperArm, foreArm, armDecal };
 })();
-const headGeo = (() => {
-  const pts = [[0, 0], [0.36, 0], [0.42, 0.06], [0.42, 0.56], [0.36, 0.62], [0.2, 0.62], [0.2, 0.74], [0, 0.74]].map(([x, y]) => new THREE.Vector2(x, y));
-  return new THREE.LatheGeometry(pts, 22);
-})();
-const faceGeo = new THREE.CylinderGeometry(0.424, 0.424, 0.5, 18, 1, true, -0.95, 1.9);
 
 export class Figure {
   constructor({ girl = false } = {}) {
     this.girl = girl;
-    this.root = new THREE.Group();     // pop-in měřítko
-    this.body = new THREE.Group();     // natočení těla
-    this.root.add(this.body);
-    const torsoC = girl ? '#E4569A' : '#1E5AA8';
-    const legC = girl ? '#F2F3F2' : '#0A3463';
-    const hairC = girl ? '#7A3B1D' : '#3B2416';
-    const skin = std(SKIN), torso = std(torsoC), legs = std(legC), hair = std(hairC);
+    this.root = new THREE.Group();
+    this.body = new THREE.Group(); this.root.add(this.body);
+    const skin = std(SKIN);
+    const shirt = std(girl ? '#F06EAA' : '#1F3A5F');
+    const legsM = std(girl ? '#F06EAA' : '#2F5C8F');
+    const hairM = std(girl ? '#FBE3A0' : '#4A2E17', { roughness: 0.45 });
 
-    // nohy a boky
-    const legG = getGeo('tile:0.56:0.72:1.15');
-    for (const x of [-0.3, 0.3]) { const m = new THREE.Mesh(legG, legs); m.position.set(x, 0.575, 0); this.body.add(m); }
-    const hip = new THREE.Mesh(getGeo('tile:1.2:0.72:0.26'), legs); hip.position.y = 1.28; this.body.add(hip);
-    if (girl) { // sukýnka
-      const sk = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.85, 0.55, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 0.7), std('#C870A0'));
-      sk.position.y = 1.05; this.body.add(sk);
-    }
-    // trup + potisk srdce
-    const t = new THREE.Mesh(torsoGeo, torso); t.position.y = 2.03; this.body.add(t);
-    const hm = new THREE.Mesh(getGeo('heart'), std(girl ? '#ffffff' : '#E0182D'));
-    hm.scale.set(0.2, 0.2, 0.12); hm.position.set(0, 2.12, 0.355); hm.rotation.x = -0.08; this.body.add(hm);
-    const neck = new THREE.Mesh(getGeo('bar'), skin); neck.scale.set(0.2, 0.12, 0.2); neck.position.y = 2.71; this.body.add(neck);
-
-    // hlava
-    this.head = new THREE.Group(); this.head.position.y = 2.74; this.body.add(this.head);
-    this.head.add(new THREE.Mesh(headGeo, skin));
-    this.faceN = faceTexture({ girl });
-    this.faceL = faceTexture({ girl, love: true });
-    this.faceMat = new THREE.MeshStandardMaterial({ map: this.faceN, transparent: true, roughness: 0.35, polygonOffset: true, polygonOffsetFactor: -2 });
-    const face = new THREE.Mesh(faceGeo, this.faceMat); face.position.y = 0.3; this.head.add(face);
-    // vlasy
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), hair);
-    cap.scale.set(1, 0.8, 1.02); cap.position.y = 0.5; this.head.add(cap);
+    // ---- nohy / sukně
+    this.legs = [];
     if (girl) {
-      const back = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.58, 1.05, 18, 1, false, Math.PI * 0.62, Math.PI * 0.76), hair);
-      back.position.set(0, 0.2, -0.02); this.head.add(back);
-      for (const s of [-1, 1]) {
-        const lock = new THREE.Mesh(getGeo('tile:0.2:0.4:0.9'), hair); lock.position.set(s * 0.44, 0.2, 0.08); this.head.add(lock);
-        const bow = new THREE.Mesh(getGeo('cone'), std('#E0182D')); bow.scale.set(0.16, 0.26, 0.12); bow.rotation.z = s * Math.PI / 2; bow.position.set(0.32 + s * 0.17, 0.78, 0.18); this.head.add(bow);
-      }
+      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.98, 1.42, 4, 1).rotateY(PI / 4).scale(1.3, 1, 0.85), legsM);
+      skirt.position.y = 0.71; this.body.add(skirt);
+      const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.985, 1.0, 0.14, 4, 1).rotateY(PI / 4).scale(1.3, 1, 0.85), std('#ffffff'));
+      hem.position.y = 0.12; this.body.add(hem);
     } else {
-      const fr = new THREE.Mesh(getGeo('tile:0.8:0.25:0.22'), hair); fr.position.set(0.05, 0.58, 0.36); fr.rotation.set(-0.35, 0, -0.18); this.head.add(fr);
+      for (const s of [-1, 1]) {
+        const pivot = new THREE.Group(); pivot.position.set(s * 0.4, 1.12, 0);
+        const l = new THREE.Mesh(G.leg, legsM); l.position.set(-0.37 + 0.37 - 0.0, -1.12, 0); l.position.x = -0.37 + 0.37; pivot.add(l);
+        l.position.set(0, -1.12, 0);
+        const shoe = new THREE.Mesh(getGeo('tile:0.76:1.0:0.24'), std('#2b2d31')); shoe.position.set(0, -1.0, 0.06); pivot.add(shoe);
+        this.body.add(pivot); this.legs.push(pivot);
+      }
+      const hips = new THREE.Mesh(getGeo('tile:1.56:0.78:0.3'), legsM); hips.position.y = 1.27; this.body.add(hips);
     }
+    // ---- trup s potiskem
+    const torsoY = 1.42;
+    const torso = new THREE.Mesh(G.torso, shirt); torso.position.y = torsoY; this.body.add(torso);
+    const front = new THREE.Mesh(G.torsoFront, new THREE.MeshStandardMaterial({ map: torsoTex(girl), roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 }));
+    front.position.set(0, torsoY, 0.414); front.rotation.x = -0.0; this.body.add(front);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.12, 16), skin); neck.position.y = torsoY + 1.33; this.body.add(neck);
 
-    // ruce
+    // ---- hlava
+    this.head = new THREE.Group(); this.head.position.y = torsoY + 1.38; this.body.add(this.head);
+    this.head.add(new THREE.Mesh(G.head, skin));
+    this.faceN = faceTex({ girl }); this.faceL = faceTex({ girl, love: true });
+    this.faceMat = new THREE.MeshStandardMaterial({ map: this.faceN, transparent: true, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 });
+    const face = new THREE.Mesh(G.face, this.faceMat); face.position.y = 0.46; this.head.add(face);
+    this.buildHair(hairM);
+
+    // ---- ruce (otáčejí se dopředu kolem ramene jako u figurky)
     this.arms = [];
     for (const s of [-1, 1]) {
-      const pivot = new THREE.Group(); pivot.position.set(s * 0.66, 2.45, 0);
-      const arm = new THREE.Mesh(getGeo('bar'), torso); arm.scale.set(0.17, 0.8, 0.17); arm.position.set(s * 0.07, -0.38, 0.02); arm.rotation.z = s * 0.15; pivot.add(arm);
-      const hand = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.06, 8, 14, Math.PI * 1.5), skin); hand.position.set(s * 0.14, -0.86, 0.08); hand.rotation.set(Math.PI / 2, 0, 0); pivot.add(hand);
-      this.body.add(pivot); this.arms.push(pivot);
+      const shoulder = new THREE.Group(); shoulder.position.set(s * 0.72, torsoY + 1.05, 0);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 10), girl ? skin : shirt); shoulder.add(cap);
+      const up = new THREE.Mesh(G.upperArm, girl ? skin : skin); up.position.set(s * 0.1, -0.32, 0); up.rotation.z = s * 0.18; shoulder.add(up);
+      if (!girl) { // rukáv trička
+        const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.215, 0.23, 0.28, 14), shirt); sleeve.position.set(s * 0.05, -0.12, 0); sleeve.rotation.z = s * 0.18; shoulder.add(sleeve);
+      }
+      const elbow = new THREE.Group(); elbow.position.set(s * 0.17, -0.62, 0); elbow.rotation.x = -0.75; shoulder.add(elbow);
+      const fore = new THREE.Mesh(G.foreArm, skin); fore.position.y = -0.22; elbow.add(fore);
+      if (!girl && s > 0) { // tetování kotvy
+        const tat = new THREE.Mesh(G.armDecal, new THREE.MeshStandardMaterial({ map: tattooTex(), transparent: true, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 }));
+        tat.position.copy(up.position); tat.rotation.set(0, s * 0.75, up.rotation.z); tat.scale.setScalar(1.05); shoulder.add(tat);
+      }
+      if (girl) { // náramek
+        const br = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 16), std('#F7E2A0', { metalness: 0.8 })); br.rotation.x = PI / 2; br.position.y = -0.42; elbow.add(br);
+      }
+      const wrist = new THREE.Group(); wrist.position.y = -0.52; elbow.add(wrist);
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.14, 10), skin); w.position.y = -0.04; wrist.add(w);
+      const hand = new THREE.Mesh(G.hand, skin); hand.position.set(0, -0.24, 0.02); hand.rotation.set(0, PI / 2, PI * 0.72); wrist.add(hand);
+      this.body.add(shoulder);
+      this.arms.push({ shoulder, elbow, wrist });
     }
-    // podložka
-    const plate = new THREE.Mesh(getGeo('brick:4:4:0.4'), std(girl ? '#FC97AC' : '#4B9F4A'));
-    plate.position.y = -0.2; plate.scale.set(0.8, 1, 0.8); this.root.add(plate);
 
-    // srdíčka okolo
+    // ---- srdíčka okolo
     this.hearts = [];
-    const hg = getGeo('heart');
     const hmats = [std('#E0182D'), std('#FC97AC'), std('#ff5a6e')];
     for (let i = 0; i < 7; i++) {
-      const h = new THREE.Mesh(hg, hmats[i % 3]);
-      h.userData = { a: (i / 7) * Math.PI * 2, r: 1.55 + (i % 3) * 0.25, y: 1.4 + (i % 4) * 0.55, s: 0.2 + (i % 3) * 0.06, sp: 0.5 + (i % 2) * 0.25 };
+      const h = new THREE.Mesh(getGeo('heart'), hmats[i % 3]);
+      h.userData = { a: (i / 7) * PI * 2, r: 1.7 + (i % 3) * 0.3, y: 1.6 + (i % 4) * 0.6, s: 0.2 + (i % 3) * 0.06, sp: 0.5 + (i % 2) * 0.25 };
       this.root.add(h); this.hearts.push(h);
     }
-
     this.state = { show: false, point: false, love: false, side: 1, wave: 0 };
     this.anim = { show: 0, point: 0, love: 0, jump: 0 };
     this.root.scale.setScalar(0.0001);
+  }
+
+  buildHair(m) {
+    const H = this.head;
+    if (this.girl) {
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.56, 24, 14, 0, PI * 2, 0, PI * 0.56), m); cap.scale.set(1, 0.9, 1.05); cap.position.y = 0.66; H.add(cap);
+      // dlouhé vlasy vzadu a po stranách až na ramena
+      const back = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.74, 1.5, 24, 1, false, PI * 0.55, PI * 0.9), m); back.position.set(0, 0.12, -0.05); H.add(back);
+      for (const s of [-1, 1]) {
+        const lock = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 1.0, 4, 10), m); lock.position.set(s * 0.53, 0.05, 0.16); lock.rotation.z = s * 0.12; H.add(lock);
+        const curl = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 8), m); curl.position.set(s * 0.58, -0.55, 0.2); H.add(curl);
+      }
+      const fringe = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.7, 4, 10), m); fringe.rotation.z = PI / 2 + 0.25; fringe.position.set(-0.08, 0.88, 0.42); H.add(fringe);
+      const bow = std('#E0182D');
+      for (const s of [-1, 1]) { const b = new THREE.Mesh(getGeo('cone'), bow); b.scale.set(0.17, 0.3, 0.12); b.rotation.z = s * PI / 2; b.position.set(0.3 + s * 0.2, 1.06, 0.2); H.add(b); }
+      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), bow); knot.position.set(0.3, 1.06, 0.22); H.add(knot);
+    } else {
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.55, 24, 12, 0, PI * 2, 0, PI * 0.5), m); cap.scale.set(1, 0.72, 1.04); cap.position.y = 0.72; H.add(cap);
+      const quiff = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.55, 4, 10), m); quiff.rotation.set(0.4, 0, PI / 2 + 0.2); quiff.position.set(0.05, 1.1, 0.28); H.add(quiff);
+      for (const s of [-1, 1]) { const side = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.42, 0.5), m); side.position.set(s * 0.5, 0.66, -0.08); H.add(side); }
+      const back = new THREE.Mesh(new THREE.CylinderGeometry(0.53, 0.52, 0.5, 20, 1, false, PI * 0.6, PI * 0.8), m); back.position.set(0, 0.6, -0.02); H.add(back);
+    }
   }
 
   set(k, v) {
@@ -140,49 +238,49 @@ export class Figure {
     this.state[k] = v;
     if (k === 'love') { this.faceMat.map = v ? this.faceL : this.faceN; this.faceMat.needsUpdate = true; if (v) this.anim.jump = 1; }
   }
-  wave() { this.state.wave = 1.6; this.anim.jump = 1; }
+  wave() { this.state.wave = 1.8; this.anim.jump = 1; }
 
   update(dt, t) {
     const A = this.anim, S = this.state;
-    const approach = (cur, target, speed) => cur + (target - cur) * (1 - Math.exp(-speed * dt));
-    A.show = approach(A.show, S.show ? 1 : 0, 7);
-    A.point = approach(A.point, S.point ? 1 : 0, 6);
-    A.love = approach(A.love, S.love ? 1 : 0, 5);
-    // pop-in s mírným přestřelem
+    const ap = (c, tg, sp) => c + (tg - c) * (1 - Math.exp(-sp * dt));
+    A.show = ap(A.show, S.show ? 1 : 0, 7);
+    A.point = ap(A.point, S.point ? 1 : 0, 6);
+    A.love = ap(A.love, S.love ? 1 : 0, 5);
     const sh = A.show;
-    const pop = sh < 0.001 ? 0.0001 : sh * (1 + Math.sin(sh * Math.PI) * 0.18);
-    this.root.scale.setScalar(pop);
+    this.root.scale.setScalar(sh < 0.001 ? 0.0001 : sh * (1 + Math.sin(sh * PI) * 0.15));
     this.root.visible = sh > 0.002;
-    // skok
     if (A.jump > 0) A.jump = Math.max(0, A.jump - dt * 1.8);
-    const jump = Math.sin((1 - A.jump) * Math.PI) * (A.jump > 0 ? 0.55 : 0);
-    this.body.position.y = jump + Math.sin(t * 2.2 + (this.girl ? 1 : 0)) * 0.03;
-    // natočení
+    const jump = A.jump > 0 ? Math.sin((1 - A.jump) * PI) * 0.5 : 0;
+    this.body.position.y = jump + Math.sin(t * 2.1 + (this.girl ? 1 : 0)) * 0.02;
     const side = S.side;
-    this.body.rotation.y = side * (0.12 + A.point * 0.35);
-    this.head.rotation.y = side * A.point * 0.3 + Math.sin(t * 0.9) * 0.08;
-    this.head.rotation.z = Math.sin(t * 1.3 + 2) * 0.05;
-    // ruce
-    const [L, R] = this.arms;
-    const pointArm = side > 0 ? R : L, other = side > 0 ? L : R;
-    pointArm.rotation.z = side * (0.05 + A.point * 1.35);
-    pointArm.rotation.x = -A.point * 0.55;
-    other.rotation.z = -side * 0.05;
-    other.rotation.x = 0;
-    if (this.girl) { // radost: ručičky nahoru
-      L.rotation.z = -0.05 - A.love * 0.6; L.rotation.x = -A.love * 1.9;
-      R.rotation.z = 0.05 + A.love * 0.6; R.rotation.x = -A.love * 1.9;
+    this.body.rotation.y = side * (0.12 + A.point * 0.4);
+    this.head.rotation.y = side * A.point * 0.25 + Math.sin(t * 0.9) * 0.1;
+    this.head.rotation.z = Math.sin(t * 1.3 + 2) * 0.04;
+    // ruce: rameno se otáčí dopředu (osa x), ruka v zápěstí
+    const [Lf, Rt] = this.arms;
+    const pointArm = side > 0 ? Rt : Lf, other = side > 0 ? Lf : Rt;
+    pointArm.shoulder.rotation.x = -A.point * 1.45;
+    pointArm.shoulder.rotation.z = side * A.point * 0.35;
+    pointArm.elbow.rotation.x = -0.75 + A.point * 0.6;
+    other.shoulder.rotation.x = Math.sin(t * 1.4) * 0.05; other.shoulder.rotation.z = 0;
+    if (this.girl) {
+      for (const [a, s] of [[Lf, -1], [Rt, 1]]) {
+        a.shoulder.rotation.x = -A.love * 2.6 + Math.sin(t * 6) * 0.15 * A.love;
+        a.shoulder.rotation.z = s * A.love * 0.3;
+        a.elbow.rotation.x = -0.75 + A.love * 0.3;
+      }
     }
     if (S.wave > 0) {
       S.wave = Math.max(0, S.wave - dt);
       const w = Math.min(1, S.wave * 2);
-      R.rotation.z = 0.05 + w * 2.6 + Math.sin(t * 14) * 0.3 * w;
+      Rt.shoulder.rotation.x = -w * 2.9;
+      Rt.shoulder.rotation.z = w * (0.3 + Math.sin(t * 12) * 0.25);
+      Rt.wrist.rotation.z = Math.sin(t * 12) * 0.4 * w;
     }
-    // srdíčka
-    const burst = 1 + A.love * 0.6;
+    for (const l of this.legs) l.rotation.x = 0;
+    const burst = 1 + A.love * 0.5;
     for (const h of this.hearts) {
-      const u = h.userData;
-      const a = u.a + t * u.sp;
+      const u = h.userData, a = u.a + t * u.sp;
       h.position.set(Math.cos(a) * u.r * burst, u.y + Math.sin(t * 1.6 + u.a * 3) * 0.25 + A.love * 0.4, Math.sin(a) * u.r * 0.6 * burst);
       h.rotation.y = Math.sin(t + u.a) * 0.6;
       h.scale.setScalar(u.s * (1 + A.love * 0.5 + Math.sin(t * 4 + u.a) * 0.06 * (1 + A.love * 2)));
