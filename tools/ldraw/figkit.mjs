@@ -15,8 +15,8 @@ function geo(ref) {
   const b64 = (a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength).toString('base64');
   return { pos: b64(new Float32Array(g.attributes.position.array)), nrm: b64(new Float32Array(g.attributes.normal.array)), idx: b64(new Uint32Array(g.index.array)), tris: g.index.count / 3 };
 }
-const parts = { hips: '3815b.dat', legR: '3816b.dat', legL: '3817b.dat', torso: '973.dat', armR: '3818.dat', armL: '3819.dat', hand: '3820.dat', head: '3626b.dat' };
-const hairs = (process.argv[3] || '62810,87991,92746,23186,10048,40233,20597').split(',');
+const parts = { hips: '3815b.dat', legR: '3816b.dat', legL: '3817b.dat', torso: '973.dat', armR: '3818.dat', armL: '3819.dat', hand: '3820.dat', head: '3626b.dat', legsShort: '41879a.dat' };
+const hairs = (process.argv[3] || '62810,35701').split(',');
 const out = { parts: {}, hairs: {} };
 for (const [k, f] of Object.entries(parts)) out.parts[k] = geo(f);
 for (const h of hairs) out.hairs[h] = geo(h + '.dat');
