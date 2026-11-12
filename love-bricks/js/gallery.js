@@ -21,15 +21,16 @@ const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 // pořadí v chodbě: květina, auto, květina, auto…
 const ORDER = ['orchid', 'huracan', 'tulips', 'sian', 'bonsai', 'daytona', 'miniorchid', 'mclaren', 'chrysanthemum', 'chiron', 'peacelily', 'mercedes', 'plum', 'visiongt', 'cactus', 'tinyplants'];
 // velikost v metrech: květiny ~ výška člověka, auta v životní velikosti (délka)
-const SIZE = { orchid: 1.95, miniorchid: 1.6, tulips: 1.75, tinyplants: 1.25, cactus: 1.6, chrysanthemum: 1.85, peacelily: 1.75, plum: 2.1, bonsai: 1.45,
-  chiron: 4.54, huracan: 4.55, sian: 4.98, daytona: 4.69, mclaren: 4.59, mercedes: 4.95, visiongt: 4.6 };
+// obří exponáty: květiny 3–4 m, auta zhruba 1,4× skutečné velikosti
+const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
+  chiron: 6.4, huracan: 6.4, sian: 7.0, daytona: 6.6, mclaren: 6.5, mercedes: 6.9, visiongt: 6.5 };
 const N = ORDER.length;
-const SPACING = 7.5, START = 9, EYE = 1.62, WINDOW = 8;
+const SPACING = 9.5, START = 10, EYE = 1.62, WINDOW = 8;
 const BG = '#F6F4F1';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
-const sideX = () => (portrait() ? 2.0 : 3.3);
-const stopBefore = () => (portrait() ? 4.6 : 4.2);
+const sideX = () => (portrait() ? 1.25 : 1.6);
+const stopBefore = () => (portrait() ? 6.8 : 5.4);
 const slotS = (k) => START + k * SPACING;
 
 // ------------------------------------------------------------ renderer & scéna
@@ -51,7 +52,7 @@ renderer.toneMappingExposure = 1.02;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(BG);
-scene.fog = new THREE.Fog(BG, 14, 46);
+scene.fog = new THREE.Fog(BG, 18, 62);
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.7;
@@ -116,7 +117,7 @@ function place(ex, k) {
   ex.slot = k;
   const side = k % 2 === 0 ? 1 : -1;
   ex.side = side;
-  ex.root.position.set(side * (sideX() + (ex.car ? ex.D / 2 - 0.2 : 0.35)), 0, -slotS(k));
+  ex.root.position.set(side * (sideX() + (ex.car ? ex.D / 2 : Math.min(ex.r, 1.6) * 0.55)), 0, -slotS(k));
   if (ex.car) { // auto podél chodby, předkem k příchozímu a lehce do středu
     const dx = -side * 0.42, dz = 1;
     ex.base.rotation.y = Math.atan2(-dz, dx);
@@ -133,7 +134,7 @@ function place(ex, k) {
 const figs = [false, true].map((girl) => {
   const f = new Figure({ girl });
   const g = new THREE.Group(); g.add(f.root);
-  g.position.set(girl ? 3.1 : -3.1, 0, -5.4);
+  g.position.set(girl ? 3.4 : -3.4, 0, -3.6);
   g.rotation.y = girl ? -0.35 : 0.35;
   f.state.side = girl ? -1 : 1;
   scene.add(g);
@@ -145,7 +146,7 @@ const figs = [false, true].map((girl) => {
 figs.forEach(({ g }) => { g.scale.setScalar(0.64); });
 
 // ------------------------------------------------------------ pohyb
-const state = { s: -3, v: 0, target: null, walk: 0, hold: 0, yaw: 0, yawT: 0, pitchT: 0, phase: 0, entered: false };
+const state = { autoPitch: 0, s: -3, v: 0, target: null, walk: 0, hold: 0, yaw: 0, yawT: 0, pitchT: 0, phase: 0, entered: false };
 let mode = 'walk'; // walk | focus
 let focusEx = null, tween = null;
 
@@ -165,7 +166,7 @@ function goTo(dir) {
 function walkPose(out) {
   const bob = Math.sin(state.phase) * 0.022 * clamp(Math.abs(state.v) / 2.5);
   out.pos.set(Math.sin(state.phase * 0.5) * 0.015 * clamp(Math.abs(state.v) / 2.5), EYE + bob, -state.s);
-  out.tgt.set(out.pos.x + Math.sin(state.yaw) * 10, EYE - 0.25 + state.pitchT, -state.s - Math.cos(state.yaw) * 10);
+  out.tgt.set(out.pos.x + Math.sin(state.yaw) * 10, EYE - 0.1 + state.pitchT + state.autoPitch, -state.s - Math.cos(state.yaw) * 10);
   return out;
 }
 
@@ -265,7 +266,7 @@ function neighbour(d) {
 
 // ------------------------------------------------------------ okno exponátů (nekonečná smyčka)
 function updateWindow() {
-  const k0 = Math.max(0, Math.floor((state.s - 9) / SPACING));
+  const k0 = Math.max(0, Math.floor((state.s - 12) / SPACING));
   const used = new Set();
   for (let k = k0; k < k0 + WINDOW; k++) {
     const ex = exhibits[k % N];
@@ -462,24 +463,25 @@ function frame(now) {
     state.phase += Math.abs(state.v) * rawDt * 2.3;
   }
   // pohled se při přibližování sám stáčí k nejbližšímu exponátu
-  let autoYaw = 0;
+  let autoYaw = 0, autoPitch = 0;
   if (mode === 'walk') {
     for (const ex of exhibits) {
       if (!ex.inWindow) continue;
       const d = slotS(ex.slot) - state.s;
-      if (d > 0.5 && d < 13) { const w = clamp((13 - d) / 6) * clamp((d - 0.5) / 2.5); autoYaw = Math.atan2(ex.root.position.x, d) * 0.62 * w; break; }
+      if (d > 0.5 && d < 16) { const w = clamp((16 - d) / 7) * clamp((d - 0.5) / 2.5); autoYaw = Math.atan2(ex.root.position.x, d) * 0.6 * w; autoPitch = clamp(((ex.H * 0.62 - EYE) / Math.max(d, 3)) * 10 * 0.6, -1, 3) * w; break; }
     }
   }
   state.yaw += (state.yawT + autoYaw - state.yaw) * (1 - Math.exp(-rawDt * 2.2));
+  state.autoPitch += (autoPitch - state.autoPitch) * (1 - Math.exp(-rawDt * 2.2));
   updateWindow();
 
   // skládání podle vzdálenosti
   for (const ex of exhibits) {
     if (!ex.inWindow) continue;
     const d = slotS(ex.slot) - state.s;
-    ex.root.visible = d > -14 && d < 44;
+    ex.root.visible = d > -16 && d < 60;
     if (!ex.root.visible) continue;
-    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((30 - d) / 13));
+    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((40 - d) / 16));
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
@@ -490,7 +492,7 @@ function frame(now) {
   figs.forEach(({ f, g }, i) => {
     g.visible = figVis;
     if (!figVis) return;
-    f.set('show', state.entered || state.s > -2.5);
+    f.set('show', (state.entered || state.s > -2.5) && state.s < 3.2);
     if (i === 0) f.set('point', state.entered);
     if (i === 1 && state.entered && !f.__loved) { f.__loved = true; setTimeout(() => f.set('love', true), 900); }
     f.update(dt, t);
@@ -515,12 +517,12 @@ function frame(now) {
   for (const ex of exhibits) {
     const L = ex.label;
     const d = ex.inWindow ? slotS(ex.slot) - state.s : 99;
-    const op = showLabels ? clamp((26 - d) / 8) * clamp((d + 1.5) / 2.5) : 0;
+    const op = showLabels ? clamp((32 - d) / 8) * clamp((d + 1.5) / 2.5) : 0;
     if (op < 0.02) { if (L.style.opacity !== '0') { L.style.opacity = '0'; L.style.pointerEvents = 'none'; } continue; }
-    proj.copy(ex.root.position); proj.y = ex.H + 0.32; proj.project(camera);
+    proj.copy(ex.root.position); proj.x -= ex.side * Math.min(ex.r, 2) * 0.6; proj.y = Math.min(ex.H + 0.3, 2.7); proj.project(camera);
     if (proj.z > 1) { L.style.opacity = '0'; continue; }
     const x = (proj.x * 0.5 + 0.5) * innerWidth, y = (-proj.y * 0.5 + 0.5) * innerHeight;
-    if (x < -80 || x > innerWidth + 80 || y < 0 || y > innerHeight + 40) { L.style.opacity = '0'; L.style.pointerEvents = 'none'; continue; }
+    if (x < 50 || x > innerWidth - 50 || y < 60 || y > innerHeight - 60) { L.style.opacity = '0'; L.style.pointerEvents = 'none'; continue; }
     L.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%) scale(${clamp(1.25 - d / 30, 0.7, 1.15).toFixed(3)})`;
     L.style.opacity = op.toFixed(3);
     L.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
