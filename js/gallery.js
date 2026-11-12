@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
-import { byId, fmt, OCCASIONS } from './products.js';
+import { byId, fmt } from './products.js';
 import { createModel, ready } from './builders.js';
 import { Figure, loadFigureKit } from './figures.js';
 
@@ -25,7 +25,7 @@ const ORDER = ['orchid', 'porsche911', 'tulips', 'sian', 'bonsai', 'chiron', 'mi
 const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
   porsche911: 6.2, sian: 6.8, chiron: 6.6 };
 const N = ORDER.length;
-const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10;
+const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10, REVEAL = 13.5;
 const BG = '#F6F4F1';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
@@ -54,7 +54,7 @@ renderer.toneMappingExposure = 1.02;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(BG);
-scene.fog = new THREE.Fog(BG, 16, 46);
+scene.fog = new THREE.Fog(BG, 8, 22); // dál v chodbě jen bílá – exponáty se objevují až zblízka
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.7;
@@ -111,7 +111,6 @@ const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 // ------------------------------------------------------------ exponáty
 await Promise.all([ready(), loadFigureKit()]);
 const selected = {};
-const labelsEl = $('#labels');
 const exhibits = ORDER.map((id) => {
   const p = byId(id);
   selected[id] = 0;
@@ -130,15 +129,8 @@ const exhibits = ORDER.map((id) => {
   spin.add(sh);
   const hit = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), hitMat); hit.position.y = H / 2; spin.add(hit);
   scene.add(root);
-  const label = document.createElement('button');
-  label.className = 'ex-label tile-print';
-  label.type = 'button';
-  label.innerHTML = `<b>${p.name}</b><span>${fmt(p.price)}</span>`;
-  label.setAttribute('aria-label', `${p.name} – zobrazit detail`);
-  labelsEl.appendChild(label);
-  const ex = { id, p, m, root, base, spin, hit, label, car, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
+  const ex = { id, p, m, root, base, spin, hit, car, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
   hit.userData.ex = ex;
-  label.addEventListener('click', () => focus(ex));
   m.setVariant(p.variant.key, p.variant.options[0][1]);
   return ex;
 });
@@ -157,6 +149,7 @@ function place(ex, k) {
   if (ex === focusEx) return;
   ex.user = 0;
   ex.spin.rotation.y = 0;
+  ex.shown = false;
   ex.m.setProgress(0);
 }
 
@@ -225,27 +218,13 @@ const tmpA = { pos: V(), tgt: V() };
 // ------------------------------------------------------------ panel
 const panel = $('#ex-panel'), panelBody = $('.ex-scroll', panel);
 function details(p) {
-  const car = p.tags.includes('auta');
-  const why = car
-    ? ['Vystavíš ho na poličku jako skutečný sběratelský model', 'Stavění na pár večerů – ideální „odpočinkový projekt“', 'Detaily karoserie, kola i spoiler z originálních dílků']
-    : ['Nikdy nezvadne a nepotřebuje zalévat', 'Společné skládání = společně strávený čas', 'Vydrží roky jako ozdoba bytu nebo kanceláře'];
-  const box = car ? 'Stavebnice, návod v tištěné podobě, nálepky a dárková krabice Love Bricks.' : 'Stavebnice, tištěný návod, kartička s věnováním a dárková krabice Love Bricks.';
   const v = p.variant;
   return `
-    <div class="pcard-tags">${p.tags.map((t) => `<span class="chip">${OCCASIONS[t]}</span>`).join('')}</div>
     <h2 id="ex-title">${p.name}</h2>
-    <p class="pcard-line">${p.line} · ${p.pieces} dílků · ${p.size} · ${p.age}</p>
+    <p class="pcard-line">${p.pieces} dílků · ${p.size}</p>
     <p class="pcard-desc">${p.desc}</p>
     <div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === selected[p.id]}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[selected[p.id]][0]}</em></div>
-    <h3>Proč to potěší</h3>
-    <ul class="ex-why">${why.map((w) => `<li>${w}</li>`).join('')}</ul>
-    <h3>Parametry</h3>
-    <dl class="ex-spec"><dt>Počet dílků</dt><dd>${p.pieces}</dd><dt>Velikost hotového modelu</dt><dd>${p.size}</dd><dt>Doporučený věk</dt><dd>${p.age}</dd><dt>Kolekce</dt><dd>${p.line}</dd></dl>
-    <h3>Co je v balení</h3>
-    <p>${box}</p>
-    <h3>Doručení a vrácení</h3>
-    <p>Skladem, odesíláme do 24 hodin. Doprava zdarma od 1 500 Kč, vrácení do 14 dnů bez udání důvodu. Dárkové balení a ručně psané přání zdarma.</p>
-    <p class="ex-note">Model v galerii je zvětšený pro efekt – skutečná stavebnice měří ${p.size}.</p>`;
+    <p class="ex-note">Doprava zdarma od 1 500 Kč · vrácení do 14 dnů</p>`;
 }
 function openPanel(ex) {
   const p = ex.p;
@@ -363,7 +342,6 @@ canvas.addEventListener('pointermove', (e) => {
       state.pitchT = -((e.clientY / innerHeight) - 0.5) * 0.25;
       const hit = pick(e.clientX, e.clientY);
       canvas.style.cursor = hit ? 'pointer' : '';
-      exhibits.forEach((x) => x.label.classList.toggle('is-hover', !!hit && hit.ex === x));
     }
     return;
   }
@@ -438,29 +416,10 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ------------------------------------------------------------ HUD
-const hudName = $('[data-next-name]'), hudMeta = $('[data-next-meta]');
-let hudId = null;
-function updateHud() {
-  let best = null, bd = 1e9;
-  for (const ex of exhibits) {
-    if (!ex.inWindow) continue;
-    const d = slotS(ex.slot) - state.s;
-    if (d > 0.8 && d < bd) { bd = d; best = ex; }
-  }
-  if (best && best.id !== hudId) {
-    hudId = best.id;
-    const pair = exhibits.filter((x) => x.inWindow && Math.abs(slotS(x.slot) - slotS(best.slot)) < 0.01).sort((a, b) => a.side - b.side);
-    hudName.textContent = pair.map((x) => x.p.name).join('  ·  ');
-    hudMeta.textContent = pair.length > 1 ? 'vlevo · vpravo' : (best.side > 0 ? 'vpravo' : 'vlevo');
-  }
-}
-
 // ------------------------------------------------------------ smyčka
-const proj = V();
 let last = performance.now(), frames = [];
 const perf = { n: 0, sum: 0, max: 0, reset() { this.n = 0; this.sum = 0; this.max = 0; }, get avg() { return this.n ? this.sum / this.n : 0; } };
-window.__lb = { perf, stats: {}, get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter };
+window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -520,24 +479,23 @@ function frame(now) {
   state.autoPitch += (autoPitch - state.autoPitch) * (1 - Math.exp(-rawDt * 2.2));
   updateWindow();
 
-  // skládání podle vzdálenosti
+  // postupné objevování: vidět je jen to, co je blízko. Když k exponátu dojdeš, spadne z nebe
+  // a poskládá se (dvojice kousek po sobě); co je daleko nebo za tebou, zmizí a příště se složí znovu.
   for (const ex of exhibits) {
     if (!ex.inWindow) continue;
     const d = slotS(ex.slot) - state.s;
-    ex.root.visible = d > -12 && d < (ex.car ? 31 : 42); // auta (stovky tisíc ploch) jen zblízka, v dálce je stejně skryje mlha
+    const near = now >= introStart && d > -6 && d < REVEAL;
+    if (near && !ex.shown) { ex.shown = true; ex.t0 = now + (ex.slot % 2) * 350 + (ex.shown0 ? 0 : Math.floor(ex.slot / 2) * 500); ex.shown0 = true; }
+    else if (ex.shown && ex !== focusEx && (d < -8 || d > REVEAL + 3)) { ex.shown = false; ex.m.setProgress(0); }
+    ex.root.visible = ex.shown && now >= ex.t0;
     if (!ex.root.visible) continue;
-    if (ex !== focusEx) {
-      let p = clamp((40 - d) / 16);
-      const it = (now - introStart) / 1000 - Math.floor(ex.slot / 2) * 0.45 - (ex.slot % 2) * 0.2;
-      if (!introDone) p = Math.min(p, clamp(it / 2.4));
-      ex.m.setProgress(reduceMotion ? 1 : p);
-    }
+    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / (ex.car ? 1300 : 2200)));
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
     ex.spin.rotation.y += ((ex.user + swing) - ex.spin.rotation.y) * (1 - Math.exp(-rawDt * 6));
   }
-  if (!introDone && now - introStart > 3600) { introDone = true; document.body.classList.add('is-ready'); }
+  if (!introDone && now - introStart > 2800) { introDone = true; document.body.classList.add('is-ready'); }
   // panáčci
   const figVis = state.s < 24;
   figs.forEach(({ f, g }, i) => {
@@ -562,23 +520,6 @@ function frame(now) {
   camera.lookAt(pose.tgt);
   floor.position.set(0, 0, Math.round((pose.pos.z - 60) / TILE_P) * TILE_P);
   sun.position.set(pose.pos.x + 4, 10, pose.pos.z + 6); sunT.position.set(pose.pos.x, 0, pose.pos.z - 6);
-
-  // štítky u exponátů
-  const showLabels = mode === 'walk' && !tween && introDone && !state.warp;
-  for (const ex of exhibits) {
-    const L = ex.label;
-    const d = ex.inWindow ? slotS(ex.slot) - state.s : 99;
-    const op = showLabels ? clamp((17 - d) / 4) * clamp((d + 1.5) / 2.5) : 0;
-    if (op < 0.02) { if (L.style.opacity !== '0') { L.style.opacity = '0'; L.style.pointerEvents = 'none'; } continue; }
-    proj.copy(ex.root.position); proj.x -= ex.side * Math.min(ex.r, 2) * 0.6; proj.y = Math.min(ex.H + 0.3, 2.7); proj.project(camera);
-    if (proj.z > 1) { L.style.opacity = '0'; continue; }
-    const x = (proj.x * 0.5 + 0.5) * innerWidth, y = (-proj.y * 0.5 + 0.5) * innerHeight;
-    if (x < 50 || x > innerWidth - 50 || y < 60 || y > innerHeight - 60) { L.style.opacity = '0'; L.style.pointerEvents = 'none'; continue; }
-    L.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%) scale(${clamp(1.25 - d / 30, 0.7, 1.15).toFixed(3)})`;
-    L.style.opacity = op.toFixed(3);
-    L.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
-  }
-  updateHud();
 
   renderer.render(scene, camera);
 
