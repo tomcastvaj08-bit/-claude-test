@@ -2,7 +2,7 @@
 
 E-shop s dárky z kostek, kde všechno vypadá jako kostky: tlačítka, karty, pozadí (podložka s výstupky), písmo i ikonky (mozaika z 1×1 placek). Je to zatím jen ukázka, nic se neprodává.
 
-Hlavní stránka je **3D galerie v pohledu první osoby**: nekonečná bílá chodba, ve které stojí střídavě vpravo a vlevo obří květiny (zhruba výška člověka) a auta v životní velikosti. Exponáty se skládají z kostek, jak k nim přicházíš. Pohyb: scroll, swipe nahoru/dolů, šipky ▲/▼ (klepnutí = k dalšímu exponátu, podržení = chůze) nebo klávesy ↑/↓/W/S. Klepnutí na exponát (nebo jeho štítek) otočí kameru k němu a vyjede panel s popisem, barvami a košíkem; ←/→ přepíná exponáty, Esc zavře.
+Hlavní stránka je **3D galerie v pohledu první osoby**: nekonečná chodba s podlahou z bílých lesklých hladkých dílků 2×1. Exponáty stojí vždy ve **dvojicích naproti sobě** (květina + auto, strany se střídají). Po načtení všechno napadá z nebe a poskládá se a shora sjede na tenkém drátku blikající tlačítko **Dál** – klik tě s rozmazáním „teleportuje“ k další dvojici. Chodit jde i scrollem, swipem nebo klávesami ↑/↓/W/S. Klepnutí na exponát otočí kameru k němu a vyjede panel s popisem, barvami a košíkem; ←/→ přepíná exponáty, Esc zavře.
 
 Klasická scrollovací verze s katalogem a filtry zůstala jako **Přehled kolekce** (`prehled.html`).
 
@@ -51,7 +51,7 @@ Modely se dají později nahradit exportem z Blenderu (`.glb`). Ve `stage3d.js` 
 
 Galerie:
 * vstup, chůze šipkou, kolečkem i swipem, klik na štítek i exponát → detail, změna barvy se projeví na 3D modelu, přidání do košíku, další/předchozí exponát, návrat do chodby – bez chyb v konzoli
-* při chůzi: JS ~2,6 ms na snímek (~11 ms při 4× zpomaleném CPU); ~230 draw callů a ~180 tis. trojúhelníků v záběru
+* při chůzi: JS ~3,4 ms na snímek; až ~320 draw callů a ~250 tis. trojúhelníků v záběru (dvojice exponátů + detaily aut)
 * exponáty jsou obří (květiny 2,3–4 m, auta ~1,4× skutečné velikosti) a stojí těsně u cesty
 
 Přehled kolekce:

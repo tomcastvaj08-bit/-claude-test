@@ -20,33 +20,23 @@
   <div id="labels"></div>
   <div id="lb-header"></div>
 
-  <!-- úvodní obrazovka -->
-  <section id="intro" class="intro" aria-labelledby="intro-title">
-    <div class="intro-inner">
-      <span class="tile-print hero-kicker">3D galerie dárků z kostek</span>
-      <h1 class="hero-title" id="intro-title" aria-label="Love Bricks">
-        <span class="row" aria-hidden="true">
-          <span class="hl brick" data-studs style="--c:#D01012;--d:0">L</span><span class="hl brick" data-studs style="--c:#E4569A;--d:1">O</span><span class="hl brick" data-studs style="--c:#D01012;--d:2">V</span><span class="hl brick light" data-studs style="--c:#FC97AC;--d:3">E</span>
-        </span>
-        <span class="row" aria-hidden="true">
-          <span class="hl brick light" data-studs style="--c:#F5C518;--d:4">B</span><span class="hl brick" data-studs style="--c:#0055BF;--d:5">R</span><span class="hl brick" data-studs style="--c:#00852B;--d:6">I</span><span class="hl brick light" data-studs style="--c:#FFFFFF;--d:7">C</span><span class="hl brick" data-studs style="--c:#FE8A18;--d:8">K</span><span class="hl brick" data-studs style="--c:#26292F;--d:9">S</span>
-        </span>
-      </h1>
-      <p class="intro-lead">Projdi se galerií, kde vedle tebe stojí obří květiny, které nezvadnou, a auta v životní velikosti. Klepni na cokoli, co tě zaujme.</p>
-      <div class="hero-cta">
-        <button class="brick-btn" data-studs data-enter type="button">Vstoupit do galerie
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-        <a class="brick-btn white" data-studs href="prehled.html">Přehled kolekce</a>
-      </div>
-      <p class="intro-hint">Scrolluj · swipni nahoru · nebo klepni na šipku</p>
-    </div>
-    <nav class="intro-legal" aria-label="Právní informace">
-      <a href="obchodni-podminky.html">Obchodní podmínky</a>
-      <a href="ochrana-osobnich-udaju.html">Ochrana osobních údajů</a>
-      <a href="cookies.html">Cookies</a>
-      <button type="button" class="link" data-cookie-settings>Nastavení cookies</button>
-    </nav>
-  </section>
+  <!-- uvítání + právní odkazy -->
+  <div class="welcome" aria-hidden="true"><span class="tile-print">Vítej v galerii <b>Love Bricks</b></span><small>Klepni na cokoli, co tě zaujme</small></div>
+  <nav class="corner-legal" aria-label="Právní informace">
+    <a href="obchodni-podminky.html">Obchodní podmínky</a>
+    <a href="ochrana-osobnich-udaju.html">Soukromí</a>
+    <a href="cookies.html">Cookies</a>
+    <a href="prehled.html">Přehled kolekce</a>
+  </nav>
+
+  <!-- tlačítko na drátku: posune o krok dál -->
+  <div class="hang">
+    <span class="hang-wire" aria-hidden="true"></span>
+    <button class="brick-btn hang-btn" data-studs data-fwd type="button" aria-label="Posunout se dál k dalším exponátům">
+      <span>Dál</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
+  </div>
+  <div class="warp-flash" aria-hidden="true"></div>
 
   <!-- ovládání v galerii -->
   <div class="hud" aria-label="Ovládání galerie">
@@ -54,10 +44,8 @@
     <div class="hud-ctrl">
       <button class="brick-btn white icon" data-studs data-back type="button" aria-label="Zpět k předchozímu exponátu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <button class="brick-btn walk-btn" data-studs data-fwd type="button" aria-label="Vpřed k dalšímu exponátu (podrž pro chůzi)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Vpřed</span></button>
     </div>
-    <p class="hud-hint">Klepni na exponát · podrž šipku pro chůzi</p>
+    <p class="hud-hint">Klepni na exponát · scrolluj nebo swipni pro chůzi</p>
   </div>
 
   <!-- detail exponátu -->

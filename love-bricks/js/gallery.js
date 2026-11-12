@@ -25,13 +25,15 @@ const ORDER = ['orchid', 'huracan', 'tulips', 'sian', 'bonsai', 'daytona', 'mini
 const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
   chiron: 6.4, huracan: 6.4, sian: 7.0, daytona: 6.6, mclaren: 6.5, mercedes: 6.9, visiongt: 6.5 };
 const N = ORDER.length;
-const SPACING = 9.5, START = 10, EYE = 1.62, WINDOW = 8;
+const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10;
 const BG = '#F6F4F1';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
 const sideX = () => (portrait() ? 1.25 : 1.6);
-const stopBefore = () => (portrait() ? 6.8 : 5.4);
-const slotS = (k) => START + k * SPACING;
+const stopBefore = () => (portrait() ? 6.2 : 4.6);
+// vždy dvojice na jedné úrovni: k sudé + k liché stojí naproti sobě
+const slotS = (k) => START + Math.floor(k / 2) * SPACING;
+const sideOf = (k) => (k % 2 === 0 ? 1 : -1) * (Math.floor(k / 2) % 2 ? -1 : 1);
 
 // ------------------------------------------------------------ renderer & scéna
 const canvas = $('#gl');
@@ -52,7 +54,7 @@ renderer.toneMappingExposure = 1.02;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(BG);
-scene.fog = new THREE.Fog(BG, 18, 62);
+scene.fog = new THREE.Fog(BG, 16, 46);
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.7;
@@ -64,7 +66,34 @@ const sunT = new THREE.Object3D(); scene.add(sunT); sun.target = sunT;
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 90);
 
 // nekonečná bílá podlaha (posouvá se s kamerou)
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.92, metalness: 0 }));
+// podlaha z bílých lesklých hladkých dílků 2×1 (bez výstupků), kladených na vazbu jako dlažba
+const TILE_P = 4.8; // perioda textury v metrech (4 dílky na šířku, 8 řad)
+const floorTex = (() => {
+  const S = 1024, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  const bump = document.createElement('canvas'); bump.width = bump.height = S;
+  const b = bump.getContext('2d');
+  g.fillStyle = '#cfcac3'; g.fillRect(0, 0, S, S);
+  b.fillStyle = '#000'; b.fillRect(0, 0, S, S);
+  const tw = S / 4, th = S / 8, gap = 5, rad = 7;
+  const rr = (ctx, x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+  for (let row = 0; row < 8; row++) {
+    const off = row % 2 ? tw / 2 : 0;
+    for (let i = -1; i < 5; i++) {
+      const x = i * tw + off + gap / 2, y = row * th + gap / 2, w = tw - gap, h = th - gap;
+      const grd = g.createLinearGradient(x, y, x, y + h);
+      grd.addColorStop(0, '#ffffff'); grd.addColorStop(0.5, '#fbfbfa'); grd.addColorStop(1, '#f0efed');
+      g.fillStyle = grd; rr(g, x, y, w, h, rad); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 2; rr(g, x + 2, y + 2, w - 4, h - 4, rad - 2); g.stroke();
+      b.fillStyle = '#fff'; rr(b, x, y, w, h, rad); b.fill();
+    }
+  }
+  const t = new THREE.CanvasTexture(c), tb = new THREE.CanvasTexture(bump);
+  for (const tx of [t, tb]) { tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(240 / TILE_P, 240 / TILE_P); tx.anisotropy = 8; }
+  t.colorSpace = THREE.SRGBColorSpace;
+  return { t, tb };
+})();
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ map: floorTex.t, bumpMap: floorTex.tb, bumpScale: 1.2, roughness: 0.16, metalness: 0, envMapIntensity: 1.2 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
 const shadowTex = (() => {
@@ -85,7 +114,7 @@ const labelsEl = $('#labels');
 const exhibits = ORDER.map((id) => {
   const p = byId(id);
   selected[id] = 0;
-  const m = createModel(p.model);
+  const m = createModel(p.model, { drop: 30 });
   const box = m.box, size = box.getSize(V()), c = box.getCenter(V());
   m.group.position.set(-c.x, -box.min.y, -c.z);
   const car = p.tags.includes('auta');
@@ -115,7 +144,7 @@ const exhibits = ORDER.map((id) => {
 
 function place(ex, k) {
   ex.slot = k;
-  const side = k % 2 === 0 ? 1 : -1;
+  const side = sideOf(k);
   ex.side = side;
   ex.root.position.set(side * (sideX() + (ex.car ? ex.D / 2 : Math.min(ex.r, 1.6) * 0.55)), 0, -slotS(k));
   if (ex.car) { // auto podél chodby, předkem k příchozímu a lehce do středu
@@ -134,8 +163,8 @@ function place(ex, k) {
 const figs = [false, true].map((girl) => {
   const f = new Figure({ girl });
   const g = new THREE.Group(); g.add(f.root);
-  g.position.set(girl ? 3.4 : -3.4, 0, -3.6);
-  g.rotation.y = girl ? -0.35 : 0.35;
+  g.position.set(girl ? 2.7 : -2.7, 0, -5.2);
+  g.rotation.y = girl ? -0.45 : 0.45;
   f.state.side = girl ? -1 : 1;
   scene.add(g);
   const hit = new THREE.Mesh(new THREE.BoxGeometry(2.6, 4.2, 1.8), hitMat); hit.position.y = 2.1; g.add(hit);
@@ -143,7 +172,7 @@ const figs = [false, true].map((girl) => {
   return { f, g, hit };
 });
 // Figure.update řídí měřítko rootu (pop-in); měřítko 0.5 držíme na rodičovské skupině
-figs.forEach(({ g }) => { g.scale.setScalar(0.64); });
+figs.forEach(({ g }) => { g.scale.setScalar(0.46); });
 
 // ------------------------------------------------------------ pohyb
 const state = { autoPitch: 0, s: -3, v: 0, target: null, walk: 0, hold: 0, yaw: 0, yawT: 0, pitchT: 0, phase: 0, entered: false };
@@ -266,7 +295,7 @@ function neighbour(d) {
 
 // ------------------------------------------------------------ okno exponátů (nekonečná smyčka)
 function updateWindow() {
-  const k0 = Math.max(0, Math.floor((state.s - 12) / SPACING));
+  const k0 = Math.max(0, Math.floor((state.s - 12) / SPACING) * 2);
   const used = new Set();
   for (let k = k0; k < k0 + WINDOW; k++) {
     const ex = exhibits[k % N];
@@ -280,25 +309,34 @@ function updateWindow() {
 }
 
 // ------------------------------------------------------------ vstup
-const intro = $('#intro');
-function enter() {
-  if (state.entered) return;
-  state.entered = true;
-  intro.classList.add('is-gone');
-  document.body.classList.add('is-in');
-  state.target = 0;
-  setTimeout(() => { intro.hidden = true; }, 900);
-  try { sessionStorage.setItem('lb-entered', '1'); } catch (_) {}
+// Po načtení exponáty napadají z nebe a poskládají se, pak sjede tlačítko na drátku.
+const introStart = performance.now() + 350;
+let introDone = false;
+function enter() { /* vstup je hned – ponecháno kvůli kompatibilitě */ }
+state.entered = true; state.s = 0;
+document.body.classList.add('is-in');
+
+// ---------- teleport o krok vpřed s rozmazáním
+function teleport(dir) {
+  if (mode !== 'walk' || state.warp) return;
+  document.body.classList.add('is-moved');
+  goTo(dir);
+  const to = state.target; state.target = null;
+  if (to == null || Math.abs(to - state.s) < 0.05) return;
+  state.warp = { from: state.s, to, t: 0, dur: reduceMotion ? 0.01 : 0.8 };
+  state.v = 0;
+  document.body.classList.add('is-warp');
+  setTimeout(() => document.body.classList.remove('is-warp'), reduceMotion ? 0 : 820);
+  hang.classList.add('is-pulled');
+  setTimeout(() => hang.classList.remove('is-pulled'), 600);
 }
-$('[data-enter]').addEventListener('click', enter);
-try { if (sessionStorage.getItem('lb-entered')) { state.s = 0; enter(); } } catch (_) {}
 
 // ------------------------------------------------------------ ovládání
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function pick(x, y) {
   ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const objs = exhibits.filter((e) => e.root.visible).map((e) => e.hit).concat(figs.map((f) => f.hit));
+  const objs = exhibits.filter((e) => e.root.visible).map((e) => e.hit).concat(figs.filter((f) => f.g.visible && f.f.root.visible).map((f) => f.hit));
   const h = ray.intersectObjects(objs, false)[0];
   return h ? h.object.userData : null;
 }
@@ -308,8 +346,7 @@ addEventListener('wheel', (e) => {
   e.preventDefault();
   const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
   if (mode === 'focus') { panelBody.scrollTop += dy; return; }
-  if (!state.entered) { if (dy > 0) enter(); return; }
-  state.target = null;
+  state.target = null; document.body.classList.add('is-moved');
   state.v = clamp(state.v + dy * 0.006, -7, 7);
 }, { passive: false });
 
@@ -347,7 +384,6 @@ const pointerEnd = (e) => {
     const hit = pick(e.clientX, e.clientY);
     if (hit?.ex && !(mode === 'focus' && hit.ex === focusEx)) focus(hit.ex);
     else if (hit?.fig) { hit.fig.girl ? hit.fig.set('love', !hit.fig.state.love) : hit.fig.wave(); }
-    else if (!state.entered) enter();
   }
   if (performance.now() - pd.lt > 80) state.v *= 0.3;
   pd = null;
@@ -356,18 +392,18 @@ canvas.addEventListener('pointerup', pointerEnd);
 canvas.addEventListener('pointercancel', () => { pd = null; });
 
 // tlačítko vpřed: klepnutí = k dalšímu exponátu, podržení = chůze
-const fwd = $('[data-fwd]'), back = $('[data-back]');
+const fwd = $('[data-fwd]'), back = $('[data-back]'), hang = $('.hang');
 function holdable(btn, dir) {
   let timer = null, held = false;
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault(); held = false;
     timer = setTimeout(() => { held = true; state.hold = dir; state.target = null; }, 280);
   });
-  const up = () => { clearTimeout(timer); if (!held && timer) { if (!state.entered) enter(); else goTo(dir); } timer = null; held = false; state.hold = 0; };
+  const up = () => { clearTimeout(timer); if (!held && timer) teleport(dir); timer = null; held = false; state.hold = 0; };
   btn.addEventListener('pointerup', up);
   btn.addEventListener('pointerleave', () => { if (held) up(); });
   btn.addEventListener('pointercancel', () => { clearTimeout(timer); timer = null; held = false; state.hold = 0; });
-  btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(dir); } });
+  btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); teleport(dir); } });
 }
 holdable(fwd, 1); holdable(back, -1);
 
@@ -413,8 +449,9 @@ function updateHud() {
   }
   if (best && best.id !== hudId) {
     hudId = best.id;
-    hudName.textContent = best.p.name;
-    hudMeta.textContent = `${best.side > 0 ? 'vpravo' : 'vlevo'} · ${fmt(best.p.price)}`;
+    const pair = exhibits.filter((x) => x.inWindow && Math.abs(slotS(x.slot) - slotS(best.slot)) < 0.01).sort((a, b) => a.side - b.side);
+    hudName.textContent = pair.map((x) => x.p.name).join('  ·  ');
+    hudMeta.textContent = pair.length > 1 ? 'vlevo · vpravo' : (best.side > 0 ? 'vpravo' : 'vlevo');
   }
 }
 
@@ -447,7 +484,12 @@ function frame(now) {
   const t = now / 1000;
 
   // pohyb
-  if (mode === 'walk') {
+  if (mode === 'walk' && state.warp) {
+    const W = state.warp; W.t += rawDt;
+    const k = ease(clamp(W.t / W.dur));
+    state.s = W.from + (W.to - W.from) * k; state.v = 0;
+    if (k >= 1) state.warp = null;
+  } else if (mode === 'walk') {
     const kf = keys.has('arrowup') || keys.has('w') ? 1 : keys.has('arrowdown') || keys.has('s') ? -1 : 0;
     const want = state.hold || kf;
     if (want) { state.v += (want * 3.4 - state.v) * (1 - Math.exp(-rawDt * 5)); }
@@ -465,11 +507,13 @@ function frame(now) {
   // pohled se při přibližování sám stáčí k nejbližšímu exponátu
   let autoYaw = 0, autoPitch = 0;
   if (mode === 'walk') {
+    let bestD = 1e9, hMax = 0;
     for (const ex of exhibits) {
       if (!ex.inWindow) continue;
       const d = slotS(ex.slot) - state.s;
-      if (d > 0.5 && d < 16) { const w = clamp((16 - d) / 7) * clamp((d - 0.5) / 2.5); autoYaw = Math.atan2(ex.root.position.x, d) * 0.6 * w; autoPitch = clamp(((ex.H * 0.62 - EYE) / Math.max(d, 3)) * 10 * 0.6, -1, 3) * w; break; }
+      if (d > 0.5 && d < 16 && d <= bestD + 0.01) { if (d < bestD - 0.01) hMax = 0; bestD = d; hMax = Math.max(hMax, ex.H); }
     }
+    if (bestD < 16) { const w = clamp((16 - bestD) / 7) * clamp((bestD - 0.5) / 2.5); autoPitch = clamp(((hMax * 0.55 - EYE) / Math.max(bestD, 3)) * 10 * 0.5, -1, 2.5) * w; }
   }
   state.yaw += (state.yawT + autoYaw - state.yaw) * (1 - Math.exp(-rawDt * 2.2));
   state.autoPitch += (autoPitch - state.autoPitch) * (1 - Math.exp(-rawDt * 2.2));
@@ -479,22 +523,28 @@ function frame(now) {
   for (const ex of exhibits) {
     if (!ex.inWindow) continue;
     const d = slotS(ex.slot) - state.s;
-    ex.root.visible = d > -16 && d < 60;
+    ex.root.visible = d > -12 && d < 42;
     if (!ex.root.visible) continue;
-    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((40 - d) / 16));
+    if (ex !== focusEx) {
+      let p = clamp((40 - d) / 16);
+      const it = (now - introStart) / 1000 - Math.floor(ex.slot / 2) * 0.45 - (ex.slot % 2) * 0.2;
+      if (!introDone) p = Math.min(p, clamp(it / 2.4));
+      ex.m.setProgress(reduceMotion ? 1 : p);
+    }
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
     ex.spin.rotation.y += ((ex.user + swing) - ex.spin.rotation.y) * (1 - Math.exp(-rawDt * 6));
   }
+  if (!introDone && now - introStart > 3600) { introDone = true; document.body.classList.add('is-ready'); }
   // panáčci
   const figVis = state.s < 24;
   figs.forEach(({ f, g }, i) => {
     g.visible = figVis;
     if (!figVis) return;
-    f.set('show', (state.entered || state.s > -2.5) && state.s < 3.2);
-    if (i === 0) f.set('point', state.entered);
-    if (i === 1 && state.entered && !f.__loved) { f.__loved = true; setTimeout(() => f.set('love', true), 900); }
+    f.set('show', now - introStart > 1800 && state.s < 2.6);
+    if (i === 0) f.set('point', now - introStart > 2400);
+    if (i === 1 && now - introStart > 2600 && !f.__loved) { f.__loved = true; f.set('love', true); }
     f.update(dt, t);
   });
 
@@ -509,15 +559,15 @@ function frame(now) {
   } else { pose.pos.copy(tmpA.pos); pose.tgt.copy(tmpA.tgt); }
   camera.position.copy(pose.pos);
   camera.lookAt(pose.tgt);
-  floor.position.set(pose.pos.x, 0, pose.pos.z - 60);
+  floor.position.set(0, 0, Math.round((pose.pos.z - 60) / TILE_P) * TILE_P);
   sun.position.set(pose.pos.x + 4, 10, pose.pos.z + 6); sunT.position.set(pose.pos.x, 0, pose.pos.z - 6);
 
   // štítky u exponátů
-  const showLabels = mode === 'walk' && !tween && state.entered;
+  const showLabels = mode === 'walk' && !tween && introDone && !state.warp;
   for (const ex of exhibits) {
     const L = ex.label;
     const d = ex.inWindow ? slotS(ex.slot) - state.s : 99;
-    const op = showLabels ? clamp((32 - d) / 8) * clamp((d + 1.5) / 2.5) : 0;
+    const op = showLabels ? clamp((17 - d) / 4) * clamp((d + 1.5) / 2.5) : 0;
     if (op < 0.02) { if (L.style.opacity !== '0') { L.style.opacity = '0'; L.style.pointerEvents = 'none'; } continue; }
     proj.copy(ex.root.position); proj.x -= ex.side * Math.min(ex.r, 2) * 0.6; proj.y = Math.min(ex.H + 0.3, 2.7); proj.project(camera);
     if (proj.z > 1) { L.style.opacity = '0'; continue; }

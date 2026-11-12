@@ -28,20 +28,25 @@ function faceTex({ girl, love }) {
     const ink = '#1d1a1a';
     const eye = (x, flip) => {
       if (love) { g.fillStyle = '#E0182D'; heartPath(g, x, 150, 2.6); g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.arc(x - 10, 136, 6, 0, 7); g.fill(); return; }
-      g.fillStyle = ink; g.beginPath(); g.ellipse(x, 150, 17, 21, 0, 0, 7); g.fill();
-      g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 5, 141, 6.5, 0, 7); g.fill();
+      g.fillStyle = ink; g.beginPath(); g.ellipse(x, 152, 25, 31, 0, 0, 7); g.fill();
+      g.fillStyle = girl ? '#5a3a8a' : '#3b4f8f'; g.beginPath(); g.ellipse(x, 160, 18, 20, 0, 0, 7); g.fill();
+      g.fillStyle = ink; g.beginPath(); g.ellipse(x, 158, 12, 14, 0, 0, 7); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 9, 138, 10, 0, 7); g.fill();
+      g.beginPath(); g.arc(x - 8, 166, 4.5, 0, 7); g.fill();
       if (girl) { // řasy
         g.strokeStyle = ink; g.lineWidth = 6;
-        for (const [dx, dy] of [[-15, -14], [-6, -20], [4, -22]]) { g.beginPath(); g.moveTo(x + flip * dx * 0.6, 132 + dy * 0.2); g.lineTo(x + flip * (dx - 10), 130 + dy); g.stroke(); }
+        for (const [dx, dy] of [[-20, -10], [-10, -18], [2, -21]]) { g.beginPath(); g.moveTo(x + flip * dx * 0.9, 126 + dy * 0.15); g.lineTo(x + flip * (dx - 12), 122 + dy); g.stroke(); }
       }
     };
     eye(196, -1); eye(316, 1);
     g.strokeStyle = girl ? '#7a4a12' : '#3a2512'; g.lineWidth = girl ? 7 : 10;
-    g.beginPath(); g.moveTo(166, girl ? 104 : 108); g.quadraticCurveTo(194, girl ? 88 : 94, 222, 100); g.stroke();
-    g.beginPath(); g.moveTo(290, 100); g.quadraticCurveTo(318, girl ? 88 : 94, 346, girl ? 104 : 108); g.stroke();
+    g.lineWidth = girl ? 5 : 7;
+    g.beginPath(); g.moveTo(172, 96); g.quadraticCurveTo(196, 82, 220, 92); g.stroke();
+    g.beginPath(); g.moveTo(292, 92); g.quadraticCurveTo(316, 82, 340, 96); g.stroke();
     // tváře
     g.fillStyle = girl || love ? 'rgba(255,105,140,.45)' : 'rgba(230,120,60,.18)';
-    g.beginPath(); g.ellipse(150, 210, 30, 16, 0, 0, 7); g.ellipse(362, 210, 30, 16, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,105,140,.5)';
+    g.beginPath(); g.ellipse(146, 214, 34, 19, 0, 0, 7); g.ellipse(366, 214, 34, 19, 0, 0, 7); g.fill();
     if (!girl) { // pihy
       g.fillStyle = 'rgba(150,80,20,.55)';
       for (const [x, y] of [[140, 198], [156, 206], [146, 216], [356, 198], [372, 206], [362, 216]]) { g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); }
@@ -51,11 +56,10 @@ function faceTex({ girl, love }) {
       g.fillStyle = ink; g.beginPath(); g.moveTo(206, 222); g.quadraticCurveTo(256, 300, 306, 222); g.closePath(); g.fill();
       g.fillStyle = '#ff7c93'; g.beginPath(); g.ellipse(256, 262, 26, 13, 0, 0, 7); g.fill();
     } else if (girl) {
-      g.fillStyle = '#d6335a'; g.beginPath(); g.moveTo(218, 228); g.quadraticCurveTo(256, 268, 294, 228); g.quadraticCurveTo(256, 240, 218, 228); g.fill();
-      g.strokeStyle = '#a3203f'; g.lineWidth = 4; g.beginPath(); g.moveTo(218, 228); g.quadraticCurveTo(256, 262, 294, 228); g.stroke();
+      g.fillStyle = '#e0406a'; g.beginPath(); g.moveTo(230, 230); g.quadraticCurveTo(256, 262, 282, 230); g.quadraticCurveTo(256, 240, 230, 230); g.fill();
     } else {
-      g.strokeStyle = ink; g.lineWidth = 9; g.beginPath(); g.arc(256, 196, 56, 0.2 * PI, 0.8 * PI); g.stroke();
-      g.lineWidth = 6; g.beginPath(); g.moveTo(196, 222); g.lineTo(204, 230); g.stroke();
+      g.fillStyle = ink; g.beginPath(); g.moveTo(222, 226); g.quadraticCurveTo(256, 276, 290, 226); g.closePath(); g.fill();
+      g.fillStyle = '#ff8fa3'; g.beginPath(); g.ellipse(256, 250, 15, 8, 0, 0, 7); g.fill();
     }
   });
 }
@@ -166,7 +170,7 @@ export class Figure {
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.12, 16), skin); neck.position.y = torsoY + 1.33; this.body.add(neck);
 
     // ---- hlava
-    this.head = new THREE.Group(); this.head.position.y = torsoY + 1.38; this.body.add(this.head);
+    this.head = new THREE.Group(); this.head.position.y = torsoY + 1.36; this.head.scale.setScalar(1.3); this.body.add(this.head);
     this.head.add(new THREE.Mesh(G.head, skin));
     this.faceN = faceTex({ girl }); this.faceL = faceTex({ girl, love: true });
     this.faceMat = new THREE.MeshStandardMaterial({ map: this.faceN, transparent: true, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 });
@@ -194,6 +198,11 @@ export class Figure {
       const wrist = new THREE.Group(); wrist.position.y = -0.52; elbow.add(wrist);
       const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.14, 10), skin); w.position.y = -0.04; wrist.add(w);
       const hand = new THREE.Mesh(G.hand, skin); hand.position.set(0, -0.24, 0.02); hand.rotation.set(0, PI / 2, PI * 0.72); wrist.add(hand);
+      if (girl && s > 0) { const hh = new THREE.Mesh(getGeo('heart'), std('#FF4F7B')); hh.scale.setScalar(0.34); hh.position.set(0, -0.3, 0.42); wrist.add(hh); }
+      if (!girl && s < 0) { // kluk drží růži
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 6), std('#237841')); st.position.set(0, -0.24, 0.05); st.rotation.x = PI / 2.3; wrist.add(st);
+        const rose = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), std('#D01012')); rose.position.set(0, -0.06, 0.48); wrist.add(rose);
+      }
       this.body.add(shoulder);
       this.arms.push({ shoulder, elbow, wrist });
     }
@@ -255,7 +264,8 @@ export class Figure {
     const side = S.side;
     this.body.rotation.y = side * (0.12 + A.point * 0.4);
     this.head.rotation.y = side * A.point * 0.25 + Math.sin(t * 0.9) * 0.1;
-    this.head.rotation.z = Math.sin(t * 1.3 + 2) * 0.04;
+    this.head.rotation.z = Math.sin(t * 1.3 + 2) * 0.07;
+    this.body.rotation.z = Math.sin(t * 1.1 + (this.girl ? 0.5 : 0)) * 0.035;
     // ruce: rameno se otáčí dopředu (osa x), ruka v zápěstí
     const [Lf, Rt] = this.arms;
     const pointArm = side > 0 ? Rt : Lf, other = side > 0 ? Lf : Rt;
