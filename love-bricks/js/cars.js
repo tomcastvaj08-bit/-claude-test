@@ -54,7 +54,7 @@ function bodyModel(spec) {
     }
     return pts;
   };
-  return { L, top, hw, yBot, ring, M, wheels, clear };
+  return { L, top, hw, yBot, ring, M, wheels, clear, beltK, fender, nTop, nBot };
 }
 
 // sestaví BufferGeometry z části mřížky
@@ -144,58 +144,9 @@ export function car(spec) {
   }
   const cutsU = spec.cuts ?? [0, 0.16, 0.34, 0.52, 0.7, 0.86, 1];
   const flipB = needFlip(P, NS / 2, M / 2);
-  // pásy po obvodu: spodek P, bok P, horní P, horní L, bok L, spodek L
-  const bands = [[0, 5, 'under'], [5, 10, 'sideR'], [10, 13, 'topR'], [13, 16, 'topL'], [16, 21, 'sideL'], [21, 26, 'under']];
-  const paint = spec.paint ?? (() => 'var:body');
-  for (let k = 0; k < cutsU.length - 1; k++) {
-    const i0 = Math.round(cutsU[k] * NS), i1 = Math.round(cutsU[k + 1] * NS);
-    const um = (cutsU[k] + cutsU[k + 1]) / 2;
-    for (const [j0, j1, band] of bands) {
-      if (band === 'under') continue;
-      const mat = band === 'under' ? '#1d1f22' : paint(um, band);
-      const g = shrink(gridGeo(P, i0, i1, j0, j1, flipB), spec.gap ?? 0.986);
-      b.put(g, mat, new THREE.Matrix4(), 1 + (band === 'under' ? 0 : band.startsWith('side') ? 1 : 2) + k * 0.05);
-    }
-  }
-  // černý rám pod panely – prosvítá spárami jako u skutečné stavebnice
-  b.put(shrink(gridGeo(P, 0, NS, 4, 22, flipB), 0.975), '#1d1f22', new THREE.Matrix4(), 0.8);
-  // spodek jako dva velké díly (není vidět, ušetří vykreslování)
-  b.put(gridGeo(P, 0, NS, 0, 5, flipB), '#1d1f22', new THREE.Matrix4(), 0.9);
-  b.put(gridGeo(P, 0, NS, 21, 26, flipB), '#1d1f22', new THREE.Matrix4(), 0.9);
-  b.put(capGeo(S.ring(0), -L / 2, true), spec.rearCap ?? 'var:body', new THREE.Matrix4(), 2.4);
-  b.put(capGeo(S.ring(1), L / 2, false), spec.frontCap ?? 'var:body', new THREE.Matrix4(), 2.4);
+  // karoserie poskládaná z jednotlivých placek a dlaždic
+  voxelBody(b, spec, S);
 
-  // kabina (skleník) + střecha
-  if (spec.cabin) {
-    const c = spec.cabin, roof = fn(c.roof), cw = fn(c.hw), n = c.n ?? 2.3;
-    const NC = 24, MC = 18;
-    const Q = [], R2 = [];
-    for (let i = 0; i <= NC; i++) {
-      const u = c.u0 + (c.u1 - c.u0) * (i / NC), x = (u - 0.5) * L;
-      const yb = S.top(u) - 0.4, yr = Math.max(yb + 0.05, roof(u)), w = cw(u);
-      const row = [], row2 = [];
-      for (let j = 0; j <= MC; j++) {
-        const th = (j / MC) * PI;
-        const y = yb + (yr - yb) * Math.pow(Math.sin(th), 2 / n), z = w * spow(Math.cos(th), 2 / n);
-        row.push([x, y, z]);
-        row2.push([x, yb + (yr - yb + 0.06) * Math.pow(Math.sin(th), 2 / n), z * 1.02]);
-      }
-      Q.push(row); R2.push(row2);
-    }
-    const flipC = needFlip(Q, NC / 2, MC / 2);
-    if (!c.open) b.put(gridGeo(Q, 0, NC, 0, MC, flipC), 'glass', new THREE.Matrix4(), 6);
-    else { // otevřené auto – jen čelní sklo
-      const iw = Math.round(NC * (c.windshield ?? 0.3));
-      b.put(gridGeo(Q, NC - iw, NC, 0, MC, flipC), 'glass', new THREE.Matrix4(), 6);
-    }
-    if (c.roofPaint && !c.open) {
-      const a0 = Math.round(NC * (c.roofFrom ?? 0.18)), a1 = Math.round(NC * (c.roofTo ?? 0.7));
-      b.put(gridGeo(R2, a0, a1, 4, MC - 4, flipC), c.roofPaint, new THREE.Matrix4(), 6.5);
-      // sloupky
-      b.put(gridGeo(R2, a1, Math.min(NC, a1 + 2), 0, 4, flipC), c.roofPaint, new THREE.Matrix4(), 6.4);
-      b.put(gridGeo(R2, a1, Math.min(NC, a1 + 2), MC - 4, MC, flipC), c.roofPaint, new THREE.Matrix4(), 6.4);
-    }
-  }
   // kola
   const rimKey = wheelGeos(spec.rimStyle ?? 'y');
   for (const w of S.wheels) for (const side of [-1, 1]) {
@@ -222,26 +173,94 @@ export function car(spec) {
       const z = s * (S.hw(u) - 0.25);
       b.at('tile:1:1:1', key, (x0 + x1) / 2, S.clear + 0.55, z, { sx: len, sy: 0.9, sz: 0.5, o: 1.6 });
     }
-    // kolíky ve spárách mezi panely (světle šedé hlavičky)
-    for (const u of cutsU.slice(1, -1)) for (const j of [8, 18]) {
-      const p = surf(u, j), s = p.z > 0 ? 1 : -1;
-      b.at('cyl:12', '#A0A5A9', p.x, p.y - 0.4, p.z + s * 0.05, { rx: PI / 2, sx: 0.32, sy: 0.22, sz: 0.32, o: 19 });
-      b.at('cyl:12', '#A0A5A9', p.x, p.y - 1.4, p.z + s * 0.02, { rx: PI / 2, sx: 0.32, sy: 0.22, sz: 0.32, o: 19 });
-    }
   }
-  if (spec.studs) {
-    // výstupky na zádi a kapotě jako u menších modelů
-    for (const [u0, u1] of spec.studs) for (let u = u0; u <= u1; u += 0.028) for (const j of [11, 12, 14, 15]) {
-      const p = surf(u, j);
-      b.at('cyl:12', 'var:' + (spec.studsMat ?? 'body'), p.x, p.y + 0.12, p.z, { sx: 0.3, sy: 0.24, sz: 0.3, o: 20 });
-    }
-  }
+
   const decor = { surf, S, L };
   spec.details?.(b, decor);
   return b;
 }
 
 // ------------------------------------------------------------ společné detaily
+// ------------------------------------------------------------ karoserie z dílků
+// Tvar auta se "naskládá" z placek 1×N (výška 0,4 výstupku) jako skutečná stavebnice:
+// boky ukazují vrstvy dílků, nahoře jsou hladké dlaždice, okna z tmavých průhledných dílků.
+const PP = 1.0, PH = 0.4;
+function pieceGeo(w, studs) {
+  const key = (studs ? 'pbrick:' : 'pbox:') + w;
+  registerGeo(key, () => {
+    const box = new THREE.BoxGeometry(w * PP - 0.06, PH - 0.035, PP - 0.06).toNonIndexed();
+    if (!studs) return box;
+    const parts = [box];
+    for (let i = 0; i < w; i++) {
+      const s = new THREE.CylinderGeometry(0.3, 0.3, 0.17, 10, 1).toNonIndexed(); s.translate((i - (w - 1) / 2) * PP, PH / 2 + 0.07, 0); parts.push(s);
+    }
+    let n = 0; parts.forEach(p => { n += p.attributes.position.count; });
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3); let o = 0;
+    parts.forEach(p => { pos.set(p.attributes.position.array, o * 3); nor.set(p.attributes.normal.array, o * 3); o += p.attributes.position.count; });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    return g;
+  });
+  return key;
+}
+function voxelBody(b, spec, S) {
+  const L = S.L, cab = spec.cabin, paint = spec.paint ?? (() => 'var:body');
+  const roof = cab ? fn(cab.roof) : null, cw = cab ? fn(cab.hw) : null, cn = cab?.n ?? 2.3;
+  let hwMax = 0; for (let u = 0; u <= 1; u += 0.02) hwMax = Math.max(hwMax, S.hw(u));
+  let yMax = 0; for (let u = 0; u <= 1; u += 0.02) yMax = Math.max(yMax, S.top(u) + 2, cab ? roof(u) : 0);
+  const nx = Math.ceil(L / PP), nz = Math.ceil((hwMax * 2) / PP) + 1, ny = Math.ceil(yMax / PH) + 1;
+  const mats = [null], matIdx = new Map();
+  const mi = (m) => { if (!matIdx.has(m)) { matIdx.set(m, mats.length); mats.push(m); } return matIdx.get(m); };
+  const grid = new Uint8Array(nx * ny * nz);
+  const id = (x, y, z) => (y * nz + z) * nx + x;
+  const x0 = -L / 2, z0 = -(nz * PP) / 2;
+  for (let iy = 0; iy < ny; iy++) for (let iz = 0; iz < nz; iz++) for (let ix = 0; ix < nx; ix++) {
+    const x = x0 + (ix + 0.5) * PP, y = (iy + 0.5) * PH, z = z0 + (iz + 0.5) * PP;
+    const u = (x - x0) / L;
+    let well = false;
+    for (const w of S.wheels) if (Math.hypot(x - w.x, y - w.r) < w.r * 1.1) well = true;
+    if (well) continue;
+    let m = null;
+    const yt = S.top(u), yb = S.clear, w = S.hw(u), az = Math.abs(z) / w;
+    if (az <= 1 && y >= yb && y <= yt + 2) {
+      const yBelt = Math.max(yb + 0.6, yb + (yt - yb) * S.beltK(u));
+      let inside;
+      if (y >= yBelt) { const h = yt - yBelt + S.fender(u) * Math.pow(Math.sin(PI * az), 3); inside = Math.pow(az, S.nTop) + Math.pow((y - yBelt) / h, S.nTop) <= 1; }
+      else inside = Math.pow(az, S.nBot) + Math.pow((yBelt - y) / (yBelt - yb), S.nBot) <= 1;
+      if (inside) m = y < yb + PH ? '#1d1f22' : paint(u, az > 0.74 || y < yBelt ? 'sideR' : 'topR');
+    }
+    if (!m && cab && u >= cab.u0 && u <= cab.u1) {
+      const ybc = S.top(u) - 0.4, yr = roof(u), cwu = cw(u), cz = Math.abs(z) / cwu;
+      if (y >= ybc && y <= yr && cz <= 1 && Math.pow(cz, cn) + Math.pow((y - ybc) / (yr - ybc), cn) <= 1) {
+        const ru = (u - cab.u0) / (cab.u1 - cab.u0), rh = (y - ybc) / (yr - ybc);
+        if (cab.open) m = ru > 1 - (cab.windshield ?? 0.3) ? 'glass' : null;
+        else if (cab.roofPaint && rh > 0.78 && ru > (cab.roofFrom ?? 0.18) && ru < (cab.roofTo ?? 0.7)) m = cab.roofPaint;
+        else if (cab.roofPaint && rh > 0.2 && Math.abs(ru - (cab.roofTo ?? 0.7) - 0.04) < 0.035) m = cab.roofPaint; // sloupek
+        else m = 'glass';
+      }
+    }
+    if (m) grid[id(ix, iy, iz)] = mi(m);
+  }
+  const get = (x, y, z) => (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) ? 0 : grid[id(x, y, z)];
+  const dark = new Set(['#1d1f22', '#16181b', '#141517']);
+  for (let iy = 0; iy < ny; iy++) for (let iz = 0; iz < nz; iz++) {
+    let ix = 0, first = true;
+    while (ix < nx) {
+      const v = get(ix, iy, iz);
+      const shell = (x) => get(x, iy, iz) && (!get(x + 1, iy, iz) || !get(x - 1, iy, iz) || !get(x, iy + 1, iz) || !get(x, iy - 1, iz) || !get(x, iy, iz + 1) || !get(x, iy, iz - 1));
+      if (!v || !shell(ix)) { ix++; first = true; continue; }
+      const topExp = (x) => !get(x, iy + 1, iz);
+      const te = topExp(ix);
+      const maxRun = first && (iy + iz) % 2 ? 2 : 4;
+      let e = ix + 1;
+      while (e < nx && e - ix < maxRun && get(e, iy, iz) === v && shell(e) && topExp(e) === te) e++;
+      const wlen = e - ix, mat = mats[v];
+      const studs = te && dark.has(mat);
+      b.put(pieceGeo(wlen, studs), mat, new THREE.Matrix4().makeTranslation(x0 + (ix + wlen / 2) * PP, (iy + 0.5) * PH, z0 + (iz + 0.5) * PP), iy * 0.1 + Math.abs(iz - nz / 2) * 0.002);
+      ix = e; first = false;
+    }
+  }
+}
+
 // nosník s dírkami (textura se opakuje podle délky)
 function beamMat(len) {
   const key = 'beam:' + len.toFixed(1);

@@ -26,13 +26,12 @@ function heartPath(g, x, y, s) {
 function faceTex({ girl, love }) {
   return canvasTex(512, 320, (g) => {
     const ink = '#1d1a1a';
-    const eye = (x, flip) => { g.save(); const k = girl ? 1.2 : 1; g.translate(x, 152); g.scale(k, k); g.translate(-x, -152); eye0(x, flip); g.restore(); };
+    const eye = (x, flip) => { g.save(); const k = 0.62; g.translate(x, 152); g.scale(k, k); g.translate(-x, -152); eye0(x, flip); g.restore(); };
     const eye0 = (x, flip) => {
       if (love) { g.fillStyle = '#E0182D'; heartPath(g, x, 150, 2.6); g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.arc(x - 10, 136, 6, 0, 7); g.fill(); return; }
       g.fillStyle = ink; g.beginPath(); g.ellipse(x, 152, 25, 31, 0, 0, 7); g.fill();
-      g.fillStyle = girl ? '#2F86E0' : '#7A4A22'; g.beginPath(); g.ellipse(x, 160, 18, 20, 0, 0, 7); g.fill();
-      if (girl) { g.fillStyle = '#7CC0FF'; g.beginPath(); g.ellipse(x, 168, 12, 8, 0, 0, 7); g.fill(); }
-      g.fillStyle = ink; g.beginPath(); g.ellipse(x, 158, 12, 14, 0, 0, 7); g.fill();
+      if (girl) { g.fillStyle = '#1E4E9C'; g.beginPath(); g.ellipse(x, 154, 19, 25, 0, 0, 7); g.fill(); }
+      
       g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 9, 138, 10, 0, 7); g.fill();
       g.beginPath(); g.arc(x - 8, 166, 4.5, 0, 7); g.fill();
       if (girl) { // řasy
@@ -187,7 +186,7 @@ export class Figure {
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.12, 16), skin); neck.position.y = torsoY + 1.33; this.body.add(neck);
 
     // ---- hlava
-    this.head = new THREE.Group(); this.head.position.y = torsoY + 1.36; this.head.scale.setScalar(1.3); this.body.add(this.head);
+    this.head = new THREE.Group(); this.head.position.y = torsoY + 1.36; this.head.scale.setScalar(1.0); this.body.add(this.head);
     this.head.add(new THREE.Mesh(G.head, skin));
     this.faceN = faceTex({ girl }); this.faceL = faceTex({ girl, love: true });
     this.faceMat = new THREE.MeshStandardMaterial({ map: this.faceN, transparent: true, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 });
@@ -254,11 +253,6 @@ export class Figure {
       });
       const tie = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.04, 6, 14), std('#FF7FB6')); tie.position.set(0.56, -0.88, 0.3); tie.rotation.x = PI / 2; H.add(tie);
       const tip = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.28, 10), m); tip.position.set(0.56, -1.02, 0.31); tip.rotation.x = PI; H.add(tip);
-      // korunka princezny
-      const gold = std('#F2C14E', { metalness: 0.85, roughness: 0.25 });
-      const band = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 6, 24, PI), gold); band.position.set(0, 1.12, 0); band.rotation.set(PI / 2 + 0.2, 0, 0); H.add(band);
-      for (let k = 0; k < 5; k++) { const a = (k / 4) * PI; const sp = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 6), gold); sp.position.set(Math.cos(a) * 0.3, 1.2 - Math.sin(a) * 0.06 + (k === 2 ? 0.05 : 0), Math.sin(a) * 0.29); if (k === 2) sp.scale.set(1.2, 1.6, 1.2); H.add(sp); }
-      const gem = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), std('#FF4F7B')); gem.position.set(0, 1.2, 0.31); H.add(gem);
     } else {
       // normální krátký účes s pěšinkou na stranu
       const cap = new THREE.Mesh(new THREE.SphereGeometry(0.545, 28, 14, 0, PI * 2, 0, PI * 0.5), m); cap.scale.set(1, 0.62, 1.03); cap.position.y = 0.74; H.add(cap);
@@ -319,7 +313,7 @@ export class Figure {
       const u = h.userData, a = u.a + t * u.sp;
       h.position.set(Math.cos(a) * u.r * burst, u.y + Math.sin(t * 1.6 + u.a * 3) * 0.25 + A.love * 0.4, Math.sin(a) * u.r * 0.6 * burst);
       h.rotation.y = Math.sin(t + u.a) * 0.6;
-      h.scale.setScalar(u.s * (1 + A.love * 0.5 + Math.sin(t * 4 + u.a) * 0.06 * (1 + A.love * 2)));
+      h.scale.setScalar(u.s * (0.45 + A.love * 0.9 + Math.sin(t * 4 + u.a) * 0.05 * (1 + A.love * 2)));
     }
   }
 }

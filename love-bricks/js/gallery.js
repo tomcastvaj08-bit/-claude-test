@@ -67,15 +67,15 @@ const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 90);
 
 // nekonečná bílá podlaha (posouvá se s kamerou)
 // podlaha z bílých lesklých hladkých dílků 2×1 (bez výstupků), kladených na vazbu jako dlažba
-const TILE_P = 4.8; // perioda textury v metrech (4 dílky na šířku, 8 řad)
+const TILE_P = 1.2; // perioda textury v metrech: 4 dílky 2×1 na šířku, 8 řad (dílek 30 × 15 cm)
 const floorTex = (() => {
-  const S = 1024, c = document.createElement('canvas'); c.width = c.height = S;
+  const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
   const g = c.getContext('2d');
   const bump = document.createElement('canvas'); bump.width = bump.height = S;
   const b = bump.getContext('2d');
   g.fillStyle = '#cfcac3'; g.fillRect(0, 0, S, S);
   b.fillStyle = '#000'; b.fillRect(0, 0, S, S);
-  const tw = S / 4, th = S / 8, gap = 5, rad = 7;
+  const tw = S / 4, th = S / 8, gap = 3, rad = 4;
   const rr = (ctx, x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   for (let row = 0; row < 8; row++) {
     const off = row % 2 ? tw / 2 : 0;
@@ -84,7 +84,7 @@ const floorTex = (() => {
       const grd = g.createLinearGradient(x, y, x, y + h);
       grd.addColorStop(0, '#ffffff'); grd.addColorStop(0.5, '#fbfbfa'); grd.addColorStop(1, '#f0efed');
       g.fillStyle = grd; rr(g, x, y, w, h, rad); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 2; rr(g, x + 2, y + 2, w - 4, h - 4, rad - 2); g.stroke();
+      g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 1.5; rr(g, x + 1.5, y + 1.5, w - 3, h - 3, rad - 1); g.stroke();
       b.fillStyle = '#fff'; rr(b, x, y, w, h, rad); b.fill();
     }
   }
@@ -93,7 +93,7 @@ const floorTex = (() => {
   t.colorSpace = THREE.SRGBColorSpace;
   return { t, tb };
 })();
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ map: floorTex.t, bumpMap: floorTex.tb, bumpScale: 1.2, roughness: 0.16, metalness: 0, envMapIntensity: 1.2 }));
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ map: floorTex.t, bumpMap: floorTex.tb, bumpScale: 0.8, roughness: 0.07, metalness: 0.05, envMapIntensity: 1.6 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
 const shadowTex = (() => {
