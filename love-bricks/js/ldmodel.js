@@ -208,3 +208,62 @@ export function loadLDraw(url) {
   if (!cache.has(url)) cache.set(url, fetch(url).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return r.arrayBuffer(); }).then(parse));
   return cache.get(url);
 }
+
+// ---------------------------------------------------------------------------
+// Auta zoptimalizovaná v Blenderu (GLB + meshopt). Převedeme je do stejné
+// struktury jako .lbm, takže skládání po dílcích i spojení ve workeru fungují stejně.
+let gltfLoader = null;
+async function getGLTFLoader() {
+  if (gltfLoader) return gltfLoader;
+  const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([
+    import('../vendor/three/addons/loaders/GLTFLoader.js'),
+    import('../vendor/three/addons/libs/meshopt_decoder.module.js')
+  ]);
+  gltfLoader = new GLTFLoader(); gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+  return gltfLoader;
+}
+export function loadCarGLB(url) {
+  if (cache.has(url)) return cache.get(url);
+  const p = getGLTFLoader().then((l) => l.loadAsync(url)).then((gltf) => {
+    gltf.scene.updateMatrixWorld(true);
+    const Cinv = C.clone().invert();
+    const geoKey = new Map(), geomsRaw = [], places = [], colors = {};
+    const codeOf = (mat) => { const m = /ld_(\d+)/.exec(mat.name || ''); return m ? +m[1] : 7; };
+    const addGeo = (g) => {
+      if (geoKey.has(g.uuid)) return geoKey.get(g.uuid);
+      const P = g.attributes.position, N = g.attributes.normal, n = P.count;
+      const pos = new Float32Array(n * 3), nrm = new Int8Array(n * 3), col = new Uint8Array(n * 4).fill(255);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = P.getX(i); pos[i * 3 + 1] = P.getY(i); pos[i * 3 + 2] = P.getZ(i);
+        if (N) { nrm[i * 3] = Math.round(N.getX(i) * 127); nrm[i * 3 + 1] = Math.round(N.getY(i) * 127); nrm[i * 3 + 2] = Math.round(N.getZ(i) * 127); }
+        col[i * 4 + 3] = 0;
+      }
+      const idx = g.index ? (n < 65536 ? new Uint16Array(g.index.array) : new Uint32Array(g.index.array)) : (n < 65536 ? Uint16Array : Uint32Array).from({ length: n }, (_, i) => i);
+      geomsRaw.push({ pos, nrm, col, idx }); geoKey.set(g.uuid, geomsRaw.length - 1);
+      return geomsRaw.length - 1;
+    };
+    const im = new THREE.Matrix4(), w = new THREE.Matrix4();
+    gltf.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const gi = addGeo(o.geometry), code = codeOf(o.material);
+      if (!colors[code]) colors[code] = ['#' + o.material.color.getHexString(), o.material.transparent ? o.material.opacity : 1, o.material.metalness > 0.5 ? 1 : 0, o.material.name];
+      const count = o.isInstancedMesh ? o.count : 1;
+      for (let k = 0; k < count; k++) {
+        if (o.isInstancedMesh) { o.getMatrixAt(k, im); w.multiplyMatrices(o.matrixWorld, im); } else w.copy(o.matrixWorld);
+        const t = Cinv.clone().multiply(w).elements; // zpět do souřadnic LDraw, LDrawModel je znovu převede
+        places.push({ g: gi, c: code, m: [t[0], t[4], t[8], t[1], t[5], t[9], t[2], t[6], t[10], t[12], t[13], t[14]] });
+      }
+    });
+    // vše do jednoho bufferu (worker dostane soubor jednou a pracuje s posuny)
+    let size = 0; const al = (s) => (s + 3) & ~3;
+    for (const g of geomsRaw) size += al(g.pos.byteLength) + al(g.nrm.byteLength) + al(g.col.byteLength) + al(g.idx.byteLength);
+    const buf = new ArrayBuffer(size); let off = 0;
+    const put = (a) => { const T = a.constructor; const v = new T(buf, off, a.length); v.set(a); off += al(a.byteLength); return v; };
+    const geoms = geomsRaw.map((g) => ({ pos: put(g.pos), nrm: put(g.nrm), col: put(g.col), idx: put(g.idx) }));
+    const n = places.length, m = new Float32Array(n * 12), gg = new Int32Array(n), cc = new Int32Array(n), ss = new Int32Array(n);
+    places.forEach((p, i) => { m.set(p.m, i * 12); gg[i] = p.g; cc[i] = p.c; });
+    return { buffer: buf, header: { colors, steps: 1 }, geoms, m, g: gg, c: cc, s: ss, n };
+  });
+  cache.set(url, p);
+  return p;
+}
