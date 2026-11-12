@@ -51,7 +51,8 @@ Modely se dají později nahradit exportem z Blenderu (`.glb`). Ve `stage3d.js` 
 
 Galerie:
 * vstup, chůze šipkou, kolečkem i swipem, klik na štítek i exponát → detail, změna barvy se projeví na 3D modelu, přidání do košíku, další/předchozí exponát, návrat do chodby – bez chyb v konzoli
-* při chůzi: JS ~2,6 ms na snímek (~11 ms při 4× zpomaleném CPU); ~200 draw callů a ~170 tis. trojúhelníků v záběru
+* při chůzi: JS ~2,6 ms na snímek (~11 ms při 4× zpomaleném CPU); ~230 draw callů a ~180 tis. trojúhelníků v záběru
+* exponáty jsou obří (květiny 2,3–4 m, auta ~1,4× skutečné velikosti) a stojí těsně u cesty
 
 Přehled kolekce:
 
