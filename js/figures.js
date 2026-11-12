@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 
 const PI = Math.PI;
-const COL = { shirt: '#9FC3E9', legs: '#1E2C4A', skin: '#F2CD37', hair: '#6B3018' };
+const COL = { shirt: '#F4F4F2', legs: '#1E2C4A', skin: '#F2CD37', hair: '#6B3018' };
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.22, side: THREE.DoubleSide, ...extra });
 
 // ---------- sada dílků ----------
@@ -38,43 +38,18 @@ export async function loadFigureKit(url = new URL('../models/figure.json', impor
     g.setIndex([0, 2, 1, 0, 3, 2]);
     return g;
   })();
-  geos.facePrint = printGeo(geos.head, 'cyl');
+  // obličej: hladký válec těsně nad povrchem hlavy (bez švů) – v LDraw míří obličej do −z, osa Y dolů
+  geos.facePrint = (() => {
+    const p = geos.head.attributes.position, n = geos.head.attributes.normal;
+    let ys = Infinity, ye = -Infinity, r = 0;
+    for (let i = 0; i < p.count; i++) if (Math.abs(n.getY(i)) < 0.2) { ys = Math.min(ys, p.getY(i)); ye = Math.max(ye, p.getY(i)); r = Math.max(r, Math.hypot(p.getX(i), p.getZ(i))); }
+    const g = new THREE.CylinderGeometry(r + 0.1, r + 0.1, ye - ys, 64, 1, true, PI / 2, PI);
+    const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, 1 - uv.getX(i), 1 - uv.getY(i));
+    g.translate(0, (ys + ye) / 2, 0);
+    return g;
+  })();
   KIT = { geos, asm, textures: { torso: torsoTex(), face: faceTex(false), faceHappy: faceTex(true) } };
   return KIT;
-}
-
-// z geometrie dílku vybere přední plochy a dopočítá UV pro potisk
-function printGeo(src, mode) {
-  const p = src.attributes.position, n = src.attributes.normal, idx = src.index.array;
-  let bb = src.boundingBox;
-  if (mode === 'planar') { // hranice jen z přední stěny
-    const b = new THREE.Box3();
-    for (let t = 0; t < idx.length; t += 3) { let nz = 0; for (let k = 0; k < 3; k++) nz += n.getZ(idx[t + k]); if (nz / 3 <= -0.75) for (let k = 0; k < 3; k++) b.expandByPoint(new THREE.Vector3(p.getX(idx[t + k]), p.getY(idx[t + k]), p.getZ(idx[t + k]))); }
-    bb = b;
-  }
-  let ys = Infinity, ye = -Infinity;
-  if (mode === 'cyl') for (let i = 0; i < p.count; i++) if (Math.abs(n.getY(i)) < 0.2) { ys = Math.min(ys, p.getY(i)); ye = Math.max(ye, p.getY(i)); }
-  const pos = [], nrm = [], uv = [];
-  for (let t = 0; t < idx.length; t += 3) {
-    let nz = 0, ny = 0;
-    for (let k = 0; k < 3; k++) { nz += n.getZ(idx[t + k]); ny += n.getY(idx[t + k]); }
-    nz /= 3; ny /= 3;
-    if (mode === 'planar' && nz > -0.75) continue;                       // přední stěna trupu (v LDraw míří do −z)
-    if (mode === 'cyl' && (nz > -0.05 || Math.abs(ny) > 0.3)) continue;  // přední polovina válce hlavy
-    for (let k = 0; k < 3; k++) {
-      const i = idx[t + k], x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-      const f = mode === 'planar' ? 0.06 : 0.04; // lehce před povrch
-      pos.push(x + n.getX(i) * f, y + n.getY(i) * f, z + n.getZ(i) * f);
-      nrm.push(n.getX(i), n.getY(i), n.getZ(i));
-      if (mode === 'planar') uv.push((x - bb.min.x) / (bb.max.x - bb.min.x), 1 - (y - bb.min.y) / (bb.max.y - bb.min.y));
-      else uv.push(0.5 + Math.atan2(x, -z) / PI, 1 - (y - ys) / (ye - ys));
-    }
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  return g;
 }
 
 function canvasTex(w, h, draw) {
@@ -87,48 +62,11 @@ function canvasTex(w, h, draw) {
 
 // ---------- potisk košile (celá přední stěna trupu; nahoře je trup užší) ----------
 function torsoTex() {
-  // přední stěna trupu: nahoře cca 60 % šířky spodku, prvky držíme uvnitř lichoběžníku
+  // obyčejné bílé tričko s kulatým výstřihem
   return canvasTex(800, 640, (g, W) => {
-    const ink = '#1d2a44', shade = 'rgba(40,70,120,.35)';
     g.fillStyle = COL.shirt; g.fillRect(0, 0, W, 640);
-    // zelené tričko a límeček
-    g.fillStyle = '#B8D25A'; g.beginPath(); g.moveTo(320, 0); g.lineTo(480, 0); g.lineTo(400, 150); g.closePath(); g.fill();
-    g.fillStyle = '#B5D4F2'; g.strokeStyle = ink; g.lineWidth = 8;
-    g.beginPath(); g.moveTo(240, 0); g.lineTo(325, 0); g.lineTo(400, 150); g.lineTo(285, 112); g.closePath(); g.fill(); g.stroke();
-    g.beginPath(); g.moveTo(560, 0); g.lineTo(475, 0); g.lineTo(400, 150); g.lineTo(515, 112); g.closePath(); g.fill(); g.stroke();
-    // léga s knoflíky
-    g.strokeStyle = shade; g.lineWidth = 6; g.beginPath(); g.moveTo(400, 150); g.lineTo(400, 530); g.stroke();
-    g.fillStyle = ink; for (const y of [260, 360, 460]) { g.beginPath(); g.arc(414, y, 8, 0, 7); g.fill(); }
-    // náprsní kapsa vlevo
-    g.strokeStyle = ink; g.lineWidth = 8;
-    g.strokeRect(200, 200, 150, 150);
-    g.beginPath(); g.moveTo(192, 200); g.lineTo(358, 200); g.lineTo(358, 246); g.lineTo(275, 270); g.lineTo(192, 246); g.closePath(); g.stroke();
-    g.fillStyle = ink; g.beginPath(); g.arc(275, 252, 9, 0, 7); g.fill();
-    // vysílačka s mřížkou a kroucenou šňůrou
-    g.fillStyle = '#4f5359'; g.beginPath(); g.ellipse(455, 265, 74, 70, -0.3, 0, 7); g.fill();
-    g.fillStyle = '#a3a9b1'; g.beginPath(); g.ellipse(455, 265, 60, 56, -0.3, 0, 7); g.fill();
-    g.strokeStyle = '#3c4046'; g.lineWidth = 6;
-    for (let k = -3; k <= 3; k++) { g.beginPath(); g.moveTo(455 + k * 15 - 32, 265 - 42 + Math.abs(k) * 4); g.lineTo(455 + k * 15 + 22, 265 + 42 - Math.abs(k) * 4); g.stroke(); }
-    g.strokeStyle = '#4d5157'; g.lineWidth = 8;
-    g.beginPath(); for (let k = 0; k <= 30; k++) { const t = k / 30; const x = 400 - t * 230 + Math.sin(k * 1.6) * 11, y = 320 + t * 215; k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
-    // zlatý odznak s hvězdou
-    g.fillStyle = '#C9A14A'; g.strokeStyle = '#7a5a1c'; g.lineWidth = 7;
-    g.beginPath(); g.moveTo(518, 170); g.lineTo(600, 180); g.lineTo(606, 268); g.quadraticCurveTo(562, 322, 520, 274); g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = '#EED07A';
-    g.beginPath(); for (let k = 0; k < 10; k++) { const a = -PI / 2 + (k * PI) / 5, r = k % 2 ? 16 : 36; const x = 562 + Math.cos(a) * r, y = 232 + Math.sin(a) * r; k ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill();
-    // stíny po stranách dole
-    g.fillStyle = 'rgba(15,25,45,.85)';
-    g.beginPath(); g.moveTo(30, 552); g.lineTo(150, 450); g.lineTo(175, 500); g.lineTo(110, 552); g.closePath(); g.fill();
-    g.beginPath(); g.moveTo(770, 552); g.lineTo(650, 450); g.lineTo(625, 500); g.lineTo(690, 552); g.closePath(); g.fill();
-    // hnědý opasek s přezkou a pouzdrem
-    g.fillStyle = '#8A5A2B'; g.fillRect(0, 545, W, 70);
-    g.strokeStyle = '#5a3818'; g.lineWidth = 6; g.strokeRect(0, 545, W, 70);
-    g.fillStyle = '#C9CCD0'; g.strokeStyle = '#6b6f75'; g.lineWidth = 7;
-    g.fillRect(335, 536, 130, 88); g.strokeRect(335, 536, 130, 88);
-    g.fillStyle = '#8A5A2B'; g.fillRect(366, 560, 68, 40);
-    g.fillStyle = '#7a4c22'; g.strokeStyle = '#5a3818'; g.fillRect(505, 530, 92, 96); g.strokeRect(505, 530, 92, 96);
-    g.fillStyle = '#C9CCD0'; g.beginPath(); g.arc(551, 556, 9, 0, 7); g.fill();
-    g.fillStyle = COL.legs; g.fillRect(0, 615, W, 25);
+    g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 10;
+    g.beginPath(); g.ellipse(400, 0, 92, 58, 0, 0, PI); g.stroke();
   });
 }
 
@@ -146,15 +84,10 @@ function faceTex(happy) {
       g.fillStyle = ink; g.beginPath(); g.ellipse(x, 160, 25, 32, 0, 0, 7); g.fill();
       g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 8, 147, 8.5, 0, 7); g.fill();
     }
-    g.strokeStyle = 'rgba(140,90,20,.6)'; g.lineWidth = 5;
-    g.beginPath(); g.moveTo(150, 152); g.lineTo(138, 164); g.stroke(); g.beginPath(); g.moveTo(362, 152); g.lineTo(374, 164); g.stroke();
     // úšklebek do strany
     g.strokeStyle = ink; g.lineWidth = 13;
     g.beginPath(); g.moveTo(196, 238); g.quadraticCurveTo(268, happy ? 300 : 282, 336, 222); g.stroke();
-    g.lineWidth = 8; g.beginPath(); g.moveTo(336, 222); g.lineTo(350, 212); g.stroke();
-    g.strokeStyle = 'rgba(140,90,20,.6)'; g.lineWidth = 5;
-    g.beginPath(); g.arc(362, 234, 16, -0.4, 1.2); g.stroke();
-    g.beginPath(); g.moveTo(248, 300); g.quadraticCurveTo(264, 307, 280, 300); g.stroke();
+
   });
 }
 

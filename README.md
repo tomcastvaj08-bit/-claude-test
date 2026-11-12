@@ -29,7 +29,7 @@ python3 -m http.server 8765
 | `js/builders.js` | registr všech modelů (květiny procedurálně, auta ze souborů `.lbm`) |
 | `js/ldmodel.js`, `js/ldbake.worker.js` | načítání aut z originálních dílků, skládání po dílcích, spojení složeného auta do jedné geometrie |
 | `models/*.lbm` | auta převedená z LDraw (Porsche 911, Lamborghini Sián, Bugatti Chiron) – viz `tools/ldraw/README.md` |
-| `js/figures.js` + `models/figure.json` | panáček z originálních dílků figurky (boky, nohy, trup, ruce, dlaně, hlava, vlasy) s namalovaným potiskem policejní košile a obličeje |
+| `js/figures.js` + `models/figure.json` | panáček z originálních dílků figurky (boky, nohy, trup, ruce, dlaně, hlava, vlasy) v bílém tričku a modrých kalhotách, s namalovaným obličejem |
 | `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
 | `js/products.js` | ukázková data produktů (ceny, počty dílků, varianty) |
