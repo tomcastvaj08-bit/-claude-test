@@ -15,9 +15,9 @@ export const BUILDERS = {
 // auta z originálních dílků: soubor, původní barvy laku (kódy LDraw) a pevné přebarvení
 const BASE = new URL('../models/', import.meta.url);
 export const LD_CARS = {
-  porsche911: { file: 'porsche911.lbm', body: [15] },
-  sian: { file: 'sian.lbm', body: [27], fixed: { 82: '#C2309A' } },          // růžová verze: purpurové disky
-  chiron: { file: 'chiron.lbm', body: [321], fixed: { 272: '#1B1D22', 1: '#1B1D22' } } // oranžová s černou
+  porsche911: { glb: 'porsche911.glb', body: [15] },
+  sian: { glb: 'sian.glb', body: [27], fixed: { 82: '#C2309A' } },          // růžová verze: purpurové disky
+  chiron: { glb: 'chiron.glb', body: [321], fixed: { 272: '#1B1D22', 1: '#1B1D22' } } // oranžová s černou
 };
 const ldData = new Map();
 // načte data aut (volitelně jen vybraná) – voláme před stavbou scény
