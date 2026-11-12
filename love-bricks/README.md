@@ -28,7 +28,7 @@ python3 -m http.server 8765
 | `js/flowers.js` | květiny: orchidej, mini orchidej, kytice tulipánů, malé rostlinky, kvetoucí kaktus, chryzantéma, lopatkovec, kvetoucí slivoň, bonsaj |
 | `js/cars.js` | auta z panelů: Bugatti Chiron, Lamborghini Huracán Tecnica, Lamborghini Sián (růžové), Ferrari Daytona SP3, McLaren P1, Mercedes-AMG G 63 & SL 63, Bugatti Vision GT |
 | `js/builders.js` | registr všech modelů |
-| `js/figures.js` | panáčci: blondýnka s modrýma očima, copánkem, korunkou, růžovou minisukní a růžovými teniskami; kluk v bílém tričku, modrých kalhotách a černých teniskách s tkaničkami |
+| `js/figures.js` | panáček v klasickém stylu: červené tričko a ruce, modré kalhoty, žlutá hlava s tečkami a úsměvem, hnědé vlasy sčesané na stranu |
 | `js/stage3d.js` | (přehled) jeden WebGL canvas, který kreslí 3D jen do „slotů“ v HTML |
 | `js/common.js` | hlavička, patička, košík (localStorage), cookie lišta a nastavení, toast |
 | `js/products.js` | ukázková data produktů (ceny, počty dílků, varianty) |
