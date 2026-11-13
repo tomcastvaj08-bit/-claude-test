@@ -10,7 +10,8 @@ na 1080×1920. V appce je to šablona **Base** a je navolená od začátku. Lidi
 - **Hlavní řádek**: SF Pro **Heavy (800)**, ~1,58× větší než vedlejší, **Každé Slovo Velké** („Sledovat“, „Chystá V“, „S Názvem“).
   Přeliv **shora dolů: oranžová `#ff9a00` → zelenožlutá `#e8f200`** (oranžová na horní hraně velkých písmen, žlutá na účaří).
 - **Vedlejší řádky**: SF Pro **Semibold (600)**, bílá `#ffffff` → světle šedá `#d4d4d4` dole (jemný přeliv).
-  Začátek věty malým („začněte“), jména a slova jako „AdriBarber13“ zůstávají.
+  Začátek věty malým („začněte“): platí pro první slovo videa a běžná slova na začátku věty (to, tak, ale, je, proto…).
+  Jména („Volařík“) a slova jako „AdriBarber13“ zůstávají, jak jsou.
 - Písmo je **velké, zúžené a hodně stažené**: velikost 118 % (vedlejší ~134 px, hlavní ~211 px při 1080 šířce),
   zúžení na 87 %, proklad −12 % (vedlejší) / −16 % (hlavní), mezery mezi slovy 80 %.
 - **Bez 3D náklonu, bez záře.** Jemný tmavý stín (rozostření 22 %, 50 %, posun 8 %).

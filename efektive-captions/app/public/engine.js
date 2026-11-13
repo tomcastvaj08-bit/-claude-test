@@ -77,6 +77,7 @@ function fillTracked(c, s, x, y, px, track) {
   for (let i = 0; i < ch.length; i++) { c.fillText(ch[i], x + c.measureText(pre).width + tr * i, y); pre += ch[i]; }
 }
 
+const COMMON_START = new Set(('a ale aby ani asi až by bych byl byla bylo bude budeme budete co což dnes do i já jak jaký jako je jen jenom jestli jo jsem jsme jste jsou již k kam kde kdo kdy když kolik má mám máme máte mají mě mi mít mně mu my na nebo ne není nic no o od on ona oni ono pak po pod pokud potom pro proč proto protože prostě přece při s se si stačí strašně sem tady tak taky také takže tam teď ten tento tak to toho tohle tom toto tu ty tyhle u už v vám vás ve vy z za že ahoj dobrý dneska hele heleďte podívejte víte vidíte uvidíte začněte sledujte pojďte přijďte zkuste chcete můžete nezapomeňte').split(' '));
 const capFirst = s => s.charAt(0).toLocaleUpperCase('cs') + s.slice(1);
 // text slova podle role řádku: hlavní řádek může mít Každé Slovo Velké, vedlejší začátek věty malým
 function txt(words, i, S, isEm) {
@@ -90,8 +91,10 @@ function txt(words, i, S, isEm) {
     else if (S.caseMain === 'upper') s = s.toLocaleUpperCase('cs');
   } else if (S.caseSub === 'lowerStart') {
     // „Začněte“ na začátku věty → „začněte“; jména uprostřed věty a slova jako „AdriBarber13“ zůstanou
+    // jen první slovo videa a běžná slova na začátku věty – jména („Volařík“) zůstávají velkým
     const prev = words[i - 1], start = !prev || /[.!?…]["“”»)]*$/u.test(prev.raw || prev.t);
-    if (start && /^\p{Lu}[\p{Ll}]*$/u.test(s) && s.length > 1) s = s.charAt(0).toLocaleLowerCase('cs') + s.slice(1);
+    const low = s.toLocaleLowerCase('cs');
+    if (start && /^\p{Lu}[\p{Ll}]*$/u.test(s) && s.length > 1 && (i === 0 || COMMON_START.has(low))) s = low;
   }
   return s;
 }
