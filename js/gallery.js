@@ -72,15 +72,7 @@ const sun = new THREE.DirectionalLight(0xFFF1E8, 0.75); sun.position.set(4, 10, 
 const sunT = new THREE.Object3D(); scene.add(sunT); sun.target = sunT;
 const gold = new THREE.DirectionalLight(0xFFC98F, 1.9); scene.add(gold);
 const goldT = new THREE.Object3D(); scene.add(goldT); gold.target = goldT;
-// záře na konci chodby
-const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => {
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const g = c.getContext('2d'), grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-  grd.addColorStop(0, 'rgba(255,236,190,1)'); grd.addColorStop(0.25, 'rgba(255,214,170,.75)'); grd.addColorStop(0.6, 'rgba(250,196,186,.25)'); grd.addColorStop(1, 'rgba(250,196,186,0)');
-  g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-})(), transparent: true, depthWrite: false, fog: false }));
-glow.scale.set(30, 18, 1); scene.add(glow);
+
 
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 90);
 
@@ -116,7 +108,7 @@ const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshSt
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
 // lesklá podlaha: skutečný odraz – scéna se vykreslí zrcadlově do textury (v poloviční velikosti) a vmíchá se do dlaždic
-const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.5 };
+const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.28 };
 floor.material.onBeforeCompile = (sh) => {
   sh.uniforms.tRefl = { value: refl.rt.texture }; sh.uniforms.uTexMat = { value: refl.mat }; sh.uniforms.uReflK = { value: refl.k };
   sh.vertexShader = 'uniform mat4 uTexMat;\nvarying vec4 vReflUv;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvReflUv = uTexMat * vec4( transformed, 1.0 );');
@@ -132,10 +124,10 @@ function renderReflection() {
   cam.position.copy(P.v); cam.up.set(0, 1, 0).applyMatrix4(P.rot).reflect(P.n); cam.lookAt(P.tgt);
   cam.far = camera.far; cam.updateMatrixWorld(); cam.projectionMatrix.copy(camera.projectionMatrix);
   refl.mat.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1).multiply(cam.projectionMatrix).multiply(cam.matrixWorldInverse).multiply(floor.matrixWorld);
-  floor.visible = false; glow.visible = false; figLayer.visible = false;
+  floor.visible = false; figLayer.visible = false;
   for (const ex of exhibits) if (ex.sh) ex.sh.visible = false;
   renderer.setRenderTarget(refl.rt); renderer.clear(); renderer.render(scene, cam); renderer.setRenderTarget(null);
-  floor.visible = true; glow.visible = true; figLayer.visible = true;
+  floor.visible = true; figLayer.visible = true;
   for (const ex of exhibits) if (ex.sh) ex.sh.visible = true;
 }
 
@@ -488,7 +480,7 @@ window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.vi
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
-  { const k = (LITE ? 0.35 : 0.5) * dpr; refl.rt.setSize(Math.max(4, Math.round(innerWidth * k)), Math.max(4, Math.round(innerHeight * k))); }
+  { const k = 0.6 * dpr; refl.rt.setSize(Math.max(4, Math.round(innerWidth * k)), Math.max(4, Math.round(innerHeight * k))); }
   canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
   camera.aspect = innerWidth / innerHeight;
   camera.fov = portrait() ? 72 : 55;
@@ -602,7 +594,6 @@ function frame(now) {
   floor.position.set(0, 0, Math.round((pose.pos.z - 60) / TILE_P) * TILE_P);
   sun.position.set(pose.pos.x + 4, 10, pose.pos.z + 6); sunT.position.set(pose.pos.x, 0, pose.pos.z - 6);
   gold.position.set(pose.pos.x - 2, 6, pose.pos.z - 30); goldT.position.set(pose.pos.x, 0, pose.pos.z);
-  glow.position.set(pose.pos.x, 2.4, pose.pos.z - 21);
 
   renderReflection();
   renderer.render(scene, camera);
