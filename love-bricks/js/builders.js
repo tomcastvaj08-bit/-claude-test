@@ -17,7 +17,7 @@ export const LD_CARS = {
   sian: { file: 'sian', body: [27], fixed: DECLUTTER },
   sianblack: { file: 'sian', body: [27], fixed: { ...DECLUTTER, 72: '#2A2C30' } },
   // Bugatti Chiron (42083) v modré jako replika 0090B: světle modrá příď a boky, tmavě modrá záď a střecha
-  chiron: { file: 'chiron', body: [321], fixed: { 272: '#1E3A5F', 15: '#F4F5F6', 71: '#A9ADB2', 383: '#C9CDD2' } },
+  chiron: { file: 'chiron', body: [321], fixed: { 272: '#1E3A5F', 15: '#F4F5F6', 383: '#C9CDD2', 1: '#1B1D22', 4: '#1B1D22', 14: '#1B1D22', 70: '#1B1D22', 71: '#2A2C30', 72: '#2A2C30' } },
   // Porsche 911 GT3 RS (42056) v barvách Gulf: světle modrá, oranžové pruhy
   gulf: { file: 'gulf', body: [25], fixed: { 4: '#F07A1E', 1: '#F07A1E', 14: '#F07A1E' } },
   // Porsche 911 Turbo 3.0 (75895), černé

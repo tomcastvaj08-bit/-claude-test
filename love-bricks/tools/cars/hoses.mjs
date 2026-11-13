@@ -84,28 +84,14 @@ const SPECS = {
     for (const i of [1994, 1995, 2000, 2001]) REMOVE.add(i);
     for (const s of [-1, 1]) part('18944', 272, [s * 70, -323, -80], [1.95, 0, 0, 0, 1, 0, 0, 0, 1]);
     const R = 1.8; // trubka: poloměr 9 LDU
-    const hz = -545, hy = (top(0, hz) ?? -150);
-    part('3960', 71, [0, hy - 8, hz]);                       // velký kulatý díl na kapotě
-    // 1) dvě bílé hadice kolem velkého dílu (závorky z obou stran)
-    for (const s of [-1, 1]) {
-      const arc = []; for (let a = -70; a <= 250; a += 20) { const t = a * Math.PI / 180; if (s < 0 ? (a < 90 || a > 250) : false) continue; }
-      const pts = [];
-      for (let a = 20; a <= 160; a += 14) { const t = a * Math.PI / 180; pts.push(['abs', s * 56 * Math.sin(t), hy - 14, hz + 56 * Math.cos(t)]); }
-      tube(pts, 321, R);  // na modrém autě světle modré
-    }
-    // 2) šedá hadice podél spodní hrany čelního skla
-    { const pts = []; for (let x = -160; x <= 160; x += 40) pts.push([x, -432, 8]); tube(pts, 71, R); }
-    // 3) bílý oblouček přes černou masku vpředu dole
-    { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 383, R); } // stříbrná podkova
-    for (const s of [-1, 1]) {
-      // 4) bílá hadice podél dveří (velký oblouk na boku)
-      const zc = -40, yc = -170, Rr = 125, arc = [];
-      for (let a = -105; a <= 105; a += 9) { const t = a * Math.PI / 180; arc.push(['abs', s * 298, yc + Rr * Math.sin(t), zc + Rr * Math.cos(t)]); }
-      tube(arc, 15, R);
-      // růžová vzpěra od střechy k blatníku
-      const ra = [s * 140, (top(s * 140, -300) ?? -300) - 16, -300], rb = [s * 165, (top(s * 165, -620) ?? -180) - 22, -620];
-      tube([['abs', ...ra], ['abs', ...rb]], 272, 1.6); part('6536', 272, rb); // tmavě modrá vzpěra
-    }
+    // 1) dvě světle modré hadice přes kapotu od paty sloupků k logu, podél prostředního dílu kapoty
+    for (const s of [-1, 1]) tube([[s * 150, -430, 10], [s * 120, -520, 14], [s * 75, -640, 12], [s * 40, -740, 10], [s * 26, -800, 4]], 321, R);
+    // 2) černý oblouk podél spodní hrany čelního skla, od kraje ke kraji (uprostřed vyklenutý dopředu)
+    { const pts = []; for (let x = -175; x <= 175; x += 35) pts.push([x, -410 - 40 * (1 - (x / 175) ** 2), 6]); tube(pts, 0, R); }
+    // 3) stříbrná podkova přes černou masku
+    { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 383, R); }
+    // 4) bílá hadice přes celé dveře: zespodu vzadu nahoru a dopředu podél horní hrany až k zrcátku
+    for (const s of [-1, 1]) tube([['abs', s * 296, -60, -40], ['abs', s * 300, -110, 70], ['abs', s * 300, -215, 75], ['abs', s * 298, -285, 0], ['abs', s * 292, -295, -150], ['abs', s * 285, -270, -290], ['abs', s * 272, -240, -380]], 15, R);
   }
 };
 SPECS[spec]();
