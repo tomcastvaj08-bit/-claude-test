@@ -3,6 +3,9 @@
    ========================================================= */
 body.gallery { height: 100vh; height: 100dvh; overflow: hidden; background: #F6F4F1; overscroll-behavior: none; }
 body.gallery #gl { position: fixed; inset: 0; z-index: 0; pointer-events: auto; touch-action: none; cursor: grab; }
+/* v galerii se při podržení prstu nemá označovat text (modré úchyty na iPhonu) */
+body.gallery { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.gallery #ex-panel .ex-scroll { -webkit-user-select: text; user-select: text; }
 body.gallery #gl:active { cursor: grabbing; }
 .vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 55%, rgba(60, 50, 40, .10)); }
 

@@ -45,7 +45,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.05; margin: 0; letter-spacing: .01em; }
 .baseplate { background-image: var(--plate); background-size: var(--plate-size); }
 
-#gl { display: none; } /* skrytý WebGL kontext – 3D se kopíruje do plátna v každém slotu */
+#gl { position: fixed; left: 0; top: 0; z-index: 5; pointer-events: none; display: block; } /* přehled ho skrývá v js/stage3d.js */
 
 /* ---------- výstupky (studs) ---------- */
 .studs {
