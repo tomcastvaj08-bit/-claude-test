@@ -106,3 +106,16 @@ export function slatPot(b, col, r, n, { y0 = 0, taper = 0.12, id = '6636', half 
     b.part(id, col, c, basis(ex, ey, ez));
   }
 }
+// hladká trubka (válcový primitiv) po Catmull-Rom křivce bodů P, poloměr r (LDU)
+export function tubeP(b, P, col, r = 8) {
+  const out = [];
+  for (let i = 0; i + 1 < P.length; i++) { const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)]; for (let k = 0; k < 8; k++) { const t = k / 8, t2 = t * t, t3 = t2 * t; out.push([0, 1, 2].map((j) => 0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } }
+  out.push(P[P.length - 1]);
+  for (let i = 0; i + 1 < out.length; i++) {
+    const a = out[i], d = sub(out[i + 1], a), L = len(d); if (L < 0.5) continue;
+    const y = norm(d), ref = Math.abs(y[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    const x = scl(norm(cross(ref, y)), r), z = scl(norm(cross(x, y)), r), a0 = sub(a, scl(y, r * 0.35)), yy = scl(y, L + r * 0.7);
+    b.part('48/4-4cyli', col, a0, [x[0], yy[0], z[0], x[1], yy[1], z[1], x[2], yy[2], z[2]]);
+  }
+  return out;
+}
