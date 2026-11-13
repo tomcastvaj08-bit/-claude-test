@@ -54,5 +54,5 @@ zjednoduší (meshoptimizer), tvar zůstává.
 1. `python blender_ao.py model.gltf model.ao.raw.glb 0.85` – stejné zjednodušení jako `blender_opt.py`, model se slije
    a Cycles do vrcholů zapeče ambient occlusion. Výsledek zkomprimuj do `models/_tmp/<id>.ao.glb`.
 2. Zkopíruj `aobake.html` do kořene webu jako `_aobake.html`, spusť server (:8765) a `node aobake.js <id> …`.
-   Vznikne `models/<id>.ao.bin` (1 bajt na vrchol v pořadí slitého modelu) – web ho načte vedle `.glb`.
+   Vznikne `models/<id>.ao.gz` (1 bajt na vrchol v pořadí slitého modelu, 5 bitů, gzip) – web ho načte vedle `.glb`.
 3. Materiál v `js/solid.js` (lesklý ABS s lakem) stínování použije na nepřímé světlo a odlesky.

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
-import { createModel, ready } from './builders.js?v=20261113f';
+import { createModel, ready } from './builders.js?v=20261113g';
 await Promise.all([ready(), loadFigureKit()]);
 import { Figure, loadFigureKit } from './figures.js';
 
@@ -38,7 +38,7 @@ function stageHTML(p, i) {
         <h3>${p.name}</h3>
         <p class="pcard-line">${p.line} · ${p.pieces} dílků · ${p.size} · ${p.age}</p>
         <p class="pcard-desc">${p.desc}</p>
-        <div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === 0}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[0][0]}</em></div>
+        ${v.options.length < 2 ? '' : `<div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === 0}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[0][0]}</em></div>`}
         <div class="buy"><div class="price brick" data-studs>${p.old ? `<s>${fmt(p.old)}</s>` : ''}<strong>${fmt(p.price)}</strong></div><button class="brick-btn" data-studs data-add="${p.id}">${BAG} Do košíku</button></div>
         <ul class="perks"><li>Skladem</li><li>Odesíláme do 24 h</li><li>Dárkové balení zdarma</li></ul>
       </article>

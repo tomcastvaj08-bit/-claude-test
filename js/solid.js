@@ -18,9 +18,17 @@ const cache = new Map();
 export function loadSolid(url, aoUrl = null) {
   if (!cache.has(url)) cache.set(url, Promise.all([
     getLoader().then((l) => l.loadAsync(url)),
-    aoUrl ? fetch(aoUrl).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null) : null
+    aoUrl ? fetch(aoUrl).then((r) => (r.ok ? r.arrayBuffer() : null)).then(gunzip).catch(() => null) : null
   ]).then(([g, ao]) => applyAO(merge(g.scene), ao)));
   return cache.get(url);
+}
+// stínování je uložené zkomprimované (gzip); když ho server/prohlížeč už rozbalil, použije se rovnou
+async function gunzip(buf) {
+  if (!buf) return null;
+  const u = new Uint8Array(buf);
+  if (u[0] !== 0x1f || u[1] !== 0x8b) return buf;
+  if (typeof DecompressionStream === 'undefined') return null;
+  return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 }
 // zapečené stínování v záhybech (Blender, ambient occlusion): 1 bajt na vrchol, ve stejném pořadí jako slité geometrie
 function applyAO(group, buf) {
@@ -84,15 +92,15 @@ function plastic(src) {
   const code = codeOf(src), metal = METAL.has(code) || src.metalness > 0.5;
   const m = new THREE.MeshPhysicalMaterial({
     color: src.color, transparent: src.transparent, opacity: src.opacity, depthWrite: !src.transparent, side: THREE.DoubleSide,
-    roughness: src.transparent ? 0.05 : metal ? 0.32 : 0.36, metalness: metal ? 0.85 : 0,
-    clearcoat: metal ? 0.2 : 0.55, clearcoatRoughness: 0.14, specularIntensity: 0.7, ior: 1.46, envMapIntensity: metal ? 1.25 : 1.0
+    roughness: src.transparent ? 0.05 : metal ? 0.3 : 0.34, metalness: metal ? 0.85 : 0, sheen: metal ? 0 : 0.25, sheenRoughness: 0.6, sheenColor: '#ffffff',
+    clearcoat: metal ? 0.2 : 0.45, clearcoatRoughness: 0.18, specularIntensity: 0.7, ior: 1.46, envMapIntensity: metal ? 1.25 : 1.0
   });
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float ao;\nvarying float vAO;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAO = ao;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vAO;')
       .replace('#include <aomap_fragment>', `#include <aomap_fragment>
-        float aoV = mix(1.0, pow(clamp(vAO, 0.0, 1.0), 0.75), 0.9);
+        float aoV = mix(1.0, pow(clamp(vAO, 0.0, 1.0), 0.8), 0.78); // měkké stíny v záhybech
         reflectedLight.indirectDiffuse *= aoV; reflectedLight.indirectSpecular *= aoV;
         reflectedLight.directDiffuse *= mix(1.0, aoV, 0.6); reflectedLight.directSpecular *= aoV;`);
   };
@@ -130,11 +138,26 @@ export class SolidModel {
     t = Math.min(1, Math.max(0, t));
     if (Math.abs(t - this.progress) < 1e-4) return;
     this.progress = t;
-    // hned viditelné, rychlý pád a měkké dosednutí (bez odrazu)
-    const k = t, e = 1 - Math.pow(1 - k, 3);
+    const e = 1 - Math.pow(1 - t, 3);
     this.model.visible = t > 0.001;
+    if (this.appear) { // jen se objeví na místě (jemné prolnutí), nepadá
+      this.model.position.y = 0; this.model.rotation.y = 0; this.setOpacity(e);
+      return;
+    }
+    this.setOpacity(1);
+    // rychlý pád a měkké dosednutí (bez odrazu)
     this.model.position.y = (1 - e) * this.drop;
     this.model.rotation.y = (1 - e) * 0.35;
+  }
+  setOpacity(o) {
+    if (!this._fade) { this._fade = []; const seen = new Set(); this.model.traverse((m) => { if (!m.isMesh) return; for (const mt of [].concat(m.material)) if (!seen.has(mt)) { seen.add(mt); this._fade.push([mt, mt.opacity, mt.transparent]); } }); }
+    const fading = o < 0.999;
+    if (fading === this._fading && (!fading || Math.abs(o - this._o) < 1e-3)) return;
+    this._fading = fading; this._o = o;
+    for (const [mt, op, tr] of this._fade) {
+      mt.opacity = op * o;
+      const want = tr || fading; if (mt.transparent !== want) { mt.transparent = want; mt.needsUpdate = true; }
+    }
   }
   // přebarvení: kódy barev LDraw → barva (null = původní)
   recolor(map) {
