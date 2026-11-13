@@ -75,32 +75,23 @@ body.is-focus .corner-legal { opacity: 0; pointer-events: none; }
 body.is-ready .hang { animation: hangDrop 1s cubic-bezier(.25, 1.3, .45, 1) forwards, hangSwing 3.4s 1s ease-in-out infinite; }
 body.is-focus .hang { opacity: 0; transition: opacity .3s; }
 body.is-focus .hang * { pointer-events: none !important; }
-.hang-wire { position: absolute; left: -1px; top: 0; bottom: 114px; width: 2px; background: linear-gradient(#b8b3ab, #2b2a28); border-radius: 1px; }
+.hang-wire { position: absolute; left: -1px; top: 0; bottom: 122px; width: 2px; background: linear-gradient(#b8b3ab, #2b2a28); border-radius: 1px; }
 .hang-wire::after { content: ''; position: absolute; left: -5px; bottom: -8px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #2b2a28; }
-/* tlačítko: hranatý tmavě šedý čtverec, na něm průhledný červený kulatý dílek 1x1, který svítí */
-/* tlačítko: prostorová hranatá tmavě šedá kostka (zkosené hrany + viditelná tloušťka), navrchu svítící průhledný červený kulatý dílek viděný shora */
-.hang-box { position: absolute; left: 0; bottom: 14px; width: 100px; height: 100px; transform: translateX(-50%); pointer-events: auto; cursor: pointer; border: 0; padding: 0;
-  border-radius: 3px; background: linear-gradient(145deg, #5d6168 0%, #3a3d43 45%, #26282c 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  box-shadow: inset 3px 3px 0 rgba(255,255,255,.22), inset -3px -3px 0 rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.5),
-    0 1px 0 #1e1f22, 0 2px 0 #1e1f22, 0 3px 0 #1c1d20, 0 4px 0 #1b1c1f, 0 5px 0 #1a1b1e, 0 6px 0 #18191c, 0 7px 0 #17181a, 0 8px 0 #151618, 0 9px 0 #141517, 0 10px 0 #121315,
-    0 24px 30px -10px rgba(0,0,0,.6); -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .1s, box-shadow .1s; }
-.hang-box:active { transform: translateX(-50%) translateY(6px); box-shadow: inset 3px 3px 0 rgba(255,255,255,.22), inset -3px -3px 0 rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.5), 0 1px 0 #1e1f22, 0 2px 0 #1c1d20, 0 3px 0 #1a1b1e, 0 4px 0 #17181a, 0 12px 18px -8px rgba(0,0,0,.6); }
-.hang-box .screw { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #9aa0a8, #3c4046); }
-.hang-box .screw:nth-child(1) { left: 8px; top: 8px; } .hang-box .screw:nth-child(2) { right: 8px; top: 8px; }
-.hang-box .screw:nth-child(3) { left: 8px; bottom: 8px; } .hang-box .screw:nth-child(4) { right: 8px; bottom: 8px; }
-.hang-stud { width: 62px; height: 62px; overflow: visible; animation: studGlow 1.2s ease-in-out infinite; transition: transform .1s; }
-.hang-txt { font-family: var(--display); font-size: 11px; letter-spacing: .14em; color: #e9e9ea; text-transform: uppercase; line-height: 1; }
-.hang-box:active .hang-stud { transform: scale(.96); }
+/* tlačítko: tmavě šedá hranatá destička s viditelnou tloušťkou, navrchu svítící průhledný červený kulatý dílek (pohled shora) */
+.hang-box { position: absolute; left: 0; bottom: 6px; width: 112px; height: 112px; transform: translateX(-46%); pointer-events: auto; cursor: pointer; border: 0; padding: 0; background: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .1s; }
+.hang-img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; pointer-events: none; filter: drop-shadow(0 14px 14px rgba(0,0,0,.45)); }
+.hang-glow { position: absolute; left: 42.8%; top: 40%; width: 74%; height: 74%; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(circle, rgba(255,120,100,.75) 0%, rgba(255,40,30,.45) 38%, rgba(255,20,20,0) 70%); animation: studGlow 1.2s ease-in-out infinite; }
+.hang-box:active { transform: translateX(-46%) translateY(4px) scale(.97); }
+.hang-box:active .hang-glow { animation: none; opacity: 1; }
 .hang-box:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .hang.is-pulled .hang-box { animation: tug .5s ease; }
-@keyframes studGlow {
-  0%, 100% { filter: brightness(.9) drop-shadow(0 0 0 rgba(255, 40, 40, 0)); }
-  50% { filter: brightness(1.35) drop-shadow(0 0 10px rgba(255, 40, 40, .95)) drop-shadow(0 0 22px rgba(255, 60, 60, .6)); }
-}
+@keyframes studGlow { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
 @keyframes hangDrop { 0% { transform: translateY(-110%); } 100% { transform: translateY(0); } }
 @keyframes hangSwing { 0%, 100% { transform: rotate(1.2deg); } 50% { transform: rotate(-1.2deg); } }
 @keyframes tug { 0% { transform: translateX(-50%) translateY(0); } 35% { transform: translateX(-50%) translateY(22px); } 100% { transform: translateX(-50%) translateY(0); } }
-@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang-box { width: 92px; height: 92px; } }
+@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang-box { width: 100px; height: 100px; } .hang-wire { bottom: 110px; } }
 
 /* ---------- teleport: rozmazání ---------- */
 body.is-warp #gl { animation: warpBlur .8s cubic-bezier(.45, 0, .3, 1); }

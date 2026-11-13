@@ -10,7 +10,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='9' width='28' height='20' rx='3' fill='%23D01012'/%3E%3Crect x='6' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Crect x='18' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Cpath d='M16 25s-6-3.6-6-7.6c0-2 1.5-3.4 3.2-3.4 1.2 0 2.2.7 2.8 1.7.6-1 1.6-1.7 2.8-1.7 1.7 0 3.2 1.4 3.2 3.4 0 4-6 7.6-6 7.6z' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="preload" href="fonts/bungee-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/gallery.css?v=20261114g">
+  <link rel="stylesheet" href="css/gallery.css?v=20261114h">
   <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
   <link rel="modulepreload" href="vendor/three/three.module.min.js">
 </head>
@@ -32,25 +32,8 @@
   <div class="hang">
     <span class="hang-wire" aria-hidden="true"></span>
     <button class="hang-box" data-fwd type="button" aria-label="Posunout se dál k dalším exponátům">
-      <i class="screw" aria-hidden="true"></i><i class="screw" aria-hidden="true"></i><i class="screw" aria-hidden="true"></i><i class="screw" aria-hidden="true"></i>
-      <svg class="hang-stud" viewBox="0 0 80 80" aria-hidden="true">
-        <defs>
-          <radialGradient id="hsPlate" cx=".42" cy=".38" r=".7"><stop offset="0" stop-color="#ff7a70"/><stop offset=".55" stop-color="#e3121b"/><stop offset="1" stop-color="#8a0610"/></radialGradient>
-          <radialGradient id="hsStud" cx=".38" cy=".34" r=".75"><stop offset="0" stop-color="#ffc2bb"/><stop offset=".4" stop-color="#ff3a36"/><stop offset="1" stop-color="#a50a14"/></radialGradient>
-          <radialGradient id="hsShade" cx=".5" cy=".5" r=".5"><stop offset=".7" stop-color="#5a0008" stop-opacity="0"/><stop offset="1" stop-color="#5a0008" stop-opacity=".55"/></radialGradient>
-        </defs>
-        <circle cx="40" cy="40" r="36" fill="url(#hsPlate)" fill-opacity=".92"/>
-        <circle cx="40" cy="40" r="36" fill="none" stroke="#ffb1aa" stroke-opacity=".7" stroke-width="1.5"/>
-        <circle cx="40" cy="40" r="31" fill="none" stroke="#7a0510" stroke-opacity=".35" stroke-width="2"/>
-        <circle cx="41.5" cy="42" r="22" fill="#6a0008" fill-opacity=".45"/>
-        <circle cx="40" cy="40" r="21" fill="url(#hsStud)"/>
-        <circle cx="40" cy="40" r="21" fill="url(#hsShade)"/>
-        <circle cx="40" cy="40" r="21" fill="none" stroke="#ffd6d1" stroke-opacity=".8" stroke-width="1.2"/>
-        <circle cx="40" cy="40" r="15" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="1"/>
-        <path d="M27 33 A15 15 0 0 1 39 24" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="3" stroke-linecap="round"/>
-        <path d="M14 26 A30 30 0 0 1 30 12" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-      <span class="hang-txt">Dál</span>
+      <img class="hang-img" src="img/dal-btn.webp" alt="" width="300" height="300" draggable="false">
+      <span class="hang-glow" aria-hidden="true"></span>
     </button>
   </div>
   <div class="warp-flash" aria-hidden="true"></div>
@@ -83,6 +66,6 @@
   </aside>
 
   <noscript><p style="position:fixed;inset:auto 0 0;text-align:center;padding:20px;background:#fff">Galerie potřebuje JavaScript. <a href="prehled.html">Otevřít přehled kolekce</a>.</p></noscript>
-  <script type="module" src="js/gallery.js?v=20261114g"></script>
+  <script type="module" src="js/gallery.js?v=20261114h"></script>
 </body>
 </html>
