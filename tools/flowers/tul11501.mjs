@@ -200,13 +200,16 @@ export function bouquet() {
     B.add(stems[k][0](), { M, p }); placed.push({ M, p, a });
   }
   // dlouhé listy (návod str. 19): připnuté klipem na stonek, list stoupá podél stonku nad květ, lícem ven
-  for (const [si, yl, tw] of [[9, 150, 0.45], [1, 160, -0.45], [0, 120, 0.25], [4, 130, -0.25]]) { // krajní stonky vpravo a vlevo
+  // listy na krajní stonky (dva nejvíc vlevo, dva nejvíc vpravo při pohledu zepředu), list odbíhá ven
+  const byX = placed.map((st, k) => ({ k, x: apply(st.M, [0, -1, 0])[0] * 700 + st.p[0] })).sort((u, v) => u.x - v.x);
+  const leafSpots = [[byX[0].k, 110, -0.25], [byX[2].k, 130, -0.15], [byX[byX.length - 1].k, 110, 0.25], [byX[byX.length - 3].k, 130, 0.15]];
+  for (const [si, yl, tw] of leafSpots) {
     const st = placed[si], at = add(st.p, apply(st.M, [0, yl, 0]));
     const up = norm(apply(st.M, [0, -1, 0])), back = [Math.cos(st.a), 0, -Math.sin(st.a)];
     const out = norm([-tw, 0, -1]);                                        // líc listu k divákovi (+z), lehce do strany
     const ez = scl(up, -1), ey = scl(norm(sub(out, scl(up, dot(out, up)))), -1), ex = cross(ey, ez);
-    const Ml = mul(basis(ex, ey, ez), ry(-Math.sign(tw) * 0.12));                       // špička lehce od stonku ven
-    B.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 26)), [0, 0, -20]), apply(Ml, [0, 0, 140])) });
+    const Ml = mul(basis(ex, ey, ez), ry(Math.sign(tw) * 0.1)); // list odbíhá od stonku šikmo ven, špička nad květem (návod str. 19)
+    B.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 20)), [0, 0, -45]), apply(Ml, [0, 0, 140])) }); // za stonkem
   }
   // krátké zahnuté listy: připnuté na stonky nad vázou, obloukem ven a dolů
   for (const [si, yl] of []) { // krátké listy na fotce sady nejsou vidět – ve váze je nepoužíváme // [stonek, výška na ose od hlavy]
@@ -223,6 +226,15 @@ if (process.env.SUB) {
   if (process.env.SUB === 'redhead') A.add(tulipHead({ col: 4, open: E('OPEN', 0) }), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
   const hs = { purple: () => purpleHead({ open: -0.1 }), pink: () => pinkHead({ open: -0.15 }), orange: orangeHead, bud: budHead, yellow: () => tulipHead({ col: 14, disc: 28, open: -0.35 }) };
   if (hs[process.env.SUB]) A.add(hs[process.env.SUB](), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
+  if (process.env.SUB === 'one') { // jeden červený tulipán s dlouhým listem jako na str. 19 (list namontovaný stejně jako v kytici)
+    const M = [1, 0, 0, 0, 1, 0, 0, 0, 1], p = [0, -640, 0];
+    A.add(straightStem(tulipHead({ col: 4, open: -0.1 })), { M, p });
+    const at = add(p, [0, +(process.env.YL || 150), 0]), up = [0, -1, 0], out = norm([-E('TW', 0.3), 0, -1]), back = [1, 0, 0];
+    const ez = scl(up, -1), ey = scl(norm(sub(out, scl(up, dot(out, up)))), -1), ex = cross(ey, ez);
+    const VR = { a: ry(E('IP', 0)), b: ry(Math.PI), c: rz(Math.PI / 2), d: rz(-Math.PI / 2), e: mul(rz(Math.PI / 2), ry(Math.PI)), f: mul(rz(-Math.PI / 2), ry(Math.PI)) }[process.env.VR || 'a'];
+    const Ml = mul(basis(ex, ey, ez), VR);
+    A.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 26)), [0, 0, -20]), apply(Ml, [0, 0, 140])) });
+  }
   if (process.env.SUB === 'long') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.part('30374', 4, [0, -40, -300], [1, 0, 0, 0, 0, -1, 0, 1, 0]); }
   if (process.env.SUB === 'leaves') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.add(shortLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [150, 0, 0] }); }
   if (process.env.SUB === 'bouquet') A.add(bouquet(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
