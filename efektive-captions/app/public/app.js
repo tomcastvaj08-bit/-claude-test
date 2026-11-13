@@ -197,7 +197,9 @@ $('genBtn').onclick=async()=>{
     }
     E.words=all.filter(w=>w.t); if (!E.words.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
     await afterWords();
-  }catch(err){ console.error(err); show('setup'); $('setupStatus').textContent='Nepovedlo se: '+err.message; }
+  }catch(err){ console.error(err); show('setup');
+    const noServer=/Failed to fetch|NetworkError|Load failed|Chyba 404|Chyba 405|Server neodpověděl|chybí klíč/i.test(err.message);
+    $('setupStatus').textContent = noServer ? 'AI přepis tady nejede (appka neběží na serveru s klíčem). Vlož text ručně níž a dej Použít.' : 'Nepovedlo se: '+err.message; }
 };
 $('manualBtn').onclick=async()=>{
   const list=$('manualText').value.trim().split(/\s+/).filter(Boolean); if(!list.length) return;
@@ -768,7 +770,11 @@ $('exGo').onclick=async()=>{
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB${res.codec?' · '+res.codec:''}`);
     // na iPhonu nabídnout sdílení (uložit do Fotek)
-    a.onclick=async ev=>{ if (navigator.canShare){ const f=new File([res.blob],a.download,{type:res.blob.type}); if (navigator.canShare({files:[f]})){ ev.preventDefault(); try{ await navigator.share({files:[f]}); }catch(e){} } } };
+    a.onclick=async ev=>{
+      // uvnitř Claude (artifact): uložení přes potvrzení „Stáhnout“
+      if (window.claude && window.claude.use){ ev.preventDefault(); try{ const d=await window.claude.use('downloads'); if (d){ await d.save({filename:a.download, data:res.blob}); return; } }catch(e){ if (e&&e.code==='declined') return; console.warn(e); } }
+      // na iPhonu nabídnout sdílení (uložit do Fotek)
+      if (navigator.canShare){ const f=new File([res.blob],a.download,{type:res.blob.type}); if (navigator.canShare({files:[f]})){ ev.preventDefault(); try{ await navigator.share({files:[f]}); }catch(e){} } } };
     window.__lastExport=res;
   }catch(e){ console.error(e); $('exStatus').textContent='Export se nepovedl: '+e.message; }
   finally{ $('exCancel').classList.add('hidden'); $('exGo').classList.remove('hidden'); exCancel=null; }
