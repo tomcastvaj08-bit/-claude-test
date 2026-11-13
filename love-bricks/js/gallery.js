@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261113f';
+import { createModel, ready, LITE } from './builders.js?v=20261113g';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -49,7 +49,7 @@ let dpr = MAX_DPR;
 renderer.setPixelRatio(dpr);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping;
-renderer.toneMappingExposure = 1.02;
+renderer.toneMappingExposure = 1.08;
 
 const scene = new THREE.Scene();
 // golden hour: teplé růžovozlaté světlo, na konci chodby září slunce
@@ -59,9 +59,9 @@ const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.9; // odlesky okolí na lesklém plastu
 pm.dispose();
-scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xD8D4CE, 0.85)); // méně plochého světla – víc hloubky a stínů v záhybech
+scene.add(new THREE.HemisphereLight(0xFFFDF8, 0xE6DED4, 0.9)); // teplý odraz od podlahy, měkké přechody // méně plochého světla – víc hloubky a stínů v záhybech
 // měkké světlo zepředu (aby exponáty nebyly tmavé) + nízké zlaté slunce z konce chodby
-const sun = new THREE.DirectionalLight(0xFFFFFF, 1.1); sun.position.set(4, 10, 6); scene.add(sun);
+const sun = new THREE.DirectionalLight(0xFFF4E6, 1.25); sun.position.set(4, 10, 6); scene.add(sun);
 const sunT = new THREE.Object3D(); scene.add(sunT); sun.target = sunT;
 const gold = new THREE.DirectionalLight(0xFFFFFF, 1.1); scene.add(gold);
 const goldT = new THREE.Object3D(); scene.add(goldT); gold.target = goldT;
@@ -273,7 +273,7 @@ function details(p) {
     <h2 id="ex-title">${p.name}</h2>
     <p class="pcard-line">${p.pieces} dílků · ${p.size}</p>
     <p class="pcard-desc">${p.desc}</p>
-    <div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === selected[p.id]}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[selected[p.id]][0]}</em></div>
+    ${v.options.length < 2 ? '' : `<div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === selected[p.id]}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[selected[p.id]][0]}</em></div>`}
     <p class="ex-note">Doprava zdarma od 1 500 Kč · vrácení do 14 dnů</p>`;
 }
 function openPanel(ex) {
@@ -469,7 +469,7 @@ document.addEventListener('click', (e) => {
 // ------------------------------------------------------------ smyčka
 let last = performance.now(), frames = [];
 const perf = { n: 0, sum: 0, max: 0, reset() { this.n = 0; this.sum = 0; this.max = 0; }, get avg() { return this.n ? this.sum / this.n : 0; } };
-window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter };
+window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)) };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -538,11 +538,11 @@ function frame(now) {
     // při teleportu se cílová dvojice začne skládat hned po kliknutí (ne až po doletu)
     const dT = state.warp ? slotS(ex.slot) - state.warp.to : d;
     const near = now >= introStart && ((d > -6 && d < REVEAL) || (dT > -2 && dT < REVEAL));
-    if (near && !ex.shown) { ex.shown = true; ex.t0 = now + (ex.slot % 2) * 120 + (introDone ? 0 : Math.floor(ex.slot / 2) * 300); }
+    if (near && !ex.shown) { ex.shown = true; ex.m.m.appear = introDone || ex.slot > 1; ex.t0 = now + (ex.m.m.appear ? 0 : (ex.slot % 2) * 120); } // padá jen první dvojice, další se jen objeví
     else if (ex.shown && ex !== focusEx && (d < -8 || d > REVEAL + 3)) { ex.shown = false; ex.m.setProgress(0); }
     ex.root.visible = ex.shown && now >= ex.t0;
     if (!ex.root.visible) continue;
-    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / 750));
+    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / (ex.m.m.appear ? 350 : 750)));
     ex.shMat.opacity = ex.shMat.opacity + (clamp((ex.m.progress - 0.97) / 0.03) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 4));
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
