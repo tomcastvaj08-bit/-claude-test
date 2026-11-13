@@ -59,9 +59,9 @@ World space is source frame 60 (720×1280). The camera from `track_camera.py` is
 ## Timeline (source frame F, 30 fps, F1 = 0.00 s)
 
 **Shot A, F1–138 (footage): "You're not competing on price." → "You're competing on value."**
-- F1–10: footage zooms out with motion blur (camera s 2.2 → 1.15). The card fades and scales in (1.1→1). Crosses fly in: the big one comes from the right, the small ones scale-spin in.
+- F1–10: footage zooms out with motion blur (camera s 2.2 → 1.15). The card is already there at F3 (fade F1.2–3.8, scale 1.1→1). Crosses fly in: the big one comes from the right, the small ones scale-spin in.
 - F3–27: a white comet (tapered stroke, glow) flies right→left at y≈260 and **writes "You're not" right-to-left**. Each letter pops (scale 1.5→1, blur→0). The comet curls around the small cross and dies at F27. A second short streak exits left at F21–28.
-- F7.5–15: five yellow rounded squares (48 px, gap 5.75) pop in. A brightness wave runs through them (F15–22), then they shrink out left→right (F22–30).
+- F7.5–15: five yellow rounded squares (48 px, gap 5.75) pop in dim (olive) and brighten about 2 frames later. A brightness wave runs through them (F16–22), then they shrink out left→right (F22–30).
 - F26–31.5: "price." slides in from the left with a horizontal smear (−230 px, easeOutCubic).
 - F27.5–35: "competing" is hand-written left→right (a clip reveal with a pen-tip bloom). "on" fades in yellow → white (F32.5–41).
 - Crosses snap-rotate 45° (X ↔ +) at F11, 26, 50, 65 and 83. The small crosses lag by a few frames.
