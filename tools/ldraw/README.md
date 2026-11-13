@@ -37,6 +37,7 @@ zjednoduší (meshoptimizer), tvar zůstává.
 * Lamborghini Sián FKP 37 (42115) – Jens Brühl (na webu přebarveno na růžovou)
 * Bugatti Chiron (42083) – Philippe Hurbain (na webu přebarveno na oranžovo-černou)
 * Bonsaj (10281) – Orion Pobursky (varianta Sakura = přebarvené listy)
+* Kytice květin (10280) – Orion Pobursky (stonky sesazené do vázy skriptem `tools/flowers/bouquet.mjs`)
 * Knihovna dílků – LDraw.org Parts Library
 
 ## Velikosti (plná / mobilní verze)

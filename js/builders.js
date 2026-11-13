@@ -19,7 +19,9 @@ export const LD_CARS = {
   // květiny složené z dílků (tools/flowers); looks = přebarvení podle zvolené varianty (první varianta = původní barvy)
   orchid: { file: 'orchid', flower: true, key: 'pot', looks: { '#F2F3F2': { 379: '#F2F3F2' }, '#3E4347': { 379: '#3E4347' } } },
   miniorchid: { file: 'miniorchid', flower: true, key: 'petal', looks: { '#F2F3F2': { 78: '#F2F3F2' }, '#FC97AC': { 78: '#FC97AC' } } },
-  tulips: { file: 'tulips', flower: true },
+  // kytice 10280: přesná stavba z LDraw OMR, stonky sesazené do vázy (tools/flowers/bouquet.mjs)
+  bouquet: { file: 'bouquet', flower: true, vase: { bottom: 30, top: -440, r: 175 } },
+  tulips: { file: 'tulips', flower: true, vase: { bottom: 170, top: -120, r: 92 } },
   tinyplants: { file: 'tinyplants', flower: true, key: 'pot', looks: { '#F2F3F2': { 484: '#F2F3F2' }, '#3E4347': { 484: '#3E4347' } } },
   cactus: { file: 'cactus', flower: true, key: 'pot', looks: { '#FC97AC': { 212: '#FC97AC' }, '#F2F3F2': { 212: '#F2F3F2' } } },
   chrysanthemum: { file: 'chrysanthemum', flower: true, key: 'flower', looks: { '#F5C518': { 25: '#F5C518', 484: '#E0A800', 191: '#FFE066' }, '#E4569A': { 25: '#E4569A', 484: '#C2307A', 191: '#F59BC0' } } },
@@ -34,10 +36,28 @@ export function ready(ids = Object.keys(LD_CARS)) {
     loadSolid(new URL(LD_CARS[id].file + (LITE ? '-lite' : '') + '.glb', BASE).href).then((s) => solidData.set(id, s))));
 }
 
+// realistická skleněná váza (hladké sklo, ne z kostek) – rozměry v LDU, osa Y dolů jako v LDraw
+let glassMat = null;
+function addVase(sm, { bottom, top, r }) {
+  if (!glassMat) glassMat = new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.03, metalness: 0, transparent: true, opacity: 0.2, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.6, side: THREE.DoubleSide, depthWrite: false });
+  const yb = -bottom / 20, yt = -top / 20, R = r / 20, pts = [];
+  // tvar vejce: užší dno, nejširší v dolní třetině, zúžené hrdlo s malým okrajem
+  const prof = [[0, 0], [0.02, 0.62], [0.12, 0.86], [0.32, 1], [0.55, 0.95], [0.8, 0.78], [0.95, 0.7], [1, 0.72]];
+  for (const [t, k] of prof) pts.push(new THREE.Vector2(Math.max(0.001, R * k), yb + (yt - yb) * t));
+  const glass = new THREE.Mesh(new THREE.LatheGeometry(pts, 48), glassMat);
+  glass.renderOrder = 5;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.6, R * 0.6, 0.6, 40), glassMat); base.position.y = yb + 0.3; base.renderOrder = 5;
+  sm.model.add(glass, base);
+  const py = sm.model.position.y; sm.model.position.y = 0; sm.model.updateMatrixWorld(true);
+  sm.box = new THREE.Box3().setFromObject(sm.model);
+  sm.model.position.y = py;
+}
+
 class LDCar {
   constructor(id, opts) {
     const spec = this.spec = LD_CARS[id];
     this.m = new SolidModel(solidData.get(id), opts);
+    if (spec.vase) addVase(this.m, spec.vase);
     this.group = new THREE.Group();
     const inner = new THREE.Group(); inner.rotation.y = spec.flower ? 0 : Math.PI / 2; inner.add(this.m.group); // příď do +x
     this.group.add(inner);

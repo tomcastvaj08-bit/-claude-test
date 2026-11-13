@@ -19,10 +19,10 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
 
 // pořadí v chodbě: květina, auto, květina, auto…
-const ORDER = ['orchid', 'porsche911', 'tulips', 'sian', 'bonsai', 'chiron', 'miniorchid', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'tinyplants'];
+const ORDER = ['orchid', 'porsche911', 'tulips', 'sian', 'bonsai', 'chiron', 'bouquet', 'miniorchid', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'tinyplants'];
 // velikost v metrech: květiny ~ výška člověka, auta v životní velikosti (délka)
 // obří exponáty: květiny 3–4 m, auta zhruba 1,4× skutečné velikosti
-const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
+const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
   porsche911: 6.2, sian: 6.8, chiron: 6.6 };
 const N = ORDER.length;
 const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10, REVEAL = 13.5;
