@@ -85,26 +85,20 @@ const SPECS = {
     for (const s of [-1, 1]) part('18944', 272, [s * 70, -323, -80], [1.95, 0, 0, 0, 1, 0, 0, 0, 1]);
     const R = 1.8; // trubka: poloměr 9 LDU
     const hz = -545, hy = (top(0, hz) ?? -150);
-    part('3960', 71, [0, hy - 8, hz]);                      // šedý kulatý díl uprostřed kapoty
-    const con = {};
+    part('3960', 71, [0, hy - 8, hz]);                       // velký kulatý díl na kapotě
+    // 1) dvě bílé hadice kolem velkého dílu (závorky z obou stran)
     for (const s of [-1, 1]) {
-      const cx = s * 78, cz = -425, cy = (top(cx, cz) ?? -170) - 12;
-      part('32184', 71, [cx, cy, cz], [1, 0, 0, 0, 0, -1, 0, 1, 0]); // šedá spojka u paty sloupku
-      con[s] = [cx, cy, cz];
+      const arc = []; for (let a = -70; a <= 250; a += 20) { const t = a * Math.PI / 180; if (s < 0 ? (a < 90 || a > 250) : false) continue; }
+      const pts = [];
+      for (let a = 20; a <= 160; a += 14) { const t = a * Math.PI / 180; pts.push(['abs', s * 56 * Math.sin(t), hy - 14, hz + 56 * Math.cos(t)]); }
+      tube(pts, 15, R);
     }
-    const C = (s, dz = 0) => ['abs', con[s][0], con[s][1], con[s][2] - 18 + dz];
-    // šedá smyčka ze spojky kolem kulatého dílu zpět do druhé spojky
-    tube([C(-1), [-70, hz + 30, 12], [-62, hz - 70, 12], [0, hz - 92, 12], [62, hz - 70, 12], [70, hz + 30, 12], C(1)], 71, R * 0.8);
+    // 2) šedá hadice podél spodní hrany čelního skla
+    { const pts = []; for (let x = -160; x <= 160; x += 40) pts.push([x, -432, 8]); tube(pts, 71, R); }
+    // 3) bílý oblouček přes černou masku vpředu dole
+    { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 15, R); }
     for (const s of [-1, 1]) {
-      // bílá: ze spojky dopředu ven k světlu
-      tube([C(s), [s * 120, -520, 16], [s * 160, -650, 14], [s * 175, -760, -4]], 15, R);
-      // bílá: ze spojky přes blatník na bok
-      tube([C(s, 10), [s * 150, -470, 18], [s * 225, -560, 16], [s * 262, -640, -6]], 15, R);
-    }
-    // bílá šikmo přes kapotu: z pravé spojky dolů doleva ke středu masky
-    tube([C(1, 6), [40, -560, 18], [-10, -680, 14], [-30, -770, -6]], 15, R);
-    for (const s of [-1, 1]) {
-      // velký bílý oblouk kolem dveří, konce zapuštěné do karoserie
+      // 4) bílá hadice podél dveří (velký oblouk na boku)
       const zc = -40, yc = -170, Rr = 125, arc = [];
       for (let a = -105; a <= 105; a += 9) { const t = a * Math.PI / 180; arc.push(['abs', s * 298, yc + Rr * Math.sin(t), zc + Rr * Math.cos(t)]); }
       tube(arc, 15, R);
