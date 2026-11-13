@@ -7,11 +7,25 @@ on:
     paths: ['efektive-captions/app/public/**', 'efektive-captions/mobile/**', '.github/workflows/efektive-ios.yml']
   workflow_dispatch:
 jobs:
+  # levná kontrola na Linuxu: Mac (drahé minuty) se spustí jen když jsou nastavené klíče Apple
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.c.outputs.ok }}
+    steps:
+      - id: c
+        env:
+          HAS: ${{ secrets.ASC_KEY_P8_B64 != '' && secrets.APPLE_TEAM_ID != '' }}
+        run: |
+          echo "ok=$HAS" >> "$GITHUB_OUTPUT"
+          [ "$HAS" = "true" ] || echo "Apple klíče zatím nejsou nastavené – iOS sestavení přeskakuji."
   ios:
+    needs: check
+    if: ${{ needs.check.outputs.ok == 'true' }}
     runs-on: macos-15
     timeout-minutes: 60
     env:
-      HAS_APPLE: ${{ secrets.ASC_KEY_P8_B64 != '' && secrets.APPLE_TEAM_ID != '' }}
+      HAS_APPLE: 'true'
     defaults: { run: { working-directory: efektive-captions/mobile } }
     steps:
       - name: Chybí klíče Apple → přeskočeno
