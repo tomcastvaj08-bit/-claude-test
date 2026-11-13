@@ -1,5 +1,5 @@
 // Registr všech modelů Love Bricks.
-// Auta, bonsaj i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
+// Bonsaj, kytice i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
 // které se po načtení slijí do jednoho modelu (js/solid.js). Procedurálně zůstalo jen srdce.
 import * as THREE from 'three';
 import { BrickModel, buildHeart } from './models.js';
@@ -10,18 +10,7 @@ export const BUILDERS = { heart: buildHeart }; // procedurální modely (srdce v
 // hotové modely z originálních dílků (LDraw), v Blenderu zjednodušené a po načtení slité do jednoho modelu
 // body = kódy barev laku pro varianty, fixed = pevné přebarvení, looks = sady přebarvení podle varianty
 const BASE = new URL('../models/', import.meta.url);
-// barevné spojovací kolíky a osy (modré, červené, žluté, šedé) ztmavit – auto pak nepůsobí rozkouskovaně
-const DECLUTTER = { 40: '#26292E', 1: '#1B1D22', 4: '#1B1D22', 14: '#1B1D22', 70: '#1B1D22', 71: '#3A3D42', 72: '#2A2C30' };
 export const LD_CARS = {
-  // malé Lambo (replika 21 cm) postavené z dílků podle fotek – tools/cars/pinklambo.mjs; kód 70 = disky
-  sian: { file: 'pinklambo', body: [29], fixed: { 70: '#1B1D22' } },
-  sianblack: { file: 'pinklambo', body: [29], fixed: { 70: '#A8873A', 0: '#1B1D22' } },
-  // Bugatti Chiron (42083) v modré jako replika 0090B: světle modrá příď a boky, tmavě modrá záď a střecha
-  chiron: { file: 'chiron', body: [321], fixed: { 272: '#1E3A5F', 15: '#F4F5F6', 383: '#C9CDD2', 1: '#1B1D22', 4: '#1B1D22', 14: '#1B1D22', 70: '#1B1D22', 71: '#2A2C30', 72: '#2A2C30' } },
-  // Porsche 911 GT3 RS (42056) v barvách Gulf: světle modrá, oranžové pruhy
-  gulf: { file: 'gulf', body: [25], fixed: { 4: '#F07A1E', 1: '#F07A1E', 14: '#F07A1E' } },
-  // Porsche 911 Turbo 3.0 (75895), černé
-  turbo: { file: 'turbo', body: [15] },
   // bonsaj 10281: varianta Sakura přebarví listy (zelená, světle zelená) na růžové květy
   bonsai: { file: 'bonsai', flower: true, key: 'foliage', looks: { '#F59BC0': { 2: '#F59BC0', 10: '#FFD3E4' } } },
   // květiny složené z dílků (tools/flowers); looks = přebarvení podle zvolené varianty (první varianta = původní barvy)

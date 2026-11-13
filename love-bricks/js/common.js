@@ -52,7 +52,6 @@ function injectChrome() {
     <nav class="nav" aria-label="Hlavní menu">
       <a href="${GAL}">3D galerie</a>
       <a href="${LIST}#showcase">Květiny</a>
-      <a href="${LIST}#auta">Auta</a>
       <a href="${LIST}#kolekce">Kolekce</a>
     </nav>
     <button class="brick-btn cart-btn" data-studs data-open-cart aria-label="Košík">${BAG_SVG}<span class="cart-count" data-cart-count>0</span></button>
@@ -61,7 +60,6 @@ function injectChrome() {
   <nav class="mobile-menu" id="mmenu" aria-label="Mobilní menu">
     <a class="brick-btn" data-studs href="${GAL}">3D galerie</a>
     <a class="brick-btn" data-studs href="${LIST}#showcase">Květiny</a>
-    <a class="brick-btn" data-studs href="${LIST}#auta">Auta z kostek</a>
     <a class="brick-btn" data-studs href="${LIST}#kolekce">Celá kolekce</a>
     <a class="brick-btn" data-studs href="${BASE}obchodni-podminky.html">Obchodní podmínky</a>
   </nav>`;
@@ -71,7 +69,7 @@ function injectChrome() {
     <div class="footer-grid">
       <div class="footer-brand">
         <a class="logo" href="${GAL}"><span class="logo-brick brick" data-studs>${HEART_SVG}</span><span class="logo-text">Love<b>Bricks</b></span></a>
-        <p>Dárky z kostek pro ty, které máš rád. Květiny, které nezvadnou, a auta, která nezestárnou.</p>
+        <p>Dárky z kostek pro ty, které máš rád. Květiny, které nezvadnou.</p>
       </div>
       <div><h4>Nákup</h4><ul>
         <li><a href="${BASE}obchodni-podminky.html#doprava">Doprava a platba</a></li>
@@ -91,8 +89,7 @@ function injectChrome() {
       </ul></div>
     </div>
     <div class="legal-note">
-      <p>Love Bricks je nezávislý prodejce stavebnic. Názvy Lamborghini, Ferrari, Bugatti, McLaren a Mercedes-AMG jsou ochranné známky svých vlastníků a slouží pouze k označení prodávaných modelů.</p>
-      <p>3D modely: LDraw.org Official Model Repository – Philippe Hurbain (Porsche GT3 RS), Magnus Forsberg (Porsche 911 Turbo), Philippe Hurbain (Bugatti), Orion Pobursky (Bonsaj, Kytice květin); knihovna dílků LDraw.org. Licence CC BY 2.0, barvy upraveny.</p>
+      <p>3D modely: LDraw.org Official Model Repository – Orion Pobursky (Bonsaj, Kytice květin); knihovna dílků LDraw.org. Licence CC BY 2.0, barvy upraveny.</p>
       <p>© 2026 Love Bricks · ukázková verze webu – zatím nic neprodáváme, ceny a parametry jsou orientační.</p>
     </div>
   </footer>`;

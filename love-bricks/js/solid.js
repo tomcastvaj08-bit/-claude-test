@@ -1,4 +1,4 @@
-// Love Bricks – hotové modely (auta, bonsaj) jako JEDEN slitý model z Blenderu.
+// Love Bricks – hotové modely (květiny, bonsaj, kytice) jako JEDEN slitý model z Blenderu.
 // Žádné tisíce samostatných dílků: model se načte vcelku, spadne z nebe a dopadne s lehkým odrazem.
 import * as THREE from 'three';
 

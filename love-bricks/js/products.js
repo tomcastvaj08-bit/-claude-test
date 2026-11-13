@@ -2,11 +2,10 @@
 export const OCCASIONS = {
   pary: 'Pro páry',
   maminka: 'Pro maminku',
-  rodina: 'Pro rodinu',
-  auta: 'Pro milovníky aut'
+  rodina: 'Pro rodinu'
 };
 
-const BOT = 'Botanická kolekce', CAR = 'Kolekce aut', BIG = 'Sběratelská auta';
+const BOT = 'Botanická kolekce';
 
 export const ALL = [
   // ------------------------------------------------ květiny
@@ -40,22 +39,7 @@ export const ALL = [
   { id: 'bonsai', model: 'bonsai', name: 'Bonsaj', line: BOT, price: 1399, pieces: 878, size: '18 cm', age: '18+', tags: ['rodina', 'pary'], featured: true,
     kicker: 'Zelená nebo v květu', desc: 'Bonsaj na dřevěném stojánku. Listy vyměníš za růžovou sakuru.',
     variant: { key: 'foliage', label: 'Koruna', options: [['Zelená', '#4B9F4A'], ['Sakura', '#F59BC0']] }, bg: '#EAF2E1', ink: '#1A2A10', accent: '#4B9F4A', word: 'BONSAJ' },
-  // ------------------------------------------------ auta (skutečné modely z originálních dílků)
-  { id: 'sian', model: 'sian', name: 'Lamborghini růžové', line: CAR, price: 590, pieces: 420, size: '21 cm', age: '8+', tags: ['auta', 'pary'], featured: true,
-    kicker: 'Pro holky, co milují rychlost', desc: 'Malý růžový supersport s otevřenou kabinou, růžovými trubkami a černým spoilerem.',
-    variant: { key: 'body', label: 'Lak', options: [['Růžová', '#F4B6CF']] }, bg: '#FFE4EF', ink: '#3B0A22', accent: '#D3359D', word: 'ROSA' },
-  { id: 'sianblack', model: 'sianblack', name: 'Lamborghini černo-zlaté', line: CAR, price: 590, pieces: 420, size: '21 cm', age: '8+', tags: ['auta', 'rodina'], featured: true,
-    kicker: 'Černá se zlatou', desc: 'Malý černý supersport se zlatými disky a černým spoilerem.',
-    variant: { key: 'body', label: 'Lak', options: [['Černá', '#1B1D22']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#C9A44C', accentInk: '#1B1D22', word: 'NERO', dark: true },
-  { id: 'chiron', model: 'chiron', name: 'Bugatti modré', line: BIG, price: 899, pieces: 1388, size: '34,5 cm', age: '14+', tags: ['auta', 'rodina'], featured: true,
-    kicker: 'Hypersport v modré', desc: 'Světle modrá příď s podkovou masky, tmavě modrá záď a bílý oblouk kolem dveří.',
-    variant: { key: 'body', label: 'Lak', options: [['Modrá', '#4A93C6']] }, bg: '#E3EEF7', ink: '#0E2A44', accent: '#2E6FA8', word: 'BUGATTI' },
-  { id: 'gulf', model: 'gulf', name: 'Porsche GT3 RS Gulf', line: BIG, price: 1490, pieces: 1300, size: '33 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
-    kicker: 'Závodní legenda', desc: 'Porsche v legendárních barvách Gulf, světle modrá s oranžovou a velké zadní křídlo.',
-    variant: { key: 'body', label: 'Lak', options: [['Gulf modrá', '#8EC5E8']] }, bg: '#E3F1FA', ink: '#0E2A44', accent: '#F07A1E', word: 'GULF' },
-  { id: 'turbo', model: 'turbo', name: 'Porsche 911 Turbo černé', line: CAR, price: 590, pieces: 320, size: '17 cm', age: '8+', tags: ['auta', 'rodina'], featured: true,
-    kicker: 'Malá klasika', desc: 'Černá devětsetjedenáctka Turbo s velkým zadním spoilerem, malé měřítko do poličky.',
-    variant: { key: 'body', label: 'Lak', options: [['Černá', '#1B1D22']] }, bg: '#ECEEF0', ink: '#1A1D21', accent: '#F57C1F', word: 'TURBO' }
+
 ];
 
 export const PRODUCTS = ALL.filter(p => p.featured);
