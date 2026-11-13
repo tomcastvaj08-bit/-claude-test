@@ -11,7 +11,7 @@ function geo(ref) {
   const pos = new Float32Array(tris.length * 9);
   tris.forEach((t, k) => { for (let v = 0; v < 3; v++) pos.set(t.v[v], k * 9 + v * 3); });
   let g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g = toCreasedNormals(g, Math.PI / 5); g.deleteAttribute('uv'); g = mergeVertices(g, 0.01);
+  g = toCreasedNormals(g, Math.PI * (+(process.env.CREASE) || 0.56)); g.deleteAttribute('uv'); g = mergeVertices(g, 0.01); // hladké stínování i přes hrany ~100°
   const b64 = (a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength).toString('base64');
   return { pos: b64(new Float32Array(g.attributes.position.array)), nrm: b64(new Float32Array(g.attributes.normal.array)), idx: b64(new Uint32Array(g.index.array)), tris: g.index.count / 3 };
 }
