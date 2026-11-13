@@ -1,5 +1,5 @@
 // Registr všech modelů Love Bricks.
-export const MODEL_V = '20261113i'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
+export const MODEL_V = '20261113j'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
 // Bonsaj, kytice i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
 // které se po načtení slijí do jednoho modelu (js/solid.js). Procedurálně zůstalo jen srdce.
 import * as THREE from 'three';
@@ -19,7 +19,7 @@ export const LD_CARS = {
   miniorchid: { file: 'miniorchid', flower: true, fixed: { 82: '#C98F2A' }, key: 'petal', looks: { '#F2F3F2': { 78: '#F2F3F2' }, '#FC97AC': { 78: '#FC97AC' } } },
   // kytice 10280: přesná stavba z LDraw OMR, stonky sesazené do vázy (tools/flowers/bouquet.mjs)
   bouquet: { file: 'bouquet', flower: true, vase: { bottom: 30, top: -440, r: 175, prof: [[0, 0.62], [0.015, 0.8], [0.06, 0.9], [0.3, 0.97], [0.55, 0.92], [0.72, 0.95], [0.86, 1.05], [0.95, 1.13], [1, 1.17]] } }, // rozevřené hrdlo – stonky se nahoře rozbíhají
-  tulips: { file: 'tulips', flower: true, vase: { bottom: 170, top: -76, r: 92 } }, // okraj pod úchyty listů – listy přepadají přes okraj ven
+  tulips: { file: 'tulips', flower: true, vase: { bottom: 0, top: -430, r: 150, prof: [[0, 0.62], [0.015, 0.8], [0.06, 0.9], [0.3, 0.97], [0.55, 0.92], [0.72, 0.95], [0.86, 1.05], [0.95, 1.13], [1, 1.17]] } }, // sada 11501 podle návodů
   cactus: { file: 'cactus', flower: true, key: 'pot', looks: { '#FC97AC': { 212: '#FC97AC' }, '#F2F3F2': { 212: '#F2F3F2' } } },
   chrysanthemum: { file: 'chrysanthemum', flower: true, key: 'flower', looks: { '#F5C518': { 25: '#F5C518', 484: '#E0A800', 191: '#FFE066' }, '#E4569A': { 25: '#E4569A', 484: '#C2307A', 191: '#F59BC0' } } },
   peacelily: { file: 'peacelily', flower: true, key: 'pot', looks: { '#F2F3F2': { 78: '#F2F3F2' }, '#A3501E': { 78: '#A3501E' } } },
