@@ -285,3 +285,29 @@ body{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px
 .proj .del{background:rgba(10,13,20,.7)}
 .logo img{height:22px;width:auto;align-self:center;margin-right:2px}
 .status.err{display:block;padding:12px 14px;background:#fdeceb;border:1px solid #f3c4bf;color:#a3241a;font-size:14px;font-weight:600;line-height:1.4}
+
+/* ===== PRO / předplatné ===== */
+button.pro{border:0;cursor:pointer;font-family:inherit}
+button.pro.on{background:var(--green);color:#fff}
+.wmnote{display:flex;align-items:center;gap:12px;justify-content:space-between;background:#fff8dc;border:1px solid #f0d36b;padding:10px 12px}
+.wmnote div{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.wmnote small{color:var(--muted);font-size:12px}
+.wmnote .btn{white-space:nowrap;box-shadow:3px 3px 0 var(--text)}
+.pro-tag{background:var(--green);color:#fff;font-size:11px;letter-spacing:.08em;padding:3px 7px;margin-left:4px;vertical-align:2px}
+.pro-sh{gap:14px}
+.pro-price{display:flex;align-items:baseline;gap:6px}
+.pro-price b{font-size:40px;letter-spacing:-.03em}
+.pro-price span{color:var(--muted);font-weight:600}
+.pro-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.pro-list li{display:flex;align-items:center;gap:10px}
+.pro-code summary{cursor:pointer;font-weight:700;padding:6px 0}
+.pro-code{display:flex;flex-direction:column;gap:8px}
+.pro-code[open]>*{margin-top:8px}
+.pro-ok{display:flex;gap:12px;align-items:center;background:#e9f9f1;border:1px solid #9fe0c2;padding:12px}
+.pro-ok div{display:flex;flex-direction:column}
+.pro-ok small{color:var(--muted)}
+#proBuy,#proHave{display:flex;flex-direction:column;gap:14px}
+#proBuy[hidden],#proHave[hidden]{display:none}
+.pro-list .dot,.pro-ok .dot{margin:0;flex:0 0 12px}
+#proHave .frow .btn{flex:1}
+.wmnote[hidden]{display:none}

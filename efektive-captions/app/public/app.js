@@ -791,6 +791,69 @@ $('exGo').onclick=async()=>{
 };
 $('quality').onchange=()=>toast('Kvalita exportu: '+$('quality').selectedOptions[0].textContent);
 
+
+// ================= PRO (předplatné 300 Kč / měsíc, bez něj vodoznak) =================
+const PRO={
+  get(){ return lsGet('efk_pro',null); },
+  set(v){ lsSet('efk_pro',v); PRO.apply(); },
+  active(){ const p=PRO.get(); return !!(p && p.token && p.pro && (!p.until || Date.now() < p.until + 3*86400e3)); },
+  apply(){
+    const on=PRO.active(); E.flags.pro=on;
+    const b=$('proBtn'); b.textContent=on?'PRO ✓':'Získat PRO'; b.classList.toggle('on',on);
+    $('wmNote').hidden=on;
+    const p=PRO.get();
+    $('proBuy').hidden=on; $('proHave').hidden=!on;
+    if (on){ $('proCodeOut').value=p.token; $('proUntil').textContent=p.until?((p.cancelAtEnd?'Platí do ':'Další platba ')+new Date(p.until).toLocaleDateString('cs-CZ')):''; }
+  },
+  async api(a,q='',body){
+    const r=await fetch('/api/pro?a='+a+q,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
+    const j=await r.json().catch(()=>({error:'Server neodpověděl ('+r.status+')'}));
+    if (!r.ok) { const e=new Error(j.error||'Chyba'); e.status=r.status; throw e; }
+    return j;
+  },
+  msg(m,err){ const s=$('proStatus'); s.textContent=m||''; s.classList.toggle('err',!!err); },
+  open(){ PRO.msg(''); PRO.apply(); openSheet('sheetPro'); },
+  async check(token){
+    const j=await PRO.api('check','',{token});
+    PRO.set({token,...j,checked:Date.now()});
+    return j;
+  },
+};
+$('proBtn').onclick=()=>PRO.open();
+$('wmRemove').onclick=()=>{ $('sheetExport').classList.remove('on'); PRO.open(); };
+$('proGo').onclick=async()=>{
+  const b=$('proGo'); b.disabled=true; PRO.msg('Otevírám platbu…');
+  try{ const j=await PRO.api('checkout'); location.href=j.url; }
+  catch(e){ PRO.msg(e.message,true); b.disabled=false; }
+};
+$('proCodeOk').onclick=async()=>{
+  const t=$('proCodeIn').value.replace(/\s+/g,''); if (!t) return PRO.msg('Vlož PRO kód.',true);
+  PRO.msg('Ověřuji…');
+  try{ const j=await PRO.check(t); if (j.pro){ PRO.msg(''); toast('PRO je aktivní – videa jsou bez vodoznaku'); } else PRO.msg('Předplatné k tomuto kódu už neplatí ('+j.status+').',true); }
+  catch(e){ PRO.msg(e.message,true); }
+};
+$('proCopy').onclick=async()=>{ const t=$('proCodeOut').value; try{ await navigator.clipboard.writeText(t); toast('Kód zkopírovaný'); }catch(e){ $('proCodeOut').select(); document.execCommand('copy'); toast('Kód zkopírovaný'); } };
+$('proManage').onclick=async()=>{ PRO.msg('Otevírám správu předplatného…'); try{ const j=await PRO.api('portal','',{token:PRO.get().token}); location.href=j.url; }catch(e){ PRO.msg(e.message,true); } };
+$('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? Kód si nejdřív zkopíruj.')) return; lsSet('efk_pro',null); PRO.apply(); PRO.msg(''); };
+(async()=>{
+  PRO.apply();
+  const qs=new URLSearchParams(location.search);
+  const sid=qs.get('pro_session');
+  if (sid || qs.has('pro_cancel')) history.replaceState(null,'',location.pathname);
+  if (sid){
+    PRO.open(); PRO.msg('Ověřuji platbu…');
+    try{ const j=await PRO.api('activate','&session_id='+encodeURIComponent(sid)); PRO.set({...j,checked:Date.now()}); PRO.msg('Díky! PRO je aktivní. Ulož si PRO kód níže, ať ho můžeš použít i na dalším zařízení.'); }
+    catch(e){ PRO.msg('Platbu se nepodařilo ověřit: '+e.message,true); }
+    return;
+  }
+  // ověřit předplatné u Stripe (max jednou za 6 h); když server nejde, platí uložený stav
+  const p=PRO.get();
+  if (p && p.token && (!p.checked || Date.now()-p.checked > 6*3600e3)){
+    try{ await PRO.check(p.token); }catch(e){ if (e.status===400) PRO.set({...p,pro:false}); }
+  }
+  try{ const st=await PRO.api('status'); if (st.price) { $('proPrice').textContent=st.price+' Kč'; $('proGo').textContent=`Předplatit za ${st.price} Kč / měsíc`; } }catch(e){}
+})();
+
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();
 window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords,snapshot,restore,get curPage(){return curPage;}};

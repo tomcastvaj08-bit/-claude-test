@@ -21,7 +21,7 @@
   <div class="orbs" aria-hidden="true"><i class="orb b"></i><i class="orb g"></i></div>
   <header class="top">
     <div class="logo"><img src="logo.png" alt="" width="30" height="22"><b>EFEKTIVE</b><span>Captions</span></div>
-    <div class="pro">Beta</div>
+    <button class="pro" id="proBtn">Získat PRO</button>
   </header>
   <div class="wrap">
     <div class="hero">
@@ -165,12 +165,40 @@
   <div class="seg" id="exMode"><div data-v="full" class="on">Celé video</div><div data-v="captions">Jen titulky (průhledné)</div></div>
   <div class="row"><span>Rozlišení</span><select id="exRes" class="sel"></select></div>
   <div class="row"><span>Snímková frekvence</span><select id="exFps" class="sel"><option value="60" selected>60 fps</option><option value="50">50 fps</option><option value="30">30 fps</option><option value="25">25 fps</option><option value="24">24 fps</option></select></div>
+  <div class="wmnote" id="wmNote"><div><b>Video bude s vodoznakem EFEKTIVE.</b><small>S PRO exportuješ čisté video bez loga.</small></div><button class="btn small primary" id="wmRemove">Odebrat</button></div>
   <div class="muted" id="exInfo">Přesný export snímek po snímku – titulky jsou plynulé i na 60 fps.</div>
   <div class="pbar hidden" id="exBarW"><div id="exBar"></div></div>
   <div class="status" id="exStatus"></div>
   <a class="btn primary hidden" id="exDl" download>⬇ Stáhnout</a>
   <button class="btn primary" id="exGo">Exportovat</button>
   <button class="btn hidden" id="exCancel">Zrušit</button>
+</div></div>
+
+<div class="sheet" id="sheetPro"><div class="sh pro-sh">
+  <div class="sh-h"><b>EFEKTIVE Captions <span class="pro-tag">PRO</span></b><button class="ico" data-close>✕</button></div>
+  <div id="proBuy">
+    <div class="pro-price"><b id="proPrice">300 Kč</b><span>/ měsíc</span></div>
+    <ul class="pro-list">
+      <li><span class="dot g"></span>Export videa <b>bez vodoznaku</b></li>
+      <li><span class="dot b"></span>Všechny styly, písma a efekty</li>
+      <li><span class="dot y"></span>Platba kartou, Apple Pay nebo Google Pay</li>
+      <li><span class="dot g"></span>Zrušíš kdykoli jedním klikem</li>
+    </ul>
+    <button class="btn primary big" id="proGo">Předplatit za 300 Kč / měsíc</button>
+    <details class="pro-code"><summary>Už mám PRO (jiné zařízení)</summary>
+      <div class="muted">Vlož PRO kód, který ti appka ukázala po zaplacení.</div>
+      <textarea id="proCodeIn" class="inp mono" rows="3" placeholder="PRO kód"></textarea>
+      <button class="btn" id="proCodeOk">Aktivovat</button>
+    </details>
+  </div>
+  <div id="proHave" hidden>
+    <div class="pro-ok"><span class="dot g"></span><div><b>PRO je aktivní</b><small id="proUntil"></small></div></div>
+    <div class="muted">PRO kód pro další zařízení (iPhone, počítač). Ulož si ho – vložíš ho tam přes „Už mám PRO“.</div>
+    <textarea id="proCodeOut" class="inp mono" rows="3" readonly></textarea>
+    <div class="frow"><button class="btn" id="proCopy">Zkopírovat kód</button><button class="btn" id="proManage">Spravovat / zrušit</button></div>
+    <button class="btn small" id="proLogout">Odhlásit PRO z tohoto zařízení</button>
+  </div>
+  <div class="status" id="proStatus"></div>
 </div></div>
 
 <div class="toast" id="toast"></div>

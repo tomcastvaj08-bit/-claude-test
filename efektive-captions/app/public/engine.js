@@ -32,7 +32,24 @@ E.meta={};       // pageMeta podle id prvního slova: {own, so, eo}
 E.zones=[];      // úseky bez titulků [{s,e,label}]
 E.overlays=[];   // nálepky / obrázky přes video
 E.face=null;     // stopa obličeje [{t, box:[x0,y0,x1,y1]}|null] po 0.1 s
-E.flags={hidden:false, transparent:false, exporting:false, mute:false};
+E.flags={hidden:false, transparent:false, exporting:false, mute:false, pro:false};
+// vodoznak pro verzi bez předplatného
+const WM=new Image(); WM.src='logo-wm.png';
+E.drawWatermark=(c,W,H)=>{
+  if (E.flags.pro) return;
+  const m=Math.min(W,H), lw=m*0.42, lh=WM.naturalWidth?lw*WM.naturalHeight/WM.naturalWidth:lw*0.736;
+  const fs=Math.round(m*0.115), gap=m*0.035, tot=lh+gap+fs, y0=H*0.44-tot/2;
+  c.save(); c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation='source-over'; c.filter='none';
+  c.globalAlpha=0.5; c.shadowColor='rgba(0,0,0,.45)'; c.shadowBlur=m*0.02; c.shadowOffsetY=m*0.004;
+  if (WM.complete && WM.naturalWidth) c.drawImage(WM,(W-lw)/2,y0,lw,lh);
+  c.globalAlpha=0.62; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='top';
+  c.font=`800 ${fs}px "Schibsted Grotesk","Inter Tight",Arial,sans-serif`;
+  try{ c.letterSpacing=Math.round(fs*0.04)+'px'; }catch(e){}
+  c.fillText('EFEKTIVE',W/2,y0+lh+gap);
+  c.globalAlpha=0.55; c.font=`600 ${Math.round(fs*0.3)}px "Schibsted Grotesk",Arial,sans-serif`; try{ c.letterSpacing='0px'; }catch(e){}
+  c.fillText('Vytvořeno v EFEKTIVE Captions',W/2,y0+lh+gap+fs*1.12);
+  c.restore();
+};
 let wid=1; E.newId=()=>wid++;
 E.setWid=v=>{wid=Math.max(wid,v);};
 
@@ -606,6 +623,7 @@ E.render = (t, opts={}) => {
   if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height); else if (opts.frameDraw) opts.frameDraw(ctx,cv.width,cv.height); else ctx.drawImage(vid,0,0,cv.width,cv.height);
   // overlaye pod titulky
   for (const o of E.overlays) if (!o.above) E.drawOverlay(ctx,o,t);
+  E.drawWatermark(ctx,cv.width,cv.height);
   const k=E.pageAt(t);
   if (k<0 || F.hidden){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); return; }
   const p=E.pages[k], S=E.styleOf(p);
