@@ -264,8 +264,9 @@ export function bouquet() {
   return B;
 }
 const dot = (a, c) => a[0] * c[0] + a[1] * c[1] + a[2] * c[2];
-if (!process.env.SUB) { const b = new Build('tulips11501'), A = new Asm(); A.add(bouquet(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.emit(b); b.save('tulips11501.ldr'); console.log('tulips11501 parts', b.n); }
-if (process.env.SUB) {
+const MAIN = import.meta.url.endsWith('/tul11501.mjs') && (process.argv[1] || '').endsWith('tul11501.mjs');
+if (MAIN && !process.env.SUB) { const b = new Build('tulips11501'), A = new Asm(); A.add(bouquet(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.emit(b); b.save('tulips11501.ldr'); console.log('tulips11501 parts', b.n); }
+if (MAIN && process.env.SUB) {
   const b = new Build('sub'), A = new Asm();
   if (process.env.SUB === 'red') A.add(tulipStem(tulipHead({ col: 4, open: -0.1 })), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
   if (process.env.SUB === 'redhead') A.add(tulipHead({ col: 4, open: E('OPEN', 0) }), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
