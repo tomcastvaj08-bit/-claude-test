@@ -25,11 +25,11 @@ export const LD_CARS = {
   plum: { file: 'plum', flower: true, key: 'flower', looks: { '#FC97AC': { 4: '#FC97AC' }, '#F2F3F2': { 4: '#F2F3F2' } } }
 };
 const solidData = new Map();
-// na mobilu se načítá odlehčená verze (méně ploch), na počítači plná
+// vždy plná verze modelu (odlehčená byla na mobilu roztřepená)
 export const LITE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 820;
 export function ready(ids = Object.keys(LD_CARS)) {
   return Promise.all(ids.filter((id) => LD_CARS[id] && !solidData.has(id)).map((id) =>
-    loadSolid(new URL(LD_CARS[id].file + (LITE ? '-lite' : '') + '.glb', BASE).href).then((s) => solidData.set(id, s))));
+    loadSolid(new URL(LD_CARS[id].file + '.glb', BASE).href).then((s) => solidData.set(id, s))));
 }
 
 // realistická skleněná váza (hladké sklo, ne z kostek) – rozměry v LDU, osa Y dolů jako v LDraw

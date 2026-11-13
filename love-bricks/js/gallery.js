@@ -25,7 +25,7 @@ const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, cactus: 
   };
 const N = ORDER.length;
 const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10, REVEAL = 13.5;
-const BG = '#F6F4F1', FOG = '#F7E0CF';
+const BG = '#FFFFFF', FOG = '#FFFFFF';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
 const sideX = () => (portrait() ? 1.25 : 1.6);
@@ -44,7 +44,7 @@ try {
   throw e;
 }
 const isTouch = matchMedia('(pointer: coarse)').matches;
-const MAX_DPR = Math.min(devicePixelRatio || 1, isTouch ? 1.75 : 2);
+const MAX_DPR = Math.min(devicePixelRatio || 1, isTouch ? 2 : 2), MIN_DPR = Math.min(devicePixelRatio || 1, 1.5);
 let dpr = MAX_DPR;
 renderer.setPixelRatio(dpr);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -53,23 +53,17 @@ renderer.toneMappingExposure = 1.02;
 
 const scene = new THREE.Scene();
 // golden hour: teplé růžovozlaté světlo, na konci chodby září slunce
-scene.background = (() => {
-  const c = document.createElement('canvas'); c.width = 4; c.height = 256;
-  const g = c.getContext('2d'), grd = g.createLinearGradient(0, 0, 0, 256);
-  grd.addColorStop(0, '#F3D6CF'); grd.addColorStop(0.55, '#FBE3CC'); grd.addColorStop(1, '#F6DCCB');
-  g.fillStyle = grd; g.fillRect(0, 0, 4, 256);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-})();
+scene.background = new THREE.Color(BG); // čistě bílá galerie
 scene.fog = new THREE.Fog(FOG, 8, 22); // dál v chodbě jen teplý opar – exponáty se objevují až zblízka
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.7;
 pm.dispose();
-scene.add(new THREE.HemisphereLight(0xFFEDE6, 0xE8C6B4, 1.0));
+scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xE9E9E9, 1.05));
 // měkké světlo zepředu (aby exponáty nebyly tmavé) + nízké zlaté slunce z konce chodby
-const sun = new THREE.DirectionalLight(0xFFF1E8, 0.75); sun.position.set(4, 10, 6); scene.add(sun);
+const sun = new THREE.DirectionalLight(0xFFFFFF, 1.1); sun.position.set(4, 10, 6); scene.add(sun);
 const sunT = new THREE.Object3D(); scene.add(sunT); sun.target = sunT;
-const gold = new THREE.DirectionalLight(0xFFC98F, 1.9); scene.add(gold);
+const gold = new THREE.DirectionalLight(0xFFFFFF, 1.1); scene.add(gold);
 const goldT = new THREE.Object3D(); scene.add(goldT); gold.target = goldT;
 
 
@@ -99,7 +93,7 @@ const floorTex = (() => {
     }
   }
   const t = new THREE.CanvasTexture(c), tb = new THREE.CanvasTexture(bump);
-  for (const tx of [t, tb]) { tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(240 / TILE_P, 240 / TILE_P); tx.anisotropy = 8; }
+  for (const tx of [t, tb]) { tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(240 / TILE_P, 240 / TILE_P); tx.anisotropy = 16; tx.rotation = Math.PI / 2; }
   t.colorSpace = THREE.SRGBColorSpace;
   return { t, tb };
 })();
@@ -107,7 +101,7 @@ const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshSt
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
 // lesklá podlaha: skutečný odraz – scéna se vykreslí zrcadlově do textury (v poloviční velikosti) a vmíchá se do dlaždic
-const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.28 };
+const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.16 };
 floor.material.onBeforeCompile = (sh) => {
   sh.uniforms.tRefl = { value: refl.rt.texture }; sh.uniforms.uTexMat = { value: refl.mat }; sh.uniforms.uReflK = { value: refl.k };
   sh.vertexShader = 'uniform mat4 uTexMat;\nvarying vec4 vReflUv;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvReflUv = uTexMat * vec4( transformed, 1.0 );');
@@ -603,7 +597,7 @@ function frame(now) {
   if (frames.length >= 90) {
     const avg = frames.reduce((a, b) => a + b, 0) / frames.length; frames = [];
     window.__lb.stats = { fps: Math.round(1 / avg), dpr, calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
-    if (avg > 0.026 && dpr > 1) { dpr = Math.max(1, dpr - 0.25); renderer.setPixelRatio(dpr); resize(); }
+    if (introDone && avg > 0.034 && dpr > MIN_DPR) { dpr = Math.max(MIN_DPR, dpr - 0.25); renderer.setPixelRatio(dpr); resize(); }
   }
   const d = performance.now() - t0; perf.n++; perf.sum += d; if (d > perf.max) perf.max = d;
   requestAnimationFrame(frame);
