@@ -10,7 +10,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='9' width='28' height='20' rx='3' fill='%23D01012'/%3E%3Crect x='6' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Crect x='18' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Cpath d='M16 25s-6-3.6-6-7.6c0-2 1.5-3.4 3.2-3.4 1.2 0 2.2.7 2.8 1.7.6-1 1.6-1.7 2.8-1.7 1.7 0 3.2 1.4 3.2 3.4 0 4-6 7.6-6 7.6z' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="preload" href="fonts/bungee-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/gallery.css?v=20261114h">
+  <link rel="stylesheet" href="css/gallery.css?v=20261114i">
   <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
   <link rel="modulepreload" href="vendor/three/three.module.min.js">
 </head>
@@ -31,9 +31,53 @@
   <!-- tlačítko na drátku: posune o krok dál -->
   <div class="hang">
     <span class="hang-wire" aria-hidden="true"></span>
-    <button class="hang-box" data-fwd type="button" aria-label="Posunout se dál k dalším exponátům">
-      <img class="hang-img" src="img/dal-btn.webp" alt="" width="300" height="300" draggable="false">
-      <span class="hang-glow" aria-hidden="true"></span>
+    <button class="hang-box" data-fwd type="button" aria-label="Dál – posunout se k dalším exponátům">
+      <svg class="hang-svg" viewBox="0 0 124 124" aria-hidden="true">
+        <defs>
+          <linearGradient id="hbFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#585c63"/><stop offset=".5" stop-color="#3b3e44"/><stop offset="1" stop-color="#2a2c31"/></linearGradient>
+          <linearGradient id="hbSideR" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#232428"/><stop offset="1" stop-color="#18191c"/></linearGradient>
+          <linearGradient id="hbSideB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1e21"/><stop offset="1" stop-color="#121315"/></linearGradient>
+          <linearGradient id="hbShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+          <radialGradient id="hbSpill" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff3b2f" stop-opacity=".55"/><stop offset=".6" stop-color="#ff2a20" stop-opacity=".18"/><stop offset="1" stop-color="#ff2a20" stop-opacity="0"/></radialGradient>
+          <radialGradient id="hbPlate" cx=".4" cy=".36" r=".72"><stop offset="0" stop-color="#ff6f5e"/><stop offset=".45" stop-color="#ec1d1b"/><stop offset=".85" stop-color="#b10b14"/><stop offset="1" stop-color="#ff5a4c"/></radialGradient>
+          <radialGradient id="hbPlateIn" cx=".5" cy=".5" r=".5"><stop offset=".72" stop-color="#5c0009" stop-opacity="0"/><stop offset=".88" stop-color="#5c0009" stop-opacity=".45"/><stop offset="1" stop-color="#5c0009" stop-opacity="0"/></radialGradient>
+          <radialGradient id="hbStud" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#ffb3a6"/><stop offset=".35" stop-color="#ff4a3c"/><stop offset=".8" stop-color="#d4121a"/><stop offset="1" stop-color="#9c0812"/></radialGradient>
+          <radialGradient id="hbCore" cx=".45" cy=".42" r=".6"><stop offset="0" stop-color="#ffe0d8" stop-opacity=".75"/><stop offset=".6" stop-color="#ff7060" stop-opacity=".25"/><stop offset="1" stop-color="#ff4030" stop-opacity="0"/></radialGradient>
+          <filter id="hbBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+          <clipPath id="hbClip"><rect x="4" y="4" width="104" height="104" rx="4"/></clipPath>
+        </defs>
+        <!-- tloušťka destičky (vpravo a dole) -->
+        <path d="M106 6 L116 16 L116 112 Q116 116 112 116 L16 116 L6 106 Z" fill="url(#hbSideB)"/>
+        <path d="M106 6 L116 16 L116 112 L106 104 Z" fill="url(#hbSideR)"/>
+        <path d="M107.5 7.5 L115 15" stroke="#6a6e75" stroke-opacity=".5" stroke-width="1"/>
+        <!-- horní plocha -->
+        <rect x="4" y="4" width="104" height="104" rx="4" fill="url(#hbFace)"/>
+        <g clip-path="url(#hbClip)">
+          <circle class="hb-spill" cx="56" cy="56" r="56" fill="url(#hbSpill)"/>
+          <rect class="hb-shine" x="-60" y="-40" width="34" height="200" fill="url(#hbShine)"/>
+        </g>
+        <rect x="4.75" y="4.75" width="102.5" height="102.5" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.5"/>
+        <path d="M6 100 L6 8 Q6 6 8 6 L100 6" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.2"/>
+        <!-- svítící průhledný kulatý dílek 1x1 viděný shora -->
+        <circle class="hb-halo" cx="56" cy="56" r="40" fill="#ff2a1f" filter="url(#hbBlur)"/>
+        <circle cx="58.5" cy="58.5" r="38" fill="#5e0610" fill-opacity=".85"/>
+        <circle cx="56" cy="56" r="38" fill="url(#hbPlate)" fill-opacity=".95"/>
+        <circle cx="56" cy="56" r="38" fill="url(#hbPlateIn)"/>
+        <circle cx="56" cy="56" r="37.2" fill="none" stroke="#ffc0b6" stroke-opacity=".55" stroke-width="1.4"/>
+        <circle cx="56" cy="56" r="33.5" fill="none" stroke="#6e0010" stroke-opacity=".35" stroke-width="3"/>
+        <circle cx="56" cy="56" r="30" fill="none" stroke="#ff9a8a" stroke-opacity=".3" stroke-width="2.5"/>
+        <path d="M70 84 A30 30 0 0 0 85 66" fill="none" stroke="#ffd0c8" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="57.5" cy="58" r="26" fill="#7a0610" fill-opacity=".7"/>
+        <circle cx="55" cy="55" r="25" fill="url(#hbStud)"/>
+        <circle class="hb-core" cx="55" cy="55" r="25" fill="url(#hbCore)"/>
+        <circle cx="55" cy="55" r="24.4" fill="none" stroke="#ffd9d2" stroke-opacity=".75" stroke-width="1.2"/>
+        <path d="M27 40 A32 32 0 0 1 44 24" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+        <path d="M37 46 A19 19 0 0 1 46 36.5" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M86 70 A32 32 0 0 1 72 87" fill="none" stroke="#ffb0a4" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+        <!-- nápis Dál vytlačený na čepičce -->
+        <text class="hb-txt" x="55.6" y="60.8" text-anchor="middle" fill="#6a0410" fill-opacity=".55">DÁL</text>
+        <text class="hb-txt" x="55" y="60" text-anchor="middle" fill="#fff">DÁL</text>
+      </svg>
     </button>
   </div>
   <div class="warp-flash" aria-hidden="true"></div>
@@ -66,6 +110,6 @@
   </aside>
 
   <noscript><p style="position:fixed;inset:auto 0 0;text-align:center;padding:20px;background:#fff">Galerie potřebuje JavaScript. <a href="prehled.html">Otevřít přehled kolekce</a>.</p></noscript>
-  <script type="module" src="js/gallery.js?v=20261114h"></script>
+  <script type="module" src="js/gallery.js?v=20261114i"></script>
 </body>
 </html>
