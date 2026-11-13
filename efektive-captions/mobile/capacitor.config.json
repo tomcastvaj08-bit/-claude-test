@@ -1,0 +1,8 @@
+{
+  "appId": "cz.efektive.captions",
+  "appName": "EFEKTIVE Captions",
+  "webDir": "www",
+  "backgroundColor": "#f4f6f9",
+  "ios": { "contentInset": "never", "backgroundColor": "#f4f6f9" },
+  "android": { "backgroundColor": "#f4f6f9" }
+}

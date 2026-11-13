@@ -1,0 +1,26 @@
+{
+  "name": "efektive-captions-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EFEKTIVE Captions – mobilní aplikace (iOS + Android) z webové appky",
+  "scripts": {
+    "sync-web": "node scripts/sync-web.js",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#f4f6f9' --iconBackgroundColorDark '#0a0d14' --splashBackgroundColor '#f4f6f9' --splashBackgroundColorDark '#0a0d14'",
+    "sync": "npm run sync-web && cap sync",
+    "android:apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "android:aab": "npm run sync && cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor-community/media": "9.1.0",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/ios": "8.6.2",
+    "@capacitor/share": "8.0.3",
+    "@revenuecat/purchases-capacitor": "14.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "4.0.0",
+    "@capacitor/cli": "8.6.2"
+  }
+}

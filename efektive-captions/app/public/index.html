@@ -186,11 +186,13 @@
     <ul class="pro-list">
       <li><span class="dot g"></span>Export videa <b>bez vodoznaku</b></li>
       <li><span class="dot b"></span>Všechny styly, písma a efekty</li>
-      <li><span class="dot y"></span>Platba kartou, Apple Pay nebo Google Pay</li>
+      <li class="web-only"><span class="dot y"></span>Platba kartou, Apple Pay nebo Google Pay</li>
       <li><span class="dot g"></span>Zrušíš kdykoli jedním klikem</li>
     </ul>
     <button class="btn primary big" id="proGo">Předplatit za 300 Kč / měsíc</button>
-    <details class="pro-code"><summary>Už mám PRO (jiné zařízení)</summary>
+    <button class="btn app-only" id="proRestore" hidden>Obnovit nákupy</button>
+    <div class="muted app-only" hidden>Předplatné se obnovuje automaticky každý měsíc a zrušíš ho kdykoli v nastavení obchodu (App Store / Google Play) nejpozději 24 h před koncem období. <a href="https://efektive-titulky.vercel.app/podminky.html" target="_blank">Podmínky</a> · <a href="https://efektive-titulky.vercel.app/soukromi.html" target="_blank">Ochrana soukromí</a></div>
+    <details class="pro-code web-only"><summary>Už mám PRO (jiné zařízení)</summary>
       <div class="muted">Vlož PRO kód, který ti appka ukázala po zaplacení.</div>
       <textarea id="proCodeIn" class="inp mono" rows="3" placeholder="PRO kód"></textarea>
       <button class="btn" id="proCodeOk">Aktivovat</button>
@@ -198,10 +200,12 @@
   </div>
   <div id="proHave" hidden>
     <div class="pro-ok"><span class="dot g"></span><div><b>PRO je aktivní</b><small id="proUntil"></small></div></div>
+    <div class="web-only" style="display:contents">
     <div class="muted">PRO kód pro další zařízení (iPhone, počítač). Ulož si ho – vložíš ho tam přes „Už mám PRO“.</div>
     <textarea id="proCodeOut" class="inp mono" rows="3" readonly></textarea>
-    <div class="frow"><button class="btn" id="proCopy">Zkopírovat kód</button><button class="btn" id="proManage">Spravovat / zrušit</button></div>
-    <button class="btn small" id="proLogout">Odhlásit PRO z tohoto zařízení</button>
+    </div>
+    <div class="frow"><button class="btn web-only" id="proCopy">Zkopírovat kód</button><button class="btn" id="proManage">Spravovat / zrušit</button></div>
+    <button class="btn small web-only" id="proLogout">Odhlásit PRO z tohoto zařízení</button>
   </div>
   <div class="status" id="proStatus"></div>
 </div></div>
@@ -210,6 +214,7 @@
 <video id="vid" playsinline preload="auto" class="hidden"></video>
 <input type="file" id="ovIn" accept="image/*,video/*" hidden>
 
+<script src="native.js"></script>
 <script src="vendor/mp4-muxer.js"></script>
 <script src="vendor/mp4box.all.min.js"></script>
 <script src="source.js"></script>

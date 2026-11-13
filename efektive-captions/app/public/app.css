@@ -328,3 +328,4 @@ button.pro.on{background:var(--green);color:#fff}
 .tr-c2{background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(10,13,20,.04) 10px 20px)}
 .tr-c2 .cb{background:#0e7a52;border-color:#13b97a}
 .cb.lyr{opacity:.85;outline:2px dashed #fff;z-index:5}
+.web-only[hidden],.app-only[hidden]{display:none!important}

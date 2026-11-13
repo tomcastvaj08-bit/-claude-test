@@ -199,7 +199,7 @@ $('genBtn').onclick=async()=>{
       busy('Analyzuji video…',`AI poslouchá a píše text (${i+1}/${n})`,0.05+0.9*i/n);
       const blob=wavFrom(data.subarray(i*CH,Math.min(data.length,(i+1)*CH)),rate);
       const q=new URLSearchParams({lang,quality:segVal('sQuality')});
-      const r=await fetch('/api/transcribe?'+q,{method:'POST',headers:{'Content-Type':'audio/wav'},body:blob});
+      const r=await fetch(NATIVE.api('/api/transcribe?'+q),{method:'POST',headers:{'Content-Type':'audio/wav'},body:blob});
       const j=await r.json().catch(()=>({error:'Server neodpověděl'}));
       if (!r.ok||j.error) throw new Error(j.error||('Chyba '+r.status));
       const off=i*SEG; j.words.forEach(w=>{ const raw=String(w.word).trim(); if (raw) all.push(E.mkWord(raw,w.start+off,w.end+off)); });
@@ -820,6 +820,8 @@ async function runExport(){
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.audioNote?` · pozor: ${res.audioNote}`:''));
     // na iPhonu nabídnout sdílení (uložit do Fotek)
     a.onclick=async ev=>{
+      // mobilní aplikace: rovnou do galerie
+      if (NATIVE.isNative){ ev.preventDefault(); try{ $('exStatus').textContent='Ukládám do galerie…'; const r=await NATIVE.saveVideo(res.blob,a.download,p=>{ $('exStatus').textContent=`Ukládám do galerie… ${Math.round(p*100)} %`; }); $('exStatus').textContent = r==='saved' ? '✓ Video je uložené v galerii' : r==='shared' ? 'Hotovo' : 'Uložení se nepovedlo'; if (r==='saved') toast('Video je ve Fotkách / Galerii'); }catch(e){ $('exStatus').textContent='Uložení se nepovedlo: '+(e.message||e); } return; }
       // uvnitř Claude (artifact): uložení přes potvrzení „Stáhnout“
       if (window.claude && window.claude.use){ ev.preventDefault(); try{ const d=await window.claude.use('downloads'); if (d){ await d.save({filename:a.download, data:res.blob}); return; } }catch(e){ if (e&&e.code==='declined') return; console.warn(e); } }
       // na iPhonu nabídnout sdílení (uložit do Fotek)
@@ -842,10 +844,11 @@ const PRO={
     $('wmNote').hidden=on;
     const p=PRO.get();
     $('proBuy').hidden=on; $('proHave').hidden=!on;
+    const nat=NATIVE.isNative; document.querySelectorAll('.web-only').forEach(x=>x.hidden=nat); document.querySelectorAll('.app-only').forEach(x=>x.hidden=!nat);
     if (on){ $('proCodeOut').value=p.token; $('proUntil').textContent=p.until?((p.cancelAtEnd?'Platí do ':'Další platba ')+new Date(p.until).toLocaleDateString('cs-CZ')):''; }
   },
   async api(a,q='',body){
-    const r=await fetch('/api/pro?a='+a+q,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
+    const r=await fetch(NATIVE.api('/api/pro?a='+a+q),body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
     const j=await r.json().catch(()=>({error:'Server neodpověděl ('+r.status+')'}));
     if (!r.ok) { const e=new Error(j.error||'Chyba'); e.status=r.status; throw e; }
     return j;
@@ -861,9 +864,22 @@ const PRO={
 $('proBtn').onclick=()=>PRO.open();
 $('wmRemove').onclick=()=>{ $('sheetExport').classList.remove('on'); PRO.open(); };
 $('proGo').onclick=async()=>{
-  const b=$('proGo'); b.disabled=true; PRO.msg('Otevírám platbu…');
+  const b=$('proGo'); b.disabled=true;
+  // v mobilní aplikaci se platí přes App Store / Google Play (vyžadují to pravidla obchodů)
+  if (NATIVE.isNative){
+    PRO.msg('Otevírám platbu…');
+    try{ const r=await NATIVE.storeBuy(); if (r && r.pro){ PRO.set({token:'store',store:true,...r,checked:Date.now()}); PRO.msg(''); toast('Díky! PRO je aktivní – videa jsou bez vodoznaku'); } else PRO.msg(''); }
+    catch(e){ PRO.msg(e.message||String(e),true); }
+    b.disabled=false; return;
+  }
+  PRO.msg('Otevírám platbu…');
   try{ const j=await PRO.api('checkout'); location.href=j.url; }
   catch(e){ PRO.msg(e.message,true); b.disabled=false; }
+};
+$('proRestore').onclick=async()=>{
+  PRO.msg('Obnovuji nákupy…');
+  try{ const r=await NATIVE.storeRestore(); if (r && r.pro){ PRO.set({token:'store',store:true,...r,checked:Date.now()}); PRO.msg(''); toast('PRO je obnovené'); } else PRO.msg('Na tomhle účtu jsem nenašel aktivní předplatné.',true); }
+  catch(e){ PRO.msg(e.message||String(e),true); }
 };
 $('proCodeOk').onclick=async()=>{
   const t=$('proCodeIn').value.replace(/\s+/g,''); if (!t) return PRO.msg('Vlož PRO kód.',true);
@@ -872,7 +888,7 @@ $('proCodeOk').onclick=async()=>{
   catch(e){ PRO.msg(e.message,true); }
 };
 $('proCopy').onclick=async()=>{ const t=$('proCodeOut').value; try{ await navigator.clipboard.writeText(t); toast('Kód zkopírovaný'); }catch(e){ $('proCodeOut').select(); document.execCommand('copy'); toast('Kód zkopírovaný'); } };
-$('proManage').onclick=async()=>{ PRO.msg('Otevírám správu předplatného…'); try{ const j=await PRO.api('portal','',{token:PRO.get().token}); location.href=j.url; }catch(e){ PRO.msg(e.message,true); } };
+$('proManage').onclick=async()=>{ if (NATIVE.isNative && PRO.get()?.store) return NATIVE.storeManage(); PRO.msg('Otevírám správu předplatného…'); try{ const j=await PRO.api('portal','',{token:PRO.get().token}); location.href=j.url; }catch(e){ PRO.msg(e.message,true); } };
 $('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? Kód si nejdřív zkopíruj.')) return; lsSet('efk_pro',null); PRO.apply(); PRO.msg(''); };
 (async()=>{
   PRO.apply();
@@ -883,6 +899,14 @@ $('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? K
     PRO.open(); PRO.msg('Ověřuji platbu…');
     try{ const j=await PRO.api('activate','&session_id='+encodeURIComponent(sid)); PRO.set({...j,checked:Date.now()}); PRO.msg('Díky! PRO je aktivní. Ulož si PRO kód níže, ať ho můžeš použít i na dalším zařízení.'); }
     catch(e){ PRO.msg('Platbu se nepodařilo ověřit: '+e.message,true); }
+    return;
+  }
+  if (NATIVE.isNative){
+    // aplikace: stav předplatného z App Store / Google Play
+    if (await NATIVE.storeInit()){
+      const st=await NATIVE.storeStatus(); if (st) PRO.set({token:'store',store:true,...st,checked:Date.now()});
+      const pr=await NATIVE.storePrice(); if (pr){ $('proPrice').textContent=pr; $('proGo').textContent=`Předplatit za ${pr} / měsíc`; }
+    }
     return;
   }
   // ověřit předplatné u Stripe (max jednou za 6 h); když server nejde, platí uložený stav

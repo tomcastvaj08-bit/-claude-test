@@ -53,7 +53,23 @@ function origin(req) {
   return proto + '://' + host;
 }
 
+// mobilní aplikace (Capacitor) běží z capacitor://localhost (iOS) a https://localhost (Android)
+const APP_ORIGINS = new Set(['capacitor://localhost', 'https://localhost', 'http://localhost', 'ionic://localhost']);
+function cors(req, res) {
+  const o = req.headers && req.headers.origin;
+  if (o && APP_ORIGINS.has(o)) {
+    res.setHeader('Access-Control-Allow-Origin', o);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+  if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return true; }
+  return false;
+}
+
 module.exports = async function handler(req, res) {
+  if (cors(req, res)) return;
   const url = new URL(req.url, 'http://x');
   const action = url.searchParams.get('a') || '';
   try {

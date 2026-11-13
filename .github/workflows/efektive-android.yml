@@ -1,0 +1,45 @@
+# EFEKTIVE Captions – sestavení Android aplikace
+# Výsledek: APK k vyzkoušení v telefonu + (když jsou nastavené klíče) AAB pro Google Play.
+name: EFEKTIVE Captions – Android
+on:
+  push:
+    branches: [claude/lucid-maxwell-4k9eaj]
+    paths: ['efektive-captions/app/public/**', 'efektive-captions/mobile/**', '.github/workflows/efektive-android.yml']
+  workflow_dispatch:
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults: { run: { working-directory: efektive-captions/mobile } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm run sync
+      - name: APK k vyzkoušení
+        working-directory: efektive-captions/mobile/android
+        env: { VERSION_CODE: '${{ github.run_number }}' }
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with: { name: efektive-captions-apk, path: efektive-captions/mobile/android/app/build/outputs/apk/debug/*.apk }
+      - name: AAB pro Google Play (podepsaný)
+        if: ${{ env.HAS_KEY == 'true' }}
+        working-directory: efektive-captions/mobile/android
+        env:
+          HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_B64 != '' }}
+          VERSION_CODE: '${{ github.run_number }}'
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > "$ANDROID_KEYSTORE_PATH"
+          ./gradlew bundleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.HAS_KEY == 'true' }}
+        with: { name: efektive-captions-aab, path: efektive-captions/mobile/android/app/build/outputs/bundle/release/*.aab }
+    env:
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_B64 != '' }}
