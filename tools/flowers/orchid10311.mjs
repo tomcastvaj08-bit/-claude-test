@@ -6,7 +6,7 @@ const SB = 379, DG = 288, K = 0, W = 15, DP = 5, BP = 29, MG = 26, DT = 28, OL =
 const b = new Build('orchid10311'), A = new Asm();
 const I = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 // fotka z krabice → LDraw (px na stránce 768 široké, květináč uprostřed dole)
-const P = (px, py, z = 0) => [(px - 390) * 1.16, -(935 - py) * 1.16, z];
+const P = (px, py, z = 0) => [(px - 390) * 1.5, -(935 - py) * 1.5 * 0.8, z]; // 1,5 LDU/px (šířka květináče), výška stažená perspektivou fotky
 const UP = frameZ([0, -1, 0]); // místní z nahoru
 
 // ================= KVĚTINÁČ =================
@@ -22,7 +22,7 @@ for (let k = 0; k < 16; k++) {
   const ex = [0, 1, 0], ey = scl(n, -1), ez = cross(ex, ey), M = basis(ex, ey, ez);   // místní x dolů, studs ven, z tečně
   A.part('32524', beamCols[k % 4], add(scl(n, 70), [0, -100, 0]), mul(ry(a), frameZ([0, -1, 0])));
   for (const [yc, cap] of [[-60, 1], [-140, -1]]) {
-    const R = 104;
+    const R = 86;
     A.part('3020', SB, add(scl(n, R), [0, yc, 0]), M);
     A.part('3041', SB, add(scl(n, R + 24), [0, yc, 0]), M);
     // trojitý svah jako hrot modulu (dole u spodní řady, nahoře u horní)
@@ -39,7 +39,7 @@ for (let i = 0; i < 6; i++) { const a = i * 1.05; A.part('3941', RB, [Math.sin(a
 
 // ================= OPORA (2 černé osy 32 se spojkami a kužely) =================
 const rodX = P(382, 0)[0];
-for (const z of [-30, -10]) {
+for (const z of [-62, -42]) {
   A.part('50450', K, [rodX, -470, z], rz(Math.PI / 2));
   A.part('59900', K, [rodX, -796, z]);
 }
@@ -56,16 +56,17 @@ A.part('60483', K, [s1[0], -560, 6]); A.part('60483', K, [s2[0], -500, -4]);
 
 // ================= VĚTVE (úhlové spojky 157,5° + spojky 3L, na konci zakroucený výhonek) =================
 function branch(pts, opts = {}) {
-  const c = along(pts, 20), seq = opts.seq;
-  let s = 0;
-  for (const it of seq) {
-    const len = it === 'J' ? 58 : it === 'A' ? 56 : 24;
-    const m = c.at(s + len / 2); const M = frameZ(m.d, [0, -1, 0]);
-    if (it === 'J') A.part('42195', DG, m.p, M);
-    else if (it === 'A') { A.part('32016', DG, m.p, M); }
-    else if (it === 'B') A.part('3062b', DG, m.p, M);
-    s += len;
+  const c = along(pts, 20);
+  // díly navazují bez mezer: střídavě úhlová spojka a spojka 3L, dokud nedojdou k výhonku na konci
+  let s = 0, i = opts.startA === false ? 1 : 0;
+  while (s + 60 < c.total - 20) {
+    const it = i % 2 === 0 ? 'A' : 'J', len = 58;
+    const m = c.at(s + len / 2), M = frameZ(m.d, [0, -1, 0]);
+    A.part(it === 'J' ? '42195' : '32016', DG, m.p, M);
+    s += len; i++;
+    const j = c.at(s); A.part('32062', DG, j.p, mul(frameZ(j.d), rx(Math.PI / 2)));
   }
+  c.total = s;
   // zakroucený konec (stéblo trávy) a tyčka
   const e = c.at(c.total), M = frameZ(e.d, [0, -1, 0]);
   A.part('15279', DG, add(e.p, apply(M, [0, 0, 10])), mul(M, rx(-Math.PI / 2)));
@@ -102,11 +103,20 @@ function leafC() { // krok 84: dva kryty kabiny 4x4x4⅔ – zahnutý list visí
   L.part('60470b', K, [0, -8, 10]); L.part('2817', K, [0, -14, 10]);
   return L;
 }
-function placeLeaf(L, base, tip, roll = 0) { const d = sub(base, tip); A.add(L, { M: mul(frameZ(d, norm([0, -0.55, -1])), rz(roll)), p: base }); }
-placeLeaf(leafA(), P(330, 700, -30), P(190, 505, -60), 0.25);
-placeLeaf(leafA(), P(305, 712, 30), P(70, 595, 50), -0.15);
-placeLeaf(leafB(), P(440, 700, 10), P(660, 545, 30), 0.2);
-A.add(leafC(), { M: mul(ry(Math.PI + 0.3), rx(0.15)), p: P(470, 735, -120) });
+// listy sedí na černých úhlových spojkách 135° v horní části květináče (krok 13 + 20), list začíná přímo na spojce
+function mountLeaf(L, m, tip, roll = 0) {
+  const d = norm(sub(tip, m));
+  const Mc = frameZ(d, [0, -1, 0]);
+  A.part('32192', K, m, Mc);                                 // černý kloub zasunutý v květináči
+  A.part('11214', DK, add(m, scl(d, 18)), Mc);               // šedý čep
+  const base = add(m, scl(d, 34));
+  A.add(L, { M: mul(frameZ(scl(d, -1), norm([0, -0.55, -1])), rz(roll)), p: base });
+}
+const RIM = POT_TOP - 14;
+mountLeaf(leafA(), [-58, RIM, 18], P(190, 505, -60), 0.25);
+mountLeaf(leafA(), [-52, RIM, -22], P(70, 595, 50), -0.15);
+mountLeaf(leafB(), [58, RIM, 8], P(660, 545, 30), 0.2);
+{ const m = [44, RIM, -50]; A.part('32192', K, m, frameZ([0.3, 0.2, -1])); A.add(leafC(), { M: mul(ry(Math.PI + 0.3), rx(0.15)), p: add(m, [6, 4, -26]) }); }
 
 // ================= KOŘENY (ocasy dinosaura, olivové) =================
 A.part('32013', DB, P(335, 740, -30)); A.part('32013', DB, P(440, 740, -20));
@@ -133,9 +143,15 @@ function blossom() { // kroky 86–93; líc květu = -z, stonek za ním (+z)
   F.part('33320', MG, [0, 8, -22], rx(-0.6));                          // žabka uprostřed
   return F;
 }
-function placeFlower(c, rot = 0) { A.add(blossom(), { M: mul(ry(rot), I), p: c }); }
+const BR = [B1, B2, B3, B4, B5];
+function nearestOnBranch(c) { let best = null, bd = 1e9; for (const br of BR) for (const p of br.pts) { const d = Math.hypot(p[0] - c[0], p[1] - c[1]); if (d < bd) { bd = d; best = p; } } return best; }
+function placeFlower(c, rot = 0) {
+  const n = nearestOnBranch(c), ctr = [n[0], n[1] + 18, n[2] - 44];    // květ visí na větvi, osa 6587 vede do větve
+  A.part('32123b', W, add(n, [0, 4, -12]));                             // pouzdro na větvi
+  A.add(blossom(), { M: mul(ry(rot), I), p: ctr });
+}
 [[P(380, 180, -40), 0.1], [P(185, 275, -30), 0.35], [P(295, 318, -50), 0.15], [P(465, 320, -50), -0.2], [P(375, 410, -60), 0], [P(470, 505, -60), -0.25]].forEach(([c, r]) => placeFlower(c, r));
 // malé květy (2x): v originále hlava Demogorgona s potiskem (není v knihovně) – náhrada: bílá hlavička + kvítek
-for (const c of [P(265, 192, -20), P(545, 262, -30)]) { A.part('3626c', W, c, rx(Math.PI / 2)); A.part('24866', W, add(c, [0, 0, -14]), rx(-Math.PI / 2)); A.part('6141', BP, add(c, [0, 0, -18]), rx(-Math.PI / 2)); }
+for (const c0 of [P(265, 192, -20), P(545, 262, -30)]) { const n = nearestOnBranch(c0), c = [n[0], n[1] - 6, n[2] - 18]; A.part('3626c', W, c, rx(Math.PI / 2)); A.part('24866', W, add(c, [0, 0, -14]), rx(-Math.PI / 2)); A.part('6141', BP, add(c, [0, 0, -18]), rx(-Math.PI / 2)); }
 
 A.emit(b); b.save('orchid10311.ldr'); console.log('orchid10311 parts', b.n);

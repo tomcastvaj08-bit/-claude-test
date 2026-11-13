@@ -541,12 +541,14 @@ function frame(now) {
   for (const ex of exhibits) {
     if (!ex.inWindow) continue;
     const d = slotS(ex.slot) - state.s;
-    const near = now >= introStart && d > -6 && d < REVEAL;
-    if (near && !ex.shown) { ex.shown = true; ex.t0 = now + (ex.slot % 2) * 350 + (ex.shown0 ? 0 : Math.floor(ex.slot / 2) * 500); ex.shown0 = true; }
+    // při teleportu se cílová dvojice začne skládat hned po kliknutí (ne až po doletu)
+    const dT = state.warp ? slotS(ex.slot) - state.warp.to : d;
+    const near = now >= introStart && ((d > -6 && d < REVEAL) || (dT > -2 && dT < REVEAL));
+    if (near && !ex.shown) { ex.shown = true; ex.t0 = now + (ex.slot % 2) * 120 + (introDone ? 0 : Math.floor(ex.slot / 2) * 300); }
     else if (ex.shown && ex !== focusEx && (d < -8 || d > REVEAL + 3)) { ex.shown = false; ex.m.setProgress(0); }
     ex.root.visible = ex.shown && now >= ex.t0;
     if (!ex.root.visible) continue;
-    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / (ex.car ? 1300 : 2200)));
+    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / 750));
     ex.shMat.opacity = ex.shMat.opacity + (clamp((ex.m.progress - 0.97) / 0.03) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 4));
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }

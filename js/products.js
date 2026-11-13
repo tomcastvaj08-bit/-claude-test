@@ -11,7 +11,7 @@ export const ALL = [
   // ------------------------------------------------ květiny
   { id: 'orchid', model: 'orchid', name: 'Orchidej', line: BOT, price: 1399, old: 1599, pieces: 608, size: '39 cm', age: '18+', tags: ['maminka', 'pary'], featured: true,
     kicker: 'Bestseller pro maminky', desc: 'Bílá orchidej v šedomodrém květináči. Nikdy nezvadne.',
-    variant: { key: 'pot', label: 'Květináč', options: [['Šedomodrý', '#7F8FA6'], ['Bílý', '#F2F3F2'], ['Grafit', '#3E4347']] }, bg: '#EFE6F8', ink: '#2B1838', accent: '#D3359D', word: 'ORCHIDEJ' },
+    variant: { key: 'pot', label: 'Květináč', options: [['Pískově modrý', '#70819A'], ['Bílý', '#F2F3F2'], ['Grafit', '#3E4347']] }, bg: '#EFE6F8', ink: '#2B1838', accent: '#D3359D', word: 'ORCHIDEJ' },
   { id: 'miniorchid', model: 'miniorchid', name: 'Mini orchidej', line: BOT, price: 749, pieces: 274, size: '26 cm', age: '18+', tags: ['pary', 'maminka'], featured: true,
     kicker: 'Malá radost na stůl', desc: 'Malá broskvová orchidej na noční stolek.',
     variant: { key: 'petal', label: 'Květy', options: [['Broskvové', '#F7CBA8'], ['Bílé', '#F2F3F2'], ['Růžové', '#FC97AC']] }, bg: '#FFF1E4', ink: '#3A2208', accent: '#E07B39', word: 'MINI' },

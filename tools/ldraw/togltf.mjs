@@ -6,7 +6,7 @@ import { toCreasedNormals, mergeVertices } from 'three/examples/jsm/utils/Buffer
 import { readMPD, findLib, flatten, libLines, mul, lineMat, I, loadColors, colorOf } from './ldparse.mjs';
 
 const [file, outFile, keepFile] = process.argv.slice(2);
-const SKIP = /(^|\/)(stud4|stud3|stud6|stud4a|stud3a|stud10|stud4f|stud4o|stud4s|stud4h|stud2s|stud16|stud12|stud17|stud18)|peghol|axlehol|axleho|connhol|beamhol|npeghol|confric|axl2hol|axl3hol|joint|tooth|gear|-4cylo|bush/;
+const SKIP = /(^|\/)(stud4|stud3|stud6|stud4a|stud3a|stud10|stud4f|stud4o|stud4s|stud4h|stud2s|stud16|stud12|stud17|stud18)|peghol|axleho(?!l8)|beamhol|npeghol|confric|axl2hol|axl3hol|joint|tooth|gear|-4cylo|bush/;
 const colors = loadColors();
 const mpd = readMPD(file);
 const getLines = (name, lr) => { const n = name.toLowerCase(); if (mpd.files.has(n)) return mpd.files.get(n); const f = findLib(n, lr); return f ? libLines(f.path) : null; };

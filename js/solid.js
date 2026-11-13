@@ -60,13 +60,6 @@ function merge(scene) {
 }
 
 const codeOf = (mat) => { const m = /ld_(\d+)/.exec(mat?.name || ''); return m ? +m[1] : -1; };
-const easeOutBounce = (x) => {
-  const n = 7.5625, d = 2.75;
-  if (x < 1 / d) return n * x * x;
-  if (x < 2 / d) return n * (x -= 1.5 / d) * x + 0.75;
-  if (x < 2.5 / d) return n * (x -= 2.25 / d) * x + 0.9375;
-  return n * (x -= 2.625 / d) * x + 0.984375;
-};
 
 export class SolidModel {
   // scene: načtená scéna GLB; opts.drop: výška pádu v jednotkách modelu
@@ -100,11 +93,11 @@ export class SolidModel {
     t = Math.min(1, Math.max(0, t));
     if (Math.abs(t - this.progress) < 1e-4) return;
     this.progress = t;
-    // první čtvrtina: neviditelné nahoře, pak pád s odrazem
-    const k = Math.min(1, Math.max(0, (t - 0.15) / 0.85));
-    this.model.visible = t > 0.15;
-    this.model.position.y = (1 - easeOutBounce(k)) * this.drop;
-    this.model.rotation.y = (1 - k) * (1 - k) * 0.6;
+    // hned viditelné, rychlý pád a měkké dosednutí (bez odrazu)
+    const k = t, e = 1 - Math.pow(1 - k, 3);
+    this.model.visible = t > 0.001;
+    this.model.position.y = (1 - e) * this.drop;
+    this.model.rotation.y = (1 - e) * 0.35;
   }
   // přebarvení: kódy barev LDraw → barva (null = původní)
   recolor(map) {
