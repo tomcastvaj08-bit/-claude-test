@@ -284,3 +284,4 @@ body{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px
 .proj{border:1px solid var(--line);background:var(--card)}
 .proj .del{background:rgba(10,13,20,.7)}
 .logo img{height:22px;width:auto;align-self:center;margin-right:2px}
+.status.err{display:block;padding:12px 14px;background:#fdeceb;border:1px solid #f3c4bf;color:#a3241a;font-size:14px;font-weight:600;line-height:1.4}

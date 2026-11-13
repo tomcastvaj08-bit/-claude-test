@@ -145,9 +145,9 @@ $('fileIn').onchange=async e=>{
   const t0=Date.now(), tick=setInterval(()=>{ const s=(Date.now()-t0)/1000; busy('Načítám video…','Chvilku strpení, video se nahrává do appky. U delšího videa to může trvat i pár desítek sekund.',Math.min(0.95,1-Math.exp(-s/6))); },200);
   try{ await loadVideo(f); }catch(err){ clearInterval(tick); show('home'); homeMsg(err.message); return; }
   clearInterval(tick); busy('Načítám video…','Hotovo',1);
-  $('setupPrev').src=videoURL; $('setupPrev').currentTime=0.5;
+  $('setupPrev').src=videoURL+'#t=0.5'; $('setupPrev').muted=true; $('setupPrev').setAttribute('playsinline',''); $('setupPrev').preload='metadata';
   $('sPunct').checked=!!E.G.punct; setStep('sLines',E.G.maxLines||3); setStep('sChars',E.G.maxChars||0); setStep('sWpp',E.G.wpp||4); $('sMain').value=String(E.G.mainLine||'mid');
-  renderLangs(); $('setupStatus').textContent=''; show('setup');
+  renderLangs(); $('setupStatus').textContent=''; $('setupStatus').classList.remove('err'); show('setup');
 };
 $('setupBack').onclick=()=>{ show('home'); };
 
@@ -208,7 +208,8 @@ $('genBtn').onclick=async()=>{
     await afterWords();
   }catch(err){ console.error(err); show('setup');
     const noServer=/Failed to fetch|NetworkError|Load failed|Chyba 404|Chyba 405|Server neodpověděl|chybí klíč/i.test(err.message);
-    $('setupStatus').textContent = noServer ? 'AI přepis tady nejede (appka neběží na serveru s klíčem). Vlož text ručně níž a dej Použít.' : 'Nepovedlo se: '+err.message; }
+    const st=$('setupStatus'); st.textContent = noServer ? 'AI přepis tady nejede (appka neběží na serveru s klíčem). Vlož text ručně níž a dej Použít.' : 'Přepis se nepovedl: '+err.message;
+    st.classList.add('err'); try{ st.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} }
 };
 $('manualBtn').onclick=async()=>{
   const list=$('manualText').value.trim().split(/\s+/).filter(Boolean); if(!list.length) return;

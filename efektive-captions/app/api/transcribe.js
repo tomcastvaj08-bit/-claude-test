@@ -20,7 +20,8 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'Použij POST' });
   const key = process.env.OPENAI_API_KEY;
   const elKey = process.env.ELEVENLABS_API_KEY;
-  if (!key && !elKey) return send(res, 500, { error: 'Na serveru chybí OPENAI_API_KEY (nebo ELEVENLABS_API_KEY)' });
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!key && !elKey && !groqKey) return send(res, 500, { error: 'Na serveru chybí klíč pro přepis (ELEVENLABS_API_KEY, GROQ_API_KEY nebo OPENAI_API_KEY)' });
 
   try {
     const audio = await readBody(req);
@@ -31,7 +32,8 @@ module.exports = async function handler(req, res) {
     const quality = url.searchParams.get('quality') || 'max';
 
     // Max přesnost + ElevenLabs klíč → ElevenLabs Scribe (nejpřesnější na češtinu/slovenštinu); jinak OpenAI Whisper
-    if (elKey && (quality === 'max' || !key)) {
+    let elError = null;
+    if (elKey && (quality === 'max' || (!key && !groqKey) || !groqKey)) {
       const f = new FormData();
       f.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
       f.append('model_id', 'scribe_v1');
@@ -39,10 +41,34 @@ module.exports = async function handler(req, res) {
       f.append('tag_audio_events', 'false');
       if (lang) f.append('language_code', lang);
       const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': elKey }, body: f });
-      const j = await r.json();
-      if (!r.ok) return send(res, r.status, { error: j?.detail?.message || j?.detail || 'Chyba ElevenLabs' });
-      const words = (j.words || []).filter(w => w.type === 'word').map(w => ({ word: w.text, start: w.start, end: w.end }));
-      return send(res, 200, { words, text: j.text || '', engine: 'elevenlabs-scribe' });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        const words = (j.words || []).filter(w => w.type === 'word').map(w => ({ word: w.text, start: w.start, end: w.end }));
+        return send(res, 200, { words, text: j.text || '', engine: 'elevenlabs-scribe' });
+      }
+      const code = j?.detail?.code || j?.detail?.status || '';
+      elError = code === 'quota_exceeded' ? 'Na účtu ElevenLabs došly kredity. Dobij kredity na elevenlabs.io (nebo počkej na měsíční obnovení), případně nastav záložní přepis.'
+        : (code === 'missing_permissions' || r.status === 401) && code !== 'quota_exceeded' ? 'Klíč ElevenLabs nemá povolený přepis řeči (Speech to Text) nebo je neplatný.'
+        : (j?.detail?.message || j?.detail || 'Chyba ElevenLabs');
+      if (!groqKey && !key) return send(res, 402, { error: elError });
+    }
+
+    // Groq (zdarma): Whisper large v3 se slovy a časy
+    if (groqKey) {
+      const g = new FormData();
+      g.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
+      g.append('model', 'whisper-large-v3');
+      g.append('temperature', '0');
+      g.append('response_format', 'verbose_json');
+      g.append('timestamp_granularities[]', 'word');
+      if (lang) g.append('language', lang);
+      const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${groqKey}` }, body: g });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        const words = (j.words || []).map(w => ({ word: w.word, start: w.start, end: w.end }));
+        return send(res, 200, { words, text: j.text || '', engine: 'groq-whisper' });
+      }
+      if (!key) return send(res, r.status || 502, { error: (elError ? elError + ' ' : '') + 'Záložní přepis (Groq): ' + (j?.error?.message || 'chyba') });
     }
 
     const form = new FormData();
