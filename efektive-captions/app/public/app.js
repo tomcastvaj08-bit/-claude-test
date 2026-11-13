@@ -351,6 +351,8 @@ function pCaptions(){
   ${toggle('Interpunkce','punct')}
   ${toggle('Velké písmeno v hlavním řádku (slova od 3 písmen)','capMain3')}
   <div class="btnrow"><button class="btn" id="dictBtn">📖 Slovník oprav</button><button class="btn" id="resetOne">↺ Zrušit vlastní styl</button></div>
+  <div class="btnrow"><button class="btn" id="layerBtn">${E.pages[curPage]&&E.pages[curPage].layer?'⇧ Vybraný titulek do hlavní vrstvy':'⇩ Vybraný titulek do vrstvy pod'}</button></div>
+  <div class="note">Na timeline můžeš titulek i chytit a stáhnout dolů do 2. vrstvy (nebo zpátky nahoru).</div>
   <div class="pglist" id="pglist">${pg}</div>`;
 }
 binders.captions=()=>{
@@ -358,6 +360,7 @@ binders.captions=()=>{
   $('batchBtn').onclick=openBatch;
   $('dictBtn').onclick=()=>openSheet('sheetDict');
   $('resetOne').onclick=()=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); delete m.own; changed(); renderPanel(); toast('Titulek má zase společný styl'); } };
+  $('layerBtn').onclick=()=>{ const p=E.pages[curPage]; if (p) setLayer(curPage, p.layer?0:1); };
   $('pglist').onclick=e=>{
     const ed=e.target.closest('[data-ed]'); if (ed){ selectPage(+ed.dataset.ed); openInline(+ed.dataset.ed); return; }
     const w=e.target.closest('.w'); if (w){ const W=E.words[+w.dataset.i]; W.em=!W.em; w.classList.toggle('em',W.em); changed(); }
@@ -476,7 +479,8 @@ function pStyle(){
     ${S.trackEm!=null?slider('Mezery mezi písmeny – hlavní řádek','trackEm',-24,12,0.5):''}
     ${slider('Zúžení písma','cond',60,100,1,'%')}
     ${slider('Řádkování','gap',30,140,1,'%')}
-    ${slider('Kinetické rozložení (posun řádků)','kinetic',0,100)}
+    ${slider('Kinetické rozložení (horní a spodní řádek do stran)','kinetic',0,100)}
+    ${chips('Spodní řádek jede','kinDir',[['opposite','Doprava'],['same','Doleva']])}
     ${chips('Rozložení','layout',[['diagonal','Šikmo'],['cascade','Kaskáda'],['center','Na střed'],['left','Vlevo'],['right','Vpravo']])}
     ${slider('3D náklon do strany','tilt',-45,45,1,'°')}
     ${toggle('Střídat náklon vlevo / vpravo','tiltAlt')}
@@ -653,8 +657,9 @@ function renderTimeline(){
   const pad=tlPad(), W=vid.duration*pps;
   $('tlIn').style.width=(W+pad*2)+'px';
   const X=t=>pad+t*pps;
-  $('trC').innerHTML=E.pages.map((p,k)=>{ const m=E.meta[E.keyOf(p)]; const txt=[]; for(let i=p.a;i<=p.b;i++) txt.push(E.words[i].t);
+  const cbHtml=L=>E.pages.map((p,k)=>{ if ((p.layer|0)!==L) return ''; const m=E.meta[E.keyOf(p)]; const txt=[]; for(let i=p.a;i<=p.b;i++) txt.push(E.words[i].t);
     return `<div class="cb ${k===curPage?'cur':''} ${m&&m.own&&Object.keys(m.own).some(x=>x!=='posY'&&x!=='posX'&&x!=='_manualPos')?'own':''}" data-k="${k}" style="left:${X(p.s)}px;width:${Math.max(6,(p.e-p.s)*pps-2)}px"><span class="hl"></span>${esc(txt.join(' '))}<span class="hr"></span></div>`; }).join('');
+  $('trC').innerHTML=cbHtml(0); $('trC2').innerHTML=cbHtml(1);
   $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>⛔ ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">✕</span><span class="hr"></span></div>`).join('');
   $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${o.emoji?o.emoji:'🖼'} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
   $('trV').style.paddingLeft=pad+'px';
@@ -678,21 +683,34 @@ $('tlIn').addEventListener('pointerdown',e=>{
   const blk=e.target.closest('.cb,.zb,.ob'); if (!blk) return;
   e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
   const mode=e.target.classList.contains('hl')?'l':e.target.classList.contains('hr')?'r':'m';
-  tlDrag={blk,mode,x0:e.clientX,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width)};
+  tlDrag={blk,mode,x0:e.clientX,y0:e.clientY,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width),layer0:blk.parentElement&&blk.parentElement.id==='trC2'?1:0,layer:null};
 });
 $('tlIn').addEventListener('pointermove',e=>{
-  if (!tlDrag) return; const d=e.clientX-tlDrag.x0; if (Math.abs(d)>4) tlDrag.moved=true; if (!tlDrag.moved) return;
+  if (!tlDrag) return; const d=e.clientX-tlDrag.x0, dy=e.clientY-tlDrag.y0; if (Math.abs(d)>4||Math.abs(dy)>8) tlDrag.moved=true; if (!tlDrag.moved) return;
   const b=tlDrag.blk;
+  if (tlDrag.mode==='m' && b.classList.contains('cb')){
+    // tažení nahoru/dolů = přesun mezi vrstvami (hlavní ↔ pod)
+    const want = tlDrag.layer0===0 ? (dy>18?1:0) : (dy<-18?0:1);
+    tlDrag.layer = want!==tlDrag.layer0 ? want : null;
+    b.style.transform = tlDrag.layer!=null ? `translateY(${tlDrag.layer?28:-28}px)` : '';
+    b.classList.toggle('lyr', tlDrag.layer!=null);
+  }
   if (tlDrag.mode==='m') b.style.left=(tlDrag.left0+d)+'px';
   else if (tlDrag.mode==='l'){ b.style.left=(tlDrag.left0+d)+'px'; b.style.width=Math.max(6,tlDrag.w0-d)+'px'; }
   else b.style.width=Math.max(6,tlDrag.w0+d)+'px';
 });
 $('tlIn').addEventListener('pointerup',e=>{
-  if (!tlDrag) return; const {blk,mode,moved}=tlDrag; const dt=(e.clientX-tlDrag.x0)/pps; tlDrag=null;
+  if (!tlDrag) return; const {blk,mode,moved}=tlDrag, newLayer=tlDrag.layer; const dt=(e.clientX-tlDrag.x0)/pps; tlDrag=null;
   if (blk.dataset.k!==undefined){
     const k=+blk.dataset.k;
     if (!moved){ selectPage(k); return; }
-    const p=E.pages[k], m=pageMeta(p), prev=E.pages[k-1], next=E.pages[k+1];
+    const p=E.pages[k], m=pageMeta(p);
+    if (newLayer!=null){ E.words[p.a].br=true; if (p.b+1<E.words.length) E.words[p.b+1].br=true; if (newLayer) m.layer=1; else delete m.layer; p.layer=newLayer; }
+    // sousedi jen ve stejné vrstvě (jiná vrstva se může překrývat)
+    const L=p.layer|0; let prev=null, next=null;
+    for (let q=k-1;q>=0;q--) if ((E.pages[q].layer|0)===L){ prev=E.pages[q]; break; }
+    for (let q=k+1;q<E.pages.length;q++) if ((E.pages[q].layer|0)===L){ next=E.pages[q]; break; }
+    if (mode==='m'){ E.words[p.a].br=true; if (p.b+1<E.words.length) E.words[p.b+1].br=true; }
     if (mode==='m'){
       const lo=(prev?prev.s+0.05:0)-p.s, hi=(next?next.e-0.05:vid.duration)-p.e; const d=clamp(dt,lo,hi);
       for (let i=p.a;i<=p.b;i++){ E.words[i].s+=d; E.words[i].e+=d; }
@@ -719,8 +737,21 @@ $('splitBtn').onclick=()=>{
   const t=vid.currentTime, k=E.pageAt(t); if (k<0) return toast('Postav přehrávací hlavu na titulek');
   const p=E.pages[k]; let i=p.a; while (i<p.b && E.words[i+1].s<=t) i++;
   if (i>=p.b) i=p.b-1; if (i<p.a) return toast('Titulek má jen jedno slovo');
-  E.words[i+1].br=true; changed(true); toast('Titulek rozdělený');
+  // jako v CapCutu: slova před hlavou zůstanou v 1. části, slova za ní jdou do 2. části; střih je přesně v místě hlavy
+  const m=pageMeta(p), oldEo=m.eo, layer=m.layer|0, cut=clamp(t, E.words[i].s+0.05, E.words[i+1].s);
+  E.words[i+1].br=true; if (p.b+1<E.words.length) E.words[p.b+1].br=true;
+  m.eo=cut;
+  const k2=E.words[i+1].id, m2=E.meta[k2]=E.meta[k2]||{};
+  m2.so=cut; if (oldEo!=null) m2.eo=oldEo; else delete m2.eo; if (layer) m2.layer=layer; if (m.own) m2.own=JSON.parse(JSON.stringify(m.own));
+  changed(true); toast('Titulek rozdělený v místě přehrávací hlavy');
 };
+// přesun titulku do jiné vrstvy (vrstva „pod“ se může časově překrývat s hlavní)
+function setLayer(k,layer){
+  const p=E.pages[k]; if (!p) return;
+  E.words[p.a].br=true; if (p.b+1<E.words.length) E.words[p.b+1].br=true;
+  const m=pageMeta(p); if (layer) m.layer=1; else delete m.layer;
+  changed(true); renderPanel(); toast(layer?'Titulek je ve vrstvě pod – může se překrývat s ostatními':'Titulek je zpátky v hlavní vrstvě');
+}
 
 // ================= GESTA NA VIDEU =================
 const ptrs=new Map(); let gest=null;
@@ -861,6 +892,9 @@ $('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? K
   }
   try{ const st=await PRO.api('status'); if (st.price) { $('proPrice').textContent=st.price+' Kč'; $('proGo').textContent=`Předplatit za ${st.price} Kč / měsíc`; } }catch(e){}
 })();
+
+// přibalené písmo titulků (stejné na iPhonu i v počítači) – načíst hned
+if (document.fonts && document.fonts.load) for (const w of [400,500,600,700,800,900]) document.fonts.load(`${w} 60px "Inter Tight"`).catch(()=>{});
 
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();

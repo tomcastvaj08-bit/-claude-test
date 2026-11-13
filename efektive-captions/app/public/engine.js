@@ -6,7 +6,7 @@
 const E = window.E = {};
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 E.clamp=clamp;
-const SF='"SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter Tight"';
+const SF='"Inter Tight", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif';
 E.SF=SF;
 const HAS_LS = typeof CanvasRenderingContext2D!=='undefined' && 'letterSpacing' in CanvasRenderingContext2D.prototype;
 // šířka textu se staženým písmem (track v % velikosti písma) – stejná v každém prohlížeči
@@ -61,7 +61,7 @@ E.G = {
   negativ:false, shadowSize:25, shadowA:45, shadowDist:10, extrude:0, glow:30, glowMode:'always',
   fontMain:SF, wMain:700, mainItalic:false, fontEm:SF, wEm:900, emItalic:false,
   track:-4, gap:66, emScale:160, wordGap:160,
-  tilt:18, tiltX:4, persp:60, tiltAlt:true, kinetic:45, rot:0, layout:'cascade', layerOrder:'natural',
+  tilt:18, tiltX:4, persp:60, tiltAlt:true, kinetic:45, kinDir:'opposite', rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
   fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
@@ -105,11 +105,11 @@ E.FONTS = [
 
 // ================= ŠABLONY =================
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
-const common = {tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
+const common = {kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
-  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:600,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-12,trackEm:-16,cond:87,gap:66,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:25,rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:22,shadowA:50,shadowDist:8,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'none',anim:'base',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
+  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:600,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-8,trackEm:-11,cond:87,gap:60,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:18,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'none',anim:'base',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
     pv:'<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="background:linear-gradient(#ff9a00,#e8f200);-webkit-background-clip:text;color:transparent;font-weight:800;letter-spacing:-.07em">Sledovat</b>' },
   bestaccount:{ name:'Styl 2', cat:'trending', set:{...common, fontMain:SF,wMain:700,fontEm:SF,wEm:900,emItalic:false,mainLine:'mid',size:88,posX:50,posY:66,track:-4,gap:66,emScale:160,wordGap:160,tilt:18,tiltX:4,persp:60,tiltAlt:true,kinetic:45,layout:'cascade',layerOrder:'natural',cText:'#ffffff',grad:true,gA:'#ff9300',gB:'#fff200',gradDir:'v',altOn:true,altEvery:4,altA:'#8fe0ff',altB:'#0a62e6',glow:30,glowMode:'always',shadowSize:25,shadowA:45,shadowDist:10,cShadow:'#000000',fxShine:true,shineEvery:'3',shineSpeed:50,fxFlicker:false,fxWiggle:false,wiggle:0,anim:'block',fadeOut:true,capMain3:true},
     pv:'<span style="font-weight:700">Vyrostla</span><br><b style="background:linear-gradient(#ff9300,#fff200);-webkit-background-clip:text;color:transparent;font-weight:900">Vám Firma</b>' },
@@ -211,9 +211,11 @@ E.buildPages = () => {
   }
   if (c) pages.push(c);
   pages.forEach(p=>{ const m=E.meta[W[p.a].id]; p.s=(m && m.so!=null)?m.so:W[p.a].s; });
+  pages.forEach(p=>{ const m=E.meta[W[p.a].id]; p.layer=(m && m.layer)|0; });
   pages.forEach((p,k)=>{
     const m=E.meta[W[p.a].id];
-    const nxt=pages[k+1], end=W[p.b].e+1.2;
+    let nxt=null; for (let q=k+1;q<pages.length;q++) if (pages[q].layer===p.layer){ nxt=pages[q]; break; }
+    const end=W[p.b].e+1.2;
     p.e = nxt ? Math.min(end,nxt.s) : W[p.b].e+0.5;
     // konec titulku utnout před začátkem další zóny bez titulků (grafika / logo)
     const z=E.zones.filter(z=>z.s>=W[p.b].e-0.05).sort((a,b)=>a.s-b.s)[0]; if (z) p.e=Math.min(p.e, z.s);
@@ -222,7 +224,11 @@ E.buildPages = () => {
   });
   E.pages=pages;
 };
-E.pageAt = t => { for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e) return k; } return -1; };
+E.layerOf = p => { const m=E.meta[E.words[p.a]?.id]; return (m && m.layer)|0; };
+// hlavní titulek v čase t (přednost má hlavní vrstva 0)
+E.pageAt = t => { let any=-1; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e){ if (!p.layer) return k; if (any<0) any=k; } } return any; };
+// všechny titulky v čase t, seřazené pro kreslení (spodní vrstva první)
+E.pagesAt = t => { const r=[]; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e) r.push(k); } return r.sort((a,b)=>(E.pages[b].layer|0)-(E.pages[a].layer|0)); };
 const range=(a,b)=>{ const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; };
 // rozdělení titulku na řádky + který řádek je hlavní
 E.groupsOf = (p,S) => {
@@ -309,18 +315,22 @@ function layoutRaw(p,S,scaleMul){
     const st=(base+base*S.emScale/100)*0.5*(S.gap/100), slotY=[0,st,st*2]; y=st*2;
     lines.forEach(L=>ys.push(slotY[L.slot]));
   } else lines.forEach((L,i)=>{ if(i>0) y+=(lines[i-1].px*0.5+L.px*0.5)*(S.gap/100); ys.push(y); });
-  const blockH=y, kin=S.kinetic/100, step=Math.min(W,H)*0.06*kin;
+  const blockH=y, kin=S.kinetic/100;
   const cx=W*S.posX/100, cy=H*S.posY/100-blockH/2;
+  // kinetické rozložení: řádky se jen posunou do stran po své lince (žádný jiný pohyb)
+  // horní řádek doleva, prostřední (hlavní) stojí, spodní doprava (nebo doleva – S.kinDir='same')
+  const emI=lines.findIndex(L=>L.em), midI=emI>=0?emI:(lines.length>2?1:-1);
+  const side=i=>{ const pos=lines[i].slot!=null?lines[i].slot-1:(midI>=0?Math.sign(i-midI):(i===0?-1:1)); return pos<0?-1:pos>0?(S.kinDir==='same'?-1:1):0; };
+  const shift=Math.min(W,H)*0.11*kin;
   lines.forEach((L,i)=>{
-    const k=p.kin[i%4];
-    L.y=cy+ys[i]+k.dy*step*0.35;
-    if (S.layout==='diagonal') L.x0=cx-L.total/2+[-0.02,0.025,0.09][Math.min(L.slot??i,2)]*W+k.dx*step*0.5;
-    else if (S.layout==='center') L.x0=cx-L.total/2+k.dx*step*0.8;
-    else if (S.layout==='left') L.x0=cx-W*0.3+i*step*0.6;
-    else if (S.layout==='right') L.x0=cx+W*0.3-L.total-i*step*0.6;
-    else { const alt=(i%2?1:-1); L.x0=cx-L.total/2+alt*step*1.6+k.dx*step*0.4; }
+    L.y=cy+ys[i];
+    const kx=side(i)*shift;
+    if (S.layout==='diagonal') L.x0=cx-L.total/2+[-0.02,0.025,0.09][Math.min(L.slot??i,2)]*W+kx;
+    else if (S.layout==='left') L.x0=cx-W*0.3+kx;
+    else if (S.layout==='right') L.x0=cx+W*0.3-L.total+kx;
+    else L.x0=cx-L.total/2+kx;
     L.x0=clamp(L.x0,W*0.02,Math.max(W*0.02,W-L.total-W*0.02));
-    L.rot=S.layout==='diagonal'?0:k.rot*kin*0.06;
+    L.rot=0;
   });
   lines.forEach((L,i)=>L._i=i);
   return lines;
@@ -635,8 +645,23 @@ E.render = (t, opts={}) => {
   // overlaye pod titulky
   for (const o of E.overlays) if (!o.above) E.drawOverlay(ctx,o,t);
   E.drawWatermark(ctx,cv.width,cv.height);
+  // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni
+  const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);
-  if (k<0 || F.hidden){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); return; }
+  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); return; }
+  let mainLines=null, mainS=null, behind=false;
+  for (const kk of ks){
+    const r=drawPage(kk,t);
+    if (kk===k){ mainLines=r.lines; mainS=r.S; }
+    if (r.S.behind!=='off') behind=true;
+  }
+  E.lastLines=mainLines;
+  // text za postavou: přes titulky se znovu nakreslí jen postava z videa
+  if (behind && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }
+  for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t);
+  if (opts.box && mainLines) E.drawBox(mainLines,mainS);
+};
+function drawPage(k,t){
   const p=E.pages[k], S=E.styleOf(p);
   const lines=E.layoutPage(p,S); E.lastLines=lines;
   const bx=cv.width*S.posX/100, by=cv.height*S.posY/100;
@@ -657,11 +682,8 @@ E.render = (t, opts={}) => {
   if (bs<0.999) c.restore();
   if (!direct) project3D(layer, bx, by, S, ctx);
   ctx.setTransform(1,0,0,1,0,0);
-  // text za postavou: přes titulky se znovu nakreslí jen postava z videa
-  if (S.behind!=='off' && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }
-  for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t);
-  if (opts.box) E.drawBox(lines,S);
-};
+  return {lines,S};
+}
 
 // rámeček kolem vybraného titulku + úchyt (zvětšení) + tužka (úprava textu) + safe zóny
 E.drawBox = (lines,S,guides) => {
