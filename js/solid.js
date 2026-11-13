@@ -141,13 +141,17 @@ export class SolidModel {
     const e = 1 - Math.pow(1 - t, 3);
     this.model.visible = t > 0.001;
     if (this.appear) { // jen se objeví na místě (jemné prolnutí), nepadá
-      this.model.position.y = 0; this.model.rotation.y = 0; this.setOpacity(e);
+      this.model.position.y = 0; this.model.rotation.y = 0; this.model.scale.set(1, 1, 1); this.setOpacity(e);
       return;
     }
     this.setOpacity(1);
-    // rychlý pád a měkké dosednutí (bez odrazu)
-    this.model.position.y = (1 - e) * this.drop;
-    this.model.rotation.y = (1 - e) * 0.35;
+    // pád jako ze skutečné výšky (zrychluje), tvrdý dopad: krátké přimáčknutí k podlaze, žádný odskok
+    const FALL = 0.72, f = Math.min(1, t / FALL), u = Math.max(0, (t - FALL) / (1 - FALL));
+    const sq = t < FALL ? 0 : Math.sin(Math.PI * Math.min(1, u * 1.15)) * Math.exp(-u * 2.2) * 0.075;
+    const sy = 1 - sq, sxz = 1 + sq * 0.45, y0 = this.box.min.y;
+    this.model.scale.set(sxz, sy, sxz);
+    this.model.position.y = (1 - f * f) * this.drop + y0 * (1 - sy);
+    this.model.rotation.y = (1 - f) * 0.25;
   }
   setOpacity(o) {
     if (!this._fade) { this._fade = []; const seen = new Set(); this.model.traverse((m) => { if (!m.isMesh) return; for (const mt of [].concat(m.material)) if (!seen.has(mt)) { seen.add(mt); this._fade.push([mt, mt.opacity, mt.transparent]); } }); }
