@@ -30,7 +30,7 @@ X.Zip = class {
 X.buildAudio = async (file, duration, mute) => {
   const RATE=48000;
   let decoded=null;
-  if (!mute){ try{ const ac=new (window.AudioContext||window.webkitAudioContext)(); decoded=await ac.decodeAudioData(await file.arrayBuffer()); ac.close&&ac.close(); }catch(e){ console.warn('Video nemá zvuk',e); } }
+  if (!mute){ try{ decoded=await decodeVideoAudio(file); }catch(e){ console.warn('Video nemá zvuk',e); } }
   const ch=decoded?Math.min(2,decoded.numberOfChannels):2;
   const off=new OfflineAudioContext(ch,Math.ceil(duration*RATE),RATE);
   if (decoded){ const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(0); }

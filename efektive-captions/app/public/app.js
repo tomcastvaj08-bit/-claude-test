@@ -162,8 +162,7 @@ function wavFrom(samples,rate){
   return new Blob([buf],{type:'audio/wav'});
 }
 async function extractAudio(file){
-  const ab=await file.arrayBuffer(); const tmp=new (window.AudioContext||window.webkitAudioContext)();
-  const decoded=await tmp.decodeAudioData(ab); tmp.close&&tmp.close();
+  const decoded=await decodeVideoAudio(file);
   const RATE=16000, off=new OfflineAudioContext(1,Math.ceil(decoded.duration*RATE),RATE);
   const src=off.createBufferSource(); src.buffer=decoded; src.connect(off.destination); src.start();
   const out=await off.startRendering(); return {data:out.getChannelData(0),rate:RATE};

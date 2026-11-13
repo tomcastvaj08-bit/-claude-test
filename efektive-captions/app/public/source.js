@@ -86,3 +86,86 @@ async function openFrameSource(file, dispW, dispH) {
 }
 global.openFrameSource = openFrameSource;
 })(window);
+
+// ---------- Zvuk z videa (i z iPhonu) ----------
+// Safari často odmítne dekódovat zvuk přímo z .mov/.mp4 s obrazem („Decoding failed“).
+// Proto: zkusit napřímo, a když to nejde, vytáhnout jen zvukovou stopu (AAC) do .m4a bez obrazu a dekódovat tu.
+(function (global) {
+"use strict";
+async function audioOnlyM4A(file) {
+  if (!global.MP4Box || !global.Mp4Muxer) return null;
+  const buf = await file.arrayBuffer(); buf.fileStart = 0;
+  const mp4 = MP4Box.createFile(); let info = null;
+  mp4.onReady = i => { info = i; }; mp4.onError = () => {};
+  try { mp4.appendBuffer(buf); mp4.flush(); } catch (e) { return null; }
+  if (!info || !info.audioTracks || !info.audioTracks.length) return null;
+  const tr = info.audioTracks[0];
+  if (!/^mp4a/.test(tr.codec)) return null;
+  const rate = tr.audio.sample_rate, ch = tr.audio.channel_count;
+  let dsi = null;
+  try { const en = mp4.getTrackById(tr.id).mdia.minf.stbl.stsd.entries[0]; dsi = en.esds.esd.descs[0].descs[0].data; } catch (e) {}
+  if (!dsi) dsi = esdsFromMoov(new Uint8Array(buf));   // .mov z iPhonu: esds je schovaný v boxu „wave“
+  if (!dsi) dsi = aacLcConfig(rate, ch);               // nouzově: standardní AAC-LC (iPhone nahrává AAC-LC)
+  if (!dsi) return null;
+  const samples = [];
+  mp4.onSamples = (id, u, s) => { for (const x of s) samples.push(x); };
+  mp4.setExtractionOptions(tr.id, null, { nbSamples: 1e9 }); mp4.start(); mp4.flush();
+  if (!samples.length) return null;
+  const target = new Mp4Muxer.ArrayBufferTarget();
+  const mux = new Mp4Muxer.Muxer({ target, audio: { codec: 'aac', numberOfChannels: ch, sampleRate: rate }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
+  const meta = { decoderConfig: { codec: /^mp4a\.40\.\d+$/.test(tr.codec) ? tr.codec : 'mp4a.40.' + ((dsi[0] >> 3) || 2), sampleRate: rate, numberOfChannels: ch, description: dsi } };
+  samples.forEach((s, i) => mux.addAudioChunkRaw(new Uint8Array(s.data), 'key', Math.round(s.cts / s.timescale * 1e6), Math.round(s.duration / s.timescale * 1e6), i === 0 ? meta : undefined));
+  mux.finalize();
+  // úvodní „priming“ AAC: originál ho schovává přes edit list → po dekódování ho uřízneme, ať zvuk sedí na obraz
+  let skip = 0;
+  try { const t = mp4.getTrackById(tr.id), e = t.edts && t.edts.elst && t.edts.elst.entries && t.edts.elst.entries[0]; if (e && e.media_time > 0) skip = e.media_time / t.mdia.mdhd.timescale; } catch (e) {}
+  const out = target.buffer; out.skip = Math.min(0.5, skip);
+  return out;
+}
+// AudioSpecificConfig z boxu esds uvnitř moov (najde ho i v QuickTime .mov)
+function esdsFromMoov(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let pos = 0, moov = null;
+  while (pos + 8 <= u8.length) {
+    let size = dv.getUint32(pos); const type = String.fromCharCode(u8[pos + 4], u8[pos + 5], u8[pos + 6], u8[pos + 7]);
+    if (size === 1) size = Number(dv.getBigUint64(pos + 8)); else if (size === 0) size = u8.length - pos;
+    if (type === 'moov') { moov = [pos, pos + size]; break; }
+    if (size < 8) break; pos += size;
+  }
+  if (!moov) return null;
+  for (let i = moov[0]; i < moov[1] - 8; i++) {
+    if (u8[i] !== 0x65 || u8[i + 1] !== 0x73 || u8[i + 2] !== 0x64 || u8[i + 3] !== 0x73) continue; // 'esds'
+    let p = i + 8; // za typem + verze/flags
+    const len = () => { let n = 0, b; do { b = u8[p++]; n = (n << 7) | (b & 0x7f); } while (b & 0x80); return n; };
+    if (u8[p++] !== 0x03) continue; len(); p += 2; const fl = u8[p++];
+    if (fl & 0x80) p += 2; if (fl & 0x40) p += 1 + u8[p]; if (fl & 0x20) p += 2;
+    if (u8[p++] !== 0x04) continue; len(); p += 13;
+    if (u8[p++] !== 0x05) continue; const n = len();
+    if (n > 0 && n < 64) return u8.slice(p, p + n);
+  }
+  return null;
+}
+function aacLcConfig(rate, ch) {
+  const idx = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350].indexOf(rate);
+  if (idx < 0 || !ch) return null;
+  return new Uint8Array([(2 << 3) | (idx >> 1), ((idx & 1) << 7) | (Math.min(ch, 7) << 3)]);
+}
+async function decodeVideoAudio(file) {
+  const AC = global.AudioContext || global.webkitAudioContext;
+  const dec = async ab => { const ac = new AC(); try { return await new Promise((res, rej) => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); } finally { try { ac.close && ac.close(); } catch (e) {} } };
+  try { return await dec(await file.arrayBuffer()); } catch (e) { console.warn('Přímé dekódování zvuku nejde, zkouším zvukovou stopu zvlášť', e); }
+  const m4a = await audioOnlyM4A(file);
+  if (!m4a) throw new Error('Ve videu jsem nenašel zvuk, který umím přečíst.');
+  try {
+    const skip = m4a.skip || 0, ab = await dec(m4a);
+    if (!(skip > 0)) return ab;
+    const from = Math.round(skip * ab.sampleRate), len = Math.max(1, ab.length - from);
+    const ctx = new (global.OfflineAudioContext || global.webkitOfflineAudioContext)(ab.numberOfChannels, len, ab.sampleRate);
+    const out = ctx.createBuffer(ab.numberOfChannels, len, ab.sampleRate);
+    for (let c = 0; c < ab.numberOfChannels; c++) out.copyToChannel(ab.getChannelData(c).subarray(from, from + len), c);
+    return out;
+  } catch (e) { throw new Error('Zvuk z videa se nepodařilo přečíst. Zkus video uložit znovu (ve Fotkách Sdílet → Uložit video) a nahrát ho znovu.'); }
+}
+global.audioOnlyM4A = audioOnlyM4A;
+global.decodeVideoAudio = decodeVideoAudio;
+})(window);
