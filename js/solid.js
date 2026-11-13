@@ -90,7 +90,9 @@ function merge(scene) {
 
 // Realistický ABS plast: lesklý lak (clearcoat), jemné odlesky okolí, zapečené stínování v záhybech.
 const METAL = new Set([82, 297, 80, 383, 334, 135, 179]); // kovové zlaté a stříbrné barvy
-function plastic(src, aoK = 1) { // aoK > 1 = výraznější stíny v záhybech (husté květy)
+const _hsl = {};
+function plastic(src, aoK = 1) {
+  src = src.clone(); src.color.getHSL(_hsl); src.color.setHSL(_hsl.h, Math.min(1, _hsl.s * 1.12), _hsl.l); // o něco sytější barvy jako skutečný ABS // aoK > 1 = výraznější stíny v záhybech (husté květy)
   const code = codeOf(src), metal = METAL.has(code) || src.metalness > 0.5;
   const m = new THREE.MeshPhysicalMaterial({
     color: src.color, transparent: src.transparent, opacity: src.opacity, depthWrite: !src.transparent, side: THREE.DoubleSide,
@@ -129,7 +131,7 @@ export class SolidModel {
       o.material = (Array.isArray(o.material) ? o.material : [o.material]).map((src) => {
         const code = codeOf(src);
         if (this.mats.has(code)) return this.mats.get(code);
-        const m = plastic(src, opts.ao ?? 1);
+        const m = plastic(src, opts.ao ?? 1.3);
         this.mats.set(code, m); this.base.set(code, src.color.clone());
         return m;
       });

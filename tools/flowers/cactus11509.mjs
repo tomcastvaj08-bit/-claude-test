@@ -21,9 +21,12 @@ for (let q = 0; q < 4; q++) {
   pot.part('3004', LBL, add(s(-48), apply(R, [0, 0, -20])), mul(R, ry(Math.PI / 2))); pot.part('3004', LBL, add(s(-48), apply(R, [0, 0, 20])), mul(R, ry(Math.PI / 2)));
   pot.part('3004', LBL, add(s(-72), apply(R, [0, 0, -20])), mul(R, ry(Math.PI / 2))); pot.part('3004', LBL, add(s(-72), apply(R, [0, 0, 20])), mul(R, ry(Math.PI / 2)));
   pot.part('3710', LBL, add(s(-80), [0, 0, 0]), mul(R, ry(Math.PI / 2)));
+  // kroky 48–51: horní hladký lem – zkosené rohy a zkosené strany bez výstupků, otočené zkosením nahoru
+  pot.part('5649', LBL, c(-80), mul(R, ry(Math.PI / 2), rx(Math.PI)));
+  pot.part('5540', LBL, add(s(-80), apply(R, [-20, 0, 0])), mul(R, ry(E('SR2', Math.PI / 2)), rx(Math.PI)));
 }
 // hlína: tmavě hnědé desky, kulaté dlaždice a kamínky
-const SOIL = -64;
+const SOIL = -72;
 pot.part('3034', RB, [0, SOIL, -20]); pot.part('3034', RB, [0, SOIL, 20]); pot.part('3034', RB, [0, SOIL, 60]); pot.part('3034', RB, [0, SOIL, -60]);
 for (const [x, z] of [[-60, -20], [60, 60], [-70, 70], [70, -60], [10, -70]]) pot.part('14769', RB, [x, SOIL - 8, z]);
 for (let k = 0; k < 14; k++) { const a = k * 2.3, r = 40 + (k * 13) % 50; pot.part('85861', DT, [Math.cos(a) * r, SOIL - 8, Math.sin(a) * r]); }
@@ -54,11 +57,11 @@ function column(cx, cz, ribs, len, r, spineSets, yaw = 0) {
   }
 }
 // velký kaktus (8 žeber 1x10, krok 54–69) vzadu vpravo, malý (8 žeber 1x6, krok 78–89) vpředu vlevo – baňaté, žebra s mezerami
-const BX = E('BX', 24), BZ = E('BZ', 18), SX = E('SXC', -52), SZ = E('SZ', -46);
-const RB_ = E('RBIG', 38), RS_ = E('RSM', 28);
-column(BX, BZ, 8, 10, RB_, [[0.1, 0.5, 0.9], [0.3, 0.7]], Math.PI / 8);
+const BX = E('BX', 30), BZ = E('BZ', 24), SX = E('SXC', -60), SZ = E('SZ', -56);
+const RB_ = E('RBIG', 50), RS_ = E('RSM', 28);
+column(BX, BZ, 12, 10, RB_, [[0.1, 0.5, 0.9], [0.3, 0.7]], Math.PI / 12);
 for (const y of [TOPS - 40, TOPS - 100, TOPS - 160]) A.part('68888', RB, [BX, y, BZ]);
-for (let y = TOPS - 24; y >= TOPS - 196; y -= 24) A.part('87081', DG, [BX, y, BZ]);                  // tmavě zelené jádro – vyplní mezery mezi žebry          // jádro: náboje se 4 tyčkami
+for (let y = TOPS - 24; y >= TOPS - 196; y -= 24) { A.part('87081', DG, [BX, y, BZ]); for (let q = 0; q < 8; q++) A.part('3941', DG, [BX + Math.cos(q * Math.PI / 4) * 34, y, BZ + Math.sin(q * Math.PI / 4) * 34]); }                  // tmavě zelené jádro – vyplní mezery mezi žebry          // jádro: náboje se 4 tyčkami
 const TOPB = TOPS - 208;
 A.part('67811', DG, [BX, TOPB, BZ]);                                                              // tmavě zelený volant na vršku (krok 65)
 column(SX, SZ, 8, 6, RS_, [[0.2, 0.8], [0.5]], 0);
@@ -113,15 +116,15 @@ function bud(p, az, tilt, small = false) {
   const y = scl(d, -1), x = norm(cross(y, [0, 0, 1].map((v, i) => (Math.abs(d[2]) > 0.9 ? [1, 0, 0][i] : v)))), z = cross(x, y);
   const B = new Asm();
   B.part('85861', DP, [0, 0, 0]);
-  if (!small) B.part('28621', SG, [0, -8, 0]);                                       // zelené tělo poupěte
-  B.part('39262', SG, [0, small ? -6 : -30, 0]);                                     // kalich – zuby nahoru
-  B.part('5904', DP, [0, small ? -14 : -38, 0]);                                     // tmavě růžový květ
+  if (!small) B.part('28621', SG, [0, -24, 0]);                                    // zelené tělo poupěte (sedí na destičce)                                       // zelené tělo poupěte
+  B.part('39262', SG, [0, small ? -6 : -26, 0]);                                     // kalich – zuby nahoru
+  B.part('5904', DP, [0, small ? -14 : -32, 0]);                                     // tmavě růžový květ
   A.add(B, { M: basis(x, y, z), p });
 }
 const T0 = [SX, TOPSM + 2, SZ], D2 = Math.PI / 180;
-for (const [az, r, tilt, sm] of [[200, 18, 0.55, false], [250, 22, 0.75, false], [150, 20, 0.7, true], [300, 14, 0.4, true], [90, 6, 0.15, false]])
+for (const [az, r, tilt, sm] of [[200, 12, 0.5, false], [250, 14, 0.7, false], [150, 13, 0.6, false], [300, 10, 0.4, false], [90, 4, 0.15, false]])
   bud(add(T0, [Math.cos(az * D2) * r, 0, Math.sin(az * D2) * r]), az * D2, tilt, sm);
-for (const az of [20, 330, 120]) A.part('24866', MA, add(T0, [Math.cos(az * D2) * 22, -2, Math.sin(az * D2) * 22]));
+for (const az of [20, 330, 120]) A.part('24866', MA, add(T0, [Math.cos(az * D2) * 16, -2, Math.sin(az * D2) * 16]));
 
 if (process.env.SUB === 'bloom') { A.items = []; bloom([0, 0, 0]); const b = new Build('sub'); A.emit(b); b.save('sub.ldr'); process.exit(0); }
 if (process.env.SUB === 'rib') { const b = new Build('sub'), X = new Asm(); X.add(rib(10, 0, [0.1, 0.5, 0.9]), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); X.emit(b); b.save('sub.ldr'); process.exit(0); }
