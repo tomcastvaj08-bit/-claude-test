@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261113j';
+import { createModel, ready, LITE } from './builders.js?v=20261113k';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -128,13 +128,25 @@ const shadowTex = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d');
   const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grd.addColorStop(0, 'rgba(0,0,0,.42)'); grd.addColorStop(0.55, 'rgba(0,0,0,.16)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  grd.addColorStop(0, 'rgba(0,0,0,.5)'); grd.addColorStop(0.45, 'rgba(0,0,0,.32)'); grd.addColorStop(0.75, 'rgba(0,0,0,.1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 })();
 const shadowGeo = new THREE.PlaneGeometry(1, 1);
 const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, fog: false });
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+// půdorys spodní části modelu (body do výšky band nad zemí) v souřadnicích nadřazené skupiny
+function footprint(obj, band) {
+  obj.updateMatrixWorld(true);
+  const inv = obj.parent ? new THREE.Matrix4().copy(obj.parent.matrixWorld).invert() : new THREE.Matrix4();
+  const v = new THREE.Vector3(), pts = []; let ymin = Infinity;
+  obj.traverse((o) => { if (!o.isMesh || !o.visible && o !== obj) return; const P = o.geometry.attributes.position, st = Math.max(1, Math.floor(P.count / 4000));
+    for (let i = 0; i < P.count; i += st) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld).applyMatrix4(inv); pts.push(v.x, v.y, v.z); if (v.y < ymin) ymin = v.y; } });
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let i = 0; i < pts.length; i += 3) if (pts[i + 1] < ymin + band) { x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]); z0 = Math.min(z0, pts[i + 2]); z1 = Math.max(z1, pts[i + 2]); }
+  if (!isFinite(x0)) return { cx: 0, cz: 0, w: 1, d: 1 };
+  return { cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, w: x1 - x0, d: z1 - z0 };
+}
 
 // ------------------------------------------------------------ exponáty
 await Promise.all([ready(), loadFigureKit()]);
@@ -152,12 +164,12 @@ const exhibits = ORDER.map((id) => {
   const base = new THREE.Group(); base.add(spin);
   const root = new THREE.Group(); root.add(base);
   const W = size.x * sc, D = size.z * sc, H = size.y * sc;
-  // stín: až po dopadu, protažený k divákovi (světlo je na konci chodby)
+  // kontaktní stín: jen pod tím, co skutečně stojí na zemi (dno květináče / vázy), lehký a přímo pod exponátem
+  m.setProgress(1); const fp = footprint(inner, H * 0.04); m.setProgress(0);
   const shMat = shadowMat.clone(); shMat.opacity = 0;
   const sh = new THREE.Mesh(shadowGeo, shMat);
-  const sw = car ? D * 1.25 + 0.3 : Math.max(W, D) * 1.05 + 0.3, sl = car ? W * 1.3 + 0.6 : Math.max(W, D) * 1.9 + 0.6;
-  sh.rotation.x = -Math.PI / 2; sh.position.set(0, 0.004, sl * 0.32); sh.scale.set(sw, sl, 1);
-  root.add(sh);
+  sh.rotation.x = -Math.PI / 2; sh.position.set(fp.cx, 0.003, fp.cz); sh.scale.set(fp.w * 1.35 + 0.12, fp.d * 1.35 + 0.12, 1);
+  sh.renderOrder = -1; spin.add(sh);
   const hit = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), hitMat); hit.position.y = H / 2; spin.add(hit);
   scene.add(root);
   const ex = { id, p, m, root, base, spin, hit, car, sh, shMat, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
@@ -546,7 +558,7 @@ function frame(now) {
     ex.root.visible = ex.shown && now >= ex.t0 && (ex === focusEx || (d > -8 && d < 26));
     if (!ex.root.visible) continue;
     if (ex !== focusEx && !ex.dropped) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / 760));
-    ex.shMat.opacity = ex.shMat.opacity + (clamp((ex.m.progress - 0.97) / 0.03) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 4));
+    ex.shMat.opacity = ex.shMat.opacity + (0.55 * clamp((ex.m.progress - 0.7) / 0.3) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 8)); // lehký stín, naplno až po dopadu
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
