@@ -93,7 +93,13 @@ const SPECS = {
     // 3) stříbrná podkova přes černou masku
     { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 383, R); }
     // 4) bílá hadice přes celé dveře: zespodu vzadu nahoru a dopředu podél horní hrany až k zrcátku
-    for (const s of [-1, 1]) tube([['abs', s * 296, -75, -40], ['abs', s * 300, -130, 80], ['abs', s * 300, -235, 85], ['abs', s * 298, -305, 0], ['abs', s * 292, -315, -150], ['abs', s * 285, -290, -290], ['abs', s * 272, -258, -380]], 15, R);
+    // bílá hadice přitisknutá na lištu okna: od spodku dveří po C-linii nahoru, podél střešní lišty dopředu až k zrcátku
+    const sx = (z, y) => { let best = 0; for (let dz = -3; dz <= 3; dz++) for (let dy = -2; dy <= 2; dy++) { const v = SXm.get(Math.round(z / C + dz) + ',' + Math.round(y / C + dy)); if (v !== undefined && v < 330 && v > best) best = v; } return best; };
+    const path = [[-20, -80], [60, -125], [92, -200], [88, -262], [45, -312], [-60, -322], [-180, -320], [-270, -298], [-350, -262], [-385, -250]];
+    let xs = path.map(([z, y]) => sx(z, y) + 8);
+    xs = xs.map((x, i) => (xs[Math.max(0, i - 1)] + 2 * x + xs[Math.min(xs.length - 1, i + 1)]) / 4);
+    for (const s of [-1, 1]) tube(path.map(([z, y], i) => ['abs', s * xs[i], y, z]), 15, R);
+    console.log('door hose x', xs.map(Math.round).join(','));
   }
 };
 SPECS[spec]();
