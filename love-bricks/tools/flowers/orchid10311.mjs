@@ -27,7 +27,7 @@ for (let k = 0; k < 16; k++) {
     A.part('3041', SB, add(scl(n, R + 24), [0, yc, 0]), M);
     // trojitý svah jako hrot modulu (dole u spodní řady, nahoře u horní)
     const yCap = yc + cap * 50;
-    A.part('15571', SB, add(scl(n, R + 24), [0, yCap, 0]), mul(M, cap > 0 ? ry(Math.PI / 2) : ry(-Math.PI / 2)));
+    A.part('15571', SB, add(scl(n, R + 24), [0, yCap, 0]), mul(M, cap > 0 ? ry(-Math.PI / 2) : ry(Math.PI / 2))); // hrot: nahoře pyramidka trojúhelníkem dolů, dole špička (jako skutečná sada)
   }
 }
 // horní okraj: černý „makaróny“ prstenec, mulč z kamínků a kulatých dlaždic
