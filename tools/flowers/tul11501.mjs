@@ -45,10 +45,10 @@ export function tulipHead({ col, disc = 320, open = 0 }) {
     H.part('85861', disc, add(scl(u, 45), [0, yb, 0]), basis(cross(u, scl(Y, -1)), u, scl(Y, -1)));
   }
   // vnější lístky (krok 6): klip 5264 na tyčce kroužku 1941 (tečná tyčka v r = 14,4)
-  for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
-    const Mt = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
+  [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]].forEach((b, i) => {
+    const Mt = petalM(b, Array.isArray(open) ? open[i] : open), bar = add(scl(b, 14.4), [0, yb, 0]);
     H.add(outerPetal(col), { M: Mt, p: sub(bar, apply(Mt, [0, 26, -30])) });
-  }
+  });
   return H;
 }
 // ===== stonek: osa 32 + zahnutá trubička 7324; hlava na konci trubičky =====
@@ -93,7 +93,7 @@ export function pinkHead({ open = 0 } = {}) {
   const yb = -110;
   for (const u of [[1, 0, 0], [-0.5, 0, -0.866], [-0.5, 0, 0.866]]) { // prkno nastojato, lícem ven
     const Mi = basis(cross(u, Y), u, Y); // prkno nastojato, líc ven, delší konec nahoru
-    H.part('90397', col, add(scl(u, E('SR', 10)), [0, E('SY', -96), 0]), mul(Mi, ry(Math.PI))); // špička prkna dolů do středu
+    H.part('90397', col, add(scl(u, E('SR', 4)), [0, E('SY', -104), 0]), Mi); // špička prkna dolů do středu
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
     const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
@@ -118,8 +118,8 @@ export function orangeHead() {
     const P = new Asm(); P.part('7096', 25, [0, 0, 0]); P.part('98138', 191, [0, -8, 10]); P.part('15712', 191, [0, 8, 10], rx(Math.PI));
     H.add(P, { M, p: add(scl(u, 20), [0, yBar, 0]) });
   };
-  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3, -40, E('OL1', 0.85));                 // vnitřní řada
-  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3 + Math.PI / 3, -18, E('OL2', 1.3));    // vnější, víc rozevřené
+  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3, -40, E('OL1', 1.0));                 // vnitřní řada
+  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3 + Math.PI / 3, -18, E('OL2', 1.45));    // vnější, víc rozevřené
   return H;
 }
 // poupě (návod 2, kroky 1–4): protáhlá limetková kopule 1744 na kopuli 49308, zelený kužel a miska
@@ -201,16 +201,16 @@ export function bouquet() {
     // zadní řada (nahoře)
     [() => pinkHead({ open: -0.05 }), -125, -800, 90, null],
     [() => pinkHead({ open: -0.05 }), -15, -815, 110, null],
-    [() => Yl(-0.2), 85, -790, 100, null],
+    [() => Yl([-0.15, -0.15, -0.55]), 85, -790, 100, null],
     [() => pinkHead({ open: -0.05 }), 180, -795, 80, null],
     // prostřední řada
     [() => orangeHead(), -175, -735, 20, null],
     [() => purpleHead({ open: -0.05 }), 35, -755, -10, null],
     [() => R(-0.05), 140, -740, -10, null],
-    [() => Yl(-0.5), 215, -700, -40, null],
+    [() => Yl([-0.15, -0.6, -0.15]), 215, -700, -40, null],
     // přední řada (níž, k divákovi)
-    [() => R(-0.1), -215, -680, -110, -1],
-    [() => Yl(-0.6), -105, -660, -150, null],
+    [() => R([-0.15, -0.15, -0.55]), -215, -680, -110, -1],
+    [() => Yl([-0.45, -0.45, -0.45]), -105, -660, -150, null],
     [() => orangeHead(), 0, -650, -170, null],
     [() => purpleHead({ open: -0.1 }), 115, -690, -130, 1],
     // poupata vzadu mezi hlavami
@@ -269,7 +269,7 @@ if (process.env.SUB) {
   const b = new Build('sub'), A = new Asm();
   if (process.env.SUB === 'red') A.add(tulipStem(tulipHead({ col: 4, open: -0.1 })), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
   if (process.env.SUB === 'redhead') A.add(tulipHead({ col: 4, open: E('OPEN', 0) }), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
-  const hs = { purple: () => purpleHead({ open: -0.1 }), pink: () => pinkHead({ open: -0.15 }), orange: orangeHead, bud: budHead, yellow: () => tulipHead({ col: 14, disc: 28, open: -0.35 }) };
+  const hs = { purple: () => purpleHead({ open: -0.1 }), pink: () => pinkHead({ open: -0.15 }), orange: orangeHead, bud: budHead, yellow: () => tulipHead({ col: 14, disc: 28, open: [-0.15, -0.15, -0.55] }) };
   if (hs[process.env.SUB]) A.add(hs[process.env.SUB](), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
   if (process.env.SUB === 'one') { // jeden červený tulipán s dlouhým listem jako na str. 19 (list namontovaný stejně jako v kytici)
     const M = [1, 0, 0, 0, 1, 0, 0, 0, 1], p = [0, -640, 0];
@@ -282,6 +282,8 @@ if (process.env.SUB) {
   }
   if (process.env.SUB === 'long') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.part('30374', 4, [0, -40, -300], [1, 0, 0, 0, 0, -1, 0, 1, 0]); }
   if (process.env.SUB === 'budhead') { A.add(budStem(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, -640, 0] }); }
+  if (process.env.SUB === 'yopen') A.add(tulipHead({ col: 14, disc: 28, open: -0.45 }), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
+  if (process.env.SUB === 'ropen') A.add(tulipHead({ col: 4, open: [-0.15, -0.15, -0.55] }), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
   if (process.env.SUB === 'budone') {
     A.add(budStem(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, -640, 0] });
   }

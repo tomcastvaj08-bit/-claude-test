@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261113s';
+import { createModel, ready, LITE } from './builders.js?v=20261113t';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
