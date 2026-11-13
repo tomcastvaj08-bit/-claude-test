@@ -104,6 +104,7 @@ export class SolidModel {
     for (const [code, hex] of Object.entries(map)) {
       const m = this.mats.get(+code); if (!m) continue;
       m.color.copy(hex ? new THREE.Color(hex) : this.base.get(+code));
+      if (hex) m.metalness = Math.min(m.metalness, 0.3); // přebarvené kovové dílky (zlatý pás) nesmí zešednout
     }
   }
 }
