@@ -47,13 +47,13 @@ export const ALL = [
   { id: 'sianblack', model: 'sianblack', name: 'Lamborghini černo-zlaté', line: BIG, price: 1490, pieces: 1280, size: '36 cm', age: '14+', tags: ['auta', 'rodina'], featured: true,
     kicker: 'Černá se zlatou', desc: 'Černý supersport se zlatými disky a zlatými detaily, měřítko 1:14.',
     variant: { key: 'body', label: 'Lak', options: [['Černá', '#1B1D22']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#C9A44C', accentInk: '#1B1D22', word: 'NERO', dark: true },
-  { id: 'chironpink', model: 'chironpink', name: 'Bugatti růžovo-bílé', line: BIG, price: 1290, pieces: 1388, size: '35 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
+  { id: 'chironpink', model: 'chironpink', name: 'Bugatti růžovo-bílé', line: BIG, price: 899, pieces: 1388, size: '35 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
     kicker: 'Hypersport v pastelu', desc: 'Bílá příď s podkovou masky, růžová záď, rám a kola.',
     variant: { key: 'body', label: 'Lak', options: [['Růžová', '#E58BB8']] }, bg: '#FBE9F2', ink: '#3B0A22', accent: '#D3359D', word: 'BUGATTI' },
   { id: 'gulf', model: 'gulf', name: 'Porsche GT3 RS Gulf', line: BIG, price: 1490, pieces: 1300, size: '33 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
     kicker: 'Závodní legenda', desc: 'Porsche v legendárních barvách Gulf, světle modrá s oranžovou a velké zadní křídlo.',
     variant: { key: 'body', label: 'Lak', options: [['Gulf modrá', '#8EC5E8']] }, bg: '#E3F1FA', ink: '#0E2A44', accent: '#F07A1E', word: 'GULF' },
-  { id: 'turbo', model: 'turbo', name: 'Porsche 911 Turbo černé', line: CAR, price: 590, pieces: 320, size: '16 cm', age: '8+', tags: ['auta', 'rodina'], featured: true,
+  { id: 'turbo', model: 'turbo', name: 'Porsche 911 Turbo černé', line: CAR, price: 590, pieces: 320, size: '17 cm', age: '8+', tags: ['auta', 'rodina'], featured: true,
     kicker: 'Malá klasika', desc: 'Černá devětsetjedenáctka Turbo s velkým zadním spoilerem, malé měřítko do poličky.',
     variant: { key: 'body', label: 'Lak', options: [['Černá', '#1B1D22']] }, bg: '#ECEEF0', ink: '#1A1D21', accent: '#F57C1F', word: 'TURBO' }
 ];
