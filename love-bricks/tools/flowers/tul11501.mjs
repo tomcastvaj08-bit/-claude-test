@@ -8,10 +8,10 @@ export function outerPetal(col, v = -1) {
   const P = new Asm();
   P.part('7613', col, [0, 0, 0]);
   if (v === 1) P.part('93273', col, [0, 0, 10], ry(Math.PI / 2)); else {
-  P.part('5852', col, [20, 0, 10], ry(-Math.PI / 2));   // čtvrtkruhy na dvou výstupcích jazýčku – zaoblený konec lístku
-  P.part('5852', col, [-20, 0, 10], ry(Math.PI)); }
-  P.part('3176', v === 0 ? 0 : col, [0, 8, 0]);                          // destička 3x2 pod jazýčkem, zaoblený konec do lístku
-  P.part('5264', 297, [0, 16, -30]);
+  P.part('5852', col, [20, E('QD', 8), 10], ry(-Math.PI / 2));   // čtvrtkruhy na dvou výstupcích jazýčku – zaoblený konec lístku
+  P.part('5852', col, [-20, E('QD', 8), 10], ry(Math.PI)); } // čtvrtkruhy zapuštěné, horní plocha navazuje na zakřivený díl
+  P.part('3176', v === 0 ? 0 : col, [0, 8 + E('QD', 8), 0]);                          // destička 3x2 pod jazýčkem, zaoblený konec do lístku
+  P.part('5264', 297, [0, 16 + E('QD', 8), -30]);
                        // zlatý klip zespodu v otvoru destičky
   return P;
 }
