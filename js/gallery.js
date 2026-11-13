@@ -112,11 +112,11 @@ const floorTex = (() => {
   t.colorSpace = THREE.SRGBColorSpace;
   return { t, tb };
 })();
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ map: floorTex.t, bumpMap: floorTex.tb, bumpScale: 0.8, roughness: 0.07, metalness: 0.05, envMapIntensity: 1.6 }));
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ map: floorTex.t, bumpMap: floorTex.tb, bumpScale: 0.8, roughness: 0.04, metalness: 0.05, envMapIntensity: 1.9 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
 // lesklá podlaha: skutečný odraz – scéna se vykreslí zrcadlově do textury (v poloviční velikosti) a vmíchá se do dlaždic
-const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.38 };
+const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.5 };
 floor.material.onBeforeCompile = (sh) => {
   sh.uniforms.tRefl = { value: refl.rt.texture }; sh.uniforms.uTexMat = { value: refl.mat }; sh.uniforms.uReflK = { value: refl.k };
   sh.vertexShader = 'uniform mat4 uTexMat;\nvarying vec4 vReflUv;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvReflUv = uTexMat * vec4( transformed, 1.0 );');
@@ -572,8 +572,10 @@ function frame(now) {
       pair = exhibits.filter((ex) => ex.inWindow && ex.root.visible && Math.abs(slotS(ex.slot) - state.s - best) < 0.01 && ex.m.progress >= 0.99);
     }
     const flower = pair.find((ex) => !ex.car), car = pair.find((ex) => ex.car);
+    // u růžového auta vykoukne holka (srdíčka), kluk u květiny nedělá nic
+    const pinkCar = car && car.id === 'sian';
     for (const F of figs) {
-      const ex = F.girl ? flower : car;
+      const ex = F.girl ? (pinkCar ? car : flower) : (pinkCar ? null : car);
       const want = ex ? (F.girl ? 'hearts' : 'stars') : '';
       if (ex && (!F.target || F.side !== ex.side)) {
         if (F.k < 0.05) { F.side = ex.side; F.target = 1; F.since = now; F.f.anim.jump = 1; }
