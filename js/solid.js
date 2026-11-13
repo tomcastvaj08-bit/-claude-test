@@ -92,7 +92,7 @@ function plastic(src) {
   const code = codeOf(src), metal = METAL.has(code) || src.metalness > 0.5;
   const m = new THREE.MeshPhysicalMaterial({
     color: src.color, transparent: src.transparent, opacity: src.opacity, depthWrite: !src.transparent, side: THREE.DoubleSide,
-    roughness: src.transparent ? 0.05 : metal ? 0.3 : 0.34, metalness: metal ? 0.85 : 0, sheen: metal ? 0 : 0.25, sheenRoughness: 0.6, sheenColor: '#ffffff',
+    roughness: src.transparent ? 0.05 : metal ? 0.3 : 0.34, metalness: metal ? 0.85 : 0, sheen: metal ? 0 : 0.06, sheenRoughness: 0.8, sheenColor: '#ffffff',
     clearcoat: metal ? 0.2 : 0.45, clearcoatRoughness: 0.18, specularIntensity: 0.7, ior: 1.46, envMapIntensity: metal ? 1.25 : 1.0
   });
   m.onBeforeCompile = (sh) => {
