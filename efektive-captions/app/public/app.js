@@ -6,6 +6,8 @@ const vid=$('vid'), cv=$('cv');
 E.attach(cv,vid);
 
 // ================= POMOCNÉ =================
+// hláška na úvodní obrazovce (systémové okno alert() se uvnitř Claude neukáže)
+function homeMsg(m){ let el=document.getElementById('homeMsg'); if (!el){ el=document.createElement('div'); el.id='homeMsg'; el.className='homemsg'; const h=document.querySelector('#home .hero'); (h||document.getElementById('home')).appendChild(el); } el.textContent=m; el.hidden=!m; }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); }
 function fmt(t){ t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+String(s).padStart(2,'0'); }
@@ -121,20 +123,28 @@ async function openProject(id){
 function loadVideo(file){
   return new Promise((res,rej)=>{
     videoFile=file; if (videoURL) URL.revokeObjectURL(videoURL); videoURL=URL.createObjectURL(file);
-    vid.src=videoURL; vid.muted=E.flags.mute;
-    vid.onloadedmetadata=()=>{ fullW=vid.videoWidth; fullH=vid.videoHeight; sizeCanvas(); };
-    vid.onloadeddata=()=>res(); vid.onerror=()=>rej(new Error('Tohle video prohlížeč neumí přehrát'));
+    let done=false; const ok=()=>{ if(done) return; done=true; clearTimeout(to); res(); }, bad=m=>{ if(done) return; done=true; clearTimeout(to); rej(new Error(m)); };
+    // iPhone video nenačte, dokud se nespustí → stačí znát rozměry (loadedmetadata), obraz se dočte potom
+    vid.onloadedmetadata=()=>{ fullW=vid.videoWidth; fullH=vid.videoHeight; sizeCanvas(); if (fullW&&fullH){ try{ vid.currentTime=0.01; }catch(e){} ok(); } };
+    vid.onloadeddata=()=>{ if (!fullW){ fullW=vid.videoWidth; fullH=vid.videoHeight; sizeCanvas(); } ok(); };
+    vid.onerror=()=>bad('Tohle video se nedá otevřít. Zkus jiné video, nebo ho ulož jako MP4 (ve Fotkách: Sdílet → Uložit video).');
+    const to=setTimeout(()=>bad('Video se nenačetlo do 40 sekund. Zkus to znovu, případně kratší video.'),40000);
+    vid.preload='auto'; vid.src=videoURL; vid.muted=E.flags.mute; vid.load();
   });
 }
 function sizeCanvas(){ const sc=Math.min(1,1280/Math.max(fullW,fullH)); cv.width=Math.round(fullW*sc/2)*2; cv.height=Math.round(fullH*sc/2)*2; }
 $('fileIn').onchange=async e=>{
-  const f=e.target.files[0]; e.target.value=''; if (!f) return;
+  const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   // nový projekt se zvolenou šablonou
   E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now()};
-  try{ await loadVideo(f); }catch(err){ alert(err.message); return; }
+  // hned dát najevo, že se něco děje
+  show('busy'); busy('Načítám video…','Chvilku strpení, video se nahrává do appky. U delšího videa to může trvat i pár desítek sekund.',0);
+  const t0=Date.now(), tick=setInterval(()=>{ const s=(Date.now()-t0)/1000; busy('Načítám video…','Chvilku strpení, video se nahrává do appky. U delšího videa to může trvat i pár desítek sekund.',Math.min(0.95,1-Math.exp(-s/6))); },200);
+  try{ await loadVideo(f); }catch(err){ clearInterval(tick); show('home'); homeMsg(err.message); return; }
+  clearInterval(tick); busy('Načítám video…','Hotovo',1);
   $('setupPrev').src=videoURL; $('setupPrev').currentTime=0.5;
   $('sPunct').checked=!!E.G.punct; setStep('sLines',E.G.maxLines||3); setStep('sChars',E.G.maxChars||0); setStep('sWpp',E.G.wpp||4); $('sMain').value=String(E.G.mainLine||'mid');
   renderLangs(); $('setupStatus').textContent=''; show('setup');

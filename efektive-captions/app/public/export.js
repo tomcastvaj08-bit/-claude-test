@@ -70,7 +70,8 @@ function frameReady(v){ return new Promise(r=>{ if (v.requestVideoFrameCallback)
 X.exportVideo = async (opts) => {
   const {w,h,fps,onP}=opts;
   const v=document.createElement('video'); v.src=opts.src; v.muted=true; v.playsInline=true; v.preload='auto';
-  await new Promise((r,j)=>{ v.onloadeddata=r; v.onerror=()=>j(new Error('Video nejde načíst')); });
+  // iPhone u nespuštěného videa nevyvolá loadeddata → stačí metadata (snímky se pak čtou přetáčením / dekodérem)
+  await new Promise((r,j)=>{ let ok=false; const done=()=>{ if(!ok){ ok=true; r(); } }; v.onloadedmetadata=done; v.onloadeddata=done; v.onerror=()=>j(new Error('Video nejde načíst')); v.load(); setTimeout(()=>{ if(!ok) j(new Error('Video se nenačetlo')); },40000); });
   const dur=v.duration, N=Math.floor(dur*fps);
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
   const prev=E._attached; E.attach(cv,v);
@@ -154,7 +155,7 @@ X.exportVideo = async (opts) => {
 X.recordRealtime = async (opts) => {
   const {w,h,onP}=opts; const fps=opts.fps||30;
   const v=document.createElement('video'); v.src=opts.src; v.playsInline=true; v.preload='auto'; v.muted=false;
-  await new Promise(r=>{ v.onloadeddata=r; });
+  await new Promise(r=>{ v.onloadedmetadata=r; v.onloadeddata=r; v.load(); });
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const prev=E._attached; E.attach(cv,v);
   const ac=new (window.AudioContext||window.webkitAudioContext)(), dest=ac.createMediaStreamDestination();
   const src=ac.createMediaElementSource(v); const g=ac.createGain(); g.gain.value=opts.mute?0:1; src.connect(g); g.connect(dest);
