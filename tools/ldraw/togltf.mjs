@@ -6,7 +6,7 @@ import { toCreasedNormals, mergeVertices } from 'three/examples/jsm/utils/Buffer
 import { readMPD, findLib, flatten, libLines, mul, lineMat, I, loadColors, colorOf } from './ldparse.mjs';
 
 const [file, outFile, keepFile] = process.argv.slice(2);
-const SKIP = /(^|\/)(stud4|stud3|stud6|stud4a|stud3a|stud10|stud4f|stud4o|stud4s|stud4h|stud2s|stud16|stud12|stud17|stud18)|peghol|axleho(?!l8)|beamhol|npeghol|confric|axl2hol|axl3hol|joint|tooth|gear|-4cylo|bush/;
+const SKIP = /(^|\/)(stud4|stud3|stud6|stud4a|stud3a|stud10|stud4f|stud4o|stud4s|stud4h|stud2s|stud16|stud12|stud17|stud18)|peghol|axleho(?!l8)|beamhol|npeghol|confric|axl2hol|axl3hol|joint|tooth|gear|bush/;
 const colors = loadColors();
 const mpd = readMPD(file);
 const getLines = (name, lr) => { const n = name.toLowerCase(); if (mpd.files.has(n)) return mpd.files.get(n); const f = findLib(n, lr); return f ? libLines(f.path) : null; };
@@ -37,7 +37,7 @@ const partGeo = new Map();
 function partGeometry(ref) {
   if (partGeo.has(ref)) return partGeo.get(ref);
   const tris = []; const missing = new Set();
-  flatten(getLines(ref, true) || [], I, 16, false, tris, { lowres: true, missing, skip: SKIP }, getLines);
+  flatten(getLines(ref, true) || [], I, 16, false, tris, { lowres: process.env.LOWRES === "1", missing, skip: SKIP }, getLines);
   const byCol = new Map();
   for (const t of tris) { if (!byCol.has(t.col)) byCol.set(t.col, []); byCol.get(t.col).push(t); }
   const prims = [];

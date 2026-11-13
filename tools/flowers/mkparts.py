@@ -19,8 +19,9 @@ def lathe(name, title, prof, a0, a1, seg, cx=0, cz=0, caps=True):
                 L.append("3 16 " + " ".join(f"{v:.3f}" for q in p for v in q))
     open(f"{OUT}/{name}.dat", "w").write("\n".join(L) + "\n")
 # 7033: kulatý roh 5x5x1 bez výstupků, zaoblený vnější okraj, vnitřní výřez (prstenec květináče / podstavce)
-prof = [(60, 24), (60, 2), (64, 0), (82, 0), (92, 3), (98, 10), (100, 18), (100, 24), (60, 24)]
-lathe("7033", "Brick Round Corner 5 x 5 x 1 Curved, No Studs", prof, 0, math.pi / 2, 16, cx=-10, cz=10)
+import math as _m
+prof = [(60, 24), (60, 0)] + [(60 + 40 * _m.sin(t * _m.pi / 24), 24 - 24 * _m.cos(t * _m.pi / 24)) for t in range(1, 13)] + [(60, 24)]
+lathe("7033", "Brick Round Corner 5 x 5 x 1 Curved, No Studs", prof, 0, math.pi / 2, 32, cx=-10, cz=10)
 # 5903: poupě tulipánu (vejčitý pupen na stopce s otvorem pro tyčku)
 prof = [(0, -26), (4, -25), (7, -21), (8.5, -15), (8.5, -8), (7, -3), (5, 0), (3, 2), (0, 2)]
 lathe("5903", "Plant Flower Tulip", prof, 0, 2 * math.pi, 16, caps=False)
