@@ -15,14 +15,32 @@ function neck(H) { // krk pod hlavou podle návodu: černá osa 2, zelená spojk
 }
 // zavřený tulipán: 3 vnější lístky (vrstvené), 3 vnitřní pootočené o 60°, uprostřed tyčinky
 // open = rozevření vršku [rad] (dole zůstává zavřeno), ajar = navíc pro jednotlivé lístky, s = velikost
-export function closedHead({ col, s = E('HS', 1.25), open = 0.05, ajar = [0, 0, 0], yaw = 0, inner = null, stamen = true }) {
-  const H = new Asm(); neck(H);
-  const ic = inner ?? col;
-  for (let k = 0; k < 3; k++) {                                         // vnitřní lístky
-    const a = yaw + Math.PI / 3 + k * 2 * Math.PI / 3;
-    H.part('lbtul', ic, [0, BASE - 2, 0], mul(ry(a), rx(open * 0.6), S(s * 0.86)));
+// vnitřek hlavy ze skutečných dílků podle návodu (kroky 1–5): kopule 3262, kroužek 1941 se 3 tyčkami, vnitřní lístky,
+// tmavé kroužky 85861, černý kužel 11610 a béžové tyčinky 68211; K = měřítko vůči hladké skořápce
+function realCore(H, { col, disc, kind, K, y0 }) {
+  const C = new Asm(), yb = -110;
+  C.part('3262', col, [0, -104, 0]);
+  C.part('1941', 191, [0, -112, 0]);
+  C.part('11610', 0, [0, -131, 0]); C.part('68211', 19, [0, -133, 0]);
+  for (const u of [[1, 0, 0], [-0.5, 0, -0.866], [-0.5, 0, 0.866]]) {
+    const ex = cross(u, Y);
+    if (kind === 'leaf') {
+      C.part('78258', col, add(scl(u, 26), [0, yb, 0]), basis(Y, u, cross(Y, u)));
+      C.part('7905', col, add(scl(u, 32), [0, yb, 0]), mul(basis(ex, u, Y), rx(-0.15)));
+      C.part('85861', disc, add(scl(u, 43), [0, yb - 2, 0]), basis(cross(u, scl(Y, -1)), u, scl(Y, -1)));
+    } else if (kind === 'shield') {
+      C.part('2586', col, add(scl(u, 18), [0, -146, 0]), basis(cross(Y, u), Y, scl(u, -1)));
+    } else {
+      C.part('90397', col, add(scl(u, 8), [0, -108, 0]), basis(cross(u, Y), u, Y));
+    }
   }
-  if (stamen) { H.part('11610', 0, [0, BASE - 20 * s, 0]); H.part('68211', 19, [0, BASE - 22 * s, 0]); H.part('68211', 19, [0, BASE - 96 * s, 0], ry(1)); H.part('11610', 0, [0, BASE - 70 * s, 0]); }
+  H.add(C, { M: S(K), p: [0, y0 + 110 * K, 0] });
+}
+// zavřený tulipán: 3 vnější lístky (štít + 2 čtvrtkruhy se spárami), uvnitř skutečné dílky podle návodu
+// open = rozevření vršku [rad] (dole zůstává zavřeno), ajar = navíc pro jednotlivé lístky, s = velikost
+export function closedHead({ col, s = E('HS', 1.25), open = 0.05, ajar = [0, 0, 0], yaw = 0, kind = 'leaf', disc = 320 }) {
+  const H = new Asm(); neck(H);
+  realCore(H, { col, disc, kind, K: E('CK', 1.2) * s / 1.25, y0: BASE - E('CY', 48) * s });
   const lay = [1, 0.972, 0.944];
   for (let k = 0; k < 3; k++) {                                         // vnější lístky
     const a = yaw + k * 2 * Math.PI / 3;
@@ -34,14 +52,18 @@ export function closedHead({ col, s = E('HS', 1.25), open = 0.05, ajar = [0, 0, 
 export function starHead({ s = E('HS', 1.25), lean1 = E('L1', 0.5), lean2 = E('L2', 1.0), col = 25 } = {}) {
   const H = new Asm(); neck(H);
   const c = BASE + 8;
-  H.part('15469', 191, [0, c - 4, 0]); H.part('18674', 191, [0, c - 8, 0]); H.part('3262', 191, [0, c + 16, 0]); // oranžový střed
-  H.part('68211', 19, [0, c - 14, 0]); H.part('24855', 15, [0, c - 16, 0]);
+  const SC = S(s * 1.35);   // střed podle návodu: oranžová kytička 15469, kulatá destička 18674, bílé tyčinky 24855
+  H.part('3262', 191, [0, c + 16, 0], SC); H.part('15469', 191, [0, c - 6, 0], SC); H.part('18674', 191, [0, c - 16, 0], SC);
+  H.part('68211', 19, [0, c - 24, 0], SC); H.part('24855', 15, [0, c - 28, 0], SC);
   const petal = (a, lean, r0, y0) => {
     const w = [Math.cos(a), 0, Math.sin(a)];
     const up = norm(add(scl(w, Math.sin(lean)), [0, -Math.cos(lean), 0]));
     const zz = norm(add(scl(w, Math.cos(lean)), [0, Math.sin(lean), 0]));
     const M = mul(basis(cross(scl(up, -1), zz), scl(up, -1), zz), S(s));
-    H.part('lbtulo', col, add(scl(w, r0 * s), [0, y0, 0]), M);
+    const zA = scl(up, -1), yA = scl(zz, E('OY', 1)), xA = cross(yA, zA);           // skutečný lístek 7096: špička (−z) nahoru
+    const M7 = mul(basis(xA, yA, zA), S(s * E('OS', 0.95)));
+    H.part('7096', col, sub(add(scl(w, r0 * s), [0, y0, 0]), apply(M7, [0, 0, 22])), M7);
+    H.part('15712', 191, add(scl(w, (r0 - 4) * s), [0, y0 + 6, 0]), mul(basis(xA, yA, zA), rx(Math.PI / 2), S(s)));
   };
   for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3, lean1, 12, c + 14);
   for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3 + Math.PI / 3, lean2, 16, c + 18);
@@ -51,10 +73,10 @@ const O = E('OPEN', 0.25);   // rozevření vršku – jako na obalu: dole zavř
 const HEADS = {
   red: () => closedHead({ col: 4, open: O }),
   redAjar: () => closedHead({ col: 4, open: O + 0.04, ajar: [0.45, 0, 0], yaw: 0.6 }),
-  yellow: () => closedHead({ col: 14, open: O + 0.02, ajar: [0, 0.25, 0] }),
-  yellowOpen: () => closedHead({ col: 14, open: 0.5, ajar: [0.15, 0, 0.15], yaw: 0.5 }),
-  purple: () => closedHead({ col: 85, open: O }),
-  pink: () => closedHead({ col: 29, s: E('HS', 1.25) * 1.08, open: O - 0.04, yaw: 0.3 }),
+  yellow: () => closedHead({ col: 14, disc: 28, open: O + 0.02, ajar: [0, 0.25, 0] }),
+  yellowOpen: () => closedHead({ col: 14, disc: 28, open: 0.5, ajar: [0.15, 0, 0.15], yaw: 0.5 }),
+  purple: () => closedHead({ col: 85, open: O, kind: 'shield' }),
+  pink: () => closedHead({ col: 29, s: E('HS', 1.25) * 1.08, open: O - 0.04, yaw: 0.3, kind: 'board' }),
   orange: () => starHead(),
 };
 export { HEADS };

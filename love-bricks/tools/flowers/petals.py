@@ -70,7 +70,7 @@ def part(u0, u1, v0, v1, nu, nv):
     P = lambda u, v: tul(u0 + (u1 - u0) * u, v0 + (v1 - v0) * v)
     N = lambda u, v, p: tul_n(u0 + (u1 - u0) * u, v0 + (v1 - v0) * v, p)
     return shell(P, nu, nv, N)
-G = 0.012; VS = 0.30
+G = 0.02; VS = 0.30
 write("lbtul", "Tulip Petal Shell (Love Bricks)", part(0, 1, VS + G, 1, 26, 22) + part(0, 0.5 - G, 0, VS - G, 13, 9) + part(0.5 + G, 1, 0, VS - G, 13, 9))
 
 # ---------- dlouhý špičatý lístek (oranžový tulipán) ----------

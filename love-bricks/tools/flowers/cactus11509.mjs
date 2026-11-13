@@ -22,11 +22,11 @@ for (let q = 0; q < 4; q++) {
   pot.part('3004', LBL, add(s(-72), apply(R, [0, 0, -20])), mul(R, ry(Math.PI / 2))); pot.part('3004', LBL, add(s(-72), apply(R, [0, 0, 20])), mul(R, ry(Math.PI / 2)));
   pot.part('3710', LBL, add(s(-80), [0, 0, 0]), mul(R, ry(Math.PI / 2)));
   // kroky 48–51: horní hladký lem – zkosené rohy a zkosené strany bez výstupků, otočené zkosením nahoru
-  pot.part('5649', LBL, c(-80), mul(R, ry(Math.PI / 2), rx(Math.PI)));
-  pot.part('5540', LBL, add(s(-80), apply(R, [-20, 0, 0])), mul(R, ry(E('SR2', Math.PI / 2)), rx(Math.PI)));
+  pot.part('5649', LBL, c(-104), mul(R, ry(E('RR', 0))));
+  pot.part('5540', LBL, add(s(-104), apply(R, [-20, 0, 0])), mul(R, ry(E('SR2', -Math.PI / 2))));
 }
 // hlína: tmavě hnědé desky, kulaté dlaždice a kamínky
-const SOIL = -72;
+const SOIL = -88;
 pot.part('3034', RB, [0, SOIL, -20]); pot.part('3034', RB, [0, SOIL, 20]); pot.part('3034', RB, [0, SOIL, 60]); pot.part('3034', RB, [0, SOIL, -60]);
 for (const [x, z] of [[-60, -20], [60, 60], [-70, 70], [70, -60], [10, -70]]) pot.part('14769', RB, [x, SOIL - 8, z]);
 for (let k = 0; k < 14; k++) { const a = k * 2.3, r = 40 + (k * 13) % 50; pot.part('85861', DT, [Math.cos(a) * r, SOIL - 8, Math.sin(a) * r]); }
@@ -38,7 +38,8 @@ const TOPS = SOIL - 8;
 // na koncích oblé díly 2x1 svažující se ke koncům (zaoblený vršek a spodek), trny = béžové kulaté destičky + trojzubce
 function rib(len, base, spines) {
   const R = new Asm(), h = len * 10, col = len === 10 ? SG : DG;
-  R.part(len === 10 ? '4477' : '3666', col, [0, 0, 0]);
+  if (len === 10) { R.part('3710', col, [-60, 0, 0]); R.part('3023', col, [0, 0, 0]); R.part('3710', col, [60, 0, 0]); }
+  else { R.part('3023', col, [-40, 0, 0]); R.part('3023', col, [0, 0, 0]); R.part('3023', col, [40, 0, 0]); }
   R.part('11477', SG, [h - 20, 0, 0], ry(-Math.PI / 2)); R.part('11477', SG, [-h + 20, 0, 0], ry(Math.PI / 2));
   const inner = [];
   for (let x = -h + 40; x <= h - 40; x += 20) inner.push(x);
@@ -49,24 +50,32 @@ function rib(len, base, spines) {
   spines.forEach((t) => { const x = Math.round((-h + 50 + t * (2 * h - 100)) / 20) * 20 + 10; R.part('85861', DT, [x, -12, 0]); R.part('68211', TN, [x, -16, 0], ry(t * 3)); });
   return R;
 }
-function column(cx, cz, ribs, len, r, spineSets, yaw = 0) {
+// prohnutí žebra do oblouku: střed vystoupí o B ven, konce zůstávají – baňatý tvar jako u malého kaktusu
+function bend(R, h, B) {
+  const X = new Asm();
+  for (const it of R.items) {
+    const x = it.p[0], t = x / h, off = -B * (1 - t * t), sl = -2 * B * x / (h * h);
+    const a = -Math.atan(sl), c = Math.cos(a), si = Math.sin(a), Rz = [c, -si, 0, si, c, 0, 0, 0, 1];
+    X.items.push({ id: it.id, col: it.col, p: [x, it.p[1] + off, it.p[2]], M: mul(Rz, it.M) });
+  }
+  return X;
+}
+function column(cx, cz, ribs, len, r, spineSets, yaw = 0, B = 0) {
   for (let k = 0; k < ribs; k++) {
     const a = yaw + k * 2 * Math.PI / ribs, n = [Math.sin(a), 0, -Math.cos(a)];
     const ex = [0, 1, 0], ey = scl(n, -1), ez = cross(ex, ey);
-    A.add(rib(len, 0, spineSets[k % spineSets.length]), { M: basis(ex, ey, ez), p: add([cx, TOPS - len * 10, cz], scl(n, r)) });
+    A.add(bend(rib(len, 0, spineSets[k % spineSets.length]), len * 10, B), { M: basis(ex, ey, ez), p: add([cx, TOPS - len * 10, cz], scl(n, r)) });
   }
 }
 // velký kaktus (8 žeber 1x10, krok 54–69) vzadu vpravo, malý (8 žeber 1x6, krok 78–89) vpředu vlevo – baňaté, žebra s mezerami
-const BX = E('BX', 30), BZ = E('BZ', 24), SX = E('SXC', -60), SZ = E('SZ', -56);
-const RB_ = E('RBIG', 50), RS_ = E('RSM', 28);
-column(BX, BZ, 12, 10, RB_, [[0.1, 0.5, 0.9], [0.3, 0.7]], Math.PI / 12);
-for (const y of [TOPS - 40, TOPS - 100, TOPS - 160]) A.part('68888', RB, [BX, y, BZ]);
-for (let y = TOPS - 24; y >= TOPS - 196; y -= 24) { A.part('87081', DG, [BX, y, BZ]); for (let q = 0; q < 8; q++) A.part('3941', DG, [BX + Math.cos(q * Math.PI / 4) * 34, y, BZ + Math.sin(q * Math.PI / 4) * 34]); }                  // tmavě zelené jádro – vyplní mezery mezi žebry          // jádro: náboje se 4 tyčkami
+const BX = E('BX', 26), BZ = E('BZ', 20), SX = E('SXC', -54), SZ = E('SZ', -48);
+const RB_ = E('RBIG', 36), RS_ = E('RSM', 26);
+column(BX, BZ, 8, 10, RB_, [[0.1, 0.5, 0.9], [0.3, 0.7]], Math.PI / 8, E('BB', 16));
+for (let y = TOPS - 24; y >= TOPS - 196; y -= 24) A.part('3941', DG, [BX, y, BZ]);          // tmavě zelené jádro
 const TOPB = TOPS - 208;
 A.part('67811', DG, [BX, TOPB, BZ]);                                                              // tmavě zelený volant na vršku (krok 65)
-column(SX, SZ, 8, 6, RS_, [[0.2, 0.8], [0.5]], 0);
-for (const y of [TOPS - 40, TOPS - 90]) A.part('68888', RB, [SX, y, SZ]);
-for (let y = TOPS - 24; y >= TOPS - 120; y -= 24) { A.part('3941', DG, [SX, y, SZ]); for (let q = 0; q < 8; q++) A.part('3062b', DG, add([SX, y, SZ], [Math.cos(q * Math.PI / 4 + 0.39) * 17, 0, Math.sin(q * Math.PI / 4 + 0.39) * 17])); }
+column(SX, SZ, 8, 6, RS_, [[0.2, 0.8], [0.5]], 0, E('BS', 6));
+for (let y = TOPS - 24; y >= TOPS - 120; y -= 24) A.part('3941', DG, [SX, y, SZ]);
 const TOPSM = TOPS - 128;
 for (let q = 0; q < 4; q++) A.part('27925', SG, [SX, TOPSM, SZ], ry(q * Math.PI / 2));          // zaoblený vršek malého kaktusu
 
@@ -127,5 +136,5 @@ for (const [az, r, tilt, sm] of [[200, 12, 0.5, false], [250, 14, 0.7, false], [
 for (const az of [20, 330, 120]) A.part('24866', MA, add(T0, [Math.cos(az * D2) * 16, -2, Math.sin(az * D2) * 16]));
 
 if (process.env.SUB === 'bloom') { A.items = []; bloom([0, 0, 0]); const b = new Build('sub'); A.emit(b); b.save('sub.ldr'); process.exit(0); }
-if (process.env.SUB === 'rib') { const b = new Build('sub'), X = new Asm(); X.add(rib(10, 0, [0.1, 0.5, 0.9]), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); X.emit(b); b.save('sub.ldr'); process.exit(0); }
+if (process.env.SUB === 'rib') { const b = new Build('sub'), X = new Asm(); X.add(bend(rib(10, 0, [0.1, 0.5, 0.9]), 100, E('BB', 16)), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); X.emit(b); b.save('sub.ldr'); process.exit(0); }
 const b = new Build('cactus11509'); A.emit(b); b.save('cactus11509.ldr'); console.log('cactus11509 parts', b.n);
