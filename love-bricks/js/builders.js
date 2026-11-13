@@ -22,9 +22,9 @@ export const LD_CARS = {
   tulips: { file: 'tulips', flower: true },
   tinyplants: { file: 'tinyplants', flower: true, key: 'pot', looks: { '#F2F3F2': { 484: '#F2F3F2' }, '#3E4347': { 484: '#3E4347' } } },
   cactus: { file: 'cactus', flower: true, key: 'pot', looks: { '#FC97AC': { 212: '#FC97AC' }, '#F2F3F2': { 212: '#F2F3F2' } } },
-  chrysanthemum: { file: 'chrysanthemum', flower: true, key: 'flower', looks: { '#F5C518': { 25: '#F5C518', 484: '#E0A800' }, '#E4569A': { 25: '#E4569A', 484: '#C2307A' } } },
+  chrysanthemum: { file: 'chrysanthemum', flower: true, key: 'flower', looks: { '#F5C518': { 25: '#F5C518', 484: '#E0A800', 191: '#FFE066' }, '#E4569A': { 25: '#E4569A', 484: '#C2307A', 191: '#F59BC0' } } },
   peacelily: { file: 'peacelily', flower: true, key: 'pot', looks: { '#F2F3F2': { 78: '#F2F3F2' }, '#A3501E': { 78: '#A3501E' } } },
-  plum: { file: 'plum', flower: true, key: 'flower', looks: { '#FC97AC': { 4: '#FC97AC', 320: '#E87FA0' }, '#F2F3F2': { 4: '#F2F3F2', 320: '#E4E4E4' } } }
+  plum: { file: 'plum', flower: true, key: 'flower', looks: { '#FC97AC': { 4: '#FC97AC' }, '#F2F3F2': { 4: '#F2F3F2' } } }
 };
 const solidData = new Map();
 // na mobilu se načítá odlehčená verze (méně ploch), na počítači plná

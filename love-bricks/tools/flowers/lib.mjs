@@ -83,3 +83,26 @@ export function tulip(b, col, base, up, twist = 0, lean = 6) {
   b.part('30367a', col, add(base, apply(U, [0, 30, 0])), mul(U, rx(Math.PI)));
   for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2; b.part('11477', col, add(base, apply(U, [Math.sin(a) * 12, 0, Math.cos(a) * 12])), mul(U, ry(a), rx((-90 - lean) * Math.PI / 180))); }
 }
+// matice ze sloupců (obrazy místních os x, y, z)
+export const basis = (ex, ey, ez) => [ex[0], ey[0], ez[0], ex[1], ey[1], ez[1], ex[2], ey[2], ez[2]];
+// hladký klenutý list ze tří oblých dílů 6x1 (střední delší); a = směr ven (úhel kolem Y), tilt = zvednutí
+export function leaf6(b, col, base, a, tilt = 0, roll = 0) {
+  const M = mul(ry(a + Math.PI), rx(-tilt), rz(roll));
+  for (const [dx, dz] of [[-20, 0], [0, -20], [20, 0]]) b.part('42022', col, add(base, apply(M, [dx, 0, dz])), M);
+}
+// silný stonek z kulatých kostek 1x1 podél křivky (body zdola nahoru)
+export function stalk(b, col, pts0, id = '3062b') {
+  const pts = resample(pts0, 24);
+  for (let i = 0; i + 1 < pts.length; i++) b.part(id, col, pts[i + 1], alignY(sub(pts[i], pts[i + 1])));
+  return pts;
+}
+// kuželový květináč z lamel (dlaždice 1x6 svisle): r poloměr nahoře, n lamel, taper = zúžení dolů
+export function slatPot(b, col, r, n, { y0 = 0, taper = 0.12, id = '6636', half = 60 } = {}) {
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2, out = [Math.sin(a), 0, Math.cos(a)];
+    const ex = norm([-out[0] * taper, 1, -out[2] * taper]); // dlouhá osa dílu míří dolů a dovnitř
+    const ey0 = scl(out, -1); const ez = norm(cross(ex, ey0)); const ey = cross(ez, ex);
+    const c = add([out[0] * (r - taper * half), y0 + half, out[2] * (r - taper * half)], [0, 0, 0]);
+    b.part(id, col, c, basis(ex, ey, ez));
+  }
+}
