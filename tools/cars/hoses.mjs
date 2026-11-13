@@ -27,16 +27,33 @@ function hose(xz, col, { lift = 5, th = 0.7, step = 10 } = {}) {
     lines.push(`1 ${col} ${a.map(f).join(' ')} ${[x[0], yy[0], z[0], x[1], yy[1], z[1], x[2], yy[2], z[2]].map(f).join(' ')} 87994.dat`);
   }
 }
+
+const SXm = new Map(Object.entries(S.SX || {}));
+const sideX = (z, y) => { let best = 0; for (let dz = -2; dz <= 2; dz++) for (let dy = -2; dy <= 2; dy++) { const v = SXm.get(Math.round(z / C + dz) + ',' + Math.round(y / C + dy)); if (v !== undefined && v < 260 && v > best) best = v; } return best; };
+function catmull(P, n = 8) { const out = []; for (let i = 0; i + 1 < P.length; i++) { const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)]; for (let k = 0; k < n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1, 2].map((j) => 0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } } out.push(P[P.length - 1]); return out; }
+// body: [x, z, lift] nad povrchem nebo ['abs', x, y, z]
+function tube(ctrl, col, th = 1.4) {
+  const P = ctrl.map((c) => c[0] === 'abs' ? c.slice(1) : [c[0], (top(c[0], c[1]) ?? -100) - c[2], c[1]]);
+  const pts = catmull(P, 10);
+  for (let i = 0; i + 1 < pts.length; i++) seg(pts[i], pts[i + 1], col, th);
+}
+function seg(a, b2, col, th) {
+  const d = sub(b2, a), L = len(d); if (L < 0.5) return;
+  const y = norm(d), ref = Math.abs(y[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+  const x = scl(norm(cross(ref, y)), th), z = scl(norm(cross(x, y)), th), yy = scl(y, L / 60), f = (v) => +v.toFixed(4);
+  lines.push(`1 ${col} ${a.map(f).join(' ')} ${[x[0], yy[0], z[0], x[1], yy[1], z[1], x[2], yy[2], z[2]].map(f).join(' ')} 87994.dat`);
+}
+function part(id, col, pos, M = [1, 0, 0, 0, 1, 0, 0, 0, 1]) { const f = (v) => +v.toFixed(4); lines.push(`1 ${col} ${pos.map(f).join(' ')} ${M.map(f).join(' ')} ${id}.dat`); }
 const SPECS = {
   // Lambo: stříbrné hadičky po kapotě (V k předku), růžový oblouk nad dveřmi, stříbrná podél prahu
   sian() {
     for (const s of [-1, 1]) {
-      hose([[s * 60, -1110], [s * 130, -1000], [s * 175, -880], [s * 160, -760]], 7, { lift: 8, th: 0.85 });
-      hose([[s * 20, -1100], [s * 70, -980], [s * 95, -860], [s * 90, -760]], 7, { lift: 8, th: 0.85 });
-      const arch = []; for (let z = -800; z <= -120; z += 20) arch.push([s * (edgeX(z, s, -150) - 10), z]);
-      hose(arch, 7, { lift: 8, th: 0.85 });
-      const sill = []; for (let z = -760; z <= -180; z += 20) sill.push([s * (edgeX(z, s, -60) - 4), z]);
-      hose(sill, 7, { lift: 4 });
+      tube([[s * 60, -1110, 8], [s * 130, -1000, 16], [s * 172, -880, 18], [s * 160, -760, 12]], 7, 1.1);
+      tube([[s * 20, -1100, 8], [s * 70, -980, 16], [s * 95, -860, 18], [s * 90, -760, 12]], 7, 1.1);
+      const arch = []; for (let z = -800; z <= -120; z += 85) arch.push([s * (edgeX(z, s, -150) - 10), z, 12]);
+      tube(arch, 7, 1.1);
+      const sill = []; for (let z = -760; z <= -180; z += 116) sill.push([s * (edgeX(z, s, -60) - 4), z, 6]);
+      tube(sill, 7, 1.0);
       // zrcátko: krátká tyčka ven a černá destička
       const zm = -650, xm = edgeX(zm, s, -150), ym = top(s * xm, zm);
       if (ym !== undefined) {
@@ -54,12 +71,24 @@ const SPECS = {
   },
   // Chiron: bílé hadice přes kapotu a „C“ oblouk na boku, přes motor dva oblouky
   chiron() {
+    const hz = -560; // střed kapoty
+    // šedý kulatý díl uprostřed kapoty a šedé spojky u předního skla
+    part('3960', 71, [0, (top(0, hz) ?? -150) - 10, hz]);
     for (const s of [-1, 1]) {
-      hose([[s * 40, -760], [s * 110, -640], [s * 150, -520], [s * 140, -420]], 15, { lift: 9, th: 1.1 });
-      const arch = []; for (let z = -460; z <= 160; z += 20) arch.push([s * (edgeX(z, s, -170) - 8), z]);
-      hose(arch, 15, { lift: 10, th: 1.2 });
-      hose([[s * 30, 120], [s * 90, 220], [s * 120, 340], [s * 100, 460]], 15, { lift: 9, th: 1.1 });
-      hose([[s * 70, -300], [s * 110, -120], [s * 100, 60], [s * 60, 200]], 15, { lift: 10, th: 1.1 });
+      const cz = -410, cx = s * 62, cy = (top(cx, cz) ?? -170) - 24;
+      part('42003', 71, [cx, cy, cz], [1, 0, 0, 0, 0, -1, 0, 1, 0]);
+      // hadice z předního rohu obloukem nahoru do spojky
+      tube([[s * 130, -740, 6], [s * 125, -660, 30], [s * 95, -520, 40], ['abs', cx, cy - 6, cz - 14]], 15);
+      // smyčka kolem kulatého dílu: ze spojky dopředu kolem a zpět ke středu
+      tube([['abs', cx, cy, cz - 14], [s * 70, hz + 10, 22], [s * 50, hz - 70, 16], [0, hz - 85, 14]], 15);
+      // velký bílý oblouk „C“ na boku za dveřmi (ve svislé rovině boku)
+      const zc = -60, yc = -175, R = 115, arc = [];
+      for (let a = -105; a <= 100; a += 12) { const t = a * Math.PI / 180, z = zc + R * Math.cos(t), y = yc + R * Math.sin(t); arc.push(['abs', s * 312, y, z]); }
+      tube(arc, 15, 1.5);
+      // růžová vzpěra od střechy dopředu na blatník
+      const ra = [s * 140, (top(s * 140, -300) ?? -300) - 16, -300], rb = [s * 165, (top(s * 165, -620) ?? -180) - 22, -620];
+      tube([['abs', ...ra], ['abs', ...rb]], 272, 1.6);
+      part('6536', 272, rb);
     }
   }
 };
