@@ -19,6 +19,11 @@ export function outerPetal(col, v = -1) {
 const Y = [0, 1, 0];
 const rot = (a) => ry(a);
 const dirs3 = (a0) => [0, 1, 2].map((k) => { const a = a0 + k * 2 * Math.PI / 3; return [Math.cos(a), 0, -Math.sin(a)]; });
+// vnější lístek: špička nahoru, vypouklá strana ven, zaoblené čtvrtkruhy tvoří kulaté dno hlavy (jako na fotce sady)
+function petalM(b, open) {
+  const ey = scl(b, -1), up = E('PUP', 1) > 0 ? Y : scl(Y, -1);
+  return mul(basis(cross(ey, up), ey, up), rx(E('PT', -0.15) - open));
+}
 // ===== hlava typu „červený tulipán“ (kroky 1–6). Počátek = horní konec zahnuté trubičky 7324, osa hlavy = -Y =====
 // col = barva lístků, inner = barva vnitřních lístků, disc = barva kroužků 85861
 export function tulipHead({ col, disc = 320, open = 0 }) {
@@ -41,10 +46,8 @@ export function tulipHead({ col, disc = 320, open = 0 }) {
   }
   // vnější lístky (krok 6): klip 5264 na tyčce kroužku 1941 (tečná tyčka v r = 14,4)
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
-    const ey = scl(b, -1), NY = scl(Y, -1), M = basis(cross(ey, NY), ey, NY), bar = add(scl(b, 14.4), [0, yb, 0]);
-    const tilt = rx(-open);                                  // rozevření lístku kolem klipu
-    const Mt = mul(M, tilt), clip = [0, 26, -30];
-    H.add(outerPetal(col), { M: Mt, p: sub(bar, apply(Mt, clip)) });
+    const Mt = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
+    H.add(outerPetal(col), { M: Mt, p: sub(bar, apply(Mt, [0, 26, -30])) });
   }
   return H;
 }
@@ -75,7 +78,7 @@ export function purpleHead({ open = 0 } = {}) {
     H.part('2586', col, add(scl(uu, 22), [0, -150, 0]), basis(cross(Y, uu), Y, scl(uu, -1)));
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
-    const ey = scl(b, -1), NY = scl(Y, -1), M = mul(basis(cross(ey, NY), ey, NY), rx(-open)), bar = add(scl(b, 14.4), [0, yb, 0]);
+    const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
     H.add(outerPetal(col, 0), { M, p: sub(bar, apply(M, [0, 26, -30])) });
   }
   return H;
@@ -93,7 +96,7 @@ export function pinkHead({ open = 0 } = {}) {
     H.part('90397', col, add(scl(u, E('SR', 10)), [0, E('SY', -122), 0]), mul(Mi, ry(Math.PI))); // špička prkna dolů do středu
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
-    const ey = scl(b, -1), NY = scl(Y, -1), M = mul(basis(cross(ey, NY), ey, NY), rx(-open)), bar = add(scl(b, 14.4), [0, yb, 0]);
+    const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
     H.add(outerPetal(col), { M, p: sub(bar, apply(M, [0, 26, -30])) });
   }
   return H;
@@ -218,7 +221,7 @@ export function bouquet() {
     B.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 20)), [0, 0, -45]), apply(Ml, [0, 0, 140])) }); // za stonkem
   }
   // krátké listy u okraje (fotka sady): klip na stonku nad okrajem, oblouk se přehne ven přes okraj, list visí dolů vně
-  const RIM = +(process.env.RIM || -215);
+  const RIM = +(process.env.RIM || -300);
   for (const az of [22, 68, 112, 158]) { // přední strana (k divákovi = -z), rozložené zleva doprava jako na fotce
     const a = az * Math.PI / 180, out = [Math.cos(a), 0, -Math.sin(a)];
     const yc = RIM - 95;
