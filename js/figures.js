@@ -55,8 +55,8 @@ export async function loadFigureKit(url = new URL('../models/figure.json', impor
   })();
   asm.legsShort = asm.hips;
   KIT = { geos, asm, textures: {
-    boy: { torso: torsoTex(), face: faceTex(false), faceHappy: faceTex(true) },
-    girl: { torso: girlTorsoTex(), face: girlFaceTex(false), faceHappy: girlFaceTex(true) }
+    boy: { torso: torsoTex(), face: faceTex(false), faceHappy: faceTex(true), stars: faceTex(true, 'stars'), hearts: faceTex(true, 'hearts'), wink: faceTex(true, 'wink') },
+    girl: { torso: girlTorsoTex(), face: girlFaceTex(false), faceHappy: girlFaceTex(true), hearts: girlFaceTex(true, 'hearts'), stars: girlFaceTex(true, 'stars'), wink: girlFaceTex(true, 'wink') }
   } };
   return KIT;
 }
@@ -80,7 +80,18 @@ function torsoTex() {
 }
 
 // ---------- potisk obličeje ----------
-function faceTex(happy) {
+// oči jako srdíčka / hvězdičky
+function heartEye(g, x, y, s) {
+  g.fillStyle = '#E8173A'; g.beginPath(); g.moveTo(x, y + s * 0.9);
+  g.bezierCurveTo(x - s * 1.5, y - s * 0.1, x - s * 0.9, y - s * 1.2, x, y - s * 0.45);
+  g.bezierCurveTo(x + s * 0.9, y - s * 1.2, x + s * 1.5, y - s * 0.1, x, y + s * 0.9); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.arc(x - s * 0.5, y - s * 0.35, s * 0.2, 0, 7); g.fill();
+}
+function starEye(g, x, y, r) {
+  g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  g.closePath(); g.fillStyle = '#FFC21A'; g.fill(); g.strokeStyle = '#141414'; g.lineWidth = 5; g.stroke();
+}
+function faceTex(happy, eyes = '') {
   return canvasTex(512, 384, (g) => {
     const ink = '#141414';
     g.translate(0, 34);
@@ -88,13 +99,17 @@ function faceTex(happy) {
     g.strokeStyle = '#8A3A16'; g.lineWidth = 18;
     g.beginPath(); g.moveTo(158, 112); g.quadraticCurveTo(194, 94, 232, 106); g.stroke();
     g.beginPath(); g.moveTo(282, 98); g.quadraticCurveTo(318, 80, 354, 96); g.stroke();
-    // oči s odleskem
+    // oči s odleskem (nebo srdíčka, hvězdičky, mrknutí)
     for (const x of [196, 316]) {
+      if (eyes === 'hearts') { heartEye(g, x, 160, 34); continue; }
+      if (eyes === 'stars') { starEye(g, x, 160, 40); continue; }
+      if (eyes === 'wink' && x === 316) { g.strokeStyle = ink; g.lineWidth = 12; g.beginPath(); g.moveTo(x - 26, 162); g.quadraticCurveTo(x, 142, x + 26, 162); g.stroke(); continue; }
       g.fillStyle = ink; g.beginPath(); g.ellipse(x, 160, 25, 32, 0, 0, 7); g.fill();
       g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 8, 147, 8.5, 0, 7); g.fill();
     }
-    // úšklebek do strany
     g.strokeStyle = ink; g.lineWidth = 13;
+    if (eyes === 'stars') { g.fillStyle = ink; g.beginPath(); g.ellipse(262, 252, 26, 30, 0, 0, 7); g.fill(); g.fillStyle = '#C0392B'; g.beginPath(); g.ellipse(262, 266, 15, 12, 0, 0, 7); g.fill(); return; } // „wow“
+    // úšklebek do strany
     g.beginPath(); g.moveTo(196, 238); g.quadraticCurveTo(268, happy ? 300 : 282, 336, 222); g.stroke();
 
   });
@@ -119,7 +134,7 @@ function girlTorsoTex() {
     }
   });
 }
-function girlFaceTex(happy) {
+function girlFaceTex(happy, eyes = '') {
   return canvasTex(512, 384, (g) => {
     const ink = '#141414';
     g.translate(0, 34);
@@ -129,6 +144,9 @@ function girlFaceTex(happy) {
     g.beginPath(); g.moveTo(286, 104); g.quadraticCurveTo(314, 96, 342, 108); g.stroke();
     // oči s řasami a odleskem
     for (const [x, s] of [[200, -1], [312, 1]]) {
+      if (eyes === 'hearts') { heartEye(g, x, 160, 30); continue; }
+      if (eyes === 'stars') { starEye(g, x, 160, 34); continue; }
+      if (eyes === 'wink' && s > 0) { g.strokeStyle = ink; g.lineWidth = 9; g.beginPath(); g.moveTo(x - 22, 162); g.quadraticCurveTo(x, 144, x + 22, 162); g.stroke(); continue; }
       g.fillStyle = ink; g.beginPath(); g.ellipse(x, 160, 21, 26, 0, 0, 7); g.fill();
       g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 7, 150, 7, 0, 7); g.fill();
       g.strokeStyle = ink; g.lineWidth = 6;
@@ -204,6 +222,11 @@ export class Figure {
     if (k === 'love') { this.faceMat.map = v ? this.faces.faceHappy : this.faces.face; this.faceMat.needsUpdate = true; if (v) this.anim.jump = 1; }
   }
   wave() { this.state.wave = 1.8; this.anim.jump = 1; }
+  // výraz: '', 'hearts', 'stars', 'wink', 'faceHappy'
+  setFace(name) {
+    const map = (name && this.faces[name]) || this.faces.face;
+    if (this.faceMat.map !== map) { this.faceMat.map = map; this.faceMat.needsUpdate = true; }
+  }
 
   update(dt, t) {
     const A = this.anim, S = this.state;
