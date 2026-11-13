@@ -47,13 +47,14 @@ export function starHead({ s = E('HS', 1.25), lean1 = E('L1', 0.5), lean2 = E('L
   for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3 + Math.PI / 3, lean2, 16, c + 18);
   return H;
 }
+const O = E('OPEN', 0.25);   // rozevření vršku – jako na obalu: dole zavřené, nahoře vidět dovnitř na tyčinky
 const HEADS = {
-  red: () => closedHead({ col: 4, open: 0.05 }),
-  redAjar: () => closedHead({ col: 4, open: 0.08, ajar: [0.55, 0, 0], yaw: 0.6 }),
-  yellow: () => closedHead({ col: 14, open: 0.06, ajar: [0, 0.3, 0] }),
-  yellowOpen: () => closedHead({ col: 14, open: 0.42, ajar: [0.15, 0, 0.15], yaw: 0.5 }),
-  purple: () => closedHead({ col: 85, open: 0.06 }),
-  pink: () => closedHead({ col: 29, s: E('HS', 1.25) * 1.08, open: 0.03, yaw: 0.3 }),
+  red: () => closedHead({ col: 4, open: O }),
+  redAjar: () => closedHead({ col: 4, open: O + 0.04, ajar: [0.45, 0, 0], yaw: 0.6 }),
+  yellow: () => closedHead({ col: 14, open: O + 0.02, ajar: [0, 0.25, 0] }),
+  yellowOpen: () => closedHead({ col: 14, open: 0.5, ajar: [0.15, 0, 0.15], yaw: 0.5 }),
+  purple: () => closedHead({ col: 85, open: O }),
+  pink: () => closedHead({ col: 29, s: E('HS', 1.25) * 1.08, open: O - 0.04, yaw: 0.3 }),
   orange: () => starHead(),
 };
 export { HEADS };

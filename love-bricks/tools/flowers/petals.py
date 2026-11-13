@@ -65,7 +65,13 @@ def tul_n(u, v, p):
     dt = 0.01; dr = (rad(min(1, t + dt)) - rad(max(0, t - dt))) / (2 * dt) / H
     n = (math.sin(phi), dr, -math.cos(phi)); l = math.sqrt(sum(c * c for c in n))
     return tuple(c / l for c in n)
-write("lbtul", "Tulip Petal Shell (Love Bricks)", shell(tul, 26, 30, tul_n))
+# jako skutečný díl: horní zakřivený štít + dole dva čtvrtkruhy – mezi nimi viditelné spáry (svislá a vodorovná)
+def part(u0, u1, v0, v1, nu, nv):
+    P = lambda u, v: tul(u0 + (u1 - u0) * u, v0 + (v1 - v0) * v)
+    N = lambda u, v, p: tul_n(u0 + (u1 - u0) * u, v0 + (v1 - v0) * v, p)
+    return shell(P, nu, nv, N)
+G = 0.012; VS = 0.30
+write("lbtul", "Tulip Petal Shell (Love Bricks)", part(0, 1, VS + G, 1, 26, 22) + part(0, 0.5 - G, 0, VS - G, 13, 9) + part(0.5 + G, 1, 0, VS - G, 13, 9))
 
 # ---------- dlouhý špičatý lístek (oranžový tulipán) ----------
 LO, WO = 112.0, 40.0
