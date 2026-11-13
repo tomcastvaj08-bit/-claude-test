@@ -18,12 +18,11 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
 
-// pořadí v chodbě: květina, auto, květina, auto…
-const ORDER = ['orchid', 'sian', 'tulips', 'gulf', 'bonsai', 'sianblack', 'bouquet', 'turbo', 'miniorchid', 'chiron', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'tinyplants'];
-// velikost v metrech: květiny ~ výška člověka, auta v životní velikosti (délka)
-// obří exponáty: květiny 3–4 m, auta zhruba 1,4× skutečné velikosti
+// pořadí v chodbě: dvojice květin naproti sobě
+const ORDER = ['orchid', 'tulips', 'bonsai', 'bouquet', 'miniorchid', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'tinyplants'];
+// velikost v metrech (výška obřích květin)
 const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, tinyplants: 2.3, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
-  sian: 6.8, sianblack: 6.8, gulf: 6.4, turbo: 5.6, chiron: 6.6 };
+  };
 const N = ORDER.length;
 const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10, REVEAL = 13.5;
 const BG = '#F6F4F1', FOG = '#F7E0CF';
@@ -192,7 +191,7 @@ function place(ex, k) {
 }
 
 // panáčci vykukují z okraje obrazovky (jsou přichycení ke kameře): nohy stojí dole, tělo se nakloní do obrazu,
-// vnější rukou se drží jako z okna vlaku. Holka (srdíčka v očích) vykoukne u květiny, kluk (hvězdičky, „wow“) u auta.
+// vnější rukou se drží jako z okna vlaku. U každé dvojice květin vykoukne holka (srdíčka) a kluk (hvězdičky, mrknutí).
 scene.add(camera);
 const figLayer = new THREE.Group(); camera.add(figLayer);
 const figs = [false, true].map((girl) => {
@@ -555,7 +554,7 @@ function frame(now) {
     ex.spin.rotation.y += ((ex.user + swing) - ex.spin.rotation.y) * (1 - Math.exp(-rawDt * 6));
   }
   if (!introDone && now - introStart > 2800) { introDone = true; document.body.classList.add('is-ready'); }
-  // panáčci: u zastávky (dvojice je složená) vykoukne holka u květiny a kluk u auta
+  // panáčci: u zastávky (dvojice je složená) vykouknou ke květinám
   {
     let pair = [];
     if (mode === 'walk' && !state.warp && state.target == null && Math.abs(state.v) < 0.4) {
@@ -563,11 +562,10 @@ function frame(now) {
       for (const ex of exhibits) { if (!ex.inWindow || !ex.root.visible) continue; const d = slotS(ex.slot) - state.s; if (d > 1.5 && d < stopBefore() + 4.5 && d < best - 0.01) best = d; }
       pair = exhibits.filter((ex) => ex.inWindow && ex.root.visible && Math.abs(slotS(ex.slot) - state.s - best) < 0.01 && ex.m.progress >= 0.99);
     }
-    const flower = pair.find((ex) => !ex.car), car = pair.find((ex) => ex.car);
-    // u růžového auta vykoukne holka (srdíčka), kluk u květiny nedělá nic
-    const pinkCar = car && car.id === 'sian';
+    // dvojice květin: holka vykoukne u jedné (srdíčka v očích), kluk u druhé (hvězdičky, občas mrkne)
+    const sorted = pair.slice().sort((a, b) => a.side - b.side);
     for (const F of figs) {
-      const ex = F.girl ? (pinkCar ? car : flower) : (pinkCar ? null : car);
+      const ex = F.girl ? sorted[0] : sorted[1];
       const want = ex ? (F.girl ? 'hearts' : 'stars') : '';
       if (ex && (!F.target || F.side !== ex.side)) {
         if (F.k < 0.05) { F.side = ex.side; F.target = 1; F.since = now; F.f.anim.jump = 1; }
