@@ -75,13 +75,13 @@ body.is-focus .corner-legal { opacity: 0; pointer-events: none; }
 body.is-ready .hang { animation: hangDrop 1s cubic-bezier(.25, 1.3, .45, 1) forwards, hangSwing 3.4s 1s ease-in-out infinite; }
 body.is-focus .hang { opacity: 0; transition: opacity .3s; }
 body.is-focus .hang * { pointer-events: none !important; }
-.hang-wire { position: absolute; left: -1px; top: 0; bottom: 122px; width: 2px; background: linear-gradient(#b8b3ab, #2b2a28); border-radius: 1px; }
+.hang-wire { position: absolute; left: -1px; top: 0; bottom: 134px; width: 2px; background: linear-gradient(#b8b3ab, #2b2a28); border-radius: 1px; }
 .hang-wire::after { content: ''; position: absolute; left: -5px; bottom: -8px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #2b2a28; }
 /* tlačítko: tmavě šedá hranatá destička s tloušťkou, navrchu svítící průhledný červený kulatý dílek s nápisem DÁL */
-.hang-box { position: absolute; left: 0; bottom: 6px; width: 116px; height: 116px; transform: translateX(-45%); pointer-events: auto; cursor: pointer; border: 0; padding: 0; background: none;
+.hang-box { position: absolute; left: 0; bottom: 6px; width: 128px; height: 128px; transform: translateX(-45%); pointer-events: auto; cursor: pointer; border: 0; padding: 0; background: none;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .1s; }
 .hang-svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 12px 12px rgba(0,0,0,.4)); }
-.hb-txt { font-family: var(--display); font-size: 15px; letter-spacing: .04em; }
+.hb-txt { font-family: var(--display); font-size: 10.4px; letter-spacing: .02em; }
 .hb-halo { opacity: .35; animation: studGlow 1.4s ease-in-out infinite; }
 .hb-spill { opacity: .5; animation: studGlow 1.4s ease-in-out infinite; }
 .hb-core { opacity: .35; animation: studGlow 1.4s ease-in-out infinite; }
@@ -95,7 +95,7 @@ body.is-focus .hang * { pointer-events: none !important; }
 @keyframes hangDrop { 0% { transform: translateY(-110%); } 100% { transform: translateY(0); } }
 @keyframes hangSwing { 0%, 100% { transform: rotate(1.2deg); } 50% { transform: rotate(-1.2deg); } }
 @keyframes tug { 0% { transform: translateX(-50%) translateY(0); } 35% { transform: translateX(-50%) translateY(22px); } 100% { transform: translateX(-50%) translateY(0); } }
-@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang-box { width: 104px; height: 104px; } .hang-wire { bottom: 110px; } }
+@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang-box { width: 116px; height: 116px; } .hang-wire { bottom: 122px; } }
 
 /* ---------- teleport: rozmazání ---------- */
 body.is-warp #gl { animation: warpBlur .8s cubic-bezier(.45, 0, .3, 1); }
