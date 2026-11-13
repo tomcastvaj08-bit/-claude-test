@@ -13,7 +13,7 @@ try {
 
 const transcribe = require('./api/transcribe');
 const PORT = process.env.PORT || 3000;
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.json': 'application/json', '.wasm': 'application/wasm', '.data': 'application/octet-stream', '.tflite': 'application/octet-stream', '.binarypb': 'application/octet-stream', '.txt': 'text/plain; charset=utf-8' };
 
 http.createServer((req, res) => {
   if (req.url.startsWith('/api/transcribe')) return transcribe(req, res);
@@ -23,7 +23,6 @@ http.createServer((req, res) => {
   fs.readFile(file, (err, data) => {
     if (err) { res.statusCode = 404; return res.end('Nenalezeno'); }
     res.setHeader('Content-Type', TYPES[path.extname(file)] || 'application/octet-stream');
-    res.setHeader('Cache-Control', /\.woff2$/.test(file) ? 'public, max-age=31536000, immutable' : 'no-cache');
     res.end(data);
   });
 }).listen(PORT, () => console.log(`EFEKTIVE Captions běží na http://localhost:${PORT}`));

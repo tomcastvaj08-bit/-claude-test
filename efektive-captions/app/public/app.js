@@ -1,818 +1,783 @@
-// EFEKTIVE Captions – appka (UI, přepis, editace, export snímek po snímku)
+/* EFEKTIVE Captions – aplikace (obrazovky, editor, časová osa, panely) */
 "use strict";
-const E = window.CaptionEngine;
-const $ = id => document.getElementById(id);
-const vid = $('vid'), cv = $('cv'), ctx = cv.getContext('2d');
-const renderer = E.Renderer();
+const $=id=>document.getElementById(id);
+const clamp=E.clamp;
+const vid=$('vid'), cv=$('cv');
+E.attach(cv,vid);
 
-// ================= STAV =================
-let words = [];            // {t, raw, s, e, em}
-let pages = [];            // {a, b, s, e, kin, own}
-let G = Object.assign({}, E.BASE);
-let scope = 'all', curPage = 0;
-let videoFile = null, fullW = 0, fullH = 0, duration = 0, audioBuf = null;
-let exporting = false, dirty = true, lastInfo = null, projKey = null;
+// ================= POMOCNÉ =================
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); }
+function fmt(t){ t=Math.max(0,t||0); const m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+String(s).padStart(2,'0'); }
+function busy(title,sub,p){ $('busyT').textContent=title; $('busyS').textContent=sub||''; $('busyBar').style.width=(p*100)+'%'; $('busyP').textContent=Math.round(p*100)+' %'; }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
-const GLOBAL_ONLY = new Set(['wpp', 'punct', 'sfx', 'sfxVol']);
-G.sfx = 'none'; G.sfxVol = 60;
-function styleOf(k) { const p = pages[k]; return p && p.own ? Object.assign({}, G, p.own) : G; }
-const state = { get words() { return words; }, get pages() { return pages; }, styleOf };
-function cur() { return Object.assign({}, styleOf(curPage)); }
+// ================= STAV APLIKACE =================
+let videoFile=null, videoURL=null, project=null, fullW=1080, fullH=1920;
+let curPage=0, scope='all', panel='captions', sub={style:'color',templates:'trending',motion:'anim'}, fontTarget='em', textTarget='em';
+let selOv=null; const ovAssets={}; // id → {blob, el}
+let analysed={face:false, person:false};
+const DEFAULT_DICT=`Lidáte → Hledáte
+biznisem → byznysem
+biznis → byznys
+úspěšný → úspěšným
+Team → tým
+Řidíte → Řídíte
+franchisovou → franšízovou
+franchisu → franšízu
+učetního → účetního
+učetnictví → účetnictví
+učetní → účetní
+strategické data → strategická data
+reálnym → reálném
+z maximální → s maximální
+péči → péčí
+daňový poradci → daňoví poradci
+vzkušení → zkušení
+Získaváte → Získáváte
+Přenestte → Přeneste
+tváři → tváří
+account → Account`;
+let dict=lsGet('efk_dict',DEFAULT_DICT);
+const parseDict=txt=>txt.split('\n').map(l=>l.split(/\s*(?:→|->|=>|=)\s*/)).filter(a=>a.length===2&&a[0].trim()).map(a=>[a[0].trim(),a[1].trim()]);
 
-function setVal(key, val) {
-  if (scope === 'one' && pages[curPage] && !GLOBAL_ONLY.has(key)) {
-    const p = pages[curPage]; p.own = p.own || {}; p.own[key] = val;
-  } else {
-    G[key] = val;
+// ================= JAZYKY =================
+const LANGS=[['','Automaticky rozpoznat'],['cs','Čeština'],['sk','Slovenština'],['en','Angličtina'],['de','Němčina'],['pl','Polština'],['hu','Maďarština'],['es','Španělština'],['fr','Francouzština'],['it','Italština'],['pt','Portugalština'],['nl','Nizozemština'],['sv','Švédština'],['no','Norština'],['da','Dánština'],['fi','Finština'],['ro','Rumunština'],['bg','Bulharština'],['hr','Chorvatština'],['sr','Srbština'],['sl','Slovinština'],['uk','Ukrajinština'],['ru','Ruština'],['lt','Litevština'],['lv','Lotyština'],['et','Estonština'],['el','Řečtina'],['tr','Turečtina'],['ar','Arabština'],['he','Hebrejština'],['hi','Hindština'],['ur','Urdština'],['ta','Tamilština'],['bn','Bengálština'],['th','Thajština'],['vi','Vietnamština'],['id','Indonéština'],['ms','Malajština'],['tl','Filipínština'],['zh','Čínština'],['ja','Japonština'],['ko','Korejština'],['fa','Perština'],['af','Afrikánština'],['sw','Svahilština'],['ca','Katalánština'],['eu','Baskičtina'],['gl','Galicijština'],['is','Islandština'],['ga','Irština'],['cy','Velština'],['la','Latina'],['mk','Makedonština'],['bs','Bosenština'],['be','Běloruština'],['kk','Kazaština'],['az','Ázerbájdžánština'],['hy','Arménština'],['ka','Gruzínština'],['ne','Nepálština'],['mr','Maráthština'],['kn','Kannadština'],['te','Telugština'],['ml','Malajálamština'],['pa','Paňdžábština']];
+const BETA=new Set(['sv','it','id','hi','fi','vi','he','uk','el','ms','cs','ro','da','hu','ta','no','th','ur','hr','bg','lt','la']);
+let lang=lsGet('efk_lang','cs');
+function renderLangs(){
+  const q=$('langSearch').value.trim().toLowerCase();
+  $('langList').innerHTML=LANGS.filter(([c,n])=>!q||n.toLowerCase().includes(q)||c.includes(q)).map(([c,n])=>`<div data-c="${c}" class="${c===lang?'on':''}">${n}${BETA.has(c)?' <small>(Beta)</small>':''}<small>${c||'auto'}</small></div>`).join('');
+}
+$('langSearch').oninput=renderLangs;
+$('langList').onclick=e=>{ const d=e.target.closest('div[data-c]'); if(!d) return; lang=d.dataset.c; lsSet('efk_lang',lang); renderLangs(); };
+document.querySelectorAll('.step').forEach(st=>{
+  const b=st.querySelector('b'), [m,p]=st.querySelectorAll('button'), mn=+st.dataset.min, mx=+st.dataset.max;
+  m.onclick=()=>{ b.textContent=Math.max(mn,+b.textContent-1); }; p.onclick=()=>{ b.textContent=Math.min(mx,+b.textContent+1); };
+});
+const stepVal=id=>+document.querySelector(`.step[data-id="${id}"] b`).textContent;
+const setStep=(id,v)=>{ document.querySelector(`.step[data-id="${id}"] b`).textContent=v; };
+function segBind(id,cb){ $(id).onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; $(id).querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('on',x===d)); cb&&cb(d.dataset.v); }; }
+const segVal=id=>$(id).querySelector('.on').dataset.v;
+segBind('sQuality'); segBind('exMode',v=>{ $('exInfo').textContent = v==='captions' ? 'Průhledné PNG snímky v ZIPu – vložíš je nad video v CapCutu, Premiere, DaVinci nebo Final Cut.' : 'Přesný export snímek po snímku – titulky jsou plynulé i na 60 fps.'; });
+
+// ================= DOMŮ: šablony a projekty =================
+let homeTpl='base';
+function tplCard(key,t,extra=''){ return `<div class="tpl${extra}" data-k="${key}"><div class="pv">${t.pv||'<b>Aa</b>'}</div><small>${esc(t.name)}</small></div>`; }
+function renderHomeTpl(){
+  const all={...E.TEMPLATES, ...customTemplates()};
+  $('homeTpl').innerHTML=Object.entries(all).map(([k,t])=>tplCard(k,t,k===homeTpl?' on':'')).join('');
+}
+$('homeTpl').onclick=e=>{ const c=e.target.closest('.tpl'); if(!c) return; homeTpl=c.dataset.k; renderHomeTpl(); toast('Šablona „'+(E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]).name+'“ – teď nahraj video'); };
+
+// --- projekty v IndexedDB ---
+const DB=new Promise((res,rej)=>{ const r=indexedDB.open('efektive-captions',1); r.onupgradeneeded=()=>r.result.createObjectStore('projects',{keyPath:'id'}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+async function dbDo(mode,fn){ const db=await DB; return new Promise((res,rej)=>{ const tx=db.transaction('projects',mode), st=tx.objectStore('projects'); const r=fn(st); tx.oncomplete=()=>res(r&&r.result); tx.onerror=()=>rej(tx.error); }); }
+async function renderProjects(){
+  let list=[]; try{ list=await dbDo('readonly',st=>st.getAll()); }catch(e){}
+  list.sort((a,b)=>b.updated-a.updated);
+  $('projects').innerHTML = list.length ? list.map(p=>`<div class="proj" data-id="${p.id}"><img src="${p.thumb||'icon.png'}" alt=""><div class="pn">${esc(p.name)}<small>${new Date(p.updated).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div><button class="del" data-del="${p.id}">✕</button></div>`).join('') : '<div class="muted">Zatím žádné projekty.</div>';
+}
+$('projects').onclick=async e=>{
+  const d=e.target.closest('[data-del]');
+  if (d){ e.stopPropagation(); if (confirm('Smazat projekt?')){ await dbDo('readwrite',st=>st.delete(d.dataset.del)); renderProjects(); } return; }
+  const p=e.target.closest('.proj'); if (p) openProject(p.dataset.id);
+};
+function snapshot(){
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute});
+}
+function restore(json){
+  const s=JSON.parse(json);
+  E.G=Object.assign({},E.G,s.G); E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
+  E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
+  E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
+}
+let saveT=null;
+function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(saveProject,1500); }
+async function saveProject(){
+  if (!project || !videoFile) return;
+  try{
+    const th=document.createElement('canvas'); const sc=240/Math.max(cv.width,cv.height); th.width=Math.round(cv.width*sc); th.height=Math.round(cv.height*sc); th.getContext('2d').drawImage(cv,0,0,th.width,th.height);
+    const assets=Object.entries(ovAssets).map(([id,a])=>({id,blob:a.blob,type:a.type}));
+    const rec={id:project.id,name:project.name,created:project.created,updated:Date.now(),thumb:th.toDataURL('image/jpeg',0.7),file:videoFile,fileName:videoFile.name,state:snapshot(),assets,analysed};
+    await dbDo('readwrite',st=>st.put(rec));
+  }catch(e){ console.warn('Uložení projektu selhalo',e); }
+}
+async function openProject(id){
+  const rec=await dbDo('readonly',st=>st.get(id)); if (!rec) return;
+  project={id:rec.id,name:rec.name,created:rec.created};
+  for (const a of rec.assets||[]) await loadAsset(a.id,a.blob);
+  await loadVideo(rec.file instanceof File?rec.file:new File([rec.file],rec.fileName||'video.mp4',{type:rec.file.type}));
+  restore(rec.state); analysed=rec.analysed||analysed;
+  hist=[snapshot()]; hi=0;
+  if (analysed.face) toast('Poloha obličeje: při otevření znovu přepočítej v panelu AI, pokud chceš.');
+  openEditor();
+}
+
+// ================= NAČTENÍ VIDEA =================
+function loadVideo(file){
+  return new Promise((res,rej)=>{
+    videoFile=file; if (videoURL) URL.revokeObjectURL(videoURL); videoURL=URL.createObjectURL(file);
+    vid.src=videoURL; vid.muted=E.flags.mute;
+    vid.onloadedmetadata=()=>{ fullW=vid.videoWidth; fullH=vid.videoHeight; sizeCanvas(); };
+    vid.onloadeddata=()=>res(); vid.onerror=()=>rej(new Error('Tohle video prohlížeč neumí přehrát'));
+  });
+}
+function sizeCanvas(){ const sc=Math.min(1,1280/Math.max(fullW,fullH)); cv.width=Math.round(fullW*sc/2)*2; cv.height=Math.round(fullH*sc/2)*2; }
+$('fileIn').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if (!f) return;
+  // nový projekt se zvolenou šablonou
+  E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  for (const k in ovAssets) delete ovAssets[k];
+  const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
+  project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now()};
+  try{ await loadVideo(f); }catch(err){ alert(err.message); return; }
+  $('setupPrev').src=videoURL; $('setupPrev').currentTime=0.5;
+  $('sPunct').checked=!!E.G.punct; setStep('sLines',E.G.maxLines||3); setStep('sChars',E.G.maxChars||0); setStep('sWpp',E.G.wpp||4); $('sMain').value=String(E.G.mainLine||'mid');
+  renderLangs(); $('setupStatus').textContent=''; show('setup');
+};
+$('setupBack').onclick=()=>{ show('home'); };
+
+// ================= AI PŘEPIS =================
+function wavFrom(samples,rate){
+  const buf=new ArrayBuffer(44+samples.length*2), v=new DataView(buf);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4,36+samples.length*2,true); w(8,'WAVE'); w(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true); v.setUint32(24,rate,true); v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  w(36,'data'); v.setUint32(40,samples.length*2,true);
+  for (let i=0;i<samples.length;i++){ const s=Math.max(-1,Math.min(1,samples[i])); v.setInt16(44+i*2,s<0?s*0x8000:s*0x7fff,true); }
+  return new Blob([buf],{type:'audio/wav'});
+}
+async function extractAudio(file){
+  const ab=await file.arrayBuffer(); const tmp=new (window.AudioContext||window.webkitAudioContext)();
+  const decoded=await tmp.decodeAudioData(ab); tmp.close&&tmp.close();
+  const RATE=16000, off=new OfflineAudioContext(1,Math.ceil(decoded.duration*RATE),RATE);
+  const src=off.createBufferSource(); src.buffer=decoded; src.connect(off.destination); src.start();
+  const out=await off.startRendering(); return {data:out.getChannelData(0),rate:RATE};
+}
+function readSetup(){
+  E.G.punct=$('sPunct').checked; E.G.maxLines=stepVal('sLines'); E.G.maxChars=stepVal('sChars'); E.G.wpp=stepVal('sWpp');
+  const ml=$('sMain').value; E.G.mainLine = ml;
+  if (E.G.maxLines>3 && ml==='mid') E.G.mainLine='mid';
+}
+async function afterWords(){
+  if ($('sDict').checked){ const n=E.applyCorrections(parseDict(dict)); if (n) toast(`Opraveno ${n}× podle slovníku`); }
+  E.buildPages();
+  const doFace=$('sFace').checked, doBehind=$('sBehind').checked;
+  if (doFace){
+    busy('Analyzuji video…','Hledám obličej, ať titulky nezakrývají tvář',0);
+    try{ await AI.analyzeFaces(vid,p=>busy('Analyzuji video…','Hledám obličej, ať titulky nezakrývají tvář',p)); E.applyFacePositions(); analysed.face=true; }catch(e){ console.warn(e); toast('Obličej se nepodařilo najít – titulky zůstaly na pozici šablony'); }
   }
-  touch(); maybeReflow(key);
+  if (doBehind){
+    busy('Analyzuji video…','Odstraňuji pozadí, aby text mohl být za postavou',0);
+    try{ await AI.analyzePerson(vid,p=>busy('Analyzuji video…','Odstraňuji pozadí, aby text mohl být za postavou',p)); E.G.behind='on'; analysed.person=true; }catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit'); }
+  }
+  hist=[snapshot()]; hi=0; curPage=0;
+  openEditor();
+  vid.currentTime=Math.max(0.01,(E.words[0]?E.words[0].s:0)+0.3);
+  saveProject();
 }
-function setMany(obj) { for (const [k, v] of Object.entries(obj)) setVal(k, v); }
-function touch() { dirty = true; scheduleSave(); markList(); }
-// v režimu Base závisí rozdělení na řádky na šířce slov → po změně písma/velikosti přepočítat
-const REFLOW = new Set(['size', 'emScale', 'track', 'trackEm', 'cond', 'wordGap', 'fontMain', 'wMain', 'fontEm', 'wEm', 'emItalic', 'rowMax', 'caseMain', 'caseSub', 'punct', 'wpp', 'split']);
-let reflowTimer = 0;
-function maybeReflow(key) {
-  if (!words.length || !REFLOW.has(key) || (scope === 'one' && key !== 'wpp' && key !== 'punct')) return;
-  clearTimeout(reflowTimer); reflowTimer = setTimeout(() => { rebuild(); }, 120);
-}
-
-// ================= PÍSMA =================
-const FONTS = [
-  [E.SF, 800, 'SF Pro Heavy'], [E.SF, 600, 'SF Pro Semibold'], [E.SF, 900, 'SF Pro Black'], [E.SF, 500, 'SF Pro Medium'], [E.SF, 700, 'SF Pro Bold'], [E.SF, 400, 'SF Pro Regular'],
-  ['Inter Tight', 900, 'Inter Tight Black'], ['Inter Tight', 500, 'Inter Tight'], ['Inter Tight', 300, 'Inter Tight Light'],
-  ['Inter', 900, 'Inter Black'], ['Inter', 400, 'Inter'],
-  ['Montserrat', 900, 'Montserrat Black'], ['Montserrat', 400, 'Montserrat'],
-  ['Poppins', 900, 'Poppins Black'], ['Poppins', 600, 'Poppins Semi'], ['Poppins', 300, 'Poppins Light'],
-  ['Playfair Display', 900, 'Playfair Black'], ['Playfair Display', 700, 'Playfair'],
-  ['Bodoni Moda', 900, 'Didot Black'], ['Bodoni Moda', 700, 'Didot'],
-  ['Libre Baskerville', 700, 'Baskerville'], ['Roboto', 900, 'Roboto Black'], ['Rubik', 900, 'Rubik Black'],
-  ['Anton', 400, 'Anton'], ['Bebas Neue', 400, 'Bebas'], ['Oswald', 700, 'Oswald'], ['Nunito', 900, 'Nunito Black'],
-  ['Courier Prime', 700, 'Courier'], ['Caveat', 700, 'Rukopis'], ['Dancing Script', 700, 'Kaligrafie'],
-];
-const SAMPLE = 'AaŽluťoučký kůň úpěl ďábelské ódy ĚŠČŘŽÝÁÍÉŮÚ 0123456789';
-const fontsLoaded = new Set();
-function ensureFonts() {
-  const need = new Set();
-  const add = S => { need.add(E.fontStr(S.fontMain, S.wMain, false, 40)); need.add(E.fontStr(S.fontEm, S.wEm, S.emItalic, 40)); };
-  add(G); pages.forEach(p => p.own && add(Object.assign({}, G, p.own)));
-  const todo = [...need].filter(f => !fontsLoaded.has(f));
-  if (!todo.length) return Promise.resolve();
-  return Promise.all(todo.map(f => document.fonts.load(f, SAMPLE).then(() => fontsLoaded.add(f)).catch(() => {})))
-    .then(() => { dirty = true; if (words.length && G.split === 'fill') rebuild(); });
-}
-
-// ================= VIDEO =================
-function setStatus(msg, pct, n = '', err = false) {
-  const st = $('status' + n); st.textContent = msg; st.classList.toggle('err', !!err);
-  const b = $('bar' + n);
-  if (pct == null) b.hidden = true; else { b.hidden = false; b.firstElementChild.style.width = (clamp01(pct) * 100) + '%'; }
-}
-const clamp01 = x => Math.max(0, Math.min(1, x));
-const fmt = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + String(s).padStart(2, '0'); };
-
-function outSize(res) {
-  const sc = res === 'orig' ? 1 : Math.min(1, (+res) / Math.min(fullW, fullH));
-  return [Math.round(fullW * sc / 2) * 2, Math.round(fullH * sc / 2) * 2];
-}
-function sizeCanvas() { const [w, h] = outSize($('res').value); cv.width = w; cv.height = h; dirty = true; }
-
-function openFile(f) {
-  if (!f) return;
-  if (vid.src) URL.revokeObjectURL(vid.src);
-  videoFile = f; words = []; pages = []; audioBuf = null; curPage = 0; scope = 'all';
-  projKey = 'efc:' + f.name + ':' + f.size + ':' + f.lastModified;
-  vid.src = URL.createObjectURL(f); vid.load();
-}
-$('file').addEventListener('change', e => openFile(e.target.files[0]));
-const drop = $('pick');
-['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', e => openFile(e.dataTransfer.files[0]));
-$('newBtn').onclick = () => $('file').click();
-
-vid.addEventListener('loadedmetadata', () => {
-  fullW = vid.videoWidth; fullH = vid.videoHeight; duration = vid.duration;
-  sizeCanvas();
-  $('pick').hidden = true; $('how').hidden = true; $('stage').hidden = false; $('player').hidden = false; $('step2').hidden = false; $('newBtn').hidden = false;
-  $('durInfo').textContent = fmt(duration) + (fullW > fullH ? ' · vodorovné video' : '');
-  setStatus(fullW > fullH ? 'Video je vodorovné – titulky fungují, ale šablona je laděná na 9:16.' : '', null);
-  if (!restore()) { G = Object.assign({}, E.BASE, { sfx: 'none', sfxVol: 60 }); syncUI(); }
-  vid.currentTime = 0.01;
-  ensureFonts();
-});
-vid.addEventListener('error', () => setStatus('Tohle video prohlížeč neumí otevřít. Zkus ho převést na MP4 (H.264).', null, '', true));
-vid.addEventListener('seeked', () => dirty = true);
-vid.addEventListener('play', () => { $('icPlay').hidden = true; $('icPause').hidden = false; });
-vid.addEventListener('pause', () => { $('icPlay').hidden = false; $('icPause').hidden = true; dirty = true; });
-$('playBtn').onclick = togglePlay;
-function togglePlay() { if (!duration || exporting) return; if (vid.paused) { audioCtx(); vid.play(); } else vid.pause(); }
-document.addEventListener('keydown', e => {
-  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-  if (e.code === 'ArrowRight') gotoPage(curPage + 1);
-  if (e.code === 'ArrowLeft') gotoPage(curPage - 1);
-});
-
-// ================= SMYČKA NÁHLEDU =================
-let lastK = -1;
-function draw() {
-  if (!fullW) return;
-  const t = vid.currentTime;
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-  ctx.drawImage(vid, 0, 0, cv.width, cv.height);
-  lastInfo = renderer.render(ctx, cv.width, cv.height, t, state);
-  if (vid.paused && !exporting) drawBox();
-}
-function loop() {
-  if (!exporting && (dirty || !vid.paused)) {
-    dirty = false; draw();
-    const t = vid.currentTime, k = E.pageAt(pages, t);
-    if (k >= 0 && k !== lastK) {
-      if (!vid.paused && G.sfx !== 'none' && t - pages[k].s < 0.15) { const ac = audioCtx(); sfxAt(ac, ac.destination, ac.currentTime, G.sfx, G.sfxVol / 100); }
-      curPage = k; markList(); updateNav();
+$('genBtn').onclick=async()=>{
+  readSetup(); show('busy');
+  try{
+    busy('Analyzuji video…','Vytahuju zvuk z videa',0.02);
+    const {data,rate}=await extractAudio(videoFile);
+    const SEG=45, CH=rate*SEG, n=Math.ceil(data.length/CH), all=[];
+    for (let i=0;i<n;i++){
+      busy('Analyzuji video…',`AI poslouchá a píše text (${i+1}/${n})`,0.05+0.9*i/n);
+      const blob=wavFrom(data.subarray(i*CH,Math.min(data.length,(i+1)*CH)),rate);
+      const q=new URLSearchParams({lang,quality:segVal('sQuality')});
+      const r=await fetch('/api/transcribe?'+q,{method:'POST',headers:{'Content-Type':'audio/wav'},body:blob});
+      const j=await r.json().catch(()=>({error:'Server neodpověděl'}));
+      if (!r.ok||j.error) throw new Error(j.error||('Chyba '+r.status));
+      const off=i*SEG; j.words.forEach(w=>{ const raw=String(w.word).trim(); if (raw) all.push(E.mkWord(raw,w.start+off,w.end+off)); });
     }
-    lastK = k;
-    updateScrub(t);
+    E.words=all.filter(w=>w.t); if (!E.words.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
+    await afterWords();
+  }catch(err){ console.error(err); show('setup'); $('setupStatus').textContent='Nepovedlo se: '+err.message; }
+};
+$('manualBtn').onclick=async()=>{
+  const list=$('manualText').value.trim().split(/\s+/).filter(Boolean); if(!list.length) return;
+  readSetup(); show('busy'); E.words=E.spread(list,0.2,vid.duration-0.2); await afterWords();
+};
+// slovník
+$('dictOpen').onclick=()=>openSheet('sheetDict');
+function openSheet(id){ if (id==='sheetDict') $('dictText').value=dict; $(id).classList.add('on'); }
+document.querySelectorAll('.sheet').forEach(s=>{ s.onclick=e=>{ if (e.target===s||e.target.closest('[data-close]')) s.classList.remove('on'); }; });
+$('dictSave').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); $('sheetDict').classList.remove('on'); toast('Slovník uložený'); };
+$('dictApply').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); const n=E.applyCorrections(parseDict(dict)); E.buildPages(); changed(); $('sheetDict').classList.remove('on'); toast(n?`Opraveno ${n}×`:'Nic k opravě'); };
+
+// ================= EDITOR =================
+function openEditor(){ show('editor'); sizeCanvas(); renderTimeline(); thumbs(); renderPanel(); updateMute(); syncTop(); }
+$('closeBtn').onclick=async()=>{ vid.pause(); await saveProject(); renderProjects(); show('home'); };
+
+// --- historie (zpět / znovu) ---
+let hist=[], hi=-1, histT=null;
+function changed(rebuild){ if (rebuild) E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); renderTimeline(); clearTimeout(histT); histT=setTimeout(pushHist,250); scheduleSave(); }
+function pushHist(){ const s=snapshot(); if (hist[hi]===s) return; hist=hist.slice(0,hi+1); hist.push(s); if (hist.length>100) hist.shift(); hi=hist.length-1; syncTop(); }
+function undo(){ clearTimeout(histT); pushHist(); if (hi<=0) return; hi--; restore(hist[hi]); renderTimeline(); renderPanel(); syncTop(); scheduleSave(); }
+function redo(){ if (hi>=hist.length-1) return; hi++; restore(hist[hi]); renderTimeline(); renderPanel(); syncTop(); scheduleSave(); }
+$('undoBtn').onclick=undo; $('redoBtn').onclick=redo;
+document.addEventListener('keydown',e=>{ if (!$('editor').classList.contains('on')||/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if ((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); }
+  else if (e.key===' '){ e.preventDefault(); togglePlay(); } });
+function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.length-1; $('eyeBtn').classList.toggle('on',E.flags.hidden); $('eyeBtn').textContent=E.flags.hidden?'🙈':'👁'; }
+
+// --- přehrávání ---
+function togglePlay(){ if (vid.paused){ ensureAC(); vid.play(); } else vid.pause(); }
+$('playBtn').onclick=togglePlay;
+vid.onplay=()=>{ $('playBtn').textContent='❚❚'; lastT=vid.currentTime; };
+vid.onpause=()=>{ $('playBtn').textContent='▶'; };
+$('eyeBtn').onclick=()=>{ E.flags.hidden=!E.flags.hidden; syncTop(); };
+$('fsBtn').onclick=()=>{ const st=$('stage'); if (st.requestFullscreen && !document.fullscreenElement){ st.requestFullscreen().catch(()=>st.classList.toggle('fs')); } else if (document.fullscreenElement) document.exitFullscreen(); else st.classList.toggle('fs'); };
+function updateMute(){ vid.muted=E.flags.mute; $('muteBtn').classList.toggle('on',E.flags.mute); $('muteBtn').textContent=E.flags.mute?'🔇 Zvuk videa vypnutý':'🔊 Zvuk videa'; }
+$('muteBtn').onclick=()=>{ E.flags.mute=!E.flags.mute; updateMute(); changed(); };
+
+// --- živé zvuky ---
+let AC=null, lastT=0;
+function ensureAC(){ if (!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } if (AC.state==='suspended') AC.resume(); }
+function playSfx(type){ ensureAC(); E.sfxInto(AC,AC.destination,AC.currentTime,type,E.G.sfxVol/100); }
+
+// --- smyčka ---
+let dragging=null, guides=false, inlineOpen=false;
+function loop(){
+  const t=vid.currentTime;
+  if (videoURL && $('editor').classList.contains('on')){
+    if (!vid.paused){
+      const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
+      if (t>lastT && t-lastT<0.5) for (const ev of E.sfxEvents()) if (ev.t>lastT && ev.t<=t) playSfx(ev.type);
+      followTimeline(t);
+    }
+    lastT=t;
+    E.render(t,{});
+    if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleOf(p),guides); }
+    else E.lastBox=null;
+    if (selOv && vid.paused) drawOvSel();
+    $('tm').textContent=fmt(t)+' / '+fmt(vid.duration);
   }
   requestAnimationFrame(loop);
 }
-
-// ================= PŘEHRÁVACÍ LIŠTA =================
-function updateScrub(t) {
-  if (!duration) return;
-  const p = clamp01(t / duration) * 100;
-  $('scrubFill').style.width = p + '%'; $('scrubKnob').style.left = p + '%';
-  $('tm').textContent = fmt(t);
-}
-function renderMarks() {
-  const box = $('marks'); box.innerHTML = '';
-  pages.forEach((p, k) => {
-    const i = document.createElement('i');
-    i.style.left = (p.s / duration * 100) + '%'; i.style.width = Math.max(0.4, (p.e - p.s) / duration * 100 - 0.3) + '%';
-    i.dataset.k = k; box.appendChild(i);
-  });
-  markList();
-}
-(function scrubber() {
-  const el = $('scrub'); let on = false;
-  const seek = e => { const r = el.getBoundingClientRect(); vid.currentTime = clamp01((e.clientX - r.left) / r.width) * duration; updateScrub(vid.currentTime); };
-  el.addEventListener('pointerdown', e => { if (!duration) return; on = true; el.setPointerCapture(e.pointerId); seek(e); });
-  el.addEventListener('pointermove', e => on && seek(e));
-  el.addEventListener('pointerup', () => on = false); el.addEventListener('pointercancel', () => on = false);
-})();
-function fullyVisibleTime(p) {
-  const last = words[p.b];
-  return Math.max(p.s + 0.6, Math.min(last.s + 0.4, p.e - 0.32));
-}
-function gotoPage(k) {
-  if (!pages.length) return;
-  k = Math.max(0, Math.min(pages.length - 1, k));
-  curPage = k; vid.pause(); vid.currentTime = Math.min(fullyVisibleTime(pages[k]), pages[k].e - 0.05);
-  markList(); updateNav(); if (scope === 'one') syncUI();
-}
-$('prevCap').onclick = () => gotoPage(curPage - 1);
-$('nextCap').onclick = () => gotoPage(curPage + 1);
-function updateNav() {
-  const p = pages[curPage]; if (!p) return;
-  $('capLabel').innerHTML = `Titulek <b>${curPage + 1}</b> z ${pages.length} · ` + escapeHTML(words.slice(p.a, p.b + 1).map(w => w.t).join(' '));
-  if (scope === 'one') $('curName').innerHTML = `Měníš jen titulek <b>${curPage + 1}</b>`;
-}
-const escapeHTML = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-// ================= RÁMEČEK, PŘESUN A ZVĚTŠENÍ PRSTEM =================
-let drag = null, ptrs = new Map(), handle = null;
-function drawBox() {
-  handle = null;
-  if (!lastInfo) return;
-  const q = lastInfo.quad, W = cv.width;
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  const pad = W * 0.018;
-  const cx = q.reduce((a, p) => a + p[0], 0) / 4, cy = q.reduce((a, p) => a + p[1], 0) / 4;
-  const P = q.map(([x, y]) => { const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy) || 1; return [x + dx / d * pad, y + dy / d * pad]; });
-  ctx.lineWidth = Math.max(2, W * 0.0026); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.setLineDash([W * 0.012, W * 0.008]);
-  ctx.beginPath(); P.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
-  const hr = W * 0.026, h = [Math.min(W - hr * 1.2, P[2][0]), Math.min(cv.height - hr * 1.2, P[2][1])];
-  ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = hr * 0.6;
-  ctx.beginPath(); ctx.arc(h[0], h[1], hr, 0, Math.PI * 2); ctx.fill(); ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = '#000'; ctx.lineWidth = hr * 0.16; ctx.lineCap = 'round';
-  const a = hr * 0.42; ctx.beginPath(); ctx.moveTo(h[0] - a, h[1] + a); ctx.lineTo(h[0] + a, h[1] - a);
-  ctx.moveTo(h[0] + a * 0.1, h[1] - a); ctx.lineTo(h[0] + a, h[1] - a); ctx.lineTo(h[0] + a, h[1] - a * 0.1);
-  ctx.moveTo(h[0] - a, h[1] + a * 0.1); ctx.lineTo(h[0] - a, h[1] + a); ctx.lineTo(h[0] - a * 0.1, h[1] + a); ctx.stroke();
-  handle = { x: h[0], y: h[1], r: hr, cx, cy };
-  if (drag && drag.mode === 'move') { // bezpečná zóna IG/TikTok + střed
-    const H = cv.height; ctx.strokeStyle = 'rgba(255,69,58,.9)'; ctx.lineWidth = Math.max(1.5, W * 0.002); ctx.setLineDash([W * 0.015, W * 0.01]);
-    ctx.strokeRect(W * 0.06, H * 0.12, W * 0.88, H * 0.68); ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
-  }
-  ctx.restore();
-}
-function toCanvas(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * cv.width, (e.clientY - r.top) / r.height * cv.height]; }
-cv.addEventListener('pointerdown', e => {
-  if (exporting || !duration) return;
-  cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
-  const S = cur();
-  if (ptrs.size === 2) { const a = [...ptrs.values()]; drag = { mode: 'pinch', d0: Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]), size0: S.size }; return; }
-  const [x, y] = toCanvas(e);
-  if (handle && vid.paused && Math.hypot(x - handle.x, y - handle.y) < handle.r * 2) { drag = { mode: 'resize', size0: S.size, d0: Math.hypot(x - handle.cx, y - handle.cy) }; return; }
-  drag = { mode: 'tap', x: e.clientX, y: e.clientY, px: S.posX, py: S.posY };
-});
-cv.addEventListener('pointermove', e => {
-  if (!drag) return; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
-  const r = cv.getBoundingClientRect();
-  if (drag.mode === 'tap' && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) { drag.mode = 'move'; vid.pause(); }
-  if (drag.mode === 'move') {
-    let px = drag.px + (e.clientX - drag.x) / r.width * 100, py = drag.py + (e.clientY - drag.y) / r.height * 100;
-    if (Math.abs(px - 50) < 1.5) px = 50; // přichytí na střed
-    setVal('posX', Math.round(Math.max(10, Math.min(90, px)) * 10) / 10); setVal('posY', Math.round(Math.max(12, Math.min(88, py)) * 10) / 10);
-  } else if (drag.mode === 'resize') {
-    const [x, y] = toCanvas(e); setVal('size', Math.round(Math.max(40, Math.min(160, drag.size0 * Math.hypot(x - handle.cx, y - handle.cy) / Math.max(1, drag.d0)))));
-  } else if (drag.mode === 'pinch' && ptrs.size === 2) {
-    const a = [...ptrs.values()]; setVal('size', Math.round(Math.max(40, Math.min(160, drag.size0 * Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]) / drag.d0))));
-  }
-  syncValues();
-});
-function endPtr(e) {
-  ptrs.delete(e.pointerId);
-  if (ptrs.size === 0) { if (drag && drag.mode === 'tap') togglePlay(); drag = null; dirty = true; }
-}
-cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
-
-// ================= PŘEPIS =================
-async function decodeAudio() {
-  if (audioBuf) return audioBuf;
-  const ab = await videoFile.arrayBuffer();
-  const AC = window.AudioContext || window.webkitAudioContext, tmp = new AC();
-  try { audioBuf = await new Promise((res, rej) => { const p = tmp.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); }
-  finally { tmp.close && tmp.close(); }
-  return audioBuf;
-}
-async function mono16k(buf) {
-  const RATE = 16000, off = new OfflineAudioContext(1, Math.ceil(buf.duration * RATE), RATE);
-  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
-  return (await off.startRendering()).getChannelData(0);
-}
-function wavFrom(samples, rate) {
-  const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
-  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-  w(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
-  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  w(36, 'data'); v.setUint32(40, samples.length * 2, true);
-  for (let i = 0; i < samples.length; i++) { const s = Math.max(-1, Math.min(1, samples[i])); v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
-  return new Blob([buf], { type: 'audio/wav' });
-}
-// dělení dlouhého zvuku na kusy ~45 s – řez v nejtišším místě, ať se nepřetne slovo
-function cutPoints(d, rate) {
-  const cuts = [0], SEG = 45 * rate, WIN = Math.round(0.05 * rate);
-  let pos = 0;
-  while (d.length - pos > SEG * 1.15) {
-    let best = pos + SEG, bestE = Infinity;
-    for (let c = pos + 38 * rate; c < Math.min(d.length - WIN, pos + 50 * rate); c += WIN) {
-      let e = 0; for (let i = c; i < c + WIN; i++) e += d[i] * d[i];
-      if (e < bestE) { bestE = e; best = c + (WIN >> 1); }
-    }
-    cuts.push(best); pos = best;
-  }
-  cuts.push(d.length); return cuts;
-}
-const stripPunct = s => s.replace(/[.,!?;:…"“”„»«)]+$/u, '').replace(/^[„"“«(]+/u, '');
-$('aiBtn').onclick = async () => {
-  if (!videoFile) return; $('aiBtn').disabled = true;
-  try {
-    setStatus('Vytahuju zvuk z videa…', 0.04);
-    const buf = await decodeAudio(), data = await mono16k(buf), rate = 16000;
-    const cuts = cutPoints(data, rate), all = [];
-    for (let i = 0; i < cuts.length - 1; i++) {
-      setStatus(cuts.length > 2 ? `AI poslouchá a píše text… (${i + 1}/${cuts.length - 1})` : 'AI poslouchá a píše text…', 0.1 + 0.85 * i / (cuts.length - 1));
-      const r = await fetch('/api/transcribe?' + new URLSearchParams({ lang: $('lang').value }), { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: wavFrom(data.subarray(cuts[i], cuts[i + 1]), rate) });
-      const j = await r.json().catch(() => ({ error: 'Server neodpověděl (' + r.status + ')' }));
-      if (!r.ok || j.error) throw new Error(j.error || ('Chyba ' + r.status));
-      const off = cuts[i] / rate;
-      j.words.forEach(w => { const raw = String(w.word).trim(); const t = stripPunct(raw); if (t) all.push({ raw, t, s: w.start + off, e: w.end + off, em: false }); });
-    }
-    if (!all.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
-    words = all; afterWords();
-    setStatus(`Hotovo · ${words.length} slov, ${pages.length} titulků. Zkontroluj názvy a jména v kroku 3.`, null);
-  } catch (err) {
-    console.error(err);
-    const msg = /decode/i.test(err.message) ? 'Ve videu jsem nenašel zvukovou stopu.' : err.message;
-    setStatus('Nepovedlo se: ' + msg, null, '', true);
-  } finally { $('aiBtn').disabled = false; }
-};
-$('manualBtn').onclick = () => {
-  const list = $('manualText').value.trim().split(/\s+/).filter(Boolean);
-  if (!list.length || !duration) return;
-  words = spread(list, 0.2, duration - 0.2); afterWords();
-  setStatus('Text je rozložený rovnoměrně po videu – časy uprav opravou textu u titulků.', null);
-};
-function spread(list, s, e) {
-  const tot = list.reduce((a, w) => a + w.length + 2, 0); let t = s; const out = [];
-  for (const w of list) { const d = (e - s) * (w.length + 2) / tot; out.push({ raw: w, t: stripPunct(w) || w, s: t, e: t + d * 0.92, em: false }); t += d; }
-  return out;
-}
-function rebuild() {
-  // vlastní styl titulku přejde na nový titulek, který začíná slovem ze starého titulku
-  const ownOf = []; pages.forEach(p => { if (p.own) for (let i = p.a; i <= p.b; i++) ownOf[i] = p.own; });
-  pages = E.buildPages(words, G, duration, cv.width, cv.height);
-  const used = new Set();
-  pages.forEach(p => { const o = ownOf[p.a]; p.own = o && !used.has(o) ? (used.add(o), o) : (o ? Object.assign({}, o) : null); });
-  if (curPage >= pages.length) curPage = Math.max(0, pages.length - 1);
-  renderMarks(); renderPages(); checkCrops(); dirty = true; scheduleSave();
-}
-function afterWords() {
-  pages.forEach(p => p.own = null); pages = [];
-  rebuild(); revealEditor();
-  gotoPage(0);
-}
-function revealEditor() {
-  ['step3', 'step4', 'step5', 'capNav'].forEach(id => $(id).hidden = false);
-  $('appLayout').classList.add('ready'); syncUI(); ensureFonts();
-}
-
-// ================= SEZNAM TITULKŮ =================
-function renderPages() {
-  const box = $('pages'); box.innerHTML = '';
-  pages.forEach((p, k) => {
-    const row = document.createElement('div'); row.className = 'pg'; row.dataset.k = k;
-    row.onclick = e => { if (e.target.closest('.w,.ed,input')) return; gotoPage(k); };
-    const tm = document.createElement('div'); tm.className = 'tm'; tm.textContent = fmt(p.s);
-    const ws = document.createElement('div'); ws.className = 'ws';
-    const S = styleOf(k), mainIds = new Set();
-    E.groupsOf(p, S, words).forEach(g => g.em && g.ids.forEach(i => mainIds.add(i)));
-    for (let i = p.a; i <= p.b; i++) {
-      const c = document.createElement('span'); c.className = 'w' + (words[i].em ? ' em' : mainIds.has(i) ? ' main' : ''); c.textContent = words[i].t;
-      c.title = 'Ťukni = udělat z tohoto slova hlavní řádek';
-      c.onclick = () => { words[i].em = !words[i].em; curPage = k; renderPages(); checkCrops(); touch(); gotoPage(k); };
-      ws.appendChild(c);
-    }
-    const ed = document.createElement('button'); ed.className = 'ed'; ed.setAttribute('aria-label', 'Opravit text');
-    ed.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>';
-    ed.onclick = () => editPage(k, row, ws);
-    row.append(tm, ws, ed); box.appendChild(row);
-  });
-  markList();
-}
-function editPage(k, row, ws) {
-  const p = pages[k], old = words.slice(p.a, p.b + 1).map(w => w.raw || w.t).join(' ');
-  const inp = document.createElement('input'); inp.className = 'edit'; inp.value = old; inp.enterKeyHint = 'done';
-  ws.replaceWith(inp); inp.focus(); inp.select();
-  let done = false;
-  const commit = () => {
-    if (done) return; done = true;
-    const nw = inp.value.trim();
-    if (nw && nw !== old) {
-      const list = nw.split(/\s+/).filter(Boolean), prev = words.slice(p.a, p.b + 1);
-      // stejný počet slov → zachovat přesné časy, jinak rozložit v rámci titulku
-      const repl = list.length === prev.length ? list.map((w, i) => Object.assign({}, prev[i], { raw: w, t: stripPunct(w) || w })) : spread(list, words[p.a].s, words[p.b].e);
-      words.splice(p.a, p.b - p.a + 1, ...repl);
-      rebuild();
-    } else renderPages();
-  };
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { done = true; renderPages(); } });
-  inp.addEventListener('blur', commit);
-}
-function markList() {
-  document.querySelectorAll('.pg').forEach(el => {
-    const k = +el.dataset.k, p = pages[k];
-    el.classList.toggle('cur', k === curPage); el.classList.toggle('own', !!(p && p.own)); el.classList.toggle('warn', !!(p && p._crop));
-  });
-  document.querySelectorAll('#marks i').forEach(el => { const k = +el.dataset.k; el.classList.toggle('cur', k === curPage); el.classList.toggle('warn', !!(pages[k] && pages[k]._crop)); });
-  const p = pages[curPage];
-  $('resetOne').hidden = !(scope === 'one' && p && p.own);
-  $('cropBadge').hidden = !(p && p._crop && vid.paused);
-}
-// kontrola ořezu všech titulků (v plně viditelném okamžiku)
-const probe = document.createElement('canvas'), probeCtx = probe.getContext('2d');
-let cropTimer = 0;
-function checkCrops() {
-  clearTimeout(cropTimer);
-  cropTimer = setTimeout(() => {
-    if (!cv.width) return;
-    probe.width = cv.width; probe.height = cv.height;
-    const r = E.Renderer();
-    pages.forEach((p, k) => { const info = r.render(probeCtx, cv.width, cv.height, fullyVisibleTime(p), state); p._crop = !!(info && (info.cropped || info.fit < 0.999)); });
-    markList();
-  }, 250);
-}
-
-// ================= OVLÁDÁNÍ =================
-$('scope').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  scope = b.dataset.v; $('scope').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  document.body.classList.toggle('scope-on', scope === 'one');
-  $('curName').innerHTML = scope === 'one' ? `Měníš jen titulek <b>${curPage + 1}</b>` : 'Měníš všechny titulky';
-  if (scope === 'one') vid.pause();
-  markList(); syncUI();
-});
-$('resetOne').onclick = () => { if (pages[curPage]) pages[curPage].own = null; touch(); syncUI(); checkCrops(); };
-// šablony: Base (výchozí, podle vzorového videa) a v8 (vinotéka)
-function applyTemplate(id) {
-  const keep = { sfx: G.sfx, sfxVol: G.sfxVol, punct: G.punct };
-  G = Object.assign({}, E.TEMPLATES[id].style, keep, { template: id });
-  pages.forEach(p => p.own = null); scope = 'all';
-  $('scope').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === 'all'));
-  if (words.length) rebuild(); touch(); syncUI(); checkCrops(); ensureFonts();
-}
-$('resetTpl').onclick = () => applyTemplate(G.template || 'base');
-function renderTemplates() {
-  const box = $('tplPresets'); box.innerHTML = '';
-  for (const [id, t] of Object.entries(E.TEMPLATES)) {
-    const b = document.createElement('button'); b.className = 'preset' + ((G.template || 'base') === id ? ' on' : '');
-    const st = t.style, pv = st.grad ? `background:linear-gradient(${st.gA},${st.gB});-webkit-background-clip:text;background-clip:text;color:transparent` : `color:${st.cEm}`;
-    b.innerHTML = `<span class="pv" style="${pv}">Aa</span><span class="t"><b>${t.name}</b><small>${t.hint}</small></span>`;
-    b.onclick = () => applyTemplate(id);
-    box.appendChild(b);
-  }
-}
-$('tabs').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === b.dataset.t));
-});
-
-const RANGES = { size: '%', glow: '', shadowA: '%', posY: '%', tilt: '°', tiltX: '°', persp: '', kinetic: '', emScale: '%', track: '', gap: '%', wordGap: '%', sfxVol: '%', wpp: '', rowMax: '%', cond: '%' };
-function paintRange(el) { const p = (el.value - el.min) / (el.max - el.min) * 100; el.style.setProperty('--p', p + '%'); }
-for (const [id, suf] of Object.entries(RANGES)) {
-  $(id).addEventListener('input', () => {
-    const v = +$(id).value;
-    if (id === 'track') { const S0 = cur(); setVal('trackEm', v + ((S0.trackEm ?? S0.track) - S0.track)); } // hlavní řádek drží svůj odstup
-    setVal(id, v); $(id + 'V').textContent = v + suf; paintRange($(id));
-    if (id === 'tilt') $('tiltWarn').style.color = Math.abs(v) > 24 ? '#ff9f0a' : '';
-  });
-  $(id).addEventListener('change', checkCrops);
-}
-['cEm', 'gA', 'gB', 'cText', 'cText2'].forEach(id => $(id).addEventListener('input', e => {
-  setVal(id, e.target.value); if (id === 'cEm') setVal('grad', false); if (id === 'gA' || id === 'gB') setVal('grad', true); if (id === 'cText2') setVal('textGrad', true); syncUI();
-}));
-const SWITCHES = ['grad', 'textGrad', 'tiltAlt', 'emItalic', 'wordByWord', 'fadeOut', 'fxShine', 'punct'];
-SWITCHES.forEach(id => $(id).addEventListener('change', e => {
-  setVal(id, e.target.checked);
-  if (id === 'emItalic') ensureFonts(); checkCrops();
-}));
-$('lowerStart').addEventListener('change', e => { setVal('caseSub', e.target.checked ? 'lowerStart' : 'none'); renderPages(); });
-const EXITS = { fast: { exitDur: 0.1, exitScale: 0.6 }, soft: { exitDur: 0.3, exitScale: 0.94 } };
-$('exitStyle').addEventListener('click', e => { const c = e.target.closest('button'); if (!c) return; setMany(EXITS[c.dataset.v]); syncUI(); });
-function chips(id, key, cb) {
-  $(id).addEventListener('click', e => {
-    const c = e.target.closest('button'); if (!c) return;
-    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === c));
-    setVal(key, c.dataset.v); cb && cb(c.dataset.v); checkCrops();
-  });
-}
-chips('layout', 'layout'); chips('caseMain', 'caseMain', () => renderPages()); chips('anim', 'anim', v => { if (v === 'block') setVal('wordLead', 0.08), setVal('wordFade', 0.28); else setVal('wordLead', 0.05), setVal('wordFade', 0.2); });
-chips('sfx', 'sfx', v => { if (v !== 'none') { const ac = audioCtx(); sfxAt(ac, ac.destination, ac.currentTime + 0.01, v, G.sfxVol / 100); } });
-
-// předvolby barev podle tématu
-let autoColor = null;
-function renderColorPresets() {
-  const box = $('colorPresets'); box.innerHTML = ''; const S = cur();
-  const items = E.COLOR_PRESETS.map(p => ({ ...p }));
-  items.push({ id: 'auto', name: 'Podle videa', hint: autoColor ? 'dominantní barva ze scény' : 'najde barvu ze scény', set: autoColor ? { grad: false, cEm: autoColor } : null });
-  for (const pr of items) {
-    const b = document.createElement('button'); b.className = 'preset';
-    const on = pr.set && (pr.set.grad ? S.grad && S.gA === pr.set.gA && S.gB === pr.set.gB : !S.grad && S.cEm.toLowerCase() === pr.set.cEm.toLowerCase());
-    b.classList.toggle('on', !!on);
-    const style = pr.set ? (pr.set.grad ? `background:linear-gradient(${pr.set.gA},${pr.set.gB});-webkit-background-clip:text;background-clip:text;color:transparent` : `color:${pr.set.cEm}`) : 'background:conic-gradient(#ff453a,#ffd60a,#30d158,#0a84ff,#bf5af2,#ff453a);-webkit-background-clip:text;background-clip:text;color:transparent';
-    b.innerHTML = `<span class="pv" style="${style}">Aa</span><b>${pr.name}</b><small>${pr.hint}</small>`;
-    b.onclick = async () => {
-      if (pr.id === 'auto') { b.querySelector('small').textContent = 'hledám barvu…'; autoColor = await suggestColor(); setMany({ grad: false, cEm: autoColor }); }
-      else setMany(pr.set);
-      syncUI();
-    };
-    box.appendChild(b);
-  }
-}
-// náklon podle prostoru ve scéně (hodnoty z návodu)
-const TILT_PRESETS = [
-  { name: 'Střídat (v8)', hint: '18° doprava / doleva', set: { tilt: 18, tiltX: 4, tiltAlt: true }, r: 'rotateY(-24deg)' },
-  { name: 'Rovně', hint: 'bez náklonu', set: { tilt: 0, tiltX: 0, tiltAlt: false }, r: 'none' },
-  { name: 'Polička', hint: 'regál, levá strana blíž', set: { tilt: -20, tiltX: 6, tiltAlt: false }, r: 'rotateY(26deg) rotateX(8deg)' },
-  { name: 'Polička zprava', hint: 'pravá strana blíž', set: { tilt: 20, tiltX: 6, tiltAlt: false }, r: 'rotateY(-26deg) rotateX(8deg)' },
-  { name: 'Na stůl / sud', hint: 'položený na desku', set: { tilt: 16, tiltX: 8, tiltAlt: true }, r: 'rotateY(-20deg) rotateX(12deg)' },
-];
-function renderTiltPresets() {
-  const box = $('tiltPresets'); box.innerHTML = ''; const S = cur();
-  for (const pr of TILT_PRESETS) {
-    const b = document.createElement('button'); b.className = 'preset';
-    b.classList.toggle('on', S.tilt === pr.set.tilt && S.tiltX === pr.set.tiltX && !!S.tiltAlt === pr.set.tiltAlt);
-    b.innerHTML = `<span class="tiltpv"><span style="transform:${pr.r}"></span></span><b>${pr.name}</b><small>${pr.hint}</small>`;
-    b.onclick = () => { setMany(pr.set); syncUI(); checkCrops(); };
-    box.appendChild(b);
-  }
-}
-let fontTarget = 'em';
-$('fontTarget').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return; fontTarget = b.dataset.v;
-  $('fontTarget').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); syncFonts();
-});
-function buildFontGrid() {
-  const box = $('fontgrid'); box.innerHTML = '';
-  FONTS.forEach(([fam, w, label]) => {
-    const b = document.createElement('button'); b.dataset.f = fam; b.dataset.w = w;
-    b.style.fontFamily = fam.includes(',') ? fam : `"${fam}"`; b.style.fontWeight = w;
-    b.innerHTML = `Aa<small>${label}</small>`;
-    b.onclick = () => { if (fontTarget === 'em') setMany({ fontEm: fam, wEm: w }); else setMany({ fontMain: fam, wMain: w }); syncFonts(); ensureFonts().then(checkCrops); };
-    box.appendChild(b);
-  });
-}
-function syncFonts() {
-  const S = cur(), f = fontTarget === 'em' ? S.fontEm : S.fontMain, w = fontTarget === 'em' ? S.wEm : S.wMain;
-  $('fontgrid').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.f === f && +b.dataset.w === +w));
-}
-function syncValues() {
-  const S = cur();
-  for (const [id, suf] of Object.entries(RANGES)) { const el = $(id); el.value = S[id]; $(id + 'V').textContent = S[id] + suf; paintRange(el); }
-}
-function syncUI() {
-  const S = cur();
-  syncValues();
-  ['cEm', 'gA', 'gB', 'cText', 'cText2'].forEach(id => $(id).value = S[id]);
-  SWITCHES.forEach(id => $(id).checked = !!S[id]);
-  $('lowerStart').checked = S.caseSub === 'lowerStart';
-  $('rowMaxCtl').hidden = G.split !== 'fill';
-  $('exitStyle').querySelectorAll('button').forEach(c => c.classList.toggle('on', Math.abs(EXITS[c.dataset.v].exitScale - S.exitScale) < 0.01));
-  [['layout', 'layout'], ['caseMain', 'caseMain'], ['anim', 'anim'], ['sfx', 'sfx']].forEach(([id, k]) => $(id).querySelectorAll('button').forEach(c => c.classList.toggle('on', c.dataset.v === String(S[k]))));
-  syncFonts(); renderTemplates(); renderColorPresets(); renderTiltPresets(); markList(); updateNav();
-  dirty = true;
-}
-
-// ================= BARVA PODLE VIDEA =================
-// najde výraznou barvu ve scéně, která se ale liší od pozadí pod titulkem (aby byla čitelná)
-async function suggestColor() {
-  const v = helperVideo(), c = document.createElement('canvas'), W = 72, H = Math.round(72 * fullH / fullW);
-  c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true });
-  const all = new Float32Array(36), zone = new Float32Array(36); let zoneL = 0, zn = 0;
-  for (const f of [0.12, 0.3, 0.5, 0.7, 0.88]) {
-    await seekTo(v, duration * f); x.drawImage(v, 0, 0, W, H);
-    const d = x.getImageData(0, 0, W, H).data;
-    for (let i = 0; i < d.length; i += 4) {
-      const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), s = mx ? (mx - mn) / mx : 0;
-      const y = Math.floor(i / 4 / W) / H, inZone = y > 0.6 && y < 0.85;
-      if (inZone) { zoneL += 0.2126 * r + 0.7152 * g + 0.0722 * b; zn++; }
-      if (s < 0.35 || mx < 0.25) continue;
-      let h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); h = (h * 60 + 360) % 360;
-      const bin = Math.floor(h / 10) % 36, wgt = s * s * mx;
-      all[bin] += wgt; if (inZone) zone[bin] += wgt;
-    }
-  }
-  v.remove();
-  // velké plochy (nebe, tráva, zeď) jsou pozadí → preferujeme výrazné akcenty (produkt, značka)
-  const zoneHue = zone.indexOf(Math.max(...zone)) * 10 + 5, total = all.reduce((a, b) => a + b, 0) || 1;
-  const near = (a, b) => { const d = Math.abs(a - b); return Math.min(d, 360 - d); };
-  let best = -1, bestW = 0;
-  for (let i = 0; i < 36; i++) {
-    if (!all[i]) continue;
-    const h = i * 10 + 5, share = (all[(i + 35) % 36] + all[i] + all[(i + 1) % 36]) / total;
-    let w = Math.sqrt(all[i]);
-    if (share > 0.3) w *= 0.25;                                   // dominantní plocha = pozadí
-    if (Math.max(...zone) > 0 && near(h, zoneHue) < 40) w *= 0.1; // splývalo by s pozadím pod titulkem
-    if (w > bestW) { bestW = w; best = h; }
-  }
-  if (best < 0) return '#e4202c';
-  const bright = zn ? zoneLsafe(zoneL / zn) : 0.4;
-  return hsl(best, 0.88, bright > 0.6 ? 0.42 : 0.52);
-}
-const zoneLsafe = x => isFinite(x) ? x : 0.4;
-function hsl(h, s, l) {
-  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
-  return '#' + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
-}
-function helperVideo() {
-  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = vid.src;
-  v.style.cssText = 'position:fixed;left:-9999px;width:2px;height:2px'; document.body.appendChild(v); return v;
-}
-function seekTo(v, t) {
-  return new Promise(res => {
-    const go = () => {
-      if (Math.abs(v.currentTime - t) < 1e-4 && v.readyState >= 2) return res();
-      const to = setTimeout(res, 4000);
-      v.addEventListener('seeked', () => { clearTimeout(to); res(); }, { once: true });
-      v.currentTime = t;
-    };
-    if (v.readyState >= 1) go(); else v.addEventListener('loadedmetadata', go, { once: true });
-  });
-}
-
-// ================= MOZAIKA – kontrola všech titulků =================
-$('mosaicBtn').onclick = async () => {
-  if (!pages.length) return; vid.pause();
-  $('mosaic').hidden = false; const box = $('mgrid'); box.innerHTML = '';
-  const v = helperVideo(), big = document.createElement('canvas'), bc = big.getContext('2d'), r = E.Renderer();
-  big.width = cv.width; big.height = cv.height;
-  let warn = 0;
-  for (let k = 0; k < pages.length; k++) {
-    if ($('mosaic').hidden) break;
-    const t = fullyVisibleTime(pages[k]); await seekTo(v, t);
-    bc.drawImage(v, 0, 0, big.width, big.height); const info = r.render(bc, big.width, big.height, t, state);
-    const fig = document.createElement('figure'), c = document.createElement('canvas');
-    c.width = 300; c.height = Math.round(300 * big.height / big.width); c.getContext('2d').drawImage(big, 0, 0, c.width, c.height);
-    const crop = info && (info.cropped || info.fit < 0.999); if (crop) { fig.className = 'warn'; warn++; }
-    fig.innerHTML = `<figcaption>${k + 1}${crop ? ' · zmenšeno' : ''}</figcaption>`; fig.prepend(c);
-    fig.onclick = () => { $('mosaic').hidden = true; gotoPage(k); };
-    box.appendChild(fig);
-    $('mosaicInfo').textContent = `${k + 1}/${pages.length} · okamžik, kdy jsou vidět všechna slova`;
-  }
-  v.remove();
-  $('mosaicInfo').textContent = `${pages.length} titulků` + (warn ? ` · ${warn}× zmenšeno, aby se vešlo – zvaž menší písmo nebo méně slov` : ' · nic není uříznuté');
-};
-$('mosaicClose').onclick = () => $('mosaic').hidden = true;
-
-// ================= ZVUKY =================
-let actx = null;
-function audioCtx() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
-function sfxAt(ac, dest, t0, kind, vol) {
-  const g = ac.createGain(); g.gain.value = vol; g.connect(dest);
-  const osc = (type, f0, f1, dur, v) => { const o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur); const gg = ac.createGain(); gg.gain.setValueAtTime(0.0001, t0); gg.gain.exponentialRampToValueAtTime(v, t0 + 0.004); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(gg); gg.connect(g); o.start(t0); o.stop(t0 + dur + 0.02); };
-  const noise = (dur, v, f, q = 0.8) => { const n = Math.ceil(ac.sampleRate * dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2); const s = ac.createBufferSource(); s.buffer = b; const fl = ac.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = f; fl.Q.value = q; const gg = ac.createGain(); gg.gain.value = v; s.connect(fl); fl.connect(gg); gg.connect(g); s.start(t0); };
-  if (kind === 'soft') { noise(0.025, 0.6, 3500, 1.2); osc('sine', 1800, 900, 0.03, 0.12); }
-  else if (kind === 'tick') osc('sine', 3200, 2600, 0.02, 0.3);
-  else if (kind === 'pop') osc('sine', 700, 240, 0.09, 0.45);
-  else if (kind === 'whoosh') { const n = Math.ceil(ac.sampleRate * 0.35), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / n); const s = ac.createBufferSource(); s.buffer = b; const fl = ac.createBiquadFilter(); fl.type = 'bandpass'; fl.Q.value = 1.4; fl.frequency.setValueAtTime(400, t0); fl.frequency.exponentialRampToValueAtTime(2400, t0 + 0.35); const gg = ac.createGain(); gg.gain.value = 0.5; s.connect(fl); fl.connect(gg); gg.connect(g); s.start(t0); }
-}
-
-// ================= EXPORT (snímek po snímku, 60 fps, WebCodecs) =================
-let cancelExport = false;
-$('cancelExport').onclick = () => cancelExport = true;
-$('res').addEventListener('change', () => { sizeCanvas(); checkCrops(); });
-async function pickVideoCodec(w, h, fps) {
-  if (!window.VideoEncoder) return null;
-  const bitrate = Math.round(w * h * fps * 0.13); // ~16 Mb/s u 1080×1920@60 ≈ kvalita CRF 16
-  for (const codec of ['avc1.64002a', 'avc1.640028', 'avc1.4d002a', 'avc1.42002a']) {
-    const cfg = { codec, width: w, height: h, bitrate, framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' };
-    try { if ((await VideoEncoder.isConfigSupported(cfg)).supported) return { cfg, kind: 'avc' }; } catch (e) {}
-  }
-  const vp9 = { codec: 'vp09.00.40.08', width: w, height: h, bitrate, framerate: fps, latencyMode: 'quality' };
-  try { if ((await VideoEncoder.isConfigSupported(vp9)).supported) return { cfg: vp9, kind: 'vp9' }; } catch (e) {}
-  return null;
-}
-async function pickAudioCodec(rate, ch) {
-  if (!window.AudioEncoder) return null;
-  for (const [codec, kind] of [['mp4a.40.2', 'aac'], ['opus', 'opus']]) {
-    const cfg = { codec, sampleRate: rate, numberOfChannels: ch, bitrate: 192000 };
-    try { if ((await AudioEncoder.isConfigSupported(cfg)).supported) return { cfg, kind }; } catch (e) {}
-  }
-  return null;
-}
-// původní zvuk + zvukové efekty smíchané offline (přesně na snímek)
-async function mixAudio(rate) {
-  let buf = null; try { buf = await decodeAudio(); } catch (e) { return null; }
-  const len = Math.ceil(duration * rate), off = new OfflineAudioContext(2, len, rate);
-  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start(0);
-  if (G.sfx !== 'none') pages.forEach(p => sfxAt(off, off.destination, p.s, G.sfx, G.sfxVol / 100));
-  return off.startRendering();
-}
-$('exportBtn').onclick = async () => {
-  if (exporting || !pages.length && !confirm('Video zatím nemá titulky. Uložit i tak?')) return;
-  exporting = true; cancelExport = false; vid.pause();
-  $('exportBtn').disabled = true; $('cancelExport').hidden = false;
-  const fps = +$('fps').value, [W, H] = outSize($('res').value);
-  try {
-    const vc = await pickVideoCodec(W, H, fps);
-    if (!vc) { await exportRealtime(fps); return; }
-    setStatus('Připravuju zvuk…', 0, '2');
-    const rate = 48000, mixed = await mixAudio(rate);
-    const ac = mixed ? await pickAudioCodec(rate, 2) : null;
-    const useMp4 = vc.kind === 'avc' && (!ac || ac.kind === 'aac' || ac.kind === 'opus');
-    let muxer, target;
-    if (useMp4) {
-      target = new Mp4Muxer.ArrayBufferTarget();
-      muxer = new Mp4Muxer.Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: fps }, audio: ac ? { codec: ac.kind, numberOfChannels: 2, sampleRate: rate } : undefined, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
-    } else {
-      target = new WebMMuxer.ArrayBufferTarget();
-      muxer = new WebMMuxer.Muxer({ target, video: { codec: 'V_VP9', width: W, height: H, frameRate: fps }, audio: ac ? { codec: 'A_OPUS', numberOfChannels: 2, sampleRate: rate } : undefined, firstTimestampBehavior: 'offset' });
-    }
-    let encErr = null;
-    const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: e => encErr = e });
-    venc.configure(vc.cfg);
-    let aenc = null;
-    if (ac) { aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: e => encErr = e }); aenc.configure(ac.cfg); }
-    const L = mixed && mixed.getChannelData(0), R = mixed && mixed.getChannelData(1), CH = 4800;
-    let aPos = 0;
-    const feedAudio = upto => {
-      if (!aenc) return;
-      const end = Math.min(L.length, Math.ceil(upto * rate));
-      while (aPos < end) {
-        const n = Math.min(CH, L.length - aPos), data = new Float32Array(n * 2);
-        data.set(L.subarray(aPos, aPos + n), 0); data.set(R.subarray(aPos, aPos + n), n);
-        const ad = new AudioData({ format: 'f32-planar', sampleRate: rate, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(aPos / rate * 1e6), data });
-        aenc.encode(ad); ad.close(); aPos += n;
-      }
-    };
-    const oc = document.createElement('canvas'); oc.width = W; oc.height = H;
-    const octx = oc.getContext('2d'), r = E.Renderer();
-    setStatus('Připravuju video…', 0, '2');
-    let src = null; try { src = await openFrameSource(videoFile, fullW, fullH); } catch (e) { console.warn(e); }
-    const v = src ? null : helperVideo();
-    const N = Math.floor(duration * fps + 1e-6), t0 = performance.now();
-    if (v) await seekTo(v, 0);
-    for (let i = 0; i < N; i++) {
-      if (cancelExport) throw new Error('zrušeno');
-      if (encErr) throw encErr;
-      const t = i / fps;
-      octx.setTransform(1, 0, 0, 1, 0, 0); octx.globalAlpha = 1;
-      if (src) { const f = await src.frameAt(t); if (f) src.draw(octx, f, W, H); }
-      else { await seekTo(v, Math.min(t, duration - 0.001)); octx.drawImage(v, 0, 0, W, H); }
-      r.render(octx, W, H, t, state);
-      const fr = new VideoFrame(oc, { timestamp: Math.round(t * 1e6), duration: Math.round(1e6 / fps) });
-      venc.encode(fr, { keyFrame: i % (fps * 2) === 0 }); fr.close();
-      feedAudio(t + 1 / fps);
-      while (venc.encodeQueueSize > 4) await new Promise(res => setTimeout(res, 4));
-      if (i % 6 === 0) {
-        const el = (performance.now() - t0) / 1000, left = el / (i + 1) * (N - i - 1);
-        setStatus(`${src ? '' : 'Pomalý režim · '}Renderuju snímek ${i + 1} z ${N} · zbývá asi ${left < 60 ? Math.ceil(left) + ' s' : Math.ceil(left / 60) + ' min'}`, (i + 1) / N, '2');
-        // náhled průběhu do hlavního plátna
-        if (cv.width === W) { ctx.drawImage(oc, 0, 0); }
-      }
-    }
-    if (src) src.close(); if (v) v.remove();
-    feedAudio(duration + 1);
-    setStatus('Dokončuju soubor…', 1, '2');
-    await venc.flush(); if (aenc) await aenc.flush();
-    muxer.finalize();
-    const mime = useMp4 ? 'video/mp4' : 'video/webm';
-    await deliver(new Blob([target.buffer], { type: mime }), useMp4 ? 'mp4' : 'webm',
-      ac && ac.kind === 'opus' && useMp4 ? ' (zvuk je v Opus – Instagram i telefon ho přehrají, starší QuickTime ne)' : '');
-  } catch (err) {
-    console.error(err);
-    setStatus(err.message === 'zrušeno' ? 'Export zrušený.' : 'Export se nepovedl: ' + err.message, null, '2', err.message !== 'zrušeno');
-  } finally {
-    exporting = false; $('exportBtn').disabled = false; $('cancelExport').hidden = true; dirty = true;
-  }
-};
-async function deliver(blob, ext, note = '') {
-  const base = (videoFile.name.replace(/\.[^.]+$/, '') || 'video') + '-titulky.' + ext;
-  const file = new File([blob], base, { type: blob.type });
-  const mb = (blob.size / 1048576).toFixed(1);
-  setStatus(`Hotovo · ${base} (${mb} MB)${note}`, null, '2');
-  if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
-    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = base; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-}
-// záloha pro prohlížeče bez WebCodecs: nahrávání v reálném čase
-async function exportRealtime(fps) {
-  if (!window.MediaRecorder || !cv.captureStream) throw new Error('tenhle prohlížeč neumí export – použij aktuální Safari nebo Chrome');
-  setStatus('Tenhle prohlížeč neumí render po snímcích, nahrávám v reálném čase…', 0, '2');
-  const ac = audioCtx(), dest = ac.createMediaStreamDestination();
-  if (!vid._src) { vid._src = ac.createMediaElementSource(vid); vid._src.connect(ac.destination); }
-  vid._src.connect(dest);
-  const stream = new MediaStream([...cv.captureStream(fps).getVideoTracks(), ...dest.stream.getAudioTracks()]);
-  const mime = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
-  const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 16e6 } : {});
-  const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
-  const done = new Promise(r => rec.onstop = r);
-  vid.currentTime = 0; await new Promise(r => vid.addEventListener('seeked', r, { once: true }));
-  exporting = false; rec.start(500);
-  const tick = setInterval(() => setStatus(`Nahrávám… ${Math.round(vid.currentTime / duration * 100)} %`, vid.currentTime / duration, '2'), 250);
-  const sfxHook = G.sfx !== 'none' ? pages.map(p => p.s) : [];
-  const onT = () => { while (sfxHook.length && vid.currentTime >= sfxHook[0]) { sfxHook.shift(); sfxAt(ac, dest, ac.currentTime, G.sfx, G.sfxVol / 100); } };
-  vid.addEventListener('timeupdate', onT);
-  await vid.play(); await new Promise(r => vid.addEventListener('ended', r, { once: true }));
-  await new Promise(r => setTimeout(r, 300)); rec.stop(); await done; clearInterval(tick);
-  vid.removeEventListener('timeupdate', onT); vid._src.disconnect(dest);
-  const type = (mime || 'video/webm').split(';')[0];
-  await deliver(new Blob(chunks, { type }), type.includes('mp4') ? 'mp4' : 'webm');
-}
-
-// ================= UKLÁDÁNÍ PROJEKTU =================
-let saveTimer = 0;
-function scheduleSave() {
-  if (!projKey || !words.length) return;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(projKey, JSON.stringify({ v: 2, words, G, own: pages.map(p => [p.a, p.own]).filter(x => x[1]) }));
-      $('saveState').hidden = false;
-    } catch (e) {}
-  }, 600);
-}
-function restore() {
-  let d = null; try { d = JSON.parse(localStorage.getItem(projKey) || 'null'); } catch (e) {}
-  if (!d || d.v !== 2 || !d.words || !d.words.length) return false;
-  words = d.words; G = Object.assign({}, E.BASE, { sfx: 'none', sfxVol: 60 }, d.G);
-  pages = E.buildPages(words, G, duration, cv.width, cv.height);
-  const own = new Map(d.own || []); pages.forEach(p => p.own = own.get(p.a) || null);
-  renderMarks(); renderPages(); revealEditor(); checkCrops(); gotoPage(0);
-  setStatus(`Načetl jsem uložené titulky k tomuhle videu (${words.length} slov). Nový přepis přepíše úpravy.`, null);
-  return true;
-}
-
-// ================= START =================
-buildFontGrid(); syncUI(); ensureFonts();
 requestAnimationFrame(loop);
 
-// API pro render v cloudu (render_captions.py) a testy
-window.__app = {
-  E, get G() { return G; }, get words() { return words; }, get pages() { return pages; },
-  load(ws, style, own) {
-    words = ws.map(w => { const raw = String(w.word ?? w.raw ?? w.t).trim(); return { raw, t: stripPunct(raw) || raw, s: w.start ?? w.s, e: w.end ?? w.e, em: !!w.em }; }).filter(w => w.t);
-    G = Object.assign({}, (E.TEMPLATES[(style || {}).template] || E.TEMPLATES.base).style, { sfx: 'none', sfxVol: 60 }, style || {});
-    pages = E.buildPages(words, G, duration, cv.width, cv.height);
-    pages.forEach((p, k) => p.own = own && own[k] ? Object.assign({}, own[k]) : null);
-    renderMarks(); renderPages(); revealEditor();
-    return pages.map((p, i) => i + ': ' + words.slice(p.a, p.b + 1).map(w => w.t).join(' '));
-  },
-  fonts: () => ensureFonts(),
-  renderAt(t) { exporting = true; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(vid, 0, 0, cv.width, cv.height); return renderer.render(ctx, cv.width, cv.height, t, state); },
-  setScope(v) { scope = v; }, setCur(k) { curPage = k; }, setVal, syncUI, gotoPage,
+// ================= STYL: rozsah a zápis =================
+const cur=()=>E.styleOf(E.pages[curPage]);
+function pageMeta(p){ const k=E.keyOf(p); return E.meta[k]=E.meta[k]||{}; }
+const REBUILD=new Set(['wpp','maxLines','maxChars','split','rowMax']);
+// Base dělí řádky podle šířky slov → po změně písma / velikosti se titulky přepočítají
+const REFLOW=new Set(['size','emScale','track','trackEm','cond','wordGap','fontMain','wMain','fontEm','wEm','emItalic','mainItalic','caseMain','caseSec','punct']);
+function setVal(key,val,noHist){
+  const p=E.pages[curPage];
+  if (scope==='all' || E.GLOBAL_ONLY.has(key) || !p){
+    E.G[key]=val; for (const k in E.meta){ const o=E.meta[k].own; if (o && key in o) delete o[key]; }
+  } else { const m=pageMeta(p); m.own=m.own||{}; m.own[key]=val; if (key==='posX'||key==='posY') m.own._manualPos=true; }
+  if (REBUILD.has(key) || (E.G.split==='fill' && REFLOW.has(key) && (scope==='all' || E.GLOBAL_ONLY.has(key)))) E.buildPages();
+  if (!noHist) changed(); else { scheduleSave(); }
+}
+function setMany(obj){ for (const [k,v] of Object.entries(obj)) setVal(k,v,true); changed(); }
+function scopeHTML(){ return `<div class="scope" id="scopeSw"><div data-v="all" class="${scope==='all'?'on':''}">Použít na všechny titulky</div><div data-v="one" class="${scope==='one'?'on':''}">Jen tento titulek</div></div>`; }
+function bindScope(){ const s=$('scopeSw'); if (!s) return; s.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; scope=d.dataset.v; renderPanel(); }; }
+
+// ---------- generátory ovládacích prvků ----------
+const C=[]; // registrace handlerů
+function slider(lb,key,min,max,step=1,unit=''){ const id='c'+C.length; C.push(['range',id,key]); const v=cur()[key]; return `<label class="ctl"><div class="lb"><span>${lb}</span><span id="${id}v">${v}${unit}</span></div><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}" data-unit="${unit}"></label>`; }
+function toggle(lb,key,onv=true,offv=false){ const id='c'+C.length; C.push(['tog',id,key,onv,offv]); return `<div class="row"><span>${lb}</span><input type="checkbox" class="sw" id="${id}" ${cur()[key]===onv?'checked':''}></div>`; }
+function chips(lb,key,opts){ const id='c'+C.length; C.push(['chips',id,key]); const v=String(cur()[key]); return `${lb?`<div class="clabel">${lb}</div>`:''}<div class="chips" id="${id}">${opts.map(([val,l])=>`<div class="chip ${String(val)===v?'on':''}" data-v="${val}">${l}</div>`).join('')}</div>`; }
+function color(lb,key){ const id='c'+C.length; C.push(['color',id,key]); return `<label><input type="color" id="${id}" value="${cur()[key]}">${lb}</label>`; }
+function bindControls(){
+  for (const [type,id,key,a,b] of C){
+    const el=$(id); if (!el) continue;
+    if (type==='range'){ el.oninput=()=>{ $(id+'v').textContent=el.value+el.dataset.unit; setVal(key,+el.value,true); }; el.onchange=()=>changed(); }
+    else if (type==='tog') el.onchange=()=>setVal(key,el.checked?a:b);
+    else if (type==='color'){ el.oninput=()=>setVal(key,el.value,true); el.onchange=()=>changed(); }
+    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout') renderPanel(); };
+  }
+  C.length=0;
+}
+
+// ================= PANELY =================
+$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
+function subHTML(name,opts,extra=''){ return `<div class="sub" data-sub="${name}">${opts.map(([v,l])=>`<div data-v="${v}" class="${sub[name]===v?'on':''}">${l}</div>`).join('')}${extra}</div>`; }
+function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s=>{ s.onclick=e=>{ const d=e.target.closest('[data-v]'); if (d){ sub[s.dataset.sub]=d.dataset.v; renderPanel(); } }; }); }
+function renderPanel(){
+  const P=$('panel'); C.length=0;
+  let h='';
+  if (!E.pages.length && panel!=='overlay'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  switch(panel){
+    case 'captions': h=pCaptions(); break;
+    case 'templates': h=pTemplates(); break;
+    case 'style': h=pStyle(); break;
+    case 'motion': h=pMotion(); break;
+    case 'sfx': h=pSfx(); break;
+    case 'overlay': h=pOverlay(); break;
+    case 'ai': h=pAI(); break;
+  }
+  P.innerHTML=h; bindControls(); bindScope(); bindSub();
+  const fn=binders[panel]; fn&&fn();
+}
+const binders={};
+
+// ---------- TITULKY ----------
+function pCaptions(){
+  const pg=E.pages.map((p,k)=>{ const ws=[]; for(let i=p.a;i<=p.b;i++){ const w=E.words[i]; ws.push(`<span class="w ${w.em?'em':''}" data-i="${i}">${esc(w.t)}</span>`); }
+    const m=E.meta[E.keyOf(p)]; return `<div class="pg ${k===curPage?'cur':''}" data-k="${k}"><div class="t">${fmt(p.s)}</div><div class="ws">${ws.join('')}</div><button class="ed" data-ed="${k}">✎</button></div>`; }).join('');
+  return `<div class="btnrow"><button class="btn" id="editTxt">✎ Upravit text</button><button class="btn" id="batchBtn">☰ Hromadná úprava</button></div>
+  <div class="note">Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo). Tužka u titulku = upravit text.</div>
+  ${chips('Hlavní řádek','mainLine',[['mid','Auto (střed)'],['1','1.'],['2','2.'],['3','3.'],['4','4.'],['word','Nejdelší slovo'],['none','Žádný']])}
+  ${toggle('Plnit řádky podle šířky (Base: 3 / 2 / 2 slova)','split','fill','words')}
+  ${E.G.split==='fill'?slider('Šířka řádku (kolik se vejde)','rowMax',35,85,1,'%'):''}
+  ${slider('Max řádků na titulek','maxLines',1,4)}
+  ${slider('Max znaků na řádek (0 = auto)','maxChars',0,40)}
+  ${slider('Slov na titulek (auto)','wpp',1,8)}
+  ${toggle('Interpunkce','punct')}
+  ${toggle('Velké písmeno v hlavním řádku (slova od 3 písmen)','capMain3')}
+  <div class="btnrow"><button class="btn" id="dictBtn">📖 Slovník oprav</button><button class="btn" id="resetOne">↺ Zrušit vlastní styl</button></div>
+  <div class="pglist" id="pglist">${pg}</div>`;
+}
+binders.captions=()=>{
+  $('editTxt').onclick=()=>openInline(curPage);
+  $('batchBtn').onclick=openBatch;
+  $('dictBtn').onclick=()=>openSheet('sheetDict');
+  $('resetOne').onclick=()=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); delete m.own; changed(); renderPanel(); toast('Titulek má zase společný styl'); } };
+  $('pglist').onclick=e=>{
+    const ed=e.target.closest('[data-ed]'); if (ed){ selectPage(+ed.dataset.ed); openInline(+ed.dataset.ed); return; }
+    const w=e.target.closest('.w'); if (w){ const W=E.words[+w.dataset.i]; W.em=!W.em; w.classList.toggle('em',W.em); changed(); }
+    const pg=e.target.closest('.pg'); if (pg) selectPage(+pg.dataset.k);
+  };
 };
+function selectPage(k,seek=true){ curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); vid.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions' && panel!=='templates') renderPanel(); }
+function markCur(){
+  document.querySelectorAll('#pglist .pg').forEach(el=>el.classList.toggle('cur',+el.dataset.k===curPage));
+  document.querySelectorAll('#trC .cb').forEach(el=>el.classList.toggle('cur',+el.dataset.k===curPage));
+  const c=document.querySelector('#pglist .pg.cur'); if (c && panel==='captions') c.scrollIntoView({block:'nearest'});
+}
+// --- úprava textu titulku ---
+function pageText(p){ const a=[]; for(let i=p.a;i<=p.b;i++) a.push(E.G.punct?E.words[i].raw:E.words[i].t); return a.join(' '); }
+function setPageText(k,text){
+  const p=E.pages[k]; if (!p) return;
+  const list=text.trim().split(/\s+/).filter(Boolean);
+  const old=E.words.slice(p.a,p.b+1);
+  if (!list.length){ E.words.splice(p.a,p.b-p.a+1); return; }
+  let neu;
+  if (list.length===old.length) neu=old.map((w,i)=>({...w,raw:list[i],t:E.stripPunct(list[i])||list[i]}));
+  else { neu=E.spread(list,old[0].s,old[old.length-1].e); }
+  E.words.splice(p.a,p.b-p.a+1,...neu);
+}
+let inlineK=-1;
+function openInline(k){
+  const p=E.pages[k]; if(!p) return; vid.pause(); inlineK=k; inlineOpen=true;
+  vid.currentTime=Math.min(p.e-0.02,p.s+0.45);
+  const ta=$('inlineEdit'); ta.value=pageText(p); ta.classList.remove('hidden'); $('inlineBar').classList.remove('hidden'); ta.focus(); ta.select();
+}
+function closeInline(save){
+  if (save && inlineK>=0){ setPageText(inlineK,$('inlineEdit').value); changed(true); renderPanel(); }
+  $('inlineEdit').classList.add('hidden'); $('inlineBar').classList.add('hidden'); inlineOpen=false; inlineK=-1;
+}
+$('inlineOk').onclick=()=>closeInline(true); $('inlineCancel').onclick=()=>closeInline(false);
+$('inlineEdit').onkeydown=e=>{ if (e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); closeInline(true); } if (e.key==='Escape') closeInline(false); };
+// --- hromadná úprava ---
+function openBatch(){ $('batchText').value=E.pages.map(pageText).join('\n'); openSheet('sheetBatch'); }
+$('replBtn').onclick=()=>{ const f=$('findIn').value; if(!f) return; const ta=$('batchText'); const n=ta.value.split(f).length-1; ta.value=ta.value.split(f).join($('replIn').value); toast(`Nahrazeno ${n}×`); };
+$('batchOk').onclick=()=>{
+  const lines=$('batchText').value.split('\n');
+  // od konce, aby indexy slov seděly
+  for (let k=E.pages.length-1;k>=0;k--){ if (lines[k]===undefined) continue; if (lines[k].trim()!==pageText(E.pages[k])) setPageText(k,lines[k]); }
+  changed(true); $('sheetBatch').classList.remove('on'); renderPanel(); toast('Titulky upravené');
+};
+
+// ---------- ŠABLONY ----------
+function customTemplates(){ return lsGet('efk_custom',{}); }
+function pTemplates(){
+  const cat=sub.templates; let list;
+  if (cat==='custom') list=Object.entries(customTemplates());
+  else list=Object.entries(E.TEMPLATES).filter(([k,t])=>cat==='all'||t.cat==='trending');
+  const S=cur();
+  return `${scopeHTML()}${subHTML('templates',[['trending','🔥 Trending'],['all','Vše'],['custom','♥ Vlastní']])}
+  <div class="tplgrid" id="tplgrid">${list.map(([k,t])=>tplCard(k,t,S.style===k?' on':'').replace('</div>',(cat==='custom'?`<span class="x" data-del="${k}">✕</span>`:'')+'</div>')).join('')||'<div class="muted">Zatím nemáš vlastní šablony. V záložce Styl ulož srdíčkem ♥.</div>'}</div>
+  <div class="clabel">Rychlé efekty</div>
+  <div class="chips" id="quickFx">
+    <div class="chip ${S.fxFlicker?'on':''}" data-k="fxFlicker">Flicker</div>
+    <div class="chip ${S.anim==='squish'?'on':''}" data-k="squish">Squish</div>
+    <div class="chip ${S.fxShine?'on':''}" data-k="fxShine">Shine</div>
+    <div class="chip ${S.fxShake?'on':''}" data-k="fxShake">Shake</div>
+    <div class="chip ${S.fxWiggle?'on':''}" data-k="fxWiggle">Wiggle</div>
+  </div>`;
+}
+binders.templates=()=>{
+  $('tplgrid').onclick=e=>{
+    const d=e.target.closest('[data-del]'); if (d){ e.stopPropagation(); const c=customTemplates(); delete c[d.dataset.del]; lsSet('efk_custom',c); renderPanel(); return; }
+    const c=e.target.closest('.tpl'); if(!c) return; const t=E.TEMPLATES[c.dataset.k]||customTemplates()[c.dataset.k]; if(!t) return;
+    const set={...t.set}; delete set.posY; delete set.posX; // pozici (pod obličej) šablona nepřepisuje
+    setMany({...set, style:c.dataset.k}); renderPanel(); toast('Šablona „'+t.name+'“ '+(scope==='all'?'na všechny titulky':'na tento titulek'));
+  };
+  $('quickFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; const k=c.dataset.k, S=cur();
+    if (k==='squish') setVal('anim',S.anim==='squish'?'block':'squish'); else setVal(k,!S[k]); renderPanel(); };
+};
+
+// ---------- STYL ----------
+const SHADOWS=[['none',null],['#000000','#000'],['#2f7bff','#2f7bff'],['#ffc531','#ffc531'],['#4df0ff','#4df0ff'],['#21d07a','#21d07a'],['#ff3ad7','#ff3ad7']];
+function pStyle(){
+  const S=cur(), st=sub.style;
+  let h=`${scopeHTML()}${subHTML('style',[['color','Barva'],['font','Font'],['text','Text'],['shadow','Stín'],['transform','3D a tvar']],'<div class="sp"></div><div class="hrt" id="saveTpl" title="Uložit jako vlastní šablonu">♥</div>')}`;
+  if (st==='color'){
+    h+=`<div class="colors">${color('Text','cText')}${color('Zvýraznění 1','c1')}${color('2.','c2')}${color('3.','c3')}${color('4.','c4')}</div>
+    <div class="note">Zvýraznění 1–4 se střídá po titulcích (1. titulek = 1. barva…), když je přechod vypnutý.</div>
+    ${toggle('Vedlejší řádky s jemným přelivem do šeda','textGrad')}
+    ${S.textGrad?`<div class="colors">${color('Vedlejší nahoře','cText')}${color('Vedlejší dole','cText2')}</div>`:''}
+    ${toggle('Dvoubarevný přechod na hlavním řádku','grad')}
+    ${S.grad?`<div class="colors">${color('Barva A','gA')}${color('Barva B','gB')}</div>${chips('Směr přechodu','gradDir',[['v','↕ Svisle'],['h','↔ Vodorovně'],['d','↘ Šikmo']])}`:''}
+    ${toggle('Každý N-tý titulek jinou barvou','altOn')}
+    ${S.altOn?`<div class="colors">${color('Barva A','altA')}${color('Barva B','altB')}</div>${slider('Každý … titulek','altEvery',2,6)}`:''}
+    ${toggle('Negativ (inverzní písmo)','negativ')}
+    ${slider('Záře okolo hlavního slova','glow',0,100)}
+    ${chips('Záře svítí','glowMode',[['always','Pořád'],['entrance','Jen při nástupu (problikne)']])}
+    <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">✧ Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
+  } else if (st==='font'){
+    const fam=fontTarget==='em'?S.fontEm:S.fontMain, w=fontTarget==='em'?S.wEm:S.wMain, it=fontTarget==='em'?S.emItalic:S.mainItalic;
+    h+=`<div class="seg" id="fontT"><div data-v="em" class="${fontTarget==='em'?'on':''}">Hlavní řádek</div><div data-v="main" class="${fontTarget==='main'?'on':''}">Vedlejší řádky</div></div>
+    <div class="fontlist" id="fontlist">${E.FONTS.map(([f,wt,l,i],n)=>`<div class="chip ${f===fam&&wt===w&&!!i===!!it?'on':''}" data-n="${n}" style="font-family:${esc(f)};font-weight:${wt};${i?'font-style:italic':''}">${esc(l)}</div>`).join('')}</div>`;
+  } else if (st==='text'){
+    const em=textTarget==='em';
+    h+=`<div class="seg" id="textT"><div data-v="em" class="${em?'on':''}">Hlavní řádek</div><div data-v="main" class="${!em?'on':''}">Vedlejší řádky</div></div>
+    ${em?chips('Velikost písmen','caseMain',[['none','Žádná'],['title','Každé Slovo Velké'],['upper','VELKÁ'],['lower','malá']]):chips('Velikost písmen','caseSec',[['none','Žádná'],['lowerStart','Začátek věty malým'],['upper','VELKÁ'],['lower','malá'],['title','Každé Slovo Velké']])}
+    ${em?slider('Velikost hlavního řádku (%)','emScale',60,260,1,'%'):slider('Velikost písma','size',30,200)}
+    ${toggle('Kurzíva',em?'emItalic':'mainItalic')}
+    ${slider('Tloušťka písma',em?'wEm':'wMain',100,900,100)}
+    ${slider('Mezera mezi slovy (%)','wordGap',40,260,5,'%')}`;
+  } else if (st==='shadow'){
+    const cs=S.shadowSize===0?'none':S.cShadow;
+    h+=`<div class="clabel">Barva stínu</div><div class="swatches" id="shSw">${SHADOWS.map(([v,c])=>`<div class="swatch ${v==='none'?'none':''} ${cs===v?'on':''}" data-v="${v}" style="${c?'background:'+c:''}"></div>`).join('')}<div class="swatch rainbow ${!SHADOWS.some(s=>s[0]===cs)?'on':''}"><input type="color" id="shCustom" value="${S.cShadow}"></div></div>
+    <div class="chips" id="shSize"><div class="chip ${S.shadowSize<=18&&S.shadowSize>0?'on':''}" data-v="15">Malý</div><div class="chip ${S.shadowSize>18&&S.shadowSize<=35?'on':''}" data-v="25">Střední</div><div class="chip ${S.shadowSize>35?'on':''}" data-v="50">Velký</div></div>
+    ${slider('Velikost (rozmazání)','shadowSize',0,100)}
+    ${slider('Průhlednost','shadowA',0,100,1,'%')}
+    ${slider('Vzdálenost stínu','shadowDist',0,40)}
+    ${slider('3D hloubka písma (extrude)','extrude',0,100)}`;
+  } else if (st==='transform'){
+    h+=`${slider('Mezery mezi písmeny','track',-20,12,0.5)}
+    ${S.trackEm!=null?slider('Mezery mezi písmeny – hlavní řádek','trackEm',-24,12,0.5):''}
+    ${slider('Zúžení písma','cond',60,100,1,'%')}
+    ${slider('Řádkování','gap',30,140,1,'%')}
+    ${slider('Kinetické rozložení (posun řádků)','kinetic',0,100)}
+    ${chips('Rozložení','layout',[['diagonal','Šikmo (Base)'],['cascade','Kaskáda'],['center','Na střed'],['left','Vlevo'],['right','Vpravo']])}
+    ${slider('3D náklon do strany','tilt',-45,45,1,'°')}
+    ${toggle('Střídat náklon vlevo / vpravo','tiltAlt')}
+    ${slider('3D náklon dopředu / dozadu','tiltX',-35,35,1,'°')}
+    ${slider('Síla perspektivy','persp',0,100)}
+    ${slider('Rotace','rot',-30,30,1,'°')}
+    ${chips('Pořadí vrstev','layerOrder',[['natural','Spodní řádek vpředu (doporučeno)'],['mainfront','Hlavní vpředu'],['bottomfirst','Horní vpředu']])}
+    <div class="note">Spodní řádek vpředu = háčky a čárky spodního řádku nikdy nezakryje řádek nad ním.</div>
+    ${slider('Velikost','size',30,200)}
+    ${slider('Pozice vodorovně','posX',5,95,1,'%')}
+    ${slider('Pozice svisle','posY',5,95,1,'%')}`;
+  }
+  return h;
+}
+binders.style=()=>{
+  $('saveTpl').onclick=()=>{
+    const name=prompt('Název vlastní šablony:','Moje šablona '+(Object.keys(customTemplates()).length+1)); if(!name) return;
+    const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k];
+    const c=customTemplates(); const key='c'+Date.now(); c[key]={name,cat:'custom',set,pv:`<span style="font-family:${esc(S.fontMain)};font-weight:${S.wMain}">Tvůj</span><br><b style="font-family:${esc(S.fontEm)};font-weight:${S.wEm};${S.grad?`background:linear-gradient(${S.gA},${S.gB});-webkit-background-clip:text;color:transparent`:`color:${S.c1}`}">Styl</b>`};
+    lsSet('efk_custom',c); renderHomeTpl(); toast('♥ Uloženo do Vlastních šablon');
+  };
+  const ft=$('fontT'); if (ft) ft.onclick=e=>{ const d=e.target.closest('[data-v]'); if(d){ fontTarget=d.dataset.v; renderPanel(); } };
+  const tt=$('textT'); if (tt) tt.onclick=e=>{ const d=e.target.closest('[data-v]'); if(d){ textTarget=d.dataset.v; renderPanel(); } };
+  const fl=$('fontlist'); if (fl) fl.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; const [f,w,,i]=E.FONTS[+c.dataset.n];
+    if (fontTarget==='em') setMany({fontEm:f,wEm:w,emItalic:!!i}); else setMany({fontMain:f,wMain:w,mainItalic:!!i});
+    fl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); document.fonts&&document.fonts.load(`${i?'italic ':''}${w} 40px ${f}`); };
+  const sw=$('shSw'); if (sw) sw.onclick=e=>{ const d=e.target.closest('.swatch[data-v]'); if(!d) return; if (d.dataset.v==='none') setVal('shadowSize',0); else setMany({cShadow:d.dataset.v, shadowSize:cur().shadowSize||25}); renderPanel(); };
+  const sc=$('shCustom'); if (sc){ sc.oninput=()=>setVal('cShadow',sc.value,true); sc.onchange=()=>{ if(!cur().shadowSize) setVal('shadowSize',25); changed(); renderPanel(); }; }
+  const ss=$('shSize'); if (ss) ss.onclick=e=>{ const d=e.target.closest('.chip'); if(!d) return; setVal('shadowSize',+d.dataset.v); renderPanel(); };
+  const sg=$('suggestCol'); if (sg) sg.onclick=suggestColors;
+};
+async function suggestColors(){
+  const box=$('suggBox'); box.innerHTML='<div class="muted">Analyzuju barvy ve videu…</div>';
+  const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
+  const r=await AI.suggestColors(v);
+  box.innerHTML=r.list.map((c,i)=>`<div data-i="${i}"><span style="background:linear-gradient(${c.gA},${c.gB});-webkit-background-clip:text;background-clip:text;color:transparent">${esc(c.name)}</span></div>`).join('');
+  box.onclick=e=>{ const d=e.target.closest('[data-i]'); if(!d) return; const c=r.list[+d.dataset.i]; setMany({grad:true,gA:c.gA,gB:c.gB}); renderPanel(); toast('Barva použitá'); };
+}
+
+// ---------- POHYB A EFEKTY ----------
+function pMotion(){
+  const S=cur();
+  return `${scopeHTML()}
+  ${chips('Animace nástupu','anim',[['base','Prolnutí slov (Base)'],['block','Plynulý blok (Apple)'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
+  ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom','↑ Zdola'],['top','↓ Shora'],['left','→ Zleva'],['right','← Zprava']])}
+  ${S.enter!=='none'?chips('Dojezd','ease',[['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,''):''}
+  ${toggle('Slovo po slově (podle řeči)','wordByWord')}
+  ${toggle('Plynulý odchod','fadeOut')}
+  ${S.fadeOut?`<div class="clabel">Odchod</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení (Base)</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:''}
+  <div class="clabel">Efekty</div>
+  ${toggle('Shine – lesk přejede přes hlavní slovo','fxShine')}
+  ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100):''}
+  ${toggle('Flicker – problikne při nástupu','fxFlicker')}
+  ${toggle('Shake – zatřese při nástupu','fxShake')}
+  ${toggle('Wiggle – jemné vlnění','fxWiggle')}
+  ${S.fxWiggle||S.fxShake?slider('Síla wiggle / shake','wiggle',0,100):''}`;
+}
+
+// ---------- SFX ----------
+const SFX=[['none','Žádný'],['light','Lehké kliknutí'],['heavy','Těžké kliknutí'],['mouse','Klik myši'],['tick','Tick'],['type','Psaní na klávesnici'],['pop','Pop'],['whoosh','Whoosh'],['swoosh','Swoosh'],['shutter','Spoušť foťáku'],['glitch','Glitch'],['ding','Ding']];
+function pSfx(){
+  const S=cur();
+  return `${scopeHTML()}${slider('Hlasitost','sfxVol',0,100,1,'%')}
+  ${toggle('Zvuk na každé slovo (jinak na každý titulek)','sfxWord')}
+  <div class="clabel">Zvuk</div><div class="sfxlist chips" id="sfxList">${SFX.map(([v,l])=>`<div class="chip ${S.sfx===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="note">Klepnutí zvuk přehraje a nastaví. „Jen tento titulek“ = každý titulek může mít jiný zvuk.</div>`;
+}
+binders.motion=(function(prev){ return ()=>{ prev&&prev(); const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1}); else setMany({exitScale:null,exitDur:0.3}); renderPanel(); }; }; })(binders.motion);
+binders.sfx=()=>{ $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; playSfx(c.dataset.v); setVal('sfx',c.dataset.v); $('sfxList').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); }; };
+
+// ---------- OVERLAY ----------
+const STICKERS=['💸','💰','⚡','🔥','✅','❌','⭐','👉','👇','➡️','🚀','💯','❤️','😂','🤯','👀','📈','🎯'];
+const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide →'],['slideL','Slide ←'],['slideU','Slide ↑'],['slideD','Slide ↓']];
+function pOverlay(){
+  const o=E.overlays.find(x=>x.id===selOv);
+  let h=`<div class="btnrow"><button class="btn" id="ovImg">🖼 Přidat obrázek / video</button></div>
+  <div class="clabel">Nálepky</div><div class="stickers" id="stk">${STICKERS.map(s=>`<div>${s}</div>`).join('')}</div>
+  <div class="row"><span>Wiggle na všechny overlaye</span><input type="checkbox" class="sw" id="ovWigAll" ${E.overlays.length&&E.overlays.every(x=>x.wiggle)?'checked':''}></div>`;
+  if (o){
+    h+=`<div class="clabel">Vybraný overlay – animace</div><div class="chips" id="ovAnim">${OVANIM.map(([v,l])=>`<div class="chip ${o.anim===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+    <div class="row"><span>Wiggle</span><input type="checkbox" class="sw" id="ovWig" ${o.wiggle?'checked':''}></div>
+    <div class="row"><span>Před titulky (jinak za nimi)</span><input type="checkbox" class="sw" id="ovAbove" ${o.above?'checked':''}></div>
+    <label class="ctl"><div class="lb"><span>Velikost</span><span>${o.w}%</span></div><input type="range" id="ovW" min="5" max="100" value="${o.w}"></label>
+    <label class="ctl"><div class="lb"><span>Rotace</span><span>${o.rot||0}°</span></div><input type="range" id="ovR" min="-180" max="180" value="${o.rot||0}"></label>
+    <div class="btnrow"><button class="btn" id="ovDel">🗑 Smazat overlay</button></div>
+    <div class="note">Na videu ho chytni a posuň. Na časové ose posuneš začátek a konec.</div>`;
+  } else h+=`<div class="note">Vyber overlay klepnutím na fialový blok v časové ose nebo na videu.</div>`;
+  return h;
+}
+binders.overlay=()=>{
+  $('ovImg').onclick=()=>$('ovIn').click();
+  $('stk').onclick=e=>{ const d=e.target.closest('div'); if(!d||d.id==='stk') return; addOverlay({emoji:d.textContent}); };
+  $('ovWigAll').onchange=e=>{ E.overlays.forEach(o=>o.wiggle=e.target.checked); changed(); renderPanel(); };
+  const o=E.overlays.find(x=>x.id===selOv); if (!o) return;
+  $('ovAnim').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; o.anim=c.dataset.v; changed(); renderPanel(); vid.currentTime=o.s; };
+  $('ovWig').onchange=e=>{ o.wiggle=e.target.checked; changed(); };
+  $('ovAbove').onchange=e=>{ o.above=e.target.checked; changed(); };
+  $('ovW').oninput=e=>{ o.w=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.w+'%'; }; $('ovW').onchange=()=>changed();
+  $('ovR').oninput=e=>{ o.rot=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.rot+'°'; }; $('ovR').onchange=()=>changed();
+  $('ovDel').onclick=()=>{ E.overlays=E.overlays.filter(x=>x!==o); selOv=null; changed(); renderPanel(); };
+};
+async function loadAsset(id,blob){
+  const url=URL.createObjectURL(blob); let el;
+  if (blob.type.startsWith('video')){ el=document.createElement('video'); el.src=url; el.muted=true; el.loop=true; el.playsInline=true; await new Promise(r=>{ el.onloadeddata=r; el.onerror=r; }); el.play().catch(()=>{}); }
+  else { el=new Image(); el.src=url; await new Promise(r=>{ el.onload=r; el.onerror=r; }); }
+  ovAssets[id]={blob,el,type:blob.type}; return el;
+}
+$('ovIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const id='a'+Date.now(); const el=await loadAsset(id,f); addOverlay({asset:id,src:el}); };
+function addOverlay(o){
+  const t=vid.currentTime; const ov={id:Date.now()%1e9, s:t, e:Math.min(vid.duration,t+2), x:50, y:35, w:o.emoji?22:40, rot:0, anim:'pop', wiggle:false, above:true, ...o};
+  E.overlays.push(ov); selOv=ov.id; changed(); renderPanel(); toast('Overlay přidaný – posuň ho prstem');
+}
+function drawOvSel(){
+  const o=E.overlays.find(x=>x.id===selOv); if (!o) return; const t=vid.currentTime; if (t<o.s||t>o.e) return;
+  const b=E.overlayBox(o), c=cv.getContext('2d'); c.save(); c.setTransform(1,0,0,1,0,0); c.strokeStyle='#a78bfa'; c.lineWidth=Math.max(2,cv.width*0.003); c.setLineDash([8,6]);
+  c.strokeRect(b.cx-b.w/2,b.cy-b.h/2,b.w,b.h); c.restore();
+}
+
+// ---------- AI ----------
+function pAI(){
+  const S=cur();
+  return `${scopeHTML()}
+  <div class="clabel">📍 Pozice pod obličej</div>
+  <div class="note">Najde obličej v každém titulku a dá titulek těsně pod bradu – nikdy přes tvář.</div>
+  <div class="row"><span>Uhnout do strany, když je obličej mimo střed</span><input type="checkbox" class="sw" id="faceDodge" ${E.G.faceDodgeX?'checked':''}></div>
+  <button class="btn" id="aiFace">${analysed.face?'↻ Znovu umístit pod obličej':'Umístit titulky pod obličej'}</button>
+  <div class="clabel">🧍 Text za postavou</div>
+  <div class="note">Titulek bude za člověkem (postava zakryje písmo), jako v SA Captions.</div>
+  ${toggle('Text za postavou','behind','on','off')}
+  <div class="clabel">🎨 Barva z videa</div>
+  <button class="btn" id="aiColor">Navrhnout barvy podle videa</button><div class="sugg" id="suggBox" style="margin-top:8px"></div>
+  <div class="clabel">📐 Náklon podle scény</div>
+  <div class="note">Najde linie v záběru (regál, stůl, okno) a nakloní titulek ve 3D stejně jako prostor.</div>
+  <button class="btn" id="aiTilt">${scope==='all'?'Sladit náklon všech titulků se scénou':'Sladit náklon tohoto titulku'}</button>
+  <div class="clabel">⛔ Úseky bez titulků</div>
+  <div class="note">Kde je grafika nebo logo na konci, titulky se nezobrazí a slova se tam vynechají.</div>
+  <div class="btnrow"><button class="btn" id="zHere">＋ 2 s od přehrávací hlavy</button><button class="btn" id="zEnd">＋ Odsud do konce (logo)</button></div>
+  <div class="clabel">📏 Ochrana proti uříznutí</div>
+  <div class="note">Je zapnutá vždy: dlouhý titulek se sám zmenší, aby byl celý vidět i při 3D náklonu.</div>`;
+}
+binders.ai=()=>{
+  $('faceDodge').onchange=e=>{ E.G.faceDodgeX=e.target.checked; if (analysed.face){ E.applyFacePositions(); } changed(); };
+  $('aiFace').onclick=async()=>{
+    const b=$('aiFace'); b.disabled=true; const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
+    try{ await AI.analyzeFaces(v,p=>{ b.textContent='Hledám obličej… '+Math.round(p*100)+' %'; }); for (const k in E.meta) if (E.meta[k].own) delete E.meta[k].own._manualPos; const n=E.applyFacePositions(); analysed.face=true; changed(); toast(`Hotovo – ${n} titulků pod obličejem`); }
+    catch(e){ toast('Nepovedlo se: '+e.message); }
+    renderPanel();
+  };
+  // při zapnutí „text za postavou“ nejdřív oddělit postavu
+  document.querySelectorAll('#panel .sw').forEach(el=>{ if (el.id!=='faceDodge') el.onchange=async()=>{
+    if (el.checked && !AI.masks.length){ el.disabled=true; toast('Odstraňuji pozadí…'); const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
+      try{ await AI.analyzePerson(v,p=>{ toast('Odstraňuji pozadí… '+Math.round(p*100)+' %'); }); analysed.person=true; }catch(e){ toast('Nepovedlo se: '+e.message); el.checked=false; el.disabled=false; return; } el.disabled=false; }
+    else AI.useMasks();
+    setVal('behind',el.checked?'on':'off'); }; });
+  $('aiColor').onclick=suggestColors;
+  $('aiTilt').onclick=async()=>{
+    const b=$('aiTilt'); b.disabled=true; const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
+    const list = scope==='all' ? E.pages.map((p,k)=>k) : [curPage];
+    for (const k of list){ const p=E.pages[k], S=E.styleOf(p); b.textContent=`Měřím linie… ${k+1}/${E.pages.length}`;
+      const r=await AI.suggestTilt(v,(p.s+p.e)/2,S.posY); const m=pageMeta(p); m.own=m.own||{}; m.own.tilt=r.tilt*r.sign*(S.tilt<0?-1:1)||S.tilt; m.own.tiltAlt=false; m.own.rot=r.rot; }
+    changed(); renderPanel(); toast('Náklon sladěný se scénou');
+  };
+  $('zHere').onclick=()=>addZone(vid.currentTime,Math.min(vid.duration,vid.currentTime+2));
+  $('zEnd').onclick=()=>addZone(vid.currentTime,vid.duration);
+};
+function addZone(s,e){ E.zones.push({s,e,label:'Bez titulků'}); changed(true); toast('Úsek bez titulků přidaný'); }
+$('zoneAdd').onclick=()=>addZone(vid.currentTime,Math.min(vid.duration,vid.currentTime+2));
+
+// ================= ČASOVÁ OSA =================
+let pps=70, tlSync=false;
+const tlPad=()=>$('tlScroll').clientWidth/2;
+function renderTimeline(){
+  if (!vid.duration) return;
+  const pad=tlPad(), W=vid.duration*pps;
+  $('tlIn').style.width=(W+pad*2)+'px';
+  const X=t=>pad+t*pps;
+  $('trC').innerHTML=E.pages.map((p,k)=>{ const m=E.meta[E.keyOf(p)]; const txt=[]; for(let i=p.a;i<=p.b;i++) txt.push(E.words[i].t);
+    return `<div class="cb ${k===curPage?'cur':''} ${m&&m.own&&Object.keys(m.own).some(x=>x!=='posY'&&x!=='posX'&&x!=='_manualPos')?'own':''}" data-k="${k}" style="left:${X(p.s)}px;width:${Math.max(6,(p.e-p.s)*pps-2)}px"><span class="hl"></span>${esc(txt.join(' '))}<span class="hr"></span></div>`; }).join('');
+  $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>⛔ ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">✕</span><span class="hr"></span></div>`).join('');
+  $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${o.emoji?o.emoji:'🖼'} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
+  $('trV').style.paddingLeft=pad+'px';
+  if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
+  followTimeline(vid.currentTime,true);
+}
+let thumbsFor=null;
+async function thumbs(){
+  if (thumbsFor===videoURL) return; thumbsFor=videoURL; const tr=$('trV'); tr.innerHTML='';
+  const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; v.onerror=r; });
+  const n=Math.max(1,Math.ceil(v.duration)), w=Math.round(30*v.videoWidth/v.videoHeight);
+  for (let i=0;i<n;i++){ if (thumbsFor!==videoURL) return; await AI.seek(v,i+0.01); const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img); }
+}
+function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
+$('tlScroll').addEventListener('scroll',()=>{ if (tlSync||tlDrag) return; if (!vid.paused) return; vid.currentTime=clamp($('tlScroll').scrollLeft/pps,0,vid.duration-0.01); const k=E.pageAt(vid.currentTime); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
+$('tlZoom').oninput=e=>{ pps=+e.target.value; $('trV').querySelectorAll('img').forEach(i=>i.style.width=pps+'px'); renderTimeline(); };
+// tažení bloků (posun, zkrácení, prodloužení)
+let tlDrag=null;
+$('tlIn').addEventListener('pointerdown',e=>{
+  const zx=e.target.closest('[data-zx]'); if (zx){ E.zones.splice(+zx.dataset.zx,1); changed(true); return; }
+  const blk=e.target.closest('.cb,.zb,.ob'); if (!blk) return;
+  e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
+  const mode=e.target.classList.contains('hl')?'l':e.target.classList.contains('hr')?'r':'m';
+  tlDrag={blk,mode,x0:e.clientX,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width)};
+});
+$('tlIn').addEventListener('pointermove',e=>{
+  if (!tlDrag) return; const d=e.clientX-tlDrag.x0; if (Math.abs(d)>4) tlDrag.moved=true; if (!tlDrag.moved) return;
+  const b=tlDrag.blk;
+  if (tlDrag.mode==='m') b.style.left=(tlDrag.left0+d)+'px';
+  else if (tlDrag.mode==='l'){ b.style.left=(tlDrag.left0+d)+'px'; b.style.width=Math.max(6,tlDrag.w0-d)+'px'; }
+  else b.style.width=Math.max(6,tlDrag.w0+d)+'px';
+});
+$('tlIn').addEventListener('pointerup',e=>{
+  if (!tlDrag) return; const {blk,mode,moved}=tlDrag; const dt=(e.clientX-tlDrag.x0)/pps; tlDrag=null;
+  if (blk.dataset.k!==undefined){
+    const k=+blk.dataset.k;
+    if (!moved){ selectPage(k); return; }
+    const p=E.pages[k], m=pageMeta(p), prev=E.pages[k-1], next=E.pages[k+1];
+    if (mode==='m'){
+      const lo=(prev?prev.s+0.05:0)-p.s, hi=(next?next.e-0.05:vid.duration)-p.e; const d=clamp(dt,lo,hi);
+      for (let i=p.a;i<=p.b;i++){ E.words[i].s+=d; E.words[i].e+=d; }
+      if (m.so!=null) m.so+=d; if (m.eo!=null) m.eo+=d; else m.eo=p.e+d;
+      if (next && p.e+d>next.s){ const nm=pageMeta(next); nm.so=p.e+d; }
+    } else if (mode==='l'){ m.so=clamp(p.s+dt, prev?prev.s+0.05:0, p.e-0.1); if (prev && m.so<prev.e){ pageMeta(prev).eo=m.so; } }
+    else { m.eo=clamp(p.e+dt, p.s+0.1, next?next.e-0.05:vid.duration); if (next && m.eo>next.s){ pageMeta(next).so=m.eo; } }
+    curPage=k; changed(true); if (panel==='captions') renderPanel();
+  } else if (blk.dataset.z!==undefined){
+    const z=E.zones[+blk.dataset.z]; if (!moved) return;
+    if (mode==='m'){ z.s=clamp(z.s+dt,0,vid.duration); z.e=clamp(z.e+dt,0,vid.duration); } else if (mode==='l') z.s=clamp(z.s+dt,0,z.e-0.1); else z.e=clamp(z.e+dt,z.s+0.1,vid.duration);
+    changed(true);
+  } else if (blk.dataset.o!==undefined){
+    const o=E.overlays.find(x=>x.id===+blk.dataset.o); if (!o) return;
+    selOv=o.id;
+    if (moved){ if (mode==='m'){ o.s=clamp(o.s+dt,0,vid.duration); o.e=clamp(o.e+dt,0,vid.duration); } else if (mode==='l') o.s=clamp(o.s+dt,0,o.e-0.1); else o.e=clamp(o.e+dt,o.s+0.1,vid.duration); }
+    else vid.currentTime=o.s+0.3;
+    if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.p==='overlay')); }
+    changed(); renderPanel();
+  }
+});
+// rozdělit titulek v místě přehrávací hlavy
+$('splitBtn').onclick=()=>{
+  const t=vid.currentTime, k=E.pageAt(t); if (k<0) return toast('Postav přehrávací hlavu na titulek');
+  const p=E.pages[k]; let i=p.a; while (i<p.b && E.words[i+1].s<=t) i++;
+  if (i>=p.b) i=p.b-1; if (i<p.a) return toast('Titulek má jen jedno slovo');
+  E.words[i+1].br=true; changed(true); toast('Titulek rozdělený');
+};
+
+// ================= GESTA NA VIDEU =================
+const ptrs=new Map(); let gest=null;
+function cvPt(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]; }
+cv.addEventListener('pointerdown',e=>{
+  if (inlineOpen) return;
+  cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,cvPt(e));
+  const [x,y]=cvPt(e), hr=Math.min(cv.width,cv.height)*0.05;
+  if (ptrs.size===2 && gest && gest.type==='move'){ const [a,b]=[...ptrs.values()]; gest={type:'pinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),size0:cur().size}; return; }
+  // overlay?
+  const t=vid.currentTime;
+  for (const o of [...E.overlays].reverse()){ if (t<o.s||t>o.e) continue; const b=E.overlayBox(o); if (Math.abs(x-b.cx)<b.w/2 && Math.abs(y-b.cy)<b.h/2){ selOv=o.id; gest={type:'ov',o,x0:x,y0:y,ox:o.x,oy:o.y,moved:false}; vid.pause(); if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='overlay')); } renderPanel(); renderTimeline(); return; } }
+  const B=E.lastBox;
+  if (B){
+    const k=E.pageAt(t); if (k>=0) curPage=k;
+    if (Math.hypot(x-B.pe[0],y-B.pe[1])<hr*1.4){ openInline(curPage); ptrs.clear(); return; }
+    if (Math.hypot(x-B.h[0],y-B.h[1])<hr*1.4){ gest={type:'resize',cx:B.cx,cy:B.cy,d0:Math.hypot(x-B.cx,y-B.cy),size0:cur().size}; guides=true; return; }
+    const P=B.P, inside=x>Math.min(...P.map(p=>p[0]))-hr&&x<Math.max(...P.map(p=>p[0]))+hr&&y>Math.min(...P.map(p=>p[1]))-hr&&y<Math.max(...P.map(p=>p[1]))+hr;
+    if (inside){ const S=cur(); gest={type:'move',x0:x,y0:y,px:S.posX,py:S.posY,moved:false}; return; }
+  }
+  gest={type:'tap',x0:x,y0:y};
+});
+cv.addEventListener('pointermove',e=>{
+  if (!ptrs.has(e.pointerId)||!gest) return; ptrs.set(e.pointerId,cvPt(e)); const [x,y]=cvPt(e);
+  if (gest.type==='ov'){ gest.moved=true; gest.o.x=clamp(gest.ox+(x-gest.x0)/cv.width*100,0,100); gest.o.y=clamp(gest.oy+(y-gest.y0)/cv.height*100,0,100); }
+  else if (gest.type==='move'){ if (Math.hypot(x-gest.x0,y-gest.y0)>6){ gest.moved=true; guides=true; } if (!gest.moved) return;
+    let nx=gest.px+(x-gest.x0)/cv.width*100, ny=gest.py+(y-gest.y0)/cv.height*100; if (Math.abs(nx-50)<1.5) nx=50; setVal('posX',+nx.toFixed(1),true); setVal('posY',+clamp(ny,3,97).toFixed(1),true); }
+  else if (gest.type==='resize'){ const d=Math.hypot(x-gest.cx,y-gest.cy); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }
+  else if (gest.type==='pinch' && ptrs.size>=2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }
+});
+function endPtr(e){
+  ptrs.delete(e.pointerId); if (ptrs.size) return;
+  if (gest){ if (gest.type==='tap'){ selOv=null; togglePlay(); } else if (gest.type!=='move'||gest.moved) { changed(); if (panel==='style'||panel==='overlay') renderPanel(); } else if (gest.type==='move' && !gest.moved){ markCur(); if (panel==='captions') renderPanel(); } }
+  gest=null; guides=false;
+}
+cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
+
+// ================= EXPORT =================
+$('exportBtn').onclick=()=>{
+  vid.pause();
+  const opts=[['orig',`Původní (${fullW}×${fullH})`]]; const short=Math.min(fullW,fullH);
+  for (const s of [2160,1440,1080,720]) if (s<short){ const sc=s/short; opts.push([String(s),`${s}p (${Math.round(fullW*sc/2)*2}×${Math.round(fullH*sc/2)*2})`]); }
+  $('exRes').innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  const q=$('quality').value; if ([...$('exRes').options].some(o=>o.value===q)) $('exRes').value=q;
+  $('exDl').classList.add('hidden'); $('exStatus').textContent=EXP.canPrecise()?'':'Tento prohlížeč neumí přesný export – použije se nahrávání v reálném čase.';
+  $('exGo').classList.remove('hidden'); $('exBarW').classList.add('hidden');
+  openSheet('sheetExport');
+};
+let exCancel=null;
+$('exCancel').onclick=()=>{ if (exCancel) exCancel.v=true; };
+$('exGo').onclick=async()=>{
+  const r=$('exRes').value, short=Math.min(fullW,fullH), sc=r==='orig'?1:(+r)/short;
+  const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2, fps=+$('exFps').value, mode=segVal('exMode');
+  $('exGo').classList.add('hidden'); $('exCancel').classList.remove('hidden'); $('exBarW').classList.remove('hidden'); $('exDl').classList.add('hidden');
+  exCancel={v:false};
+  const onP=(p,m)=>{ $('exBar').style.width=(p*100)+'%'; $('exStatus').textContent=`${Math.round(p*100)} % · ${m}`; };
+  const t0=performance.now();
+  try{
+    let res;
+    const o={file:videoFile,src:videoURL,w,h,fps,mode,mute:E.flags.mute,behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
+    if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
+    const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
+    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB${res.codec?' · '+res.codec:''}`);
+    // na iPhonu nabídnout sdílení (uložit do Fotek)
+    a.onclick=async ev=>{ if (navigator.canShare){ const f=new File([res.blob],a.download,{type:res.blob.type}); if (navigator.canShare({files:[f]})){ ev.preventDefault(); try{ await navigator.share({files:[f]}); }catch(e){} } } };
+    window.__lastExport=res;
+  }catch(e){ console.error(e); $('exStatus').textContent='Export se nepovedl: '+e.message; }
+  finally{ $('exCancel').classList.add('hidden'); $('exGo').classList.remove('hidden'); exCancel=null; }
+};
+$('quality').onchange=()=>toast('Kvalita exportu: '+$('quality').selectedOptions[0].textContent);
+
+// ================= START =================
+renderHomeTpl(); renderProjects(); renderLangs();
+window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords,snapshot,restore,get curPage(){return curPage;}};
+
+// Base měří šířku slov – když se písmo dočte později, titulky se přepočítají
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', ()=>{ if (E.G.split==='fill' && E.words.length){ E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); try{ renderTimeline(); }catch(e){} } });

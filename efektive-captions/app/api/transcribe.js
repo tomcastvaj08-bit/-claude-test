@@ -1,68 +1,70 @@
-// Přepis řeči na text se slovy a časy.
-// 1) ElevenLabs Scribe (ELEVENLABS_API_KEY) – nejlepší čeština, preferovaný
-// 2) OpenAI Whisper (OPENAI_API_KEY) – záloha
-// Klíče jsou jen na serveru, do telefonu se nedostanou.
+// Přepis řeči na text se slovy a časy (OpenAI Whisper).
+// Klíč je jen na serveru (proměnná OPENAI_API_KEY), do telefonu se nedostane.
 
-function readBody(req, limit = 25 * 1024 * 1024) {
+function readBody(req) {
   return new Promise((resolve, reject) => {
-    const chunks = []; let n = 0;
-    req.on('data', c => { n += c.length; if (n > limit) { reject(new Error('Zvuk je moc velký')); req.destroy(); } else chunks.push(c); });
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
+
 function send(res, code, obj) {
   res.statusCode = code;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(obj));
 }
 
-async function scribe(audio, lang, key) {
-  const form = new FormData();
-  form.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
-  form.append('model_id', process.env.ELEVENLABS_STT_MODEL || 'scribe_v1');
-  form.append('timestamps_granularity', 'word');
-  form.append('tag_audio_events', 'false');
-  if (lang) form.append('language_code', lang);
-  const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': key }, body: form });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(j?.detail?.message || j?.detail || 'Chyba ElevenLabs'), { status: r.status });
-  const words = (j.words || []).filter(w => w.type === 'word').map(w => ({ word: w.text, start: w.start, end: w.end }));
-  return { words, text: j.text || '', engine: 'scribe' };
-}
-
-async function whisper(audio, lang, key) {
-  const form = new FormData();
-  form.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
-  form.append('model', 'whisper-1');
-  form.append('temperature', '0');
-  form.append('response_format', 'verbose_json');
-  form.append('timestamp_granularities[]', 'word');
-  if (lang) form.append('language', lang);
-  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: form });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(j?.error?.message || 'Chyba OpenAI'), { status: r.status });
-  const words = (j.words || []).map(w => ({ word: w.word, start: w.start, end: w.end }));
-  return { words, text: j.text || '', engine: 'whisper' };
-}
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'Použij POST' });
-  const el = process.env.ELEVENLABS_API_KEY, oa = process.env.OPENAI_API_KEY;
-  if (!el && !oa) return send(res, 500, { error: 'Na serveru chybí klíč (ELEVENLABS_API_KEY nebo OPENAI_API_KEY)' });
+  const key = process.env.OPENAI_API_KEY;
+  const elKey = process.env.ELEVENLABS_API_KEY;
+  if (!key && !elKey) return send(res, 500, { error: 'Na serveru chybí OPENAI_API_KEY (nebo ELEVENLABS_API_KEY)' });
+
   try {
     const audio = await readBody(req);
     if (!audio.length) return send(res, 400, { error: 'Prázdný zvuk' });
+
     const url = new URL(req.url, 'http://x');
-    const lang = (url.searchParams.get('lang') || '').replace(/[^a-z]/gi, '').slice(0, 3);
-    let out;
-    if (el) {
-      try { out = await scribe(audio, lang, el); }
-      catch (e) { if (!oa) throw e; out = await whisper(audio, lang, oa); }
-    } else out = await whisper(audio, lang, oa);
-    return send(res, 200, out);
+    const lang = (url.searchParams.get('lang') || '').slice(0, 5);
+    const quality = url.searchParams.get('quality') || 'max';
+
+    // Max přesnost + ElevenLabs klíč → ElevenLabs Scribe (nejpřesnější na češtinu/slovenštinu); jinak OpenAI Whisper
+    if (elKey && (quality === 'max' || !key)) {
+      const f = new FormData();
+      f.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
+      f.append('model_id', 'scribe_v1');
+      f.append('timestamps_granularity', 'word');
+      f.append('tag_audio_events', 'false');
+      if (lang) f.append('language_code', lang);
+      const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': elKey }, body: f });
+      const j = await r.json();
+      if (!r.ok) return send(res, r.status, { error: j?.detail?.message || j?.detail || 'Chyba ElevenLabs' });
+      const words = (j.words || []).filter(w => w.type === 'word').map(w => ({ word: w.text, start: w.start, end: w.end }));
+      return send(res, 200, { words, text: j.text || '', engine: 'elevenlabs-scribe' });
+    }
+
+    const form = new FormData();
+    form.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
+    // whisper-1 umí časy slov ve všech jazycích; "fast" = nižší teplota, bez promptu
+    form.append('model', 'whisper-1');
+    if (quality === 'max') form.append('temperature', '0');
+    form.append('response_format', 'verbose_json');
+    form.append('timestamp_granularities[]', 'word');
+    if (lang) form.append('language', lang);
+
+    const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+    });
+    const j = await r.json();
+    if (!r.ok) return send(res, r.status, { error: j?.error?.message || 'Chyba OpenAI' });
+
+    const words = (j.words || []).map(w => ({ word: w.word, start: w.start, end: w.end }));
+    return send(res, 200, { words, text: j.text || '' });
   } catch (e) {
-    const msg = /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT/i.test(e.message) ? 'Nepodařilo se spojit s přepisovou službou – zkus to znovu' : e.message;
-    return send(res, e.status || 502, { error: msg });
+    return send(res, 500, { error: e.message });
   }
 };

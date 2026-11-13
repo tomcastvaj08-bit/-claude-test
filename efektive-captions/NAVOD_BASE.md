@@ -3,7 +3,8 @@
 Základ je **vzorové video `VID_43543582.mov`** (barbershop, „začněte mě sledovat…“), dodané Teeceem
 jako výchozí vzhled. Všechna čísla níže jsou **změřená z toho videa** (1440×2560, 60 fps) a přepočtená
 na 1080×1920. V appce je to šablona **Base** a je navolená od začátku. Lidi si ji pak můžou upravit
-(fonty, barvy, velikost…). Druhá šablona je **v8** (vinotéka, viz `NAVOD_TITULKY.md`).
+(fonty, barvy, velikost…). Další šablony: **Vinotéka v8** (`NAVOD_TITULKY.md`), Best Account, Negativ, Luxus,
+Zlato, EFEKTIVE, Neon, Bold, Klasik (+ vlastní uložené srdíčkem). Kompletní seznam funkcí appky je v rozboru v9.
 
 ## Vzhled
 - **3 řádky**: horní (vedlejší) → **hlavní** (prostřední, větší, barevný) → spodní (vedlejší).
@@ -15,7 +16,8 @@ na 1080×1920. V appce je to šablona **Base** a je navolená od začátku. Lidi
 - Písmo je **velké, zúžené a hodně stažené**: velikost 118 % (vedlejší ~134 px, hlavní ~211 px při 1080 šířce),
   zúžení na 87 %, proklad −12 % (vedlejší) / −16 % (hlavní), mezery mezi slovy 80 %.
 - **Bez 3D náklonu, bez záře.** Jemný tmavý stín (rozostření 22 %, 50 %, posun 8 %).
-- **Vrstvy**: hlavní řádek leží **před** horním i spodním.
+- **Vrstvy**: **každý spodní řádek leží vždy před řádkem nad ním** (spodní před hlavním, hlavní před horním),
+  aby háčky a čárky spodního řádku nikdy nezakryl řádek nad ním. Platí pro všechny šablony (Styl → 3D a tvar → Pořadí vrstev).
 - **Rozložení šikmo**: každý další řádek je posunutý doprava (horní −2 %, hlavní +2,5 %, spodní +9 % šířky od středu).
 - **Pozice**: střed bloku na 72,5 % výšky. Řádky mají pevné sloty, takže horní řádek je na stejném místě i u kratšího titulku.
 
@@ -32,11 +34,13 @@ na 1080×1920. V appce je to šablona **Base** a je navolená od začátku. Lidi
   Žádný posun ani zvětšení.
 - **Odchod**: celý blok se **rychle zmenší na 60 % a zhasne za 0,1 s**. Hned potom začíná další titulek.
 
-## Co jde v appce změnit (a zůstane to u šablony)
-Šablona (Base / v8), barva hlavního řádku (předvolby i vlastní), přeliv vedlejších řádků, fonty pro hlavní
-a vedlejší řádky zvlášť, velikost, zvětšení hlavního řádku, zúžení písma, proklad, řádkování, mezery mezi slovy,
-šířka řádku, max slov, velká písmena v hlavním řádku, nástup a odchod, 3D náklon, pozice tažením.
-Tlačítko **Obnovit šablonu** vrátí výchozí hodnoty.
+## Kde se to v appce nastavuje
+- **Titulky**: Plnit řádky podle šířky (Base), Šířka řádku, Max řádků, Max znaků, Slov na titulek, Hlavní řádek.
+- **Styl → Barva**: přeliv hlavního řádku, Vedlejší řádky s přelivem do šeda (+ barvy nahoře/dole).
+- **Styl → Text**: Každé Slovo Velké (hlavní), Začátek věty malým (vedlejší), velikosti, tloušťka.
+- **Styl → 3D a tvar**: mezery mezi písmeny (vedlejší i hlavní zvlášť), Zúžení písma, Šikmo (Base), Pořadí vrstev.
+- **Pohyb**: Prolnutí slov (Base), Odchod: Rychlé zmenšení (Base) / Jemné zhasnutí.
+- **Šablony**: Base je první v Trending; klepnutím se vrátí výchozí hodnoty.
 
 ## Poznámka k fontu
 Na iPhonu/Macu se kreslí přímo **SF Pro**. Jinde (Android, Windows, cloud) je náhrada **Inter Tight**

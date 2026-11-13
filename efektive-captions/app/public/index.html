@@ -2,206 +2,181 @@
 <html lang="cs">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Captions">
+<meta name="apple-mobile-web-app-title" content="EFEKTIVE Captions">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="icon" href="icon.png">
 <title>EFEKTIVE Captions</title>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header class="top">
-  <div class="logo"><span>EFEKTIVE</span> Captions</div>
-  <div class="top-r">
-    <span class="pill" id="saveState" hidden>Uloženo</span>
-    <button class="ghost sm" id="newBtn" hidden>Nové video</button>
+
+<!-- ================= DOMŮ ================= -->
+<section id="home" class="screen on">
+  <header class="top">
+    <div class="logo">EFEKTIVE <span>Captions</span></div>
+    <div class="pro">👑 BETA</div>
+  </header>
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-t">Virální titulky<br>jedním klepnutím</div>
+      <div class="hero-s">Tvoje další virální video začíná tady</div>
+      <label class="btn primary big">＋ Nové video<input type="file" id="fileIn" accept="video/*" hidden></label>
+    </div>
+    <div class="sec-h">Šablony titulků <small>klepni = použít pro další video</small></div>
+    <div class="tplrow" id="homeTpl"></div>
+    <div class="sec-h">Nedávné projekty</div>
+    <div id="projects" class="projects"><div class="muted">Zatím žádné projekty.</div></div>
   </div>
-</header>
+</section>
 
-<main class="layout" id="appLayout">
-  <!-- ===== Náhled ===== -->
-  <section class="preview" id="previewCol">
-    <label class="drop" id="pick" for="file">
-      <div class="drop-ic" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="M16 10l5-3v10l-5-3"/></svg>
-      </div>
-      <b>Nahraj video</b>
-      <span>Ideálně svislé 9:16. Video zůstává u tebe, na přepis se posílá jen zvuk.</span>
-    </label>
-    <input type="file" id="file" accept="video/*" hidden>
-    <ol class="how" id="how">
-      <li><b>AI přepíše řeč</b><span>slovo po slovu s přesnými časy</span></li>
-      <li><b>Titulky ve stylu v8</b><span>3 řádky, hlavní barevný, 3D náklon, nástup jako v DaVinci</span></li>
-      <li><b>Uložíš 60 fps</b><span>render snímek po snímku, nic nezasekne</span></li>
-    </ol>
-
-    <div class="stage" id="stage" hidden>
-      <canvas id="cv"></canvas>
-      <div class="stage-badge" id="cropBadge" hidden>Titulek se nevejde – zmenšený</div>
+<!-- ================= NASTAVENÍ PŘEPISU ================= -->
+<section id="setup" class="screen">
+  <header class="top"><button class="ico" id="setupBack">✕</button><div class="ttl">AI přepis</div><div style="width:40px"></div></header>
+  <div class="wrap">
+    <video id="setupPrev" class="setup-prev" muted playsinline></video>
+    <div class="card">
+      <h3>Mluvený jazyk</h3>
+      <input id="langSearch" class="inp" placeholder="Hledat jazyk…" autocomplete="off">
+      <div id="langList" class="langlist"></div>
     </div>
-    <div class="player" id="player" hidden>
-      <button class="round" id="playBtn" aria-label="Přehrát">
-        <svg id="icPlay" viewBox="0 0 24 24" width="18" height="18"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
-        <svg id="icPause" viewBox="0 0 24 24" width="18" height="18" hidden><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"/></svg>
-      </button>
-      <div class="scrub" id="scrub"><div class="marks" id="marks"></div><div class="fill" id="scrubFill"></div><div class="knob" id="scrubKnob"></div></div>
-      <span class="tm" id="tm">0:00</span>
+    <div class="card">
+      <h3>Nastavení titulků</h3>
+      <div class="row"><span>Zobrazit interpunkci</span><input type="checkbox" id="sPunct" class="sw"></div>
+      <div class="row"><span>Max řádků na titulek</span><div class="step" data-id="sLines" data-min="1" data-max="4"><button>−</button><b>3</b><button>＋</button></div></div>
+      <div class="row"><span>Max znaků na řádek <small>(0 = automaticky po slovech)</small></span><div class="step" data-id="sChars" data-min="0" data-max="40"><button>−</button><b>0</b><button>＋</button></div></div>
+      <div class="row"><span>Slov na titulek <small>(při auto)</small></span><div class="step" data-id="sWpp" data-min="1" data-max="8"><button>−</button><b>4</b><button>＋</button></div></div>
+      <div class="row"><span>Hlavní řádek</span><select id="sMain" class="sel"><option value="mid">Střední (auto)</option><option value="1">1.</option><option value="2">2.</option><option value="3">3.</option><option value="4">4.</option><option value="word">Nejdelší slovo</option><option value="none">Žádný</option></select></div>
     </div>
-    <div class="nav" id="capNav" hidden>
-      <button class="ghost sm" id="prevCap" aria-label="Předchozí titulek">‹</button>
-      <div class="nav-mid"><span id="capLabel">–</span></div>
-      <button class="ghost sm" id="nextCap" aria-label="Další titulek">›</button>
+    <div class="card">
+      <h3>Kvalita AI modelu</h3>
+      <div class="seg" id="sQuality"><div data-v="fast">⚡ Rychlá <small>doporučeno</small></div><div data-v="max" class="on">🎯 Max přesnost</div></div>
     </div>
-  </section>
-
-  <!-- ===== Ovládání ===== -->
-  <section class="panel" id="panelCol">
-    <div class="card" id="step2" hidden>
-      <div class="card-h"><h2>1 · Přepis řeči</h2><span class="muted" id="durInfo"></span></div>
-      <div class="row">
-        <select id="lang" aria-label="Jazyk">
-          <option value="">Poznat jazyk automaticky</option>
-          <option value="cs" selected>Čeština</option><option value="sk">Slovenština</option><option value="en">Angličtina</option><option value="de">Němčina</option><option value="pl">Polština</option><option value="hu">Maďarština</option><option value="es">Španělština</option><option value="fr">Francouzština</option><option value="it">Italština</option><option value="pt">Portugalština</option><option value="nl">Nizozemština</option><option value="uk">Ukrajinština</option><option value="ru">Ruština</option><option value="ro">Rumunština</option><option value="hr">Chorvatština</option><option value="sl">Slovinština</option><option value="bg">Bulharština</option><option value="el">Řečtina</option><option value="tr">Turečtina</option><option value="sv">Švédština</option><option value="da">Dánština</option><option value="no">Norština</option><option value="fi">Finština</option><option value="ja">Japonština</option><option value="ko">Korejština</option><option value="zh">Čínština</option>
-        </select>
-      </div>
-      <button class="primary" id="aiBtn">Vytvořit titulky</button>
-      <div class="progress" id="bar" hidden><i></i></div>
-      <div class="status" id="status"></div>
-      <details class="manual">
-        <summary>Bez AI: vložit text ručně</summary>
-        <textarea id="manualText" rows="4" placeholder="Sem napiš, co se ve videu říká…"></textarea>
-        <button id="manualBtn">Použít text</button>
-      </details>
+    <div class="card">
+      <h3>Chytré úpravy</h3>
+      <div class="row"><span>Opravit slova podle slovníku</span><input type="checkbox" id="sDict" class="sw" checked></div>
+      <button class="btn small" id="dictOpen">Upravit slovník oprav</button>
+      <div class="row"><span>Titulky pod obličej</span><input type="checkbox" id="sFace" class="sw" checked></div>
+      <div class="row"><span>Text za postavou</span><input type="checkbox" id="sBehind" class="sw"></div>
     </div>
-
-    <div class="card" id="step3" hidden>
-      <div class="card-h"><h2>2 · Vzhled</h2><button class="ghost sm" id="resetTpl" title="Vrátit šablonu do výchozího stavu">Obnovit šablonu</button></div>
-      <div class="presets tpl" id="tplPresets"></div>
-      <div class="seg" id="scope" role="tablist">
-        <button class="on" data-v="all">Všechny titulky</button>
-        <button data-v="one">Jen tenhle titulek</button>
-      </div>
-      <div class="scope-info" id="scopeInfo"><span id="curName">Měníš všechny titulky</span><button class="link" id="resetOne" hidden>Vrátit na společný styl</button></div>
-
-      <div class="tabs" id="tabs">
-        <button data-t="barva" class="on">Barva</button>
-        <button data-t="prostor">3D</button>
-        <button data-t="pismo">Písmo</button>
-        <button data-t="pohyb">Pohyb</button>
-        <button data-t="zvuk">Zvuk</button>
-      </div>
-
-      <!-- Barva -->
-      <div class="pane on" data-p="barva">
-        <div class="lbl">Barva hlavního řádku podle tématu</div>
-        <div class="presets" id="colorPresets"></div>
-        <div class="swrow">
-          <label class="sw"><input type="color" id="cEm" value="#e4202c"><span>Vlastní barva</span></label>
-          <label class="sw"><input type="color" id="gA" value="#ffe04a"><span>Přeliv od</span></label>
-          <label class="sw"><input type="color" id="gB" value="#ff8a00"><span>Přeliv do</span></label>
-          <label class="sw"><input type="color" id="cText" value="#ffffff"><span>Vedlejší nahoře</span></label>
-          <label class="sw"><input type="color" id="cText2" value="#d4d4d4"><span>Vedlejší dole</span></label>
-        </div>
-        <div class="tg"><span>Hlavní řádek s přelivem shora dolů</span><input type="checkbox" class="switch" id="grad"></div>
-        <div class="tg"><span>Vedlejší řádky s jemným přelivem do šeda</span><input type="checkbox" class="switch" id="textGrad"></div>
-        <label class="ctl"><div class="lb"><span>Velikost písma</span><span id="sizeV"></span></div><input type="range" id="size" min="50" max="160" value="118"></label>
-        <label class="ctl"><div class="lb"><span>Záře okolo hlavního řádku</span><span id="glowV"></span></div><input type="range" id="glow" min="0" max="100" value="30"></label>
-        <label class="ctl"><div class="lb"><span>Stín (průhlednost)</span><span id="shadowAV"></span></div><input type="range" id="shadowA" min="0" max="80" value="45"></label>
-        <label class="ctl"><div class="lb"><span>Svislá pozice</span><span id="posYV"></span></div><input type="range" id="posY" min="20" max="85" value="72"></label>
-        <p class="hint">Titulek můžeš v náhledu i přetáhnout prstem. Výchozí pozice 72 % je pod obličejem, v bezpečné zóně Instagramu.</p>
-      </div>
-
-      <!-- 3D -->
-      <div class="pane" data-p="prostor">
-        <div class="lbl">Náklon podle prostoru ve scéně</div>
-        <div class="presets" id="tiltPresets"></div>
-        <label class="ctl"><div class="lb"><span>Natočení do strany</span><span id="tiltV"></span></div><input type="range" id="tilt" min="-30" max="30" value="18"></label>
-        <label class="ctl"><div class="lb"><span>Naklopení (plus = horní okraj blíž)</span><span id="tiltXV"></span></div><input type="range" id="tiltX" min="-20" max="20" value="4"></label>
-        <label class="ctl"><div class="lb"><span>Hloubka perspektivy</span><span id="perspV"></span></div><input type="range" id="persp" min="20" max="100" value="60"></label>
-        <div class="tg"><span>Střídat směr (titulek doprava, další doleva)</span><input type="checkbox" class="switch" id="tiltAlt" checked></div>
-        <p class="hint" id="tiltWarn">Sweet spot je 15–20°. Nad 24° se písmo začne deformovat.</p>
-        <label class="ctl"><div class="lb"><span>Kinetické rozhození řádků</span><span id="kineticV"></span></div><input type="range" id="kinetic" min="0" max="100" value="45"></label>
-        <div class="lbl">Rozložení řádků</div>
-        <div class="chips" id="layout"><button data-v="diagonal">Šikmo</button><button data-v="cascade">Schody</button><button data-v="center">Na střed</button><button data-v="left">Doleva</button><button data-v="right">Doprava</button></div>
-      </div>
-
-      <!-- Písmo -->
-      <div class="pane" data-p="pismo">
-        <div class="seg small" id="fontTarget"><button class="on" data-v="em">Hlavní řádek</button><button data-v="main">Vedlejší řádky</button></div>
-        <div class="fontgrid" id="fontgrid"></div>
-        <div class="tg"><span>Hlavní řádek kurzívou</span><input type="checkbox" class="switch" id="emItalic"></div>
-        <label class="ctl"><div class="lb"><span>Zvětšení hlavního řádku</span><span id="emScaleV"></span></div><input type="range" id="emScale" min="110" max="220" value="160"></label>
-        <label class="ctl"><div class="lb"><span>Mezery mezi písmeny</span><span id="trackV"></span></div><input type="range" id="track" min="-20" max="6" value="-12"></label>
-        <label class="ctl"><div class="lb"><span>Zúžení písma</span><span id="condV"></span></div><input type="range" id="cond" min="70" max="100" value="87"></label>
-        <label class="ctl"><div class="lb"><span>Řádkování</span><span id="gapV"></span></div><input type="range" id="gap" min="50" max="110" value="66"></label>
-        <label class="ctl"><div class="lb"><span>Mezery mezi slovy</span><span id="wordGapV"></span></div><input type="range" id="wordGap" min="40" max="240" value="80"></label>
-        <div class="lbl">Písmena v hlavním řádku</div>
-        <div class="chips" id="caseMain"><button data-v="title">Každé Slovo Velké</button><button data-v="none">Jak je</button><button data-v="upper">VELKÁ</button></div>
-        <div class="tg"><span>Začátek věty ve vedlejším řádku malým</span><input type="checkbox" class="switch" id="lowerStart"></div>
-      </div>
-
-      <!-- Pohyb -->
-      <div class="pane" data-p="pohyb">
-        <div class="lbl">Nástup</div>
-        <div class="chips" id="anim"><button data-v="fade">Slova se prolnou (Base)</button><button data-v="block">Celý blok zespodu (v8)</button></div>
-        <div class="lbl">Odchod</div>
-        <div class="chips" id="exitStyle"><button data-v="fast">Rychlé zmenšení (Base)</button><button data-v="soft">Jemné zhasnutí (v8)</button></div>
-        <div class="tg"><span>Slova se rozsvěcují, jak zazní</span><input type="checkbox" class="switch" id="wordByWord" checked></div>
-        <div class="tg"><span>Animovaný odchod</span><input type="checkbox" class="switch" id="fadeOut" checked></div>
-        <div class="tg"><span>Lesk přes hlavní slovo (každý 3. titulek)</span><input type="checkbox" class="switch" id="fxShine"></div>
-        <p class="hint">Base: slova se jen prolnou (0,2 s), titulek stojí a na konci se rychle zmenší a zhasne. v8: celý blok dojede zespodu (expo 0,55 s, 82 % → 100 %). Žádné pružení, vlnění ani třesení.</p>
-      </div>
-
-      <!-- Zvuk -->
-      <div class="pane" data-p="zvuk">
-        <div class="lbl">Zvuk při nástupu titulku</div>
-        <div class="chips" id="sfx"><button data-v="none">Bez zvuku</button><button data-v="soft">Jemný klik</button><button data-v="tick">Tick</button><button data-v="pop">Pop</button><button data-v="whoosh">Whoosh</button></div>
-        <label class="ctl"><div class="lb"><span>Hlasitost</span><span id="sfxVolV"></span></div><input type="range" id="sfxVol" min="0" max="100" value="60"></label>
-      </div>
-    </div>
-
-    <div class="card" id="step4" hidden>
-      <div class="card-h"><h2>3 · Text titulků</h2><button class="ghost sm" id="mosaicBtn">Kontrola všech</button></div>
-      <label class="ctl"><div class="lb"><span>Max slov na titulek</span><span id="wppV"></span></div><input type="range" id="wpp" min="1" max="8" value="7"></label>
-      <label class="ctl" id="rowMaxCtl"><div class="lb"><span>Šířka řádku (kolik se vejde)</span><span id="rowMaxV"></span></div><input type="range" id="rowMax" min="35" max="80" value="61"></label>
-      <div class="tg"><span>Zobrazit interpunkci</span><input type="checkbox" class="switch" id="punct"></div>
-      <p class="hint">Ťukni na titulek = skočíš na něj. Ťukni na slovo = ručně z něj uděláš hlavní řádek. Tužka = oprava textu.</p>
-      <div class="pages" id="pages"></div>
-    </div>
-
-    <div class="card" id="step5" hidden>
-      <div class="card-h"><h2>4 · Export</h2></div>
-      <div class="row two">
-        <select id="res"><option value="1080" selected>1080 × 1920</option><option value="orig">Původní rozlišení</option><option value="720">720p (menší soubor)</option></select>
-        <select id="fps"><option value="60" selected>60 fps (plynulé)</option><option value="30">30 fps</option></select>
-      </div>
-      <button class="primary" id="exportBtn">Uložit video s titulky</button>
-      <div class="progress" id="bar2" hidden><i></i></div>
-      <div class="status" id="status2">Renderuje se snímek po snímku, takže nic nezasekne. Nech appku otevřenou.</div>
-      <button class="ghost sm" id="cancelExport" hidden>Zrušit export</button>
-    </div>
-  </section>
-</main>
-
-<div class="modal" id="mosaic" hidden>
-  <div class="modal-in">
-    <div class="modal-h"><b>Kontrola titulků</b><span class="muted" id="mosaicInfo"></span><button class="ghost sm" id="mosaicClose">Zavřít</button></div>
-    <div class="mgrid" id="mgrid"></div>
+    <button class="btn primary big" id="genBtn">Vytvořit titulky</button>
+    <details class="card"><summary>Nemám AI klíč – vložit text ručně</summary>
+      <textarea id="manualText" class="inp" rows="5" placeholder="Sem vlož text, co se ve videu říká…"></textarea>
+      <button class="btn" id="manualBtn">Rozložit text po videu</button>
+    </details>
+    <div class="status" id="setupStatus"></div>
   </div>
-</div>
+</section>
 
-<video id="vid" playsinline webkit-playsinline preload="auto" hidden></video>
+<!-- ================= ANALÝZA ================= -->
+<section id="busy" class="screen">
+  <div class="busy">
+    <div class="spin"></div>
+    <div class="busy-t" id="busyT">Analyzuji video…</div>
+    <div class="busy-s" id="busyS"></div>
+    <div class="pbar"><div id="busyBar"></div></div>
+    <div class="busy-p" id="busyP">0 %</div>
+  </div>
+</section>
+
+<!-- ================= EDITOR ================= -->
+<section id="editor" class="screen">
+  <header class="etop">
+    <button class="ico" id="closeBtn" title="Zavřít (uloží se)">✕</button>
+    <select id="quality" class="qsel"><option value="orig">Původní kvalita</option><option value="1080">1080p</option><option value="720">720p</option></select>
+    <button class="btn primary exp" id="exportBtn">Export</button>
+  </header>
+  <div id="stage" class="stage">
+    <canvas id="cv"></canvas>
+    <textarea id="inlineEdit" class="inline-edit hidden" rows="3"></textarea>
+    <div id="inlineBar" class="inline-bar hidden"><button class="btn small" id="inlineCancel">Zrušit</button><button class="btn small primary" id="inlineOk">Hotovo</button></div>
+  </div>
+  <div class="ctrl">
+    <span class="tm" id="tm">0:00 / 0:00</span>
+    <div class="ctrl-c">
+      <button class="ico" id="undoBtn" title="Zpět">↶</button>
+      <button class="ico play" id="playBtn">▶</button>
+      <button class="ico" id="redoBtn" title="Znovu">↷</button>
+    </div>
+    <div class="ctrl-r">
+      <button class="ico" id="eyeBtn" title="Skrýt titulky">👁</button>
+      <button class="ico" id="fsBtn" title="Celá obrazovka">⛶</button>
+    </div>
+  </div>
+  <div class="tl" id="tl">
+    <div class="tl-scroll" id="tlScroll">
+      <div class="tl-in" id="tlIn">
+        <div class="tr tr-v" id="trV"></div>
+        <div class="tr tr-c" id="trC"></div>
+        <div class="tr tr-z" id="trZ"></div>
+        <div class="tr tr-o" id="trO"></div>
+      </div>
+    </div>
+    <div class="tl-head"></div>
+    <div class="tl-tools">
+      <button id="muteBtn" class="chipbtn">🔊 Zvuk videa</button>
+      <button id="zoneAdd" class="chipbtn">⛔ ＋ Bez titulků</button>
+      <button id="splitBtn" class="chipbtn">✂ Rozdělit titulek</button>
+      <label class="zoom">🔍<input type="range" id="tlZoom" min="20" max="240" value="70"></label>
+    </div>
+  </div>
+  <div class="panel" id="panel"></div>
+  <nav class="bnav" id="bnav">
+    <button data-p="captions" class="on"><i>T</i>Titulky</button>
+    <button data-p="templates"><i>▦</i>Šablony</button>
+    <button data-p="style"><i>◐</i>Styl</button>
+    <button data-p="motion"><i>✦</i>Pohyb</button>
+    <button data-p="sfx"><i>♪</i>SFX</button>
+    <button data-p="overlay"><i>✚</i>Overlay</button>
+    <button data-p="ai"><i>✧</i>AI</button>
+  </nav>
+</section>
+
+<!-- ================= LISTY ================= -->
+<div class="sheet" id="sheetBatch"><div class="sh">
+  <div class="sh-h"><b>Hromadná úprava</b><button class="ico" data-close>✕</button></div>
+  <div class="muted">Každý řádek = jeden titulek. Uprav text, časy zůstanou. Prázdný řádek titulek smaže.</div>
+  <div class="frow"><input class="inp" id="findIn" placeholder="Najít"><input class="inp" id="replIn" placeholder="Nahradit"><button class="btn small" id="replBtn">Nahradit vše</button></div>
+  <textarea id="batchText" class="inp mono" rows="14"></textarea>
+  <button class="btn primary" id="batchOk">Uložit</button>
+</div></div>
+
+<div class="sheet" id="sheetDict"><div class="sh">
+  <div class="sh-h"><b>Slovník oprav</b><button class="ico" data-close>✕</button></div>
+  <div class="muted">Jeden řádek = <b>chybně → správně</b>. Opravy se použijí po každém přepisu (i na frázi o více slovech).</div>
+  <textarea id="dictText" class="inp mono" rows="14"></textarea>
+  <div class="frow"><button class="btn" id="dictApply">Použít teď na titulky</button><button class="btn primary" id="dictSave">Uložit</button></div>
+</div></div>
+
+<div class="sheet" id="sheetExport"><div class="sh">
+  <div class="sh-h"><b>Nastavení exportu</b><button class="ico" data-close>✕</button></div>
+  <div class="seg" id="exMode"><div data-v="full" class="on">Celé video</div><div data-v="captions">Jen titulky (průhledné)</div></div>
+  <div class="row"><span>Rozlišení</span><select id="exRes" class="sel"></select></div>
+  <div class="row"><span>Snímková frekvence</span><select id="exFps" class="sel"><option value="60" selected>60 fps</option><option value="50">50 fps</option><option value="30">30 fps</option><option value="25">25 fps</option><option value="24">24 fps</option></select></div>
+  <div class="muted" id="exInfo">Přesný export snímek po snímku – titulky jsou plynulé i na 60 fps.</div>
+  <div class="pbar hidden" id="exBarW"><div id="exBar"></div></div>
+  <div class="status" id="exStatus"></div>
+  <a class="btn primary hidden" id="exDl" download>⬇ Stáhnout</a>
+  <button class="btn primary" id="exGo">Exportovat</button>
+  <button class="btn hidden" id="exCancel">Zrušit</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<video id="vid" playsinline preload="auto" class="hidden"></video>
+<input type="file" id="ovIn" accept="image/*,video/*" hidden>
+
 <script src="vendor/mp4-muxer.js"></script>
-<script src="vendor/webm-muxer.js"></script>
 <script src="vendor/mp4box.all.min.js"></script>
 <script src="source.js"></script>
+<script src="vendor/face/face_detection.js"></script>
+<script src="vendor/selfie/selfie_segmentation.js"></script>
 <script src="engine.js"></script>
+<script src="ai.js"></script>
+<script src="export.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ async function openFrameSource(file, dispW, dispH) {
     try { mp4.appendBuffer(buf); mp4.flush(); } catch (e) { fin(null); }
     setTimeout(() => fin(null), 50);
   });
-  if (!info || !info.videoTracks || !info.videoTracks.length) return null;
+  if (!info || !info.videoTracks || !info.videoTracks.length) { console.warn('openFrameSource: soubor není MP4/MOV'); return null; }
   const tr = info.videoTracks[0];
 
   // popis kodeku (avcC / hvcC / vpcC / av1C) pro VideoDecoder
@@ -24,12 +24,12 @@ async function openFrameSource(file, dispW, dispH) {
     const trak = mp4.getTrackById(tr.id);
     for (const en of trak.mdia.minf.stbl.stsd.entries) {
       const box = en.avcC || en.hvcC || en.vpcC || en.av1C;
-      if (box) { const s = new MP4Box.DataStream(undefined, 0, MP4Box.DataStream.BIG_ENDIAN); box.write(s); description = new Uint8Array(s.buffer, 8); break; }
+      if (box) { const DS = MP4Box.DataStream || global.DataStream; const s = new DS(undefined, 0, DS.BIG_ENDIAN); box.write(s); description = new Uint8Array(s.buffer, 8); break; }
     }
-  } catch (e) { return null; }
+  } catch (e) { console.warn('openFrameSource: popis kodeku', e); return null; }
   const codec = tr.codec.startsWith('vp08') ? 'vp8' : tr.codec;
   const config = { codec, codedWidth: tr.video.width, codedHeight: tr.video.height, description };
-  try { if (!(await VideoDecoder.isConfigSupported(config)).supported) return null; } catch (e) { return null; }
+  try { if (!(await VideoDecoder.isConfigSupported(config)).supported) { console.warn('openFrameSource: kodek nepodporovaný', codec); return null; } } catch (e) { console.warn('openFrameSource: kodek', e); return null; }
 
   // otočení z matice stopy (iPhone ukládá svislá videa naležato + rotace)
   let rot = 0;
@@ -42,7 +42,7 @@ async function openFrameSource(file, dispW, dispH) {
   mp4.onSamples = (id, user, s) => { for (const x of s) samples.push(x); };
   mp4.setExtractionOptions(tr.id, null, { nbSamples: 1e9 });
   mp4.start(); mp4.flush();
-  if (!samples.length) return null;
+  if (!samples.length) { console.warn('openFrameSource: žádné vzorky'); return null; }
   const first = Math.min(...samples.map(s => s.cts / s.timescale)) * 1e6;
 
   const queue = []; let err = null, wake = null, si = 0, flushed = false, flushDone = false;
