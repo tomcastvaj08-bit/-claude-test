@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261113k';
+import { createModel, ready, LITE } from './builders.js?v=20261113m';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -24,12 +24,12 @@ const ORDER = ['orchid', 'miniorchid', 'tulips', 'bonsai', 'bouquet', 'chrysanth
 const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
   };
 const N = ORDER.length;
-const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 8, REVEAL = 13.5; // okno max. N exponátů (jinak se první místo přepíše)
+const SPACING = 8.2, START = 6.0, EYE = 1.62, WINDOW = 8, REVEAL = 13.5; // okno max. N exponátů (jinak se první místo přepíše)
 const BG = '#FFFFFF', FOG = '#FFFFFF';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
-const sideX = () => (portrait() ? 1.25 : 1.6);
-const stopBefore = () => (portrait() ? 6.2 : 4.6);
+const sideX = () => (portrait() ? 0.9 : 1.4);
+const stopBefore = () => (portrait() ? 6.0 : 4.2);
 // vždy dvojice na jedné úrovni: k sudé + k liché stojí naproti sobě
 const slotS = (k) => START + Math.floor(k / 2) * SPACING;
 const sideOf = (k) => (k % 2 === 0 ? 1 : -1) * (Math.floor(k / 2) % 2 ? -1 : 1);
@@ -101,7 +101,7 @@ const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshSt
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
 // lesklá podlaha: skutečný odraz – scéna se vykreslí zrcadlově do textury (v poloviční velikosti) a vmíchá se do dlaždic
-const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.16 };
+const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.1 };
 floor.material.onBeforeCompile = (sh) => {
   sh.uniforms.tRefl = { value: refl.rt.texture }; sh.uniforms.uTexMat = { value: refl.mat }; sh.uniforms.uReflK = { value: refl.k };
   sh.vertexShader = 'uniform mat4 uTexMat;\nvarying vec4 vReflUv;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvReflUv = uTexMat * vec4( transformed, 1.0 );');
@@ -121,7 +121,7 @@ function renderReflection() {
   for (const ex of exhibits) if (ex.sh) ex.sh.visible = false;
   renderer.setRenderTarget(refl.rt); renderer.clear(); renderer.render(scene, cam); renderer.setRenderTarget(null);
   floor.visible = true; figLayer.visible = true;
-  for (const ex of exhibits) if (ex.sh) ex.sh.visible = true;
+  for (const ex of exhibits) if (ex.sh) ex.sh.visible = false;
 }
 
 const shadowTex = (() => {
@@ -135,6 +135,33 @@ const shadowTex = (() => {
 const shadowGeo = new THREE.PlaneGeometry(1, 1);
 const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, fog: false });
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+// malý bílý stojánek s názvem (jako cedulka „rezervováno“ na stole): dvě destičky opřené o sebe do trojúhelníku
+const cardFont = document.fonts?.load('700 64px Rubik').catch(() => {});
+const cardBack = new THREE.MeshStandardMaterial({ color: '#F7F6F3', roughness: 0.55 });
+function makeCard(name, fp, D) {
+  const W = 1.15, H = 0.44, lean = 0.2;
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 394;
+  const g = c.getContext('2d');
+  const draw = () => {
+    g.fillStyle = '#F7F6F3'; g.fillRect(0, 0, c.width, c.height);
+    g.strokeStyle = 'rgba(0,0,0,.08)'; g.lineWidth = 6; g.strokeRect(14, 14, c.width - 28, c.height - 28);
+    g.fillStyle = '#1F1A17'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    let fs = 96; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(name).width > c.width - 110 && fs > 30);
+    g.fillText(name, c.width / 2, c.height / 2 + 4);
+    tex.needsUpdate = true;
+  };
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  draw(); cardFont?.then?.(draw);
+  const front = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 });
+  const geo = new THREE.BoxGeometry(W, H, 0.012); geo.translate(0, H / 2, 0);
+  const grp = new THREE.Group();
+  const a = new THREE.Mesh(geo, [cardBack, cardBack, cardBack, cardBack, front, cardBack]); a.rotation.x = -lean;
+  const b = new THREE.Mesh(geo, cardBack); b.rotation.x = lean;
+  const off = Math.sin(lean) * H / 2; a.position.z = off; b.position.z = -off;
+  grp.add(a, b);
+  grp.position.set(fp.cx, 0, Math.max(fp.cz + fp.d / 2, D * 0.18) + 0.5);
+  return grp;
+}
 // půdorys spodní části modelu (body do výšky band nad zemí) v souřadnicích nadřazené skupiny
 function footprint(obj, band) {
   obj.updateMatrixWorld(true);
@@ -169,7 +196,8 @@ const exhibits = ORDER.map((id) => {
   const shMat = shadowMat.clone(); shMat.opacity = 0;
   const sh = new THREE.Mesh(shadowGeo, shMat);
   sh.rotation.x = -Math.PI / 2; sh.position.set(fp.cx, 0.003, fp.cz); sh.scale.set(fp.w * 1.35 + 0.12, fp.d * 1.35 + 0.12, 1);
-  sh.renderOrder = -1; spin.add(sh);
+  sh.visible = false; // stín pod exponáty vypnutý – stojí přímo na podlaze
+  base.add(makeCard(p.name, fp, D));
   const hit = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), hitMat); hit.position.y = H / 2; spin.add(hit);
   scene.add(root);
   const ex = { id, p, m, root, base, spin, hit, car, sh, shMat, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
@@ -481,7 +509,7 @@ document.addEventListener('click', (e) => {
 // ------------------------------------------------------------ smyčka
 let last = performance.now(), frames = [];
 const perf = { n: 0, sum: 0, max: 0, reset() { this.n = 0; this.sum = 0; this.max = 0; }, get avg() { return this.n ? this.sum / this.n : 0; } };
-window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)), _ex: () => exhibits.map((e) => [e.id, e.slot, e.inWindow, e.shown, e.dropped, e.root.visible, +e.m.progress.toFixed(2), +(slotS(e.slot) - state.s).toFixed(1)]) };
+window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)), _box: () => exhibits.map((e) => [e.id, +new THREE.Box3().setFromObject(e.m.group, true).min.y.toFixed(3), e.root.position.y]), _ex: () => exhibits.map((e) => [e.id, e.slot, e.inWindow, e.shown, e.dropped, e.root.visible, +e.m.progress.toFixed(2), +(slotS(e.slot) - state.s).toFixed(1)]) };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
