@@ -87,7 +87,17 @@ const SPECS = {
     // 1) dvě světle modré hadice přes kapotu od paty sloupků k logu, podél prostředního dílu kapoty
     // výška z vyšší z obou stran (levá strana má v povrchu díry), obě hadice symetricky nad kapotou
     const hh = (x, z, l) => Math.min(top(x, z) ?? 0, top(-x, z) ?? 0) - l;
-    for (const s of [-1, 1]) tube([[150, -430, 12], [120, -520, 16], [75, -640, 14], [40, -740, 12], [26, -800, 6]].map(([x, z, l]) => ['abs', s * x, hh(x, z, l), z]), 321, R);
+    // pravidelný oblouk: v půdorysu lehce vyhnutý ven, ve výšce vyklenutý nad kapotu; oba konce ukotvené ve spojkách
+    for (const s of [-1, 1]) {
+      const A = [150, -430], B = [26, -800], pts = [];
+      let base = 1e9; for (let t = 0; t <= 1.0001; t += 0.1) { const x = A[0] + (B[0] - A[0]) * t, z = A[1] + (B[1] - A[1]) * t; base = Math.min(base, hh(x, z, 0)); }
+      for (let t = 0; t <= 1.0001; t += 0.1) {
+        const x = A[0] + (B[0] - A[0]) * t + 22 * Math.sin(Math.PI * t), z = A[1] + (B[1] - A[1]) * t;
+        const y = Math.min(hh(x, z, 10), base + (hh(A[0], A[1], 10) - base) * (1 - t) + (hh(B[0], B[1], 10) - base) * t - 34 * Math.sin(Math.PI * t));
+        pts.push(['abs', s * x, y, z]);
+      }
+      const hp = tube(pts, 321, R); clip(hp, false, 72); clip(hp, true, 72);
+    }
     // 2) černý oblouk podél spodní hrany čelního skla, od kraje ke kraji (uprostřed vyklenutý dopředu)
     { const pts = []; for (let x = -175; x <= 175; x += 35) pts.push([x, -410 - 40 * (1 - (x / 175) ** 2), 6]); tube(pts, 0, R); }
     // 3) stříbrná podkova přes černou masku
@@ -97,9 +107,11 @@ const SPECS = {
     const sx = (z, y) => { let best = 0; for (let dz = -3; dz <= 3; dz++) for (let dy = -2; dy <= 2; dy++) { const v = SXm.get(Math.round(z / C + dz) + ',' + Math.round(y / C + dy)); if (v !== undefined && v < 330 && v > best) best = v; } return best; };
     // pravidelné „C“ jako C-linie Chironu: elipsa otevřená dopředu (shora od sloupku dozadu kolem dveří a dole zpět dopředu)
     const path = []; for (let a = -120; a <= 120; a += 8) { const t = a * Math.PI / 180; path.push([-130 + 230 * Math.cos(t), -188 + 136 * Math.sin(t)]); }
-    let xs = path.map(([z, y]) => sx(z, y) + 8);
-    for (let k = 0; k < 4; k++) xs = xs.map((x, i) => (xs[Math.max(0, i - 2)] + xs[Math.max(0, i - 1)] + x + xs[Math.min(xs.length - 1, i + 1)] + xs[Math.min(xs.length - 1, i + 2)]) / 5);
-    for (const s of [-1, 1]) tube(path.map(([z, y], i) => ['abs', s * xs[i], y, z]), 15, R);
+    // x: nikdy pod povrchem (max z okolí), pak vyhladit a znovu nepustit pod povrch
+    const raw = path.map(([z, y]) => Math.max(sx(z - 12, y), sx(z, y), sx(z + 12, y), sx(z, y - 10), sx(z, y + 10)) + 11);
+    let xs = raw.slice();
+    for (let k = 0; k < 4; k++) xs = xs.map((x, i) => Math.max(raw[i], (xs[Math.max(0, i - 2)] + xs[Math.max(0, i - 1)] + x + xs[Math.min(xs.length - 1, i + 1)] + xs[Math.min(xs.length - 1, i + 2)]) / 5));
+    for (const s of [-1, 1]) { const dp = tube(path.map(([z, y], i) => ['abs', s * xs[i], y, z]), 15, R); clip(dp, false, 72); clip(dp, true, 72); }
     console.log('door hose x', xs.map(Math.round).join(','));
   }
 };
