@@ -36,7 +36,16 @@ function tube(ctrl, col, th = 1.4) {
   const P = ctrl.map((c) => c[0] === 'abs' ? c.slice(1) : [c[0], (top(c[0], c[1]) ?? -100) - c[2], c[1]]);
   const pts = catmull(P, 10);
   for (let i = 0; i + 1 < pts.length; i++) seg(pts[i], pts[i + 1], col, th);
+  return pts;
 }
+// malá šedá spojka na konci hadice (hadice do ní vede podél své osy)
+function clip(pts, end, col = 71) {
+  const a = end ? pts[pts.length - 1] : pts[0], b2 = end ? pts[pts.length - 2] : pts[1];
+  const d = norm(sub(a, b2)), y = d, ref = Math.abs(y[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+  const x = norm(cross(ref, y)), z = cross(x, y), c = add(a, scl(d, 6));
+  part('6536', col, c, [x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]]);
+}
+const hoseC = (ctrl, col, th, cc = 71) => { const p = tube(ctrl, col, th); clip(p, false, cc); clip(p, true, cc); return p; };
 function seg(a, b2, col, th) {
   const d = sub(b2, a), L = len(d); if (L < 0.5) return;
   const y = norm(d), ref = Math.abs(y[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
@@ -71,25 +80,25 @@ const SPECS = {
   },
   // Chiron: bílé hadice přes kapotu a „C“ oblouk na boku, přes motor dva oblouky
   chiron() {
-    const hz = -560; // střed kapoty
-    // šedý kulatý díl uprostřed kapoty a šedé spojky u předního skla
-    part('3960', 71, [0, (top(0, hz) ?? -150) - 10, hz]);
+    const T = 1.8, hz = -545, hy = (top(0, hz) ?? -150);
+    // šedý půlkruh uprostřed kapoty a šedá hadice obloukem kolem něj
+    part('3960', 71, [0, hy - 8, hz]);
+    hoseC([[-72, -470, 18], [-70, -600, 26], [0, -655, 30], [70, -600, 26], [72, -470, 18]], 71, 1.5);
     for (const s of [-1, 1]) {
-      const cz = -410, cx = s * 62, cy = (top(cx, cz) ?? -170) - 24;
-      part('42003', 71, [cx, cy, cz], [1, 0, 0, 0, 0, -1, 0, 1, 0]);
-      // hadice z předního rohu obloukem nahoru do spojky
-      tube([[s * 130, -740, 6], [s * 125, -660, 30], [s * 95, -520, 40], ['abs', cx, cy - 6, cz - 14]], 15);
-      // smyčka kolem kulatého dílu: ze spojky dopředu kolem a zpět ke středu
-      tube([['abs', cx, cy, cz - 14], [s * 70, hz + 10, 22], [s * 50, hz - 70, 16], [0, hz - 85, 14]], 15);
-      // velký bílý oblouk „C“ na boku za dveřmi (ve svislé rovině boku)
-      const zc = -60, yc = -175, R = 115, arc = [];
-      for (let a = -105; a <= 100; a += 12) { const t = a * Math.PI / 180, z = zc + R * Math.cos(t), y = yc + R * Math.sin(t); arc.push(['abs', s * 312, y, z]); }
-      tube(arc, 15, 1.5);
-      // růžová vzpěra od střechy dopředu na blatník
+      // bílá hadice z předního rohu obloukem nahoru ke spojce u skla
+      hoseC([[s * 150, -745, 8], [s * 140, -660, 34], [s * 110, -520, 40], [s * 80, -420, 30]], 15, T);
+      // bílá hadice přes blatník k boku
+      hoseC([[s * 175, -720, 10], [s * 215, -620, 40], [s * 245, -500, 34], [s * 250, -400, 18]], 15, T);
+      // bílý oblouk kolem dveří (svislá rovina boku), uchycený nahoře pod střechou a dole u prahu
+      const zc = -40, yc = -170, R = 120, arc = [];
+      for (let a = -100; a <= 100; a += 10) { const t = a * Math.PI / 180; arc.push(['abs', s * 300, yc + R * Math.sin(t), zc + R * Math.cos(t)]); }
+      const ap = tube(arc, 15, T); clip(ap, false); clip(ap, true);
+      // růžová vzpěra od střechy dopředu, na obou koncích růžové spojky
       const ra = [s * 140, (top(s * 140, -300) ?? -300) - 16, -300], rb = [s * 165, (top(s * 165, -620) ?? -180) - 22, -620];
-      tube([['abs', ...ra], ['abs', ...rb]], 272, 1.6);
-      part('6536', 272, rb);
+      const rp = tube([['abs', ...ra], ['abs', ...rb]], 272, 1.7); clip(rp, false, 272); clip(rp, true, 272);
     }
+    // bílá šikmá hadice přes kapotu zprava dolů doleva
+    hoseC([[95, -440, 30], [60, -560, 44], [-10, -680, 30], [-40, -750, 10]], 15, T);
   }
 };
 SPECS[spec]();
