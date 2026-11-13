@@ -15,6 +15,8 @@ for me in meshes:
         dg = bpy.context.evaluated_depsgraph_get()
         new = bpy.data.meshes.new_from_object(tmp.evaluated_get(dg))
         bpy.data.objects.remove(tmp)
+        for poly in new.polygons: poly.use_smooth = True   # hladké stínování, ostré jen skutečné hrany dílku
+        new.set_sharp_from_angle(angle=0.65)
         me.user_remap(new)          # všechna umístění dílku použijí zjednodušenou geometrii
         new.name = me.name
         me = new
