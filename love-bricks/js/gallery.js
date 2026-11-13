@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261113h';
+import { createModel, ready, LITE } from './builders.js?v=20261113i';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -19,12 +19,12 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
 
 // pořadí v chodbě: dvojice květin naproti sobě
-const ORDER = ['orchid', 'tulips', 'bonsai', 'bouquet', 'miniorchid', 'chrysanthemum', 'peacelily', 'plum', 'cactus'];
+const ORDER = ['orchid', 'miniorchid', 'tulips', 'bonsai', 'bouquet', 'chrysanthemum', 'peacelily', 'plum', 'cactus']; // obě orchideje hned na začátku
 // velikost v metrech (výška obřích květin)
 const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7,
   };
 const N = ORDER.length;
-const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10, REVEAL = 13.5;
+const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 8, REVEAL = 13.5; // okno max. N exponátů (jinak se první místo přepíše)
 const BG = '#FFFFFF', FOG = '#FFFFFF';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
@@ -206,7 +206,7 @@ function placeFig(F, dt, t) {
   const k = ease(clamp(F.k)), side = F.side;
   // pivot u nohou těsně za okrajem obrazovky; schovaný = nakloněný ven, vykouknutí = náklon dovnitř
   const P = portrait();
-  F.holder.position.set(side * (halfW + (P ? 1.25 : 0.55) * sc), -halfH - 0.1 * sc, -FIG_D);
+  F.holder.position.set(side * (halfW + (P ? 0.7 : 0.2) * sc), -halfH - (P ? 1.0 : 0.8) * sc, -FIG_D); // níž a víc do obrazu
   F.lean.rotation.z = side * (-0.4 + k * (P ? 0.82 : 0.95));
   F.holder.visible = F.k > 0.01;
   F.f.update(dt, t);
@@ -341,7 +341,7 @@ function updateWindow() {
 // ------------------------------------------------------------ vstup
 // Po načtení exponáty napadají z nebe a poskládají se, pak sjede tlačítko na drátku.
 const introStart = performance.now() + 350;
-let introDone = false;
+let introDone = false, shake = 0;
 function enter() { /* vstup je hned – ponecháno kvůli kompatibilitě */ }
 state.entered = true; state.s = 0;
 document.body.classList.add('is-in');
@@ -469,7 +469,7 @@ document.addEventListener('click', (e) => {
 // ------------------------------------------------------------ smyčka
 let last = performance.now(), frames = [];
 const perf = { n: 0, sum: 0, max: 0, reset() { this.n = 0; this.sum = 0; this.max = 0; }, get avg() { return this.n ? this.sum / this.n : 0; } };
-window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)) };
+window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)), _ex: () => exhibits.map((e) => [e.id, e.slot, e.inWindow, e.shown, e.dropped, e.root.visible, +e.m.progress.toFixed(2), +(slotS(e.slot) - state.s).toFixed(1)]) };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -537,12 +537,15 @@ function frame(now) {
     const d = slotS(ex.slot) - state.s;
     // při teleportu se cílová dvojice začne skládat hned po kliknutí (ne až po doletu)
     const dT = state.warp ? slotS(ex.slot) - state.warp.to : d;
-    const near = now >= introStart && ((d > -6 && d < REVEAL) || (dT > -2 && dT < REVEAL));
-    if (near && !ex.shown) { ex.shown = true; ex.m.m.appear = introDone || ex.slot > 1; ex.t0 = now + (ex.m.m.appear ? 0 : (ex.slot % 2) * 120); } // padá jen první dvojice, další se jen objeví
-    else if (ex.shown && ex !== focusEx && (d < -8 || d > REVEAL + 3)) { ex.shown = false; ex.m.setProgress(0); }
-    ex.root.visible = ex.shown && now >= ex.t0;
+    // první dvojice (orchideje) spadne z nebe při vstupu; ostatní už stojí a jen se vynoří z bílé dálky (mlha)
+    if (ex.slot < 2 && !ex.dropped) {
+      if (!ex.shown) { ex.shown = true; ex.m.m.appear = false; ex.t0 = introStart + ex.slot * 180; ex.m.setProgress(0); }
+      if (!ex.landed && now >= ex.t0 + 760 * 0.72) { ex.landed = true; if (!reduceMotion) shake = Math.max(shake, 1); }
+      if (now >= ex.t0 + 760) { ex.dropped = true; ex.m.setProgress(1); }
+    } else if (!ex.dropped || !ex.shown) { ex.shown = true; ex.dropped = true; ex.t0 = 0; ex.m.setProgress(1); }
+    ex.root.visible = ex.shown && now >= ex.t0 && (ex === focusEx || (d > -8 && d < 26));
     if (!ex.root.visible) continue;
-    if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / (ex.m.m.appear ? 350 : 750)));
+    if (ex !== focusEx && !ex.dropped) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / 760));
     ex.shMat.opacity = ex.shMat.opacity + (clamp((ex.m.progress - 0.97) / 0.03) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 4));
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
@@ -585,6 +588,7 @@ function frame(now) {
   } else { pose.pos.copy(tmpA.pos); pose.tgt.copy(tmpA.tgt); }
   camera.position.copy(pose.pos);
   camera.lookAt(pose.tgt);
+  if (shake > 0.002) { camera.position.y += Math.sin(now * 0.09) * 0.035 * shake; camera.rotation.z += Math.sin(now * 0.07) * 0.004 * shake; shake *= Math.exp(-rawDt * 9); } // otřes při dopadu orchidejí
   floor.position.set(0, 0, Math.round((pose.pos.z - 60) / TILE_P) * TILE_P);
   sun.position.set(pose.pos.x + 4, 10, pose.pos.z + 6); sunT.position.set(pose.pos.x, 0, pose.pos.z - 6);
   gold.position.set(pose.pos.x - 2, 6, pose.pos.z - 30); goldT.position.set(pose.pos.x, 0, pose.pos.z);
