@@ -241,10 +241,15 @@ function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.
 // --- přehrávání ---
 function togglePlay(){ if (vid.paused){ ensureAC(); vid.play(); } else vid.pause(); }
 $('playBtn').onclick=togglePlay;
-vid.onplay=()=>{ $('playBtn').textContent='❚❚'; lastT=vid.currentTime; };
-vid.onpause=()=>{ $('playBtn').textContent='▶'; };
+vid.onplay=()=>{ $('playBtn').textContent='❚❚'; $('fsPlay').textContent='❚❚'; lastT=vid.currentTime; };
+vid.onpause=()=>{ $('playBtn').textContent='▶'; $('fsPlay').textContent='▶'; };
 $('eyeBtn').onclick=()=>{ E.flags.hidden=!E.flags.hidden; syncTop(); };
-$('fsBtn').onclick=()=>{ const st=$('stage'); if (st.requestFullscreen && !document.fullscreenElement){ st.requestFullscreen().catch(()=>st.classList.toggle('fs')); } else if (document.fullscreenElement) document.exitFullscreen(); else st.classList.toggle('fs'); };
+// velký náhled: přes celou obrazovku aplikace (ne systémový fullscreen – z toho se na iPhonu nedalo dostat zpět)
+function setFs(on){ $('stage').classList.toggle('fs',on); document.body.classList.toggle('fsmode',on); $('fsBtn').textContent=on?'🗗':'⛶'; }
+$('fsBtn').onclick=()=>setFs(!$('stage').classList.contains('fs'));
+$('fsExit').onclick=e=>{ e.stopPropagation(); setFs(false); };
+$('fsPlay').onclick=e=>{ e.stopPropagation(); togglePlay(); };
+document.addEventListener('keydown',e=>{ if (e.key==='Escape' && $('stage').classList.contains('fs')) setFs(false); });
 function updateMute(){ vid.muted=E.flags.mute; $('muteBtn').classList.toggle('on',E.flags.mute); $('muteBtn').textContent=E.flags.mute?'🔇 Zvuk videa vypnutý':'🔊 Zvuk videa'; }
 $('muteBtn').onclick=()=>{ E.flags.mute=!E.flags.mute; updateMute(); changed(); };
 
