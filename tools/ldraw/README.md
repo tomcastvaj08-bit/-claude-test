@@ -48,3 +48,11 @@ zjednoduší (meshoptimizer), tvar zůstává.
 | Lamborghini Sián | 2 728 | 490 tis. / 246 tis. | 1,51 MB / 1,21 MB |
 | Bugatti Chiron | 2 370 | 410 tis. / 213 tis. | 1,37 MB / 1,08 MB |
 | Bonsaj | 610 | 97 tis. / 61 tis. | 0,41 MB / 0,33 MB |
+
+## Realistický vzhled: zapečené stínování v záhybech (AO)
+
+1. `python blender_ao.py model.gltf model.ao.raw.glb 0.85` – stejné zjednodušení jako `blender_opt.py`, model se slije
+   a Cycles do vrcholů zapeče ambient occlusion. Výsledek zkomprimuj do `models/_tmp/<id>.ao.glb`.
+2. Zkopíruj `aobake.html` do kořene webu jako `_aobake.html`, spusť server (:8765) a `node aobake.js <id> …`.
+   Vznikne `models/<id>.ao.bin` (1 bajt na vrchol v pořadí slitého modelu) – web ho načte vedle `.glb`.
+3. Materiál v `js/solid.js` (lesklý ABS s lakem) stínování použije na nepřímé světlo a odlesky.

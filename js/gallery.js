@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261113d';
+import { createModel, ready, LITE } from './builders.js?v=20261113e';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -57,9 +57,9 @@ scene.background = new THREE.Color(BG); // čistě bílá galerie
 scene.fog = new THREE.Fog(FOG, 8, 22); // dál v chodbě jen teplý opar – exponáty se objevují až zblízka
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.7;
+scene.environmentIntensity = 0.9; // odlesky okolí na lesklém plastu
 pm.dispose();
-scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xE9E9E9, 1.05));
+scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xD8D4CE, 0.85)); // méně plochého světla – víc hloubky a stínů v záhybech
 // měkké světlo zepředu (aby exponáty nebyly tmavé) + nízké zlaté slunce z konce chodby
 const sun = new THREE.DirectionalLight(0xFFFFFF, 1.1); sun.position.set(4, 10, 6); scene.add(sun);
 const sunT = new THREE.Object3D(); scene.add(sunT); sun.target = sunT;
