@@ -18,7 +18,7 @@ for (let q = 0; q < 4; q++) { const a = q * Math.PI / 2; base.part('60897', K, [
 const arm = new Asm();
 arm.part('3021', RB, [70, 8, 0]);                                   // 2x3 pod deskou, přesah o řadu
 arm.part('4304', RB, [90, 16, 0], ry(-Math.PI / 2));                // 2x2 s výstupky do strany ven
-arm.part('15429', RB, [100, 24, 10], [0, -1, 0, 0, 0, 1, -1, 0, 0]); // kočičí ocásek = stočená nožka
+arm.part('15429', RB, [+(process.env.FX || 100), +(process.env.FY || 22), 10], rx(Math.PI)); // kočičí ocásek: velký závit dole u země
 arm.part('3021', RB, [50, -8, 10]); arm.part('6141', RB, [70, -16, 20]); // horní kříž (krok 3)
 for (let q = 0; q < 4; q++) base.add(arm, { M: ry(q * Math.PI / 2), p: [0, 0, 0] });
 for (let q = 0; q < 4; q++) quarter(base, '7033', RB, -24, q);      // hnědý prstenec (krok 5)
