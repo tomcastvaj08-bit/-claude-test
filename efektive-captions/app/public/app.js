@@ -338,7 +338,7 @@ function pCaptions(){
   return `<div class="btnrow"><button class="btn" id="editTxt">✎ Upravit text</button><button class="btn" id="batchBtn">☰ Hromadná úprava</button></div>
   <div class="note">Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo). Tužka u titulku = upravit text.</div>
   ${chips('Hlavní řádek','mainLine',[['mid','Auto (střed)'],['1','1.'],['2','2.'],['3','3.'],['4','4.'],['word','Nejdelší slovo'],['none','Žádný']])}
-  ${toggle('Plnit řádky podle šířky (Base: 3 / 2 / 2 slova)','split','fill','words')}
+  ${toggle('Plnit řádky podle šířky (3 / 2 / 2 slova)','split','fill','words')}
   ${E.G.split==='fill'?slider('Šířka řádku (kolik se vejde)','rowMax',35,85,1,'%'):''}
   ${slider('Max řádků na titulek','maxLines',1,4)}
   ${slider('Max znaků na řádek (0 = auto)','maxChars',0,40)}
@@ -406,7 +406,7 @@ function pTemplates(){
   if (cat==='custom') list=Object.entries(customTemplates());
   else list=Object.entries(E.TEMPLATES).filter(([k,t])=>cat==='all'||t.cat==='trending');
   const S=cur();
-  return `${scopeHTML()}${subHTML('templates',[['trending','🔥 Trending'],['all','Vše'],['custom','♥ Vlastní']])}
+  return `${scopeHTML()}${subHTML('templates',[['trending','Styly'],['custom','♥ Vlastní']])}
   <div class="tplgrid" id="tplgrid">${list.map(([k,t])=>tplCard(k,t,S.style===k?' on':'').replace('</div>',(cat==='custom'?`<span class="x" data-del="${k}">✕</span>`:'')+'</div>')).join('')||'<div class="muted">Zatím nemáš vlastní šablony. V záložce Styl ulož srdíčkem ♥.</div>'}</div>
   <div class="clabel">Rychlé efekty</div>
   <div class="chips" id="quickFx">
@@ -472,7 +472,7 @@ function pStyle(){
     ${slider('Zúžení písma','cond',60,100,1,'%')}
     ${slider('Řádkování','gap',30,140,1,'%')}
     ${slider('Kinetické rozložení (posun řádků)','kinetic',0,100)}
-    ${chips('Rozložení','layout',[['diagonal','Šikmo (Base)'],['cascade','Kaskáda'],['center','Na střed'],['left','Vlevo'],['right','Vpravo']])}
+    ${chips('Rozložení','layout',[['diagonal','Šikmo'],['cascade','Kaskáda'],['center','Na střed'],['left','Vlevo'],['right','Vpravo']])}
     ${slider('3D náklon do strany','tilt',-45,45,1,'°')}
     ${toggle('Střídat náklon vlevo / vpravo','tiltAlt')}
     ${slider('3D náklon dopředu / dozadu','tiltX',-35,35,1,'°')}
@@ -515,12 +515,12 @@ async function suggestColors(){
 function pMotion(){
   const S=cur();
   return `${scopeHTML()}
-  ${chips('Animace nástupu','anim',[['base','Prolnutí slov (Base)'],['block','Plynulý blok (Apple)'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
+  ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
   ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom','↑ Zdola'],['top','↓ Shora'],['left','→ Zleva'],['right','← Zprava']])}
   ${S.enter!=='none'?chips('Dojezd','ease',[['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,''):''}
   ${toggle('Slovo po slově (podle řeči)','wordByWord')}
   ${toggle('Plynulý odchod','fadeOut')}
-  ${S.fadeOut?`<div class="clabel">Odchod</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení (Base)</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:''}
+  ${S.fadeOut?`<div class="clabel">Odchod</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:''}
   <div class="clabel">Efekty</div>
   ${toggle('Shine – lesk přejede přes hlavní slovo','fxShine')}
   ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100):''}
@@ -797,3 +797,6 @@ window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords
 
 // Base měří šířku slov – když se písmo dočte později, titulky se přepočítají
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', ()=>{ if (E.G.split==='fill' && E.words.length){ E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); try{ renderTimeline(); }catch(e){} } });
+
+// maskot na úvodní obrazovce (ukáže se, jen když je soubor maskot.png u appky)
+(()=>{ const m=document.getElementById('mascot'); if (!m) return; m.onload=()=>{ m.hidden=false; }; m.onerror=()=>{ m.remove(); }; m.src='maskot.png'; })();

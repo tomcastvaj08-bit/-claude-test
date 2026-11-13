@@ -17,20 +17,27 @@
 
 <!-- ================= DOMŮ ================= -->
 <section id="home" class="screen on">
+  <div class="orbs" aria-hidden="true"><i class="orb b"></i><i class="orb g"></i></div>
   <header class="top">
-    <div class="logo">EFEKTIVE <span>Captions</span></div>
-    <div class="pro">👑 BETA</div>
+    <div class="logo"><b>EFEKTIVE</b><span>Captions</span></div>
+    <div class="pro">Beta</div>
   </header>
   <div class="wrap">
     <div class="hero">
-      <div class="hero-t">Virální titulky<br>jedním klepnutím</div>
-      <div class="hero-s">Tvoje další virální video začíná tady</div>
-      <label class="btn primary big">＋ Nové video<input type="file" id="fileIn" accept="video/*" hidden></label>
+      <div class="eyebrow"><i></i>Titulky do reels</div>
+      <h1 class="hero-t">Nahraj video.<br><em>Titulky</em> jsou hotové.</h1>
+      <p class="hero-s">AI přepíše řeč, appka z ní udělá titulky ve stylu EFEKTIVE a ty si je doladíš a uložíš.</p>
+      <label class="btn primary big"><span class="plus">+</span> Nové video<input type="file" id="fileIn" accept="video/*" hidden></label>
+      <img class="mascot" id="mascot" alt="Maskot EFEKTIVE" hidden>
     </div>
-    <div class="sec-h">Šablony titulků <small>klepni = použít pro další video</small></div>
-    <div class="tplrow" id="homeTpl"></div>
+    <ol class="steps">
+      <li><span class="dot b"></span><b>Nahraj</b><small>video z galerie</small></li>
+      <li><span class="dot g"></span><b>Přepis</b><small>AI zapíše řeč</small></li>
+      <li><span class="dot y"></span><b>Ulož</b><small>hotové video</small></li>
+    </ol>
     <div class="sec-h">Nedávné projekty</div>
     <div id="projects" class="projects"><div class="muted">Zatím žádné projekty.</div></div>
+    <div id="homeTpl" hidden></div>
   </div>
 </section>
 

@@ -1,10 +1,14 @@
 :root{
-  --bg:#000; --card:#121316; --card2:#1c1d22; --line:#2a2c33; --text:#f4f5f7; --muted:#8b8f99;
-  --acc:#ff8a00; --acc2:#ffcc00; --blue:#2f7bff; --green:#21d07a; --red:#ff3b47;
-  --grad:linear-gradient(135deg,#ff8a00,#ffcc00);
+  /* EFEKTIVE: papír s jemnou modrou mřížkou, inkoust, modrá + zelená, všechno hranaté, kulaté jsou jen kuličky */
+  --bg:#f4f6f9; --card:#ffffff; --card2:#eef1f6; --line:#dbe1e9; --text:#0a0d14; --ink2:#3a4250; --muted:#687182;
+  --acc:#1f4dff; --acc2:#5b82ff; --blue:#1f4dff; --green:#13b97a; --green-ink:#0a7a4f; --red:#d42a1e; --night:#070a11;
+  --grad:linear-gradient(100deg,#1f4dff 10%,#5b82ff 55%,#13b97a 110%);
+  --grid:rgba(31,77,255,.055);
+  --ui:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:"SF Pro Display",-apple-system,BlinkMacSystemFont,"Inter Tight",system-ui,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--ui);-webkit-text-size-adjust:100%;overscroll-behavior:none}
 body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 button,select,input,textarea{font:inherit;color:inherit}
 .hidden{display:none!important}
@@ -184,3 +188,96 @@ input[type=range]{width:100%;accent-color:var(--acc);height:26px}
   .panel{grid-column:2;grid-row:2/4;max-height:none;border-left:1px solid var(--line)}.bnav{grid-column:2;grid-row:4} }
 
 .homemsg{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(255,80,80,.14);color:#ffb4b4;font-size:14px;line-height:1.4}
+
+/* ================= EFEKTIVE vzhled ================= */
+*,*::before,*::after{border-radius:0!important}
+.dot,.orb,.eyebrow i{border-radius:50%!important}
+body{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* tlačítka a ovládání */
+.btn{background:var(--card);color:var(--text);border:1px solid var(--line);font-weight:700;letter-spacing:-.01em}
+.btn.primary{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:4px 4px 0 var(--text)}
+.btn.primary:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--text)}
+.btn.big{padding:18px;font-size:17px}
+.pro{background:var(--text);color:#fff;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px}
+.ttl{font-weight:700}
+.sw{background:#c9d0dc;border:1px solid #b8c1cf}
+.sw:after{background:#fff;box-shadow:0 1px 2px rgba(10,13,20,.25)}
+.sw:checked{background:var(--green);border-color:var(--green)}
+.seg{background:var(--card2);border:1px solid var(--line)}
+.seg div.on{background:var(--text);color:#fff}
+.seg div small{color:var(--green-ink)}
+.step button{background:var(--card);border:1px solid var(--line)}
+.sel,.inp{background:var(--card);border-color:var(--line)}
+.langlist{background:var(--card);border:1px solid var(--line)}
+.card{background:var(--card);border-color:var(--line)}
+.spin{border-color:var(--line);border-top-color:var(--acc);border-radius:0!important;width:44px;height:44px}
+.busy-t{font-weight:800;letter-spacing:-.03em}
+.pbar{background:var(--card2);border:1px solid var(--line);height:8px}
+.pbar div{background:var(--grad)}
+.toast{background:var(--text);color:#fff}
+.homemsg{background:#fdeceb;border:1px solid #f3c4bf;color:#a3241a}
+
+/* editor */
+.etop{background:var(--card);border-bottom:1px solid var(--line)}
+.ctrl{background:var(--card);border-top:1px solid var(--line)}
+.ico.play{background:var(--text);color:#fff}
+.ico.on{color:var(--acc)}
+.tl{background:var(--card)}
+.tl-head{background:var(--text);box-shadow:none}
+.tl-head:before{border-top-color:var(--text)}
+.cb.cur{outline:2px solid var(--text)}
+.ob.cur{outline:2px solid var(--text)}
+.chipbtn{background:var(--card)}
+.chipbtn.on{border-color:var(--red);color:var(--red)}
+.panel{background:var(--card)}
+.bnav{background:var(--card)}
+.bnav button.on{color:var(--acc)}
+.bnav button.on i{color:var(--acc)}
+.sub div{background:var(--card2);color:var(--ink2)}
+.sub div.on{background:var(--text);color:#fff}
+.scope{background:var(--card2);border:1px solid var(--line)}
+.scope div.on{background:var(--acc);color:#fff}
+.chip{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.chip.on{border:2px solid var(--acc);background:#e3e9ff}
+.pg{background:var(--card2);border:1px solid var(--line)}
+.pg.cur{border:2px solid var(--acc)}
+.w{background:var(--card);border:1px solid var(--line)}
+.w.em{background:var(--acc);color:#fff;border-color:var(--acc)}
+.swatch{border:2px solid var(--line)}
+.swatch.on{border-color:var(--text)}
+.swatch.none{background:var(--card2)}
+.tpl{border:2px solid transparent}
+.tpl.on{border-color:var(--acc)}
+.sh{background:var(--card);border-top:1px solid var(--line)}
+
+/* úvodní obrazovka */
+#home{position:relative;overflow:hidden}
+.orbs{position:absolute;inset:0;pointer-events:none;z-index:0}
+.orb{position:absolute;width:420px;height:420px;filter:blur(30px);opacity:.9}
+.orb.b{background:radial-gradient(circle,rgba(31,77,255,.42),rgba(31,77,255,0) 70%);top:-170px;right:-170px}
+.orb.g{background:radial-gradient(circle,rgba(19,185,122,.38),rgba(19,185,122,0) 70%);top:360px;left:-230px}
+#home .top,#home .wrap{position:relative;z-index:1}
+.logo{display:flex;align-items:baseline;gap:7px;font-size:17px;letter-spacing:-.03em}
+.logo b{font-weight:800;color:var(--text)}
+.logo span{background:none;color:var(--acc);-webkit-text-fill-color:currentColor;font-weight:600}
+.hero{position:relative;background:var(--card);border:1px solid var(--line);padding:22px 18px 18px;margin:8px 0 18px;box-shadow:0 1px 0 var(--line)}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);background:var(--bg);font-size:12px;font-weight:600;color:var(--ink2)}
+.eyebrow i{width:8px;height:8px;background:var(--green);box-shadow:0 0 0 4px #daf5e9}
+.hero-t{margin:14px 0 0;font-size:clamp(30px,9vw,40px);font-weight:700;letter-spacing:-.05em;line-height:.98}
+.hero-t em{font-style:normal;color:var(--acc)}
+.hero-s{margin:12px 0 18px;color:var(--ink2);font-size:15px;line-height:1.5;max-width:34ch}
+.btn .plus{display:inline-block;width:22px;height:22px;line-height:20px;margin-right:6px;background:#fff;color:var(--acc);font-weight:800}
+.mascot{position:absolute;right:10px;top:-28px;width:96px;height:auto;pointer-events:none}
+.steps{list-style:none;margin:0 0 6px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.steps li{background:var(--card);padding:12px 10px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.steps b{font-weight:700;letter-spacing:-.02em}
+.steps small{color:var(--muted);font-size:12px}
+.dot{width:12px;height:12px;display:block;margin-bottom:6px}
+.dot.b{background:var(--blue);box-shadow:0 0 0 4px #e3e9ff,0 0 14px rgba(31,77,255,.45)}
+.dot.g{background:var(--green);box-shadow:0 0 0 4px #daf5e9,0 0 14px rgba(19,185,122,.45)}
+.dot.y{background:#ffb800;box-shadow:0 0 0 4px #fff3cf,0 0 14px rgba(255,184,0,.45)}
+.sec-h{font-weight:700;letter-spacing:-.02em}
+.proj{border:1px solid var(--line);background:var(--card)}
+.proj .del{background:rgba(10,13,20,.7)}
