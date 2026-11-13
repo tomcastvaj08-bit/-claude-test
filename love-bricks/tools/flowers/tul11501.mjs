@@ -124,12 +124,38 @@ export function orangeHead() {
 }
 // poupě (návod 2, kroky 1–4): protáhlá limetková kopule 1744 na kopuli 49308, zelený kužel a miska
 export function budHead() {
-  const H = new Asm();
-  H.part('59900', 2, [0, 0, 0], rx(Math.PI));
-  H.part('4740', 2, [0, -28, 0], rx(Math.PI));
-  H.part('49308', 326, [0, -36, 0], rx(Math.PI));            // spodek poupěte: kopule obloukem dolů
-  H.part('1744', 326, [0, -140, 0]);                          // protáhlá špička nahoru
+  // návod 2, kroky 1–4: spodní díl = kopule 49308 + miska 4740 + kulatá destička 85861 + kužel 59900 (postaveno kopulí nahoru),
+  // pak otočený a nasazený pod protáhlou kopuli 1744 s kulatou destičkou 6141 na špičce → hladké vajíčko, pod ním zelený kalich.
+  // Počátek = horní konec stonku (spodní hrot kužele), osa poupěte = -Y.
+  const H = new Asm(), E = -76;                 // rovník vajíčka (styk obou kopulí)
+  const F = rx(Math.PI);
+  H.part('1744', 326, [0, E - 72, 0]);          // horní polovina: protáhlá kopule špičkou nahoru
+  H.part('6141', 326, [0, E - 72 - 8, 0]);      // malá kulatá destička na špičce
+  H.part('49308', 326, [0, E + 32, 0], F);      // dolní polovina: kopule obloukem dolů
+  H.part('4740', 2, [0, E + 40, 0], F);         // zelená miska pod vajíčkem
+  H.part('85861', 2, [0, E + 48, 0], F);
+  H.part('59900', 2, [0, E + 72, 0], F);        // zelený kužel zužující se ke stonku
   return H;
+}
+// lístek poupěte (návod 2, krok 7): špičatý list 61406 na kulaté destičce 2654, destička s klipy 60470b, šikmá destička 85984;
+// klipy na tyčce stonku pod poupětem, list stoupá podél poupěte
+export function budLeaf() {
+  const L = new Asm();
+  L.part('61406p0a', 10, [0, 0, 0]);               // špičatý list, základna 1x2 v počátku, špička k -z
+  L.part('85984', 10, [0, 0, 0]);                  // šikmá destička zahladí výstupky základny
+  L.part('2654', 2, [0, 8, 0]);                    // kulatá destička pod základnou
+  L.part('60470b', 2, [0, 16, 4], ry(Math.PI));     // destička s klipy, klipy ke stonku
+  return L;
+}
+// poupě na stonku s lístkem: spojka 99021 na ose pod poupětem, na její boční tyčce klipem lístek, který stoupá podél poupěte
+export function budStem({ len = 640, side = 0 } = {}) {
+  const T = straightStem(budHead(), { len });
+  const out = [Math.cos(side), 0, -Math.sin(side)];
+  T.part('99021', 2, [0, 22, 0], ry(side));                          // spojka na ose těsně pod kalichem
+  const ez = [0, 1, 0], ey = scl(out, -1), ex = cross(ey, ez);
+  const Ml = mul(basis(ex, ey, ez), rx(E('BT', -0.45)), rz(0.6));            // špička nahoru a šikmo od poupěte
+  T.add(budLeaf(), { M: Ml, p: add(scl(out, 36), [0, 6, 0]) });
+  return T;
 }
 // ===== listy =====
 // dlouhý list (krok 8): deska 2x8, dvě zahnuté klínové kostky 5382 špičkami od sebe, podložka a úchyt na stonek
@@ -183,8 +209,8 @@ export function bouquet() {
     [() => straightStem(pinkHead({ open: -0.1 })), 0, 3, -40, 0],
     [() => straightStem(pinkHead({ open: -0.1 })), 225, 7, -20, 0],
     [() => straightStem(pinkHead({ open: -0.1 })), 150, 6, 10, 0],
-    [() => straightStem(budHead()), 280, 5, -60, 0],
-    [() => straightStem(budHead()), 40, 6, -50, 0],
+    [() => budStem({ side: 0.5 }), 280, 5, -60, 0],
+    [() => budStem({ side: 2.6 }), 40, 6, -50, 0],
   ];
   const LEN = 640;
   // rozložení hlav bez kolizí: hlavy (koule) se nesmí prolínat, stonky musí projít hrdlem vázy (r < 98 LDU ve výšce okraje)
@@ -251,6 +277,10 @@ if (process.env.SUB) {
     A.add(longLeaf(), { M: Ml, p: sub(add(at, [0, 0, 18]), apply(Ml, [0, 0, 140])) });
   }
   if (process.env.SUB === 'long') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.part('30374', 4, [0, -40, -300], [1, 0, 0, 0, 0, -1, 0, 1, 0]); }
+  if (process.env.SUB === 'budhead') { A.add(budStem(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, -640, 0] }); }
+  if (process.env.SUB === 'budone') {
+    A.add(budStem(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, -640, 0] });
+  }
   if (process.env.SUB === 'short') { A.add(shortLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); }
   if (process.env.SUB === 'leaves') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.add(shortLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [150, 0, 0] }); }
   if (process.env.SUB === 'bouquet') A.add(bouquet(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
