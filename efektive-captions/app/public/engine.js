@@ -10,14 +10,17 @@ const SF='"Inter Tight", "SF Pro Display", -apple-system, BlinkMacSystemFont, sa
 E.SF=SF;
 const HAS_LS = typeof CanvasRenderingContext2D!=='undefined' && 'letterSpacing' in CanvasRenderingContext2D.prototype;
 // šířka textu se staženým písmem (track v % velikosti písma) – stejná v každém prohlížeči
-function measureT(c,s,px,track){ if (HAS_LS) c.letterSpacing='0px'; return c.measureText(s).width + (track/100)*px*Math.max(0,[...s].length-1); }
+// písmena i s diakritikou jako jeden celek (u + kroužek = ů) – jinak by se háčky kreslily zvlášť
+const GRAPH=/\P{M}\p{M}*/gu;
+const chars=s=>String(s).normalize('NFC').match(GRAPH)||[];
+function measureT(c,s,px,track){ if (HAS_LS) c.letterSpacing='0px'; s=String(s).normalize('NFC'); return c.measureText(s).width + (track/100)*px*Math.max(0,chars(s).length-1); }
 E.measureT=measureT;
 // kreslení se staženým písmem: nativně, nebo po znacích se zachovaným kerningem
 function fillT(c,s,x,y,px,track){
-  const tr=(track/100)*px;
+  const tr=(track/100)*px; s=String(s).normalize('NFC');
   if (HAS_LS || !tr){ c.fillText(s,x,y); return; }
   const al=c.textAlign, tot=measureT(c,s,px,track); let x0 = al==='center' ? x-tot/2 : al==='right' ? x-tot : x;
-  c.textAlign='left'; const ch=[...s]; let pre='';
+  c.textAlign='left'; const ch=chars(s); let pre='';
   for (let i=0;i<ch.length;i++){ c.fillText(ch[i], x0 + c.measureText(pre).width + tr*i, y); pre+=ch[i]; }
   c.textAlign=al;
 }
@@ -140,7 +143,7 @@ E.tiltOf = S => (S.tiltAlt && (S._k%2)) ? -S.tilt : S.tilt;
 // ================= SLOVA, ZÓNY, OPRAVY =================
 const stripPunct=s=>s.replace(/[.,!?;:…"“”„]+$/u,'').replace(/^[„"“]+/u,'');
 E.stripPunct=stripPunct;
-E.mkWord=(raw,s,e)=>({id:E.newId(), raw, t:stripPunct(raw), s, e, em:false});
+E.mkWord=(raw,s,e)=>{ raw=String(raw).normalize('NFC'); return {id:E.newId(), raw, t:stripPunct(raw), s, e, em:false}; };
 // slovo v zóně bez titulků (grafika, logo)? – střed slova padne do (s−0,2 ; e+0,4)
 E.inZone = w => { const m=(w.s+w.e)/2; return E.zones.some(z=>m>z.s-0.2 && m<z.e+0.4); };
 // konec věty? „21.“ (číslo s tečkou, např. století) se za konec věty nepočítá
@@ -322,7 +325,7 @@ function layoutRaw(p,S,scaleMul){
   // horní řádek doleva, prostřední (hlavní) stojí, spodní doprava (nebo doleva – S.kinDir='same')
   const emI=lines.findIndex(L=>L.em), midI=emI>=0?emI:(lines.length>2?1:-1);
   const side=i=>{ const pos=lines[i].slot!=null?lines[i].slot-1:(midI>=0?Math.sign(i-midI):(i===0?-1:1)); return pos<0?-1:pos>0?(S.kinDir==='same'?-1:1):0; };
-  const shift=Math.min(W,H)*0.11*kin;
+  const shift=Math.min(W,H)*0.22*kin;
   lines.forEach((L,i)=>{
     L.y=cy+ys[i];
     const kx=side(i)*shift;
@@ -341,9 +344,11 @@ E.layoutPage = (p,S) => {
   const W=cv.width; let m=1, lines;
   for (let it=0; it<12; it++){
     lines=layoutRaw(p,S,m);
-    const x0=Math.min(...lines.map(L=>L.x0)), x1=Math.max(...lines.map(L=>L.x0+L.total)), mg=W*0.083;
-    if (x1-x0 <= W*0.78 && x0 >= mg-1 && x1 <= W-mg+1) break;
-    if (x1-x0 <= W*0.78 && it>3) break;
+    // s kinetickým rozložením smí blok sahat víc ke krajům (řádky jsou rozjeté do stran)
+    const kin=(S.kinetic||0)/100, maxBW=W*Math.min(0.94,0.78+0.16*kin);
+    const x0=Math.min(...lines.map(L=>L.x0)), x1=Math.max(...lines.map(L=>L.x0+L.total)), mg=W*(0.083-0.05*kin);
+    if (x1-x0 <= maxBW && x0 >= mg-1 && x1 <= W-mg+1) break;
+    if (x1-x0 <= maxBW && it>3) break;
     m*=0.92;
   }
   if (S.layerOrder==='natural') return lines;

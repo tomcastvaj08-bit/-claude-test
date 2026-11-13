@@ -139,6 +139,7 @@ $('fileIn').onchange=async e=>{
   E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
+  const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base') Object.assign(E.G, dflt);
   project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now()};
   // hned dát najevo, že se něco děje
   show('busy'); busy('Načítám video…','Chvilku strpení, video se nahrává do appky. U delšího videa to může trvat i pár desítek sekund.',0);
@@ -416,6 +417,9 @@ function pTemplates(){
   const S=cur();
   return `${scopeHTML()}${subHTML('templates',[['trending','Styly'],['custom','♥ Vlastní']])}
   <div class="tplgrid" id="tplgrid">${list.map(([k,t])=>tplCard(k,t,S.style===k?' on':'').replace('</div>',(cat==='custom'?`<span class="x" data-del="${k}">✕</span>`:'')+'</div>')).join('')||'<div class="muted">Zatím nemáš vlastní šablony. V záložce Styl ulož srdíčkem ♥.</div>'}</div>
+  <div class="btnrow"><button class="btn" id="setDefault">★ Tento vzhled jako výchozí</button>${lsGet('efk_default',null)?'<button class="btn" id="clrDefault">↺ Zpět na Styl 1</button>':''}</div>
+  ${lsGet('efk_default',null)?'<div class="btnrow"><button class="btn small" id="copyDefault">📋 Zkopírovat nastavení vzhledu</button></div>':''}
+  <div class="note">Výchozí vzhled se použije u každého nového videa.</div>
   <div class="clabel">Rychlé efekty</div>
   <div class="chips" id="quickFx">
     <div class="chip ${S.fxFlicker?'on':''}" data-k="fxFlicker">Flicker</div>
@@ -425,7 +429,11 @@ function pTemplates(){
     <div class="chip ${S.fxWiggle?'on':''}" data-k="fxWiggle">Wiggle</div>
   </div>`;
 }
+function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k]; return set; }
 binders.templates=()=>{
+  $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('★ Hotovo – nová videa budou vypadat takhle'); };
+  if ($('clrDefault')) $('clrDefault').onclick=()=>{ lsSet('efk_default',null); renderPanel(); toast('Nová videa budou zase ve Stylu 1'); };
+  if ($('copyDefault')) $('copyDefault').onclick=async()=>{ const t='EFEKTIVE-STYL '+JSON.stringify(lsGet('efk_default',{})); try{ await navigator.clipboard.writeText(t); toast('Nastavení zkopírované'); }catch(e){ prompt('Zkopíruj si nastavení:',t); } };
   $('tplgrid').onclick=e=>{
     const d=e.target.closest('[data-del]'); if (d){ e.stopPropagation(); const c=customTemplates(); delete c[d.dataset.del]; lsSet('efk_custom',c); renderPanel(); return; }
     const c=e.target.closest('.tpl'); if(!c) return; const t=E.TEMPLATES[c.dataset.k]||customTemplates()[c.dataset.k]; if(!t) return;
