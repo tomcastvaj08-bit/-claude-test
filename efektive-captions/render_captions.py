@@ -11,7 +11,7 @@
 #   ffmpeg -i ORIGINAL.mp4 -vf "scale=1080:1920" -r 30 -c:v libvpx-vp9 -b:v 6M -deadline realtime -cpu-used 8 -row-mt 1 -c:a libopus src.webm
 # WORDS.json = {"words":[{"word":" Slovo","start":0.36,"end":0.6}, ...]}  (časy v sekundách)
 #
-# Výchozí vzhled = schválená šablona v8 (definovaná v app/public/engine.js → V8).
+# Výchozí vzhled = šablona BASE (NAVOD_BASE.md), --template v8 = vinotéka (NAVOD_TITULKY.md); obě v app/public/engine.js.
 # Per-titulek úpravy (náklon podle scény, menší velikost dlouhého titulku) se dávají do OWN níže.
 
 import json, base64, os, argparse
@@ -20,7 +20,8 @@ from playwright.sync_api import sync_playwright
 ap = argparse.ArgumentParser()
 ap.add_argument('video'); ap.add_argument('words'); ap.add_argument('out')
 ap.add_argument('--fps', type=int, default=60)
-ap.add_argument('--color', default='#e4202c', help='barva hlavního (prostředního) řádku')
+ap.add_argument('--template', default='base', choices=['base', 'v8'], help='šablona: base (výchozí) nebo v8 (vinotéka)')
+ap.add_argument('--color', default=None, help='plná barva hlavního (prostředního) řádku, např. "#e4202c"')
 ap.add_argument('--gradA', default=None, help='přeliv od (zapne přeliv místo plné barvy)')
 ap.add_argument('--gradB', default=None, help='přeliv do')
 ap.add_argument('--range', nargs=2, type=int, default=None)
@@ -31,9 +32,10 @@ a = ap.parse_args()
 words = json.load(open(a.words))['words']
 os.makedirs(a.out, exist_ok=True)
 
-# Jen to, čím se tohle video liší od v8 (barva podle tématu)
-STYLE = {"cEm": a.color, "grad": bool(a.gradA and a.gradB)}
-if STYLE["grad"]: STYLE.update({"gA": a.gradA, "gB": a.gradB, "gradDir": "v"})
+# Šablona + jen to, čím se tohle video liší (barva podle tématu)
+STYLE = {"template": a.template}
+if a.color: STYLE.update({"cEm": a.color, "grad": False})
+if a.gradA and a.gradB: STYLE.update({"gA": a.gradA, "gB": a.gradB, "gradDir": "v", "grad": True})
 
 # ===== ÚPRAVY JEDNOTLIVÝCH TITULKŮ (index titulku: nastavení) =====
 # Příklad z vinotéky: regál = levá strana blíž, sud = střídavě; dlouhý titulek menší.
@@ -49,8 +51,9 @@ with sync_playwright() as p:
     pg.set_input_files('#file', a.video); pg.wait_for_function('document.getElementById("vid").videoWidth>0')
     dur = pg.evaluate('document.getElementById("vid").duration')
     N = int(dur * a.fps)
+    pg.evaluate('([w,s])=>__app.load(w,s)', [words, STYLE]); pg.evaluate('()=>__app.fonts()'); pg.evaluate('document.fonts.ready')
+    # znovu po načtení písma (Base dělí řádky podle šířky slov)
     caps = pg.evaluate('([w,s,o])=>__app.load(w,s,o)', [words, STYLE, {str(k): v for k, v in OWN.items()}])
-    pg.evaluate('()=>__app.fonts()'); pg.evaluate('document.fonts.ready')
     print('titulky:'); [print('  ' + c) for c in caps]
     if a.frames: only = a.frames
     elif a.range: only = range(a.range[0], min(N, a.range[1]))

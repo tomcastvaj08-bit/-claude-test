@@ -81,7 +81,8 @@
     </div>
 
     <div class="card" id="step3" hidden>
-      <div class="card-h"><h2>2 · Vzhled</h2><button class="ghost sm" id="resetV8" title="Vrátit schválenou šablonu v8">Šablona v8</button></div>
+      <div class="card-h"><h2>2 · Vzhled</h2><button class="ghost sm" id="resetTpl" title="Vrátit šablonu do výchozího stavu">Obnovit šablonu</button></div>
+      <div class="presets tpl" id="tplPresets"></div>
       <div class="seg" id="scope" role="tablist">
         <button class="on" data-v="all">Všechny titulky</button>
         <button data-v="one">Jen tenhle titulek</button>
@@ -104,10 +105,12 @@
           <label class="sw"><input type="color" id="cEm" value="#e4202c"><span>Vlastní barva</span></label>
           <label class="sw"><input type="color" id="gA" value="#ffe04a"><span>Přeliv od</span></label>
           <label class="sw"><input type="color" id="gB" value="#ff8a00"><span>Přeliv do</span></label>
-          <label class="sw"><input type="color" id="cText" value="#ffffff"><span>Vedlejší řádky</span></label>
+          <label class="sw"><input type="color" id="cText" value="#ffffff"><span>Vedlejší nahoře</span></label>
+          <label class="sw"><input type="color" id="cText2" value="#d4d4d4"><span>Vedlejší dole</span></label>
         </div>
-        <div class="tg"><span>Přeliv shora dolů místo plné barvy</span><input type="checkbox" class="switch" id="grad"></div>
-        <label class="ctl"><div class="lb"><span>Velikost písma</span><span id="sizeV"></span></div><input type="range" id="size" min="50" max="140" value="88"></label>
+        <div class="tg"><span>Hlavní řádek s přelivem shora dolů</span><input type="checkbox" class="switch" id="grad"></div>
+        <div class="tg"><span>Vedlejší řádky s jemným přelivem do šeda</span><input type="checkbox" class="switch" id="textGrad"></div>
+        <label class="ctl"><div class="lb"><span>Velikost písma</span><span id="sizeV"></span></div><input type="range" id="size" min="50" max="160" value="118"></label>
         <label class="ctl"><div class="lb"><span>Záře okolo hlavního řádku</span><span id="glowV"></span></div><input type="range" id="glow" min="0" max="100" value="30"></label>
         <label class="ctl"><div class="lb"><span>Stín (průhlednost)</span><span id="shadowAV"></span></div><input type="range" id="shadowA" min="0" max="80" value="45"></label>
         <label class="ctl"><div class="lb"><span>Svislá pozice</span><span id="posYV"></span></div><input type="range" id="posY" min="20" max="85" value="72"></label>
@@ -125,7 +128,7 @@
         <p class="hint" id="tiltWarn">Sweet spot je 15–20°. Nad 24° se písmo začne deformovat.</p>
         <label class="ctl"><div class="lb"><span>Kinetické rozhození řádků</span><span id="kineticV"></span></div><input type="range" id="kinetic" min="0" max="100" value="45"></label>
         <div class="lbl">Rozložení řádků</div>
-        <div class="chips" id="layout"><button data-v="cascade">Schody</button><button data-v="center">Na střed</button><button data-v="left">Doleva</button><button data-v="right">Doprava</button></div>
+        <div class="chips" id="layout"><button data-v="diagonal">Šikmo</button><button data-v="cascade">Schody</button><button data-v="center">Na střed</button><button data-v="left">Doleva</button><button data-v="right">Doprava</button></div>
       </div>
 
       <!-- Písmo -->
@@ -134,21 +137,25 @@
         <div class="fontgrid" id="fontgrid"></div>
         <div class="tg"><span>Hlavní řádek kurzívou</span><input type="checkbox" class="switch" id="emItalic"></div>
         <label class="ctl"><div class="lb"><span>Zvětšení hlavního řádku</span><span id="emScaleV"></span></div><input type="range" id="emScale" min="110" max="220" value="160"></label>
-        <label class="ctl"><div class="lb"><span>Mezery mezi písmeny</span><span id="trackV"></span></div><input type="range" id="track" min="-10" max="6" value="-4"></label>
+        <label class="ctl"><div class="lb"><span>Mezery mezi písmeny</span><span id="trackV"></span></div><input type="range" id="track" min="-20" max="6" value="-12"></label>
+        <label class="ctl"><div class="lb"><span>Zúžení písma</span><span id="condV"></span></div><input type="range" id="cond" min="70" max="100" value="87"></label>
         <label class="ctl"><div class="lb"><span>Řádkování</span><span id="gapV"></span></div><input type="range" id="gap" min="50" max="110" value="66"></label>
-        <label class="ctl"><div class="lb"><span>Mezery mezi slovy</span><span id="wordGapV"></span></div><input type="range" id="wordGap" min="80" max="240" value="160"></label>
-        <div class="lbl">Velikost písmen</div>
-        <div class="chips" id="case"><button data-v="none">Jak je</button><button data-v="upper">VELKÁ</button><button data-v="lower">malá</button><button data-v="title">První velké</button></div>
+        <label class="ctl"><div class="lb"><span>Mezery mezi slovy</span><span id="wordGapV"></span></div><input type="range" id="wordGap" min="40" max="240" value="80"></label>
+        <div class="lbl">Písmena v hlavním řádku</div>
+        <div class="chips" id="caseMain"><button data-v="title">Každé Slovo Velké</button><button data-v="none">Jak je</button><button data-v="upper">VELKÁ</button></div>
+        <div class="tg"><span>Začátek věty ve vedlejším řádku malým</span><input type="checkbox" class="switch" id="lowerStart"></div>
       </div>
 
       <!-- Pohyb -->
       <div class="pane" data-p="pohyb">
         <div class="lbl">Nástup</div>
-        <div class="chips" id="anim"><button data-v="block">Celý blok (DaVinci)</button><button data-v="fade">Jen prolnutí</button></div>
+        <div class="chips" id="anim"><button data-v="fade">Slova se prolnou (Base)</button><button data-v="block">Celý blok zespodu (v8)</button></div>
+        <div class="lbl">Odchod</div>
+        <div class="chips" id="exitStyle"><button data-v="fast">Rychlé zmenšení (Base)</button><button data-v="soft">Jemné zhasnutí (v8)</button></div>
         <div class="tg"><span>Slova se rozsvěcují, jak zazní</span><input type="checkbox" class="switch" id="wordByWord" checked></div>
-        <div class="tg"><span>Plynulý odchod (zhasne a zmenší se)</span><input type="checkbox" class="switch" id="fadeOut" checked></div>
+        <div class="tg"><span>Animovaný odchod</span><input type="checkbox" class="switch" id="fadeOut" checked></div>
         <div class="tg"><span>Lesk přes hlavní slovo (každý 3. titulek)</span><input type="checkbox" class="switch" id="fxShine"></div>
-        <p class="hint">Nástup je vyladěný podle schválené v8: expo ease-out 0,55 s, z 82 % na 100 %, zespodu. Žádné pružení, vlnění ani třesení.</p>
+        <p class="hint">Base: slova se jen prolnou (0,2 s), titulek stojí a na konci se rychle zmenší a zhasne. v8: celý blok dojede zespodu (expo 0,55 s, 82 % → 100 %). Žádné pružení, vlnění ani třesení.</p>
       </div>
 
       <!-- Zvuk -->
@@ -161,7 +168,8 @@
 
     <div class="card" id="step4" hidden>
       <div class="card-h"><h2>3 · Text titulků</h2><button class="ghost sm" id="mosaicBtn">Kontrola všech</button></div>
-      <label class="ctl"><div class="lb"><span>Max slov na titulek</span><span id="wppV"></span></div><input type="range" id="wpp" min="1" max="6" value="4"></label>
+      <label class="ctl"><div class="lb"><span>Max slov na titulek</span><span id="wppV"></span></div><input type="range" id="wpp" min="1" max="8" value="7"></label>
+      <label class="ctl" id="rowMaxCtl"><div class="lb"><span>Šířka řádku (kolik se vejde)</span><span id="rowMaxV"></span></div><input type="range" id="rowMax" min="35" max="80" value="61"></label>
       <div class="tg"><span>Zobrazit interpunkci</span><input type="checkbox" class="switch" id="punct"></div>
       <p class="hint">Ťukni na titulek = skočíš na něj. Ťukni na slovo = ručně z něj uděláš hlavní řádek. Tužka = oprava textu.</p>
       <div class="pages" id="pages"></div>

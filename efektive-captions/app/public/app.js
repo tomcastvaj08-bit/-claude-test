@@ -8,7 +8,7 @@ const renderer = E.Renderer();
 // ================= STAV =================
 let words = [];            // {t, raw, s, e, em}
 let pages = [];            // {a, b, s, e, kin, own}
-let G = Object.assign({}, E.V8);
+let G = Object.assign({}, E.BASE);
 let scope = 'all', curPage = 0;
 let videoFile = null, fullW = 0, fullH = 0, duration = 0, audioBuf = null;
 let exporting = false, dirty = true, lastInfo = null, projKey = null;
@@ -25,14 +25,21 @@ function setVal(key, val) {
   } else {
     G[key] = val;
   }
-  touch();
+  touch(); maybeReflow(key);
 }
 function setMany(obj) { for (const [k, v] of Object.entries(obj)) setVal(k, v); }
 function touch() { dirty = true; scheduleSave(); markList(); }
+// v režimu Base závisí rozdělení na řádky na šířce slov → po změně písma/velikosti přepočítat
+const REFLOW = new Set(['size', 'emScale', 'track', 'trackEm', 'cond', 'wordGap', 'fontMain', 'wMain', 'fontEm', 'wEm', 'emItalic', 'rowMax', 'caseMain', 'caseSub', 'punct', 'wpp', 'split']);
+let reflowTimer = 0;
+function maybeReflow(key) {
+  if (!words.length || !REFLOW.has(key) || (scope === 'one' && key !== 'wpp' && key !== 'punct')) return;
+  clearTimeout(reflowTimer); reflowTimer = setTimeout(() => { rebuild(); }, 120);
+}
 
 // ================= PÍSMA =================
 const FONTS = [
-  [E.SF, 900, 'SF Pro Black'], [E.SF, 500, 'SF Pro Medium'], [E.SF, 700, 'SF Pro Bold'], [E.SF, 400, 'SF Pro Regular'],
+  [E.SF, 800, 'SF Pro Heavy'], [E.SF, 600, 'SF Pro Semibold'], [E.SF, 900, 'SF Pro Black'], [E.SF, 500, 'SF Pro Medium'], [E.SF, 700, 'SF Pro Bold'], [E.SF, 400, 'SF Pro Regular'],
   ['Inter Tight', 900, 'Inter Tight Black'], ['Inter Tight', 500, 'Inter Tight'], ['Inter Tight', 300, 'Inter Tight Light'],
   ['Inter', 900, 'Inter Black'], ['Inter', 400, 'Inter'],
   ['Montserrat', 900, 'Montserrat Black'], ['Montserrat', 400, 'Montserrat'],
@@ -52,7 +59,7 @@ function ensureFonts() {
   const todo = [...need].filter(f => !fontsLoaded.has(f));
   if (!todo.length) return Promise.resolve();
   return Promise.all(todo.map(f => document.fonts.load(f, SAMPLE).then(() => fontsLoaded.add(f)).catch(() => {})))
-    .then(() => { dirty = true; });
+    .then(() => { dirty = true; if (words.length && G.split === 'fill') rebuild(); });
 }
 
 // ================= VIDEO =================
@@ -90,7 +97,7 @@ vid.addEventListener('loadedmetadata', () => {
   $('pick').hidden = true; $('how').hidden = true; $('stage').hidden = false; $('player').hidden = false; $('step2').hidden = false; $('newBtn').hidden = false;
   $('durInfo').textContent = fmt(duration) + (fullW > fullH ? ' · vodorovné video' : '');
   setStatus(fullW > fullH ? 'Video je vodorovné – titulky fungují, ale šablona je laděná na 9:16.' : '', null);
-  if (!restore()) { G = Object.assign({}, E.V8, { sfx: 'none', sfxVol: 60 }); syncUI(); }
+  if (!restore()) { G = Object.assign({}, E.BASE, { sfx: 'none', sfxVol: 60 }); syncUI(); }
   vid.currentTime = 0.01;
   ensureFonts();
 });
@@ -305,7 +312,7 @@ function spread(list, s, e) {
 function rebuild() {
   // vlastní styl titulku přejde na nový titulek, který začíná slovem ze starého titulku
   const ownOf = []; pages.forEach(p => { if (p.own) for (let i = p.a; i <= p.b; i++) ownOf[i] = p.own; });
-  pages = E.buildPages(words, G.wpp, duration);
+  pages = E.buildPages(words, G, duration, cv.width, cv.height);
   const used = new Set();
   pages.forEach(p => { const o = ownOf[p.a]; p.own = o && !used.has(o) ? (used.add(o), o) : (o ? Object.assign({}, o) : null); });
   if (curPage >= pages.length) curPage = Math.max(0, pages.length - 1);
@@ -397,34 +404,53 @@ $('scope').addEventListener('click', e => {
   markList(); syncUI();
 });
 $('resetOne').onclick = () => { if (pages[curPage]) pages[curPage].own = null; touch(); syncUI(); checkCrops(); };
-$('resetV8').onclick = () => {
-  const keep = { sfx: G.sfx, sfxVol: G.sfxVol, wpp: G.wpp, punct: G.punct };
-  G = Object.assign({}, E.V8, keep); pages.forEach(p => p.own = null); touch(); syncUI(); checkCrops(); ensureFonts();
-};
+// šablony: Base (výchozí, podle vzorového videa) a v8 (vinotéka)
+function applyTemplate(id) {
+  const keep = { sfx: G.sfx, sfxVol: G.sfxVol, punct: G.punct };
+  G = Object.assign({}, E.TEMPLATES[id].style, keep, { template: id });
+  pages.forEach(p => p.own = null); scope = 'all';
+  $('scope').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === 'all'));
+  if (words.length) rebuild(); touch(); syncUI(); checkCrops(); ensureFonts();
+}
+$('resetTpl').onclick = () => applyTemplate(G.template || 'base');
+function renderTemplates() {
+  const box = $('tplPresets'); box.innerHTML = '';
+  for (const [id, t] of Object.entries(E.TEMPLATES)) {
+    const b = document.createElement('button'); b.className = 'preset' + ((G.template || 'base') === id ? ' on' : '');
+    const st = t.style, pv = st.grad ? `background:linear-gradient(${st.gA},${st.gB});-webkit-background-clip:text;background-clip:text;color:transparent` : `color:${st.cEm}`;
+    b.innerHTML = `<span class="pv" style="${pv}">Aa</span><span class="t"><b>${t.name}</b><small>${t.hint}</small></span>`;
+    b.onclick = () => applyTemplate(id);
+    box.appendChild(b);
+  }
+}
 $('tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === b.dataset.t));
 });
 
-const RANGES = { size: '%', glow: '', shadowA: '%', posY: '%', tilt: '°', tiltX: '°', persp: '', kinetic: '', emScale: '%', track: '', gap: '%', wordGap: '%', sfxVol: '%', wpp: '' };
+const RANGES = { size: '%', glow: '', shadowA: '%', posY: '%', tilt: '°', tiltX: '°', persp: '', kinetic: '', emScale: '%', track: '', gap: '%', wordGap: '%', sfxVol: '%', wpp: '', rowMax: '%', cond: '%' };
 function paintRange(el) { const p = (el.value - el.min) / (el.max - el.min) * 100; el.style.setProperty('--p', p + '%'); }
 for (const [id, suf] of Object.entries(RANGES)) {
   $(id).addEventListener('input', () => {
-    const v = +$(id).value; setVal(id, v); $(id + 'V').textContent = v + suf; paintRange($(id));
-    if (id === 'wpp') rebuild();
+    const v = +$(id).value;
+    if (id === 'track') { const S0 = cur(); setVal('trackEm', v + ((S0.trackEm ?? S0.track) - S0.track)); } // hlavní řádek drží svůj odstup
+    setVal(id, v); $(id + 'V').textContent = v + suf; paintRange($(id));
     if (id === 'tilt') $('tiltWarn').style.color = Math.abs(v) > 24 ? '#ff9f0a' : '';
   });
   $(id).addEventListener('change', checkCrops);
 }
-['cEm', 'gA', 'gB', 'cText'].forEach(id => $(id).addEventListener('input', e => {
-  setVal(id, e.target.value); if (id === 'cEm') setVal('grad', false); if (id === 'gA' || id === 'gB') setVal('grad', true); syncUI();
+['cEm', 'gA', 'gB', 'cText', 'cText2'].forEach(id => $(id).addEventListener('input', e => {
+  setVal(id, e.target.value); if (id === 'cEm') setVal('grad', false); if (id === 'gA' || id === 'gB') setVal('grad', true); if (id === 'cText2') setVal('textGrad', true); syncUI();
 }));
-const SWITCHES = ['grad', 'tiltAlt', 'emItalic', 'wordByWord', 'fadeOut', 'fxShine', 'punct'];
+const SWITCHES = ['grad', 'textGrad', 'tiltAlt', 'emItalic', 'wordByWord', 'fadeOut', 'fxShine', 'punct'];
 SWITCHES.forEach(id => $(id).addEventListener('change', e => {
   setVal(id, e.target.checked);
-  if (id === 'punct') { rebuild(); } if (id === 'emItalic') ensureFonts(); checkCrops();
+  if (id === 'emItalic') ensureFonts(); checkCrops();
 }));
+$('lowerStart').addEventListener('change', e => { setVal('caseSub', e.target.checked ? 'lowerStart' : 'none'); renderPages(); });
+const EXITS = { fast: { exitDur: 0.1, exitScale: 0.6 }, soft: { exitDur: 0.3, exitScale: 0.94 } };
+$('exitStyle').addEventListener('click', e => { const c = e.target.closest('button'); if (!c) return; setMany(EXITS[c.dataset.v]); syncUI(); });
 function chips(id, key, cb) {
   $(id).addEventListener('click', e => {
     const c = e.target.closest('button'); if (!c) return;
@@ -432,7 +458,7 @@ function chips(id, key, cb) {
     setVal(key, c.dataset.v); cb && cb(c.dataset.v); checkCrops();
   });
 }
-chips('layout', 'layout'); chips('case', 'case', () => renderPages()); chips('anim', 'anim');
+chips('layout', 'layout'); chips('caseMain', 'caseMain', () => renderPages()); chips('anim', 'anim', v => { if (v === 'block') setVal('wordLead', 0.08), setVal('wordFade', 0.28); else setVal('wordLead', 0.05), setVal('wordFade', 0.2); });
 chips('sfx', 'sfx', v => { if (v !== 'none') { const ac = audioCtx(); sfxAt(ac, ac.destination, ac.currentTime + 0.01, v, G.sfxVol / 100); } });
 
 // předvolby barev podle tématu
@@ -499,10 +525,13 @@ function syncValues() {
 function syncUI() {
   const S = cur();
   syncValues();
-  ['cEm', 'gA', 'gB', 'cText'].forEach(id => $(id).value = S[id]);
+  ['cEm', 'gA', 'gB', 'cText', 'cText2'].forEach(id => $(id).value = S[id]);
   SWITCHES.forEach(id => $(id).checked = !!S[id]);
-  [['layout', 'layout'], ['case', 'case'], ['anim', 'anim'], ['sfx', 'sfx']].forEach(([id, k]) => $(id).querySelectorAll('button').forEach(c => c.classList.toggle('on', c.dataset.v === String(S[k]))));
-  syncFonts(); renderColorPresets(); renderTiltPresets(); markList(); updateNav();
+  $('lowerStart').checked = S.caseSub === 'lowerStart';
+  $('rowMaxCtl').hidden = G.split !== 'fill';
+  $('exitStyle').querySelectorAll('button').forEach(c => c.classList.toggle('on', Math.abs(EXITS[c.dataset.v].exitScale - S.exitScale) < 0.01));
+  [['layout', 'layout'], ['caseMain', 'caseMain'], ['anim', 'anim'], ['sfx', 'sfx']].forEach(([id, k]) => $(id).querySelectorAll('button').forEach(c => c.classList.toggle('on', c.dataset.v === String(S[k]))));
+  syncFonts(); renderTemplates(); renderColorPresets(); renderTiltPresets(); markList(); updateNav();
   dirty = true;
 }
 
@@ -760,8 +789,8 @@ function scheduleSave() {
 function restore() {
   let d = null; try { d = JSON.parse(localStorage.getItem(projKey) || 'null'); } catch (e) {}
   if (!d || d.v !== 2 || !d.words || !d.words.length) return false;
-  words = d.words; G = Object.assign({}, E.V8, { sfx: 'none', sfxVol: 60 }, d.G);
-  pages = E.buildPages(words, G.wpp, duration);
+  words = d.words; G = Object.assign({}, E.BASE, { sfx: 'none', sfxVol: 60 }, d.G);
+  pages = E.buildPages(words, G, duration, cv.width, cv.height);
   const own = new Map(d.own || []); pages.forEach(p => p.own = own.get(p.a) || null);
   renderMarks(); renderPages(); revealEditor(); checkCrops(); gotoPage(0);
   setStatus(`Načetl jsem uložené titulky k tomuhle videu (${words.length} slov). Nový přepis přepíše úpravy.`, null);
@@ -777,8 +806,8 @@ window.__app = {
   E, get G() { return G; }, get words() { return words; }, get pages() { return pages; },
   load(ws, style, own) {
     words = ws.map(w => { const raw = String(w.word ?? w.raw ?? w.t).trim(); return { raw, t: stripPunct(raw) || raw, s: w.start ?? w.s, e: w.end ?? w.e, em: !!w.em }; }).filter(w => w.t);
-    G = Object.assign({}, E.V8, { sfx: 'none', sfxVol: 60 }, style || {});
-    pages = E.buildPages(words, G.wpp, duration);
+    G = Object.assign({}, (E.TEMPLATES[(style || {}).template] || E.TEMPLATES.base).style, { sfx: 'none', sfxVol: 60 }, style || {});
+    pages = E.buildPages(words, G, duration, cv.width, cv.height);
     pages.forEach((p, k) => p.own = own && own[k] ? Object.assign({}, own[k]) : null);
     renderMarks(); renderPages(); revealEditor();
     return pages.map((p, i) => i + ': ' + words.slice(p.a, p.b + 1).map(w => w.t).join(' '));

@@ -5,20 +5,44 @@
 
 const SF = '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter Tight"';
 
-// ===== Schválená šablona v8 =====
+// ===== Šablona BASE (výchozí) – podle vzorového videa VID_43543582 =====
+// Řádky se plní podle šířky (horní 1–3 slova, hlavní 1–2, spodní 1–2, max 7 slov), hlavní řádek = prostřední,
+// SF Pro Heavy s přelivem oranžová → žlutá, Každé Slovo Velké; vedlejší bílé → světle šedé, bez 3D.
+// Slova se jen prolnou (0,2 s), blok stojí; odchod = rychlé zmenšení na 60 % se zhasnutím (0,12 s).
+const BASE = Object.freeze({
+  size: 118, wpp: 7, posX: 50, posY: 72.5,
+  fontMain: SF, wMain: 600, fontEm: SF, wEm: 800, emItalic: false,
+  track: -12, trackEm: -16, cond: 87, gap: 66, emScale: 158, wordGap: 80,
+  tilt: 0, tiltX: 0, persp: 60, tiltAlt: false, kinetic: 25, layout: 'diagonal', layerOrder: 'mainfront',
+  cText: '#ffffff', cText2: '#d4d4d4', textGrad: true,
+  cEm: '#ff9c00', grad: true, gA: '#ff9a00', gB: '#e8f200', gradDir: 'v', gradSpan: 0.36,
+  glow: 0, shadowSize: 22, shadowA: 50, shadowDist: 8, cShadow: '#000000',
+  anim: 'fade', wordByWord: true, wordLead: 0.05, wordFade: 0.2,
+  fadeOut: true, exitDur: 0.1, exitScale: 0.6, fxShine: false, shineEvery: 3,
+  split: 'fill', rowMax: 61, mainLine: 'mid', case: 'none', caseMain: 'title', caseSub: 'lowerStart', punct: false,
+});
+
+// ===== Schválená šablona v8 (vinotéka) =====
 const V8 = Object.freeze({
   size: 88, wpp: 4, posX: 50, posY: 72,
   fontMain: SF, wMain: 500, fontEm: SF, wEm: 900, emItalic: false,
-  track: -4, gap: 66, emScale: 160, wordGap: 160,
+  track: -4, cond: 100, gap: 66, emScale: 160, wordGap: 160,
   tilt: 18, tiltX: 4, persp: 60, tiltAlt: true, kinetic: 45, layout: 'cascade', layerOrder: 'natural',
-  cText: '#ffffff', cEm: '#e4202c', grad: false, gA: '#ffe04a', gB: '#ff8a00', gradDir: 'v',
+  cText: '#ffffff', cText2: '#ffffff', textGrad: false,
+  cEm: '#e4202c', grad: false, gA: '#ffe04a', gB: '#ff8a00', gradDir: 'v',
   glow: 30, shadowSize: 25, shadowA: 45, shadowDist: 10, cShadow: '#000000',
-  anim: 'block', wordByWord: true, fadeOut: true, fxShine: false, shineEvery: 3,
-  mainLine: 'mid', case: 'none', punct: false,
+  anim: 'block', wordByWord: true, wordLead: 0.08, wordFade: 0.28,
+  fadeOut: true, exitDur: 0.3, exitScale: 0.94, fxShine: false, shineEvery: 3,
+  split: 'v8', rowMax: 58, mainLine: 'mid', case: 'none', caseMain: 'none', caseSub: 'none', punct: false,
 });
+const TEMPLATES = {
+  base: { name: 'Base', hint: 'výchozí · přeliv, plnění řádků', style: BASE },
+  v8: { name: 'v8', hint: 'vinotéka · 3D, záře, celý blok', style: V8 },
+};
 
 // Barvy hlavního řádku podle tématu (schválené v návodu)
 const COLOR_PRESETS = [
+  { id: 'base',  name: 'Oranžovo-žlutá', hint: 'Base · přeliv shora', set: { grad: true, gA: '#ff9a00', gB: '#e8f200', gradDir: 'v' } },
   { id: 'vino',  name: 'Víno',          hint: 'vinotéka, víno, maso', set: { grad: false, cEm: '#e4202c' } },
   { id: 'zlato', name: 'Zlatý přeliv',  hint: 'jídlo, energie, „Dnes“', set: { grad: true, gA: '#ffe04a', gB: '#ff8a00', gradDir: 'v' } },
   { id: 'luxus', name: 'Luxus',         hint: 'luxus, barber, šperky', set: { grad: false, cEm: '#b8925a' } },
@@ -53,22 +77,55 @@ function fillTracked(c, s, x, y, px, track) {
   for (let i = 0; i < ch.length; i++) { c.fillText(ch[i], x + c.measureText(pre).width + tr * i, y); pre += ch[i]; }
 }
 
-function txt(w, S) {
+const capFirst = s => s.charAt(0).toLocaleUpperCase('cs') + s.slice(1);
+// text slova podle role řádku: hlavní řádek může mít Každé Slovo Velké, vedlejší začátek věty malým
+function txt(words, i, S, isEm) {
+  const w = words[i];
   let s = S.punct ? (w.raw || w.t) : w.t;
-  if (S.case === 'upper') s = s.toLocaleUpperCase('cs');
-  else if (S.case === 'lower') s = s.toLocaleLowerCase('cs');
-  else if (S.case === 'title') s = s.charAt(0).toLocaleUpperCase('cs') + s.slice(1);
+  if (S.case === 'upper') return s.toLocaleUpperCase('cs');
+  if (S.case === 'lower') return s.toLocaleLowerCase('cs');
+  if (S.case === 'title') return capFirst(s);
+  if (isEm) {
+    if (S.caseMain === 'title') s = capFirst(s);
+    else if (S.caseMain === 'upper') s = s.toLocaleUpperCase('cs');
+  } else if (S.caseSub === 'lowerStart') {
+    // „Začněte“ na začátku věty → „začněte“; jména uprostřed věty a slova jako „AdriBarber13“ zůstanou
+    const prev = words[i - 1], start = !prev || /[.!?…]["“”»)]*$/u.test(prev.raw || prev.t);
+    if (start && /^\p{Lu}[\p{Ll}]*$/u.test(s) && s.length > 1) s = s.charAt(0).toLocaleLowerCase('cs') + s.slice(1);
+  }
   return s;
 }
 
 // ===== Titulky (trojice) =====
 // nový titulek: max wpp slov, pauza > 0,6 s, nebo po . ! ? …; svítí do min(konec + 1,2 s, další titulek)
-function buildPages(words, wpp, dur) {
-  const pages = []; let c = null;
+// split 'fill' (Base): řádky se plní podle šířky – horní, pak hlavní (větší písmo), pak spodní; když se nevejde, nový titulek
+const PUNCT_END = /[.!?…]["“”»)]*$/u;
+const ROW_WORDS = [3, 2, 2]; // horní max 3 slova, hlavní 2, spodní 2 (jako ve vzorovém videu)
+let _mc = null;
+function buildPages(words, S, dur, W, H) {
+  if (typeof S === 'number') S = Object.assign({}, V8, { wpp: S });
+  const wpp = S.wpp, pages = []; let c = null;
+  const fill = S.split === 'fill' && W && H;
+  let rowW = null;
+  if (fill) {
+    if (!_mc) _mc = document.createElement('canvas').getContext('2d');
+    const base = Math.min(W, H) * 0.105 * (S.size / 100);
+    const maxRow = [W * S.rowMax / 100, W * Math.min(88, S.rowMax * 1.14) / 100, W * S.rowMax / 100];
+    const wordW = (i, r) => { const em = r === 1, px = base * (em ? S.emScale / 100 : 1); _mc.font = fontStr(em ? S.fontEm : S.fontMain, em ? S.wEm : S.wMain, em && S.emItalic, px); const k = (S.cond || 100) / 100; return [measure(_mc, txt(words, i, S, em), px, em ? (S.trackEm ?? S.track) : S.track) * k, measure(_mc, ' ', px, 0) * S.wordGap / 100 * k]; };
+    rowW = (ids, r) => ids.reduce((a, i, j) => { const [w, sp] = wordW(i, r); return a + w + (j ? sp : 0); }, 0);
+    rowW.max = maxRow;
+  }
   for (let i = 0; i < words.length; i++) {
     const w = words[i], prev = words[i - 1];
-    const br = !c || (i - c.a) >= wpp || (prev && w.s - prev.e > 0.6) || (prev && /[.!?…]["“”»)]*$/u.test(prev.raw || prev.t));
-    if (br) { if (c) pages.push(c); c = { a: i, b: i }; } else c.b = i;
+    let br = !c || (i - c.a) >= wpp || (prev && w.s - prev.e > 0.6) || (prev && PUNCT_END.test(prev.raw || prev.t));
+    if (!br && fill) {
+      const r = c.rows.length - 1, row = c.rows[r];
+      if (row.length < ROW_WORDS[r] && rowW(row.concat(i), r) <= rowW.max[r]) row.push(i);
+      else if (r < 2) c.rows.push([i]);
+      else br = true;
+      if (!br) { c.b = i; continue; }
+    }
+    if (br) { if (c) pages.push(c); c = { a: i, b: i }; if (fill) c.rows = [[i]]; } else c.b = i;
   }
   if (c) pages.push(c);
   pages.forEach(p => { p.s = words[p.a].s; });
@@ -90,6 +147,8 @@ function groupsOf(p, S, words) {
     const e0 = Math.min(...manual), e1 = Math.max(...manual);
     return [{ ids: range(p.a, e0 - 1), em: false }, { ids: range(e0, e1), em: true }, { ids: range(e1 + 1, p.b), em: false }].filter(g => g.ids.length);
   }
+  // Base: řádky naplněné podle šířky; 1 řádek = jen bílý, jinak hlavní = druhý (prostřední)
+  if (p.rows && S.mainLine !== 'none') return p.rows.map((ids, i) => ({ ids, em: i === 1, slot: i }));
   const n = p.b - p.a + 1, ids = range(p.a, p.b);
   if (S.mainLine === 'none') return [{ ids, em: false }];
   if (S.mainLine === 'word') {
@@ -116,22 +175,30 @@ function layoutPage(mc, p, k, S, words, W, H) {
   const lines = groupsOf(p, S, words).map(g => {
     const em = g.em, fam = em ? S.fontEm : S.fontMain, wt = em ? S.wEm : S.wMain, it = em && S.emItalic;
     let px = base * (em ? S.emScale / 100 : 1);
-    const texts = g.ids.map(i => txt(words[i], S));
+    const texts = g.ids.map(i => txt(words, i, S, em));
     mc.font = fontStr(fam, wt, it, px);
-    let sp = measure(mc, ' ', px, 0) * (S.wordGap / 100);
-    let ws = texts.map(s => measure(mc, s, px, S.track));
+    const cond = (S.cond || 100) / 100;
+    let sp = measure(mc, ' ', px, 0) * (S.wordGap / 100) * cond;
+    const track = em ? (S.trackEm ?? S.track) : S.track;
+    let ws = texts.map(s => measure(mc, s, px, track) * cond);
     let total = ws.reduce((a, b) => a + b, 0) + sp * (texts.length - 1);
     if (total > maxW) { const f = maxW / total; px *= f; ws = ws.map(x => x * f); sp *= f; total = maxW; }
-    return { ids: g.ids, texts, fam, wt, it, px, em, ws, sp, total };
+    return { ids: g.ids, texts, fam, wt, it, px, em, ws, sp, total, slot: g.slot, track };
   });
   let y = 0; const ys = [];
-  lines.forEach((L, i) => { if (i > 0) y += (lines[i - 1].px * 0.5 + L.px * 0.5) * (S.gap / 100); ys.push(y); });
+  if (lines.length && lines.every(L => L.slot != null)) {
+    // Base: pevné sloty (horní / hlavní / spodní) – horní řádek je na stejném místě i u kratšího titulku
+    const ps = base, pe = base * S.emScale / 100, step1 = (ps + pe) * 0.5 * (S.gap / 100);
+    const slotY = [0, step1, step1 * 2]; y = step1 * 2;
+    lines.forEach(L => ys.push(slotY[L.slot]));
+  } else lines.forEach((L, i) => { if (i > 0) y += (lines[i - 1].px * 0.5 + L.px * 0.5) * (S.gap / 100); ys.push(y); });
   const kin = S.kinetic / 100, step = Math.min(W, H) * 0.06 * kin;
   const cx = W * S.posX / 100, cy = H * S.posY / 100 - y / 2;
   lines.forEach((L, i) => {
     const q = p.kin[i % 4];
     L.y = cy + ys[i] + q.dy * step * 0.35;
     if (S.layout === 'center') L.x0 = cx - L.total / 2 + q.dx * step * 0.8;
+    else if (S.layout === 'diagonal') L.x0 = cx - L.total / 2 + [-0.02, 0.025, 0.09][Math.min(i, 2)] * W + q.dx * step * 0.5;
     else if (S.layout === 'left') L.x0 = cx - W * 0.3 + i * step * 0.6;
     else if (S.layout === 'right') L.x0 = cx + W * 0.3 - L.total - i * step * 0.6;
     else L.x0 = cx - L.total / 2 + (i % 2 ? 1 : -1) * step * 1.6 + q.dx * step * 0.4;
@@ -221,21 +288,28 @@ function Renderer() {
   const getGL = () => { if (!glTried) { glTried = true; glp = GLProjector(); } return glp && glp.ok ? glp : null; };
 
   function wordAlpha(t, w, p, S) {
-    if (!S.wordByWord) return smooth((t - p.s) / 0.28);
-    return smooth((t - w.s + 0.08) / 0.28); // slovo se plynule rozsvítí 0,08 s před vyslovením, za 0,28 s
+    if (!S.wordByWord) return smooth((t - p.s + (S.wordLead ?? 0.08)) / (S.wordFade ?? 0.28));
+    return smooth((t - w.s + (S.wordLead ?? 0.08)) / (S.wordFade ?? 0.28)); // plynulé rozsvícení těsně před vyslovením
   }
 
-  function drawWord(c, s, L, x, y, a, S, withShadow, color) {
+  function drawWord(c, s, L, x0, y0, a, S, withShadow, color) {
     c.save();
     c.globalAlpha = a;
+    // zúžení písma (cond < 100 %) – kreslí se v lokálních souřadnicích slova
+    c.translate(x0, y0); if (S.cond && S.cond !== 100) c.scale(S.cond / 100, 1);
+    const x = 0, y = 0;
     c.font = fontStr(L.fam, L.wt, L.it, L.px);
     c.textBaseline = 'middle'; c.textAlign = 'left';
     let fill = color || (L.em ? S.cEm : S.cText);
+    if (!color && !L.em && S.textGrad && S.cText2 && S.cText2 !== S.cText) {
+      const g = c.createLinearGradient(0, y - L.px * 0.36, 0, y + L.px * 0.36);
+      g.addColorStop(0, S.cText); g.addColorStop(1, S.cText2); fill = g;
+    }
     if (!color && L.em && S.grad) {
-      const w = measure(c, s, L.px, S.track), dir = S.gradDir;
+      const w = measure(c, s, L.px, L.track ?? S.track), dir = S.gradDir;
       const g = dir === 'h' ? c.createLinearGradient(x, 0, x + w, 0)
         : dir === 'd' ? c.createLinearGradient(x, y - L.px * 0.45, x + w, y + L.px * 0.45)
-        : c.createLinearGradient(0, y - L.px * 0.42, 0, y + L.px * 0.42);
+        : c.createLinearGradient(0, y - L.px * (S.gradSpan || 0.42), 0, y + L.px * (S.gradSpan || 0.42));
       g.addColorStop(0, S.gA); g.addColorStop(1, S.gB); fill = g;
     }
     if (withShadow && S.shadowA > 0 && S.shadowSize > 0) {
@@ -246,23 +320,25 @@ function Renderer() {
       c.shadowOffsetY = L.px * S.shadowDist / 100;
     }
     c.fillStyle = fill;
-    fillTracked(c, s, x, y, L.px, S.track);
+    fillTracked(c, s, x, y, L.px, L.track ?? S.track);
     c.restore();
   }
 
   // měkký oblak světla zleva doprava (~0,6 s), svítí i okolo slova – nikdy ostrý pruh
-  function drawShine(c, s, L, x, y, a, S, since) {
+  function drawShine(c, s, L, x0, y0, a, S, since) {
     const ph = (since - 0.15) / 0.6; if (ph <= 0 || ph >= 1) return;
     const env = Math.sin(ph * Math.PI);
     c.save();
+    c.translate(x0, y0); if (S.cond && S.cond !== 100) c.scale(S.cond / 100, 1);
+    const x = 0, y = 0;
     c.font = fontStr(L.fam, L.wt, L.it, L.px); c.textBaseline = 'middle'; c.textAlign = 'left';
-    const w = measure(c, s, L.px, S.track);
+    const w = measure(c, s, L.px, L.track ?? S.track);
     const cx = x - w * 0.4 + ph * w * 1.8, bw = Math.max(w * 0.9, L.px * 1.6);
     const g = c.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
     g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     c.fillStyle = g;
-    c.globalAlpha = a * env * 0.6; c.shadowColor = 'rgba(255,255,255,0.9)'; c.shadowBlur = L.px * 0.9; fillTracked(c, s, x, y, L.px, S.track);
-    c.shadowColor = 'transparent'; c.globalAlpha = a * env * 0.85; fillTracked(c, s, x, y, L.px, S.track);
+    c.globalAlpha = a * env * 0.6; c.shadowColor = 'rgba(255,255,255,0.9)'; c.shadowBlur = L.px * 0.9; fillTracked(c, s, x, y, L.px, L.track ?? S.track);
+    c.shadowColor = 'transparent'; c.globalAlpha = a * env * 0.85; fillTracked(c, s, x, y, L.px, L.track ?? S.track);
     c.restore();
   }
 
@@ -309,7 +385,7 @@ function Renderer() {
     let sc = 1, dy = 0, alpha = 1;
     const tp = t - p.s;
     if (S.anim === 'block') { const e = expoOut(tp / 0.55); sc = 0.82 + 0.18 * e; dy = (1 - e) * 0.35 * lay.base; }
-    if (S.fadeOut) { const ex = smooth((p.e - t) / 0.3); alpha = ex; sc *= 0.94 + 0.06 * ex; }
+    if (S.fadeOut) { const ex = smooth((p.e - t) / (S.exitDur || 0.3)); const xs = S.exitScale ?? 0.94; alpha = ex; sc *= xs + (1 - xs) * ex; }
     else alpha = clamp((p.e - t) / 0.06);
     const s2 = fit * sc, shift = want - got;
     const fin = ([x, y, w]) => [want + (x + shift - want) * s2, ccy + (y - ccy) * s2 + dy, w];
@@ -349,5 +425,5 @@ function Renderer() {
   return { render };
 }
 
-global.CaptionEngine = { V8, SF, COLOR_PRESETS, buildPages, pageAt, groupsOf, layoutPage, Renderer, txt, clamp, smooth, hexA, fontStr };
+global.CaptionEngine = { BASE, V8, TEMPLATES, SF, COLOR_PRESETS, buildPages, pageAt, groupsOf, layoutPage, Renderer, txt, clamp, smooth, hexA, fontStr };
 })(window);
