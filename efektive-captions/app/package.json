@@ -1,0 +1,8 @@
+{
+  "name": "efektive-captions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EFEKTIVE Captions beta – automatické titulky do videí",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

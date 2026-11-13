@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Captions">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<title>EFEKTIVE Captions</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="logo"><span>EFEKTIVE</span> Captions</div>
+  <div class="top-r">
+    <span class="pill" id="saveState" hidden>Uloženo</span>
+    <button class="ghost sm" id="newBtn" hidden>Nové video</button>
+  </div>
+</header>
+
+<main class="layout" id="appLayout">
+  <!-- ===== Náhled ===== -->
+  <section class="preview" id="previewCol">
+    <label class="drop" id="pick" for="file">
+      <div class="drop-ic" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="M16 10l5-3v10l-5-3"/></svg>
+      </div>
+      <b>Nahraj video</b>
+      <span>Ideálně svislé 9:16. Video zůstává u tebe, na přepis se posílá jen zvuk.</span>
+    </label>
+    <input type="file" id="file" accept="video/*" hidden>
+    <ol class="how" id="how">
+      <li><b>AI přepíše řeč</b><span>slovo po slovu s přesnými časy</span></li>
+      <li><b>Titulky ve stylu v8</b><span>3 řádky, hlavní barevný, 3D náklon, nástup jako v DaVinci</span></li>
+      <li><b>Uložíš 60 fps</b><span>render snímek po snímku, nic nezasekne</span></li>
+    </ol>
+
+    <div class="stage" id="stage" hidden>
+      <canvas id="cv"></canvas>
+      <div class="stage-badge" id="cropBadge" hidden>Titulek se nevejde – zmenšený</div>
+    </div>
+    <div class="player" id="player" hidden>
+      <button class="round" id="playBtn" aria-label="Přehrát">
+        <svg id="icPlay" viewBox="0 0 24 24" width="18" height="18"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+        <svg id="icPause" viewBox="0 0 24 24" width="18" height="18" hidden><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"/></svg>
+      </button>
+      <div class="scrub" id="scrub"><div class="marks" id="marks"></div><div class="fill" id="scrubFill"></div><div class="knob" id="scrubKnob"></div></div>
+      <span class="tm" id="tm">0:00</span>
+    </div>
+    <div class="nav" id="capNav" hidden>
+      <button class="ghost sm" id="prevCap" aria-label="Předchozí titulek">‹</button>
+      <div class="nav-mid"><span id="capLabel">–</span></div>
+      <button class="ghost sm" id="nextCap" aria-label="Další titulek">›</button>
+    </div>
+  </section>
+
+  <!-- ===== Ovládání ===== -->
+  <section class="panel" id="panelCol">
+    <div class="card" id="step2" hidden>
+      <div class="card-h"><h2>1 · Přepis řeči</h2><span class="muted" id="durInfo"></span></div>
+      <div class="row">
+        <select id="lang" aria-label="Jazyk">
+          <option value="">Poznat jazyk automaticky</option>
+          <option value="cs" selected>Čeština</option><option value="sk">Slovenština</option><option value="en">Angličtina</option><option value="de">Němčina</option><option value="pl">Polština</option><option value="hu">Maďarština</option><option value="es">Španělština</option><option value="fr">Francouzština</option><option value="it">Italština</option><option value="pt">Portugalština</option><option value="nl">Nizozemština</option><option value="uk">Ukrajinština</option><option value="ru">Ruština</option><option value="ro">Rumunština</option><option value="hr">Chorvatština</option><option value="sl">Slovinština</option><option value="bg">Bulharština</option><option value="el">Řečtina</option><option value="tr">Turečtina</option><option value="sv">Švédština</option><option value="da">Dánština</option><option value="no">Norština</option><option value="fi">Finština</option><option value="ja">Japonština</option><option value="ko">Korejština</option><option value="zh">Čínština</option>
+        </select>
+      </div>
+      <button class="primary" id="aiBtn">Vytvořit titulky</button>
+      <div class="progress" id="bar" hidden><i></i></div>
+      <div class="status" id="status"></div>
+      <details class="manual">
+        <summary>Bez AI: vložit text ručně</summary>
+        <textarea id="manualText" rows="4" placeholder="Sem napiš, co se ve videu říká…"></textarea>
+        <button id="manualBtn">Použít text</button>
+      </details>
+    </div>
+
+    <div class="card" id="step3" hidden>
+      <div class="card-h"><h2>2 · Vzhled</h2><button class="ghost sm" id="resetV8" title="Vrátit schválenou šablonu v8">Šablona v8</button></div>
+      <div class="seg" id="scope" role="tablist">
+        <button class="on" data-v="all">Všechny titulky</button>
+        <button data-v="one">Jen tenhle titulek</button>
+      </div>
+      <div class="scope-info" id="scopeInfo"><span id="curName">Měníš všechny titulky</span><button class="link" id="resetOne" hidden>Vrátit na společný styl</button></div>
+
+      <div class="tabs" id="tabs">
+        <button data-t="barva" class="on">Barva</button>
+        <button data-t="prostor">3D</button>
+        <button data-t="pismo">Písmo</button>
+        <button data-t="pohyb">Pohyb</button>
+        <button data-t="zvuk">Zvuk</button>
+      </div>
+
+      <!-- Barva -->
+      <div class="pane on" data-p="barva">
+        <div class="lbl">Barva hlavního řádku podle tématu</div>
+        <div class="presets" id="colorPresets"></div>
+        <div class="swrow">
+          <label class="sw"><input type="color" id="cEm" value="#e4202c"><span>Vlastní barva</span></label>
+          <label class="sw"><input type="color" id="gA" value="#ffe04a"><span>Přeliv od</span></label>
+          <label class="sw"><input type="color" id="gB" value="#ff8a00"><span>Přeliv do</span></label>
+          <label class="sw"><input type="color" id="cText" value="#ffffff"><span>Vedlejší řádky</span></label>
+        </div>
+        <div class="tg"><span>Přeliv shora dolů místo plné barvy</span><input type="checkbox" class="switch" id="grad"></div>
+        <label class="ctl"><div class="lb"><span>Velikost písma</span><span id="sizeV"></span></div><input type="range" id="size" min="50" max="140" value="88"></label>
+        <label class="ctl"><div class="lb"><span>Záře okolo hlavního řádku</span><span id="glowV"></span></div><input type="range" id="glow" min="0" max="100" value="30"></label>
+        <label class="ctl"><div class="lb"><span>Stín (průhlednost)</span><span id="shadowAV"></span></div><input type="range" id="shadowA" min="0" max="80" value="45"></label>
+        <label class="ctl"><div class="lb"><span>Svislá pozice</span><span id="posYV"></span></div><input type="range" id="posY" min="20" max="85" value="72"></label>
+        <p class="hint">Titulek můžeš v náhledu i přetáhnout prstem. Výchozí pozice 72 % je pod obličejem, v bezpečné zóně Instagramu.</p>
+      </div>
+
+      <!-- 3D -->
+      <div class="pane" data-p="prostor">
+        <div class="lbl">Náklon podle prostoru ve scéně</div>
+        <div class="presets" id="tiltPresets"></div>
+        <label class="ctl"><div class="lb"><span>Natočení do strany</span><span id="tiltV"></span></div><input type="range" id="tilt" min="-30" max="30" value="18"></label>
+        <label class="ctl"><div class="lb"><span>Naklopení (plus = horní okraj blíž)</span><span id="tiltXV"></span></div><input type="range" id="tiltX" min="-20" max="20" value="4"></label>
+        <label class="ctl"><div class="lb"><span>Hloubka perspektivy</span><span id="perspV"></span></div><input type="range" id="persp" min="20" max="100" value="60"></label>
+        <div class="tg"><span>Střídat směr (titulek doprava, další doleva)</span><input type="checkbox" class="switch" id="tiltAlt" checked></div>
+        <p class="hint" id="tiltWarn">Sweet spot je 15–20°. Nad 24° se písmo začne deformovat.</p>
+        <label class="ctl"><div class="lb"><span>Kinetické rozhození řádků</span><span id="kineticV"></span></div><input type="range" id="kinetic" min="0" max="100" value="45"></label>
+        <div class="lbl">Rozložení řádků</div>
+        <div class="chips" id="layout"><button data-v="cascade">Schody</button><button data-v="center">Na střed</button><button data-v="left">Doleva</button><button data-v="right">Doprava</button></div>
+      </div>
+
+      <!-- Písmo -->
+      <div class="pane" data-p="pismo">
+        <div class="seg small" id="fontTarget"><button class="on" data-v="em">Hlavní řádek</button><button data-v="main">Vedlejší řádky</button></div>
+        <div class="fontgrid" id="fontgrid"></div>
+        <div class="tg"><span>Hlavní řádek kurzívou</span><input type="checkbox" class="switch" id="emItalic"></div>
+        <label class="ctl"><div class="lb"><span>Zvětšení hlavního řádku</span><span id="emScaleV"></span></div><input type="range" id="emScale" min="110" max="220" value="160"></label>
+        <label class="ctl"><div class="lb"><span>Mezery mezi písmeny</span><span id="trackV"></span></div><input type="range" id="track" min="-10" max="6" value="-4"></label>
+        <label class="ctl"><div class="lb"><span>Řádkování</span><span id="gapV"></span></div><input type="range" id="gap" min="50" max="110" value="66"></label>
+        <label class="ctl"><div class="lb"><span>Mezery mezi slovy</span><span id="wordGapV"></span></div><input type="range" id="wordGap" min="80" max="240" value="160"></label>
+        <div class="lbl">Velikost písmen</div>
+        <div class="chips" id="case"><button data-v="none">Jak je</button><button data-v="upper">VELKÁ</button><button data-v="lower">malá</button><button data-v="title">První velké</button></div>
+      </div>
+
+      <!-- Pohyb -->
+      <div class="pane" data-p="pohyb">
+        <div class="lbl">Nástup</div>
+        <div class="chips" id="anim"><button data-v="block">Celý blok (DaVinci)</button><button data-v="fade">Jen prolnutí</button></div>
+        <div class="tg"><span>Slova se rozsvěcují, jak zazní</span><input type="checkbox" class="switch" id="wordByWord" checked></div>
+        <div class="tg"><span>Plynulý odchod (zhasne a zmenší se)</span><input type="checkbox" class="switch" id="fadeOut" checked></div>
+        <div class="tg"><span>Lesk přes hlavní slovo (každý 3. titulek)</span><input type="checkbox" class="switch" id="fxShine"></div>
+        <p class="hint">Nástup je vyladěný podle schválené v8: expo ease-out 0,55 s, z 82 % na 100 %, zespodu. Žádné pružení, vlnění ani třesení.</p>
+      </div>
+
+      <!-- Zvuk -->
+      <div class="pane" data-p="zvuk">
+        <div class="lbl">Zvuk při nástupu titulku</div>
+        <div class="chips" id="sfx"><button data-v="none">Bez zvuku</button><button data-v="soft">Jemný klik</button><button data-v="tick">Tick</button><button data-v="pop">Pop</button><button data-v="whoosh">Whoosh</button></div>
+        <label class="ctl"><div class="lb"><span>Hlasitost</span><span id="sfxVolV"></span></div><input type="range" id="sfxVol" min="0" max="100" value="60"></label>
+      </div>
+    </div>
+
+    <div class="card" id="step4" hidden>
+      <div class="card-h"><h2>3 · Text titulků</h2><button class="ghost sm" id="mosaicBtn">Kontrola všech</button></div>
+      <label class="ctl"><div class="lb"><span>Max slov na titulek</span><span id="wppV"></span></div><input type="range" id="wpp" min="1" max="6" value="4"></label>
+      <div class="tg"><span>Zobrazit interpunkci</span><input type="checkbox" class="switch" id="punct"></div>
+      <p class="hint">Ťukni na titulek = skočíš na něj. Ťukni na slovo = ručně z něj uděláš hlavní řádek. Tužka = oprava textu.</p>
+      <div class="pages" id="pages"></div>
+    </div>
+
+    <div class="card" id="step5" hidden>
+      <div class="card-h"><h2>4 · Export</h2></div>
+      <div class="row two">
+        <select id="res"><option value="1080" selected>1080 × 1920</option><option value="orig">Původní rozlišení</option><option value="720">720p (menší soubor)</option></select>
+        <select id="fps"><option value="60" selected>60 fps (plynulé)</option><option value="30">30 fps</option></select>
+      </div>
+      <button class="primary" id="exportBtn">Uložit video s titulky</button>
+      <div class="progress" id="bar2" hidden><i></i></div>
+      <div class="status" id="status2">Renderuje se snímek po snímku, takže nic nezasekne. Nech appku otevřenou.</div>
+      <button class="ghost sm" id="cancelExport" hidden>Zrušit export</button>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="mosaic" hidden>
+  <div class="modal-in">
+    <div class="modal-h"><b>Kontrola titulků</b><span class="muted" id="mosaicInfo"></span><button class="ghost sm" id="mosaicClose">Zavřít</button></div>
+    <div class="mgrid" id="mgrid"></div>
+  </div>
+</div>
+
+<video id="vid" playsinline webkit-playsinline preload="auto" hidden></video>
+<script src="vendor/mp4-muxer.js"></script>
+<script src="vendor/webm-muxer.js"></script>
+<script src="vendor/mp4box.all.min.js"></script>
+<script src="source.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
