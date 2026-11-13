@@ -9,6 +9,8 @@ const I = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const dot = (a, c) => a[0] * c[0] + a[1] * c[1] + a[2] * c[2];
 const quarter = (S, id, col, y, q, flip = false) => { const M = flip ? mul(ry(q * Math.PI / 2), rx(Math.PI)) : ry(q * Math.PI / 2); S.part(id, col, add(scl(apply(M, [-10, 0, 10]), -1), [0, y, 0]), M); };
 const A = new Asm();
+// ortonormální rámec: místní -Y → d (bez zkosení)
+const upM = (d) => { const y = scl(norm(d), -1), x = norm(cross(y, [0, 0, 1])), z = cross(x, y); return basis(x, y, z); };
 
 // ===== kroky 1–6: podstavec (černá kulatá deska, 4 nožky z kočičích ocásků, hnědý prstenec) =====
 const base = new Asm();
@@ -78,12 +80,12 @@ function leaf(at, dir, roll) { // dir = směr listu, líc k divákovi
   A.part('32828', DG, at, frameZ(dir));
 }
 leaf(P(100, 370, -12), norm([-0.25, 1, 0]), 0.25);
-leaf(P(212, 335, -12), norm([0.3, 1, 0]), -0.25);
+leaf(P(212, 275, -12), norm([0.3, 1, 0]), -0.25);
 // ===== zahnuté stonky s poupaty (krok 27–28): hadovitý díl 40379, na konci kalich a oranžové poupě =====
 function bud(at, d) {
   const B = new Asm();
   B.part('15469', DG, [0, 0, 0]); B.part('18674', OR, [0, -6, 0]); B.part('79743', OR, [0, -10, 0]); B.part('68212', OR, [0, -14, 0]);
-  A.add(B, { M: basis(cross(scl(d, -1), [0, 0, 1]), scl(d, -1), [0, 0, 1]), p: at });
+  A.add(B, { M: upM(d), p: at });
 }
 // zahnutý stonek poupěte (krok 27): hadovitý díl 40379 – oblouk z kolmého směru do vodorovného
 function curvedStem(at, side, z = -8) {
@@ -92,8 +94,8 @@ function curvedStem(at, side, z = -8) {
   const tip = add(at, apply(M, [0, -40, 70])), d = norm(apply(M, [0, 0.15, 1]));
   bud(add(tip, scl(d, 6)), d);
 }
-curvedStem(P(178, 330, -6), 1);
-curvedStem(P(182, 500, -6), 1);
+curvedStem(P(178, 245, -6), 1);
+curvedStem(P(182, 420, -6), 1);
 // ===== hlava (kroky 38–48): střed, věnce zahnutých lístků (banán 33085 / dráp 16770) =====
 // lístek: báze u středu, tětiva míří ven a nahoru pod úhlem elev, prohnutí ven → špička se stáčí zpět ke středu (incurved)
 const PET = { '33085': { d0: norm([32, 0, 42]), q0: norm([-42, 0, 32]), base: [-32, 0, -42] }, '16770': { d0: [0, 0, -1], q0: [0, E('CQ', -1), 0], base: [0, 0, 0] } };
@@ -110,30 +112,34 @@ function petalM(id, a, elev, curl = 1) {
 }
 function head({ s = 1, rings, core = 'big' }) {
   const H = new Asm();
-  if (core === 'big') { H.part('75937', RO, [0, 0, 0]); H.part('3941', OR, [0, -8, 0]); H.part('4733', LM, [0, -32, 0]); H.part('67811', YE, [0, -20, 0]); H.part('79743', OR, [0, -56, 0]); }
+  if (core === 'big') { H.part('75937', RO, [0, 0, 0]); H.part('3941', OR, [0, -8, 0]); H.part('4733', LM, [0, -32, 0]); H.part('67811', YE, [0, 6, 0]); H.part('85861', YE, [0, -56, 0]);
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, w = [Math.cos(a), 0, Math.sin(a)], up = norm(add(scl(w, 0.35), [0, -1, 0]));
+      const zz = scl(up, -1), xx = norm(cross([0, 1, 0], w)), yy = cross(zz, xx);         // zub 49668 (špička k -z) míří nahoru, plochou ven
+      H.part('49668', k % 2 ? LO : LY, add(scl(w, 12), [0, -40, 0]), basis(xx, scl(w, -1), zz).map((v) => v)); } }
   else { H.part('18674', OR, [0, 0, 0]); H.part('4733', LM, [0, -24, 0]); H.part('79743', OR, [0, -48, 0]); }
   for (const [id, n, r, y, elev, col, ph, curl, clip] of rings) for (let k = 0; k < n; k++) {
     const a = ph + k * 2 * Math.PI / n, w = [Math.cos(a), 0, Math.sin(a)];
     const Mp = mul(petalM(id, a, elev, curl), S(s));
     H.part(id, col, sub(scl(add(scl(w, r), [0, y, 0]), s), apply(Mp, PET[id].base)), Mp);
-    if (clip) H.part('11090', clip, scl(add(scl(w, r - 4), [0, y + 2, 0]), s), mul(basis(cross([0, 1, 0], w), [0, 1, 0], scl(w, -1)), rx(-Math.PI / 2), S(s)));
+    if (clip) H.part('11090', clip, scl(add(scl(w, r - 12), [0, y + 4, 0]), s), mul(basis(cross([0, 1, 0], w), [0, 1, 0], scl(w, -1)), rx(-Math.PI / 2), S(s)));
   }
   return H;
 }
 const S = (k) => [k, 0, 0, 0, k, 0, 0, 0, k];
+const D2R = Math.PI / 180;
 const BIG = [
-  // [díl, počet, poloměr, výška, elevace, barva, fáze, prohnutí, klip]
-  ['33085', 8, 10, -46, E('E1', 1.45), LO, 0, 1, 0],          // krok 44: vnitřní světle oranžové, téměř svisle
-  ['33085', 10, 26, -26, E('E2', 1.22), OR, 0.3, 1, RD],      // krok 45–46: oranžové
-  ['33085', 10, 36, -10, E('E3', 1.0), OR, 0.0, 1, RD],
-  ['33085', 8, 38, 2, E('E4', -0.45), RO, 0.4, -1, RD],       // krok 48: dolní červenooranžové, převislé
+  // [díl, počet, poloměr báze, výška báze, elevace, barva, fáze, prohnutí, klip] – kulovitá hlava: lístky míří od středu ven, špičky se stáčejí dovnitř
+  ['33085', 8, E('R1', 14), E('Y1', -30), E('E1', 55) * D2R, LO, 0, 1, 0],          // krok 44: vnitřní světle oranžové
+  ['33085', 10, E('R2', 26), E('Y2', -20), E('E2', 32) * D2R, OR, 0.31, 1, RD],     // krok 45–46: oranžové, horní řada
+  ['33085', 10, E('R3', 32), E('Y3', -8), E('E3', 8) * D2R, OR, 0.0, 1, RD],      //              dolní řada
+  ['33085', 8, E('R4', 30), E('Y4', 4), E('E4', -25) * D2R, RO, 0.39, E('C4', 1), RD], // krok 48: spodní červenooranžové
 ];
-const SMALL = [['16770', 8, 12, -30, 1.3, OR, 0, 1, 0], ['16770', 8, 22, -12, 0.9, OR, 0.4, 1, 0]];
-const headAt = (H, at, up) => A.add(H, { M: basis(cross(scl(up, -1), [0, 0, 1]), scl(up, -1), [0, 0, 1]), p: at });
-headAt(head({ s: E('HS', 1.35), rings: BIG }), P(175, 175, -10), norm([0.05, -1, -0.2]));
-headAt(head({ s: 1.15, rings: SMALL, core: 'small' }), P(105, 305, -25), norm([-0.35, -1, -0.35]));
+const SMALL = [['16770', 8, 12, -24, E('S1', 0.95), OR, 0, 1, 0], ['16770', 8, 18, -12, E('S2', 0.45), OR, 0.4, 1, 0]];
+const headAt = (H, at, up) => A.add(H, { M: upM(up), p: at });
+headAt(head({ s: E('HS', 1.5), rings: BIG }), P(172, 150, -10), norm([0.05, -1, -0.25]));
+headAt(head({ s: 1.25, rings: SMALL, core: 'small' }), P(105, 290, -30), norm([-0.12, -1, -0.65]));
 A.part('32016', DG, P(140, 360, -10), rz(0.7)); A.part('42195', DG, P(122, 335, -15), mul(rz(0.8), rx(Math.PI / 2)));
 A.part('42195', DG, P(150, 330, 0), rx(Math.PI / 2)); A.part('32016', DG, P(130, 345, -5));     // krátká větev k malé hlavě
 
-if (process.env.SUB) { const b = new Build('sub'), X = new Asm(); X.add(process.env.SUB === 'small' ? head({ s: 1, rings: SMALL, core: 'small' }) : head({ s: 1, rings: BIG }), { M: I, p: [0, 0, 0] }); X.emit(b); b.save('sub.ldr'); }
+if (process.env.SUB) { const b = new Build('sub'), X = new Asm(); X.add(process.env.SUB === 'small' ? head({ s: 1, rings: SMALL, core: 'small' }) : head({ s: 1, rings: BIG }), { M: I, p: [0, 0, 0] }); X.part('42195', DG, [0, 30, 0], rx(Math.PI / 2)); X.emit(b); b.save('sub.ldr'); }
 else { const b = new Build('chrysanthemum10368'); A.emit(b); b.save('chrysanthemum10368.ldr'); console.log('chrysanthemum10368 parts', b.n); }
