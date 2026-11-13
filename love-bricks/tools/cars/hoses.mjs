@@ -85,13 +85,15 @@ const SPECS = {
     for (const s of [-1, 1]) part('18944', 272, [s * 70, -323, -80], [1.95, 0, 0, 0, 1, 0, 0, 0, 1]);
     const R = 1.8; // trubka: poloměr 9 LDU
     // 1) dvě světle modré hadice přes kapotu od paty sloupků k logu, podél prostředního dílu kapoty
-    for (const s of [-1, 1]) tube([[s * 150, -430, 10], [s * 120, -520, 14], [s * 75, -640, 12], [s * 40, -740, 10], [s * 26, -800, 4]], 321, R);
+    // výška z vyšší z obou stran (levá strana má v povrchu díry), obě hadice symetricky nad kapotou
+    const hh = (x, z, l) => Math.min(top(x, z) ?? 0, top(-x, z) ?? 0) - l;
+    for (const s of [-1, 1]) tube([[150, -430, 12], [120, -520, 16], [75, -640, 14], [40, -740, 12], [26, -800, 6]].map(([x, z, l]) => ['abs', s * x, hh(x, z, l), z]), 321, R);
     // 2) černý oblouk podél spodní hrany čelního skla, od kraje ke kraji (uprostřed vyklenutý dopředu)
     { const pts = []; for (let x = -175; x <= 175; x += 35) pts.push([x, -410 - 40 * (1 - (x / 175) ** 2), 6]); tube(pts, 0, R); }
     // 3) stříbrná podkova přes černou masku
     { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 383, R); }
     // 4) bílá hadice přes celé dveře: zespodu vzadu nahoru a dopředu podél horní hrany až k zrcátku
-    for (const s of [-1, 1]) tube([['abs', s * 296, -60, -40], ['abs', s * 300, -110, 70], ['abs', s * 300, -215, 75], ['abs', s * 298, -285, 0], ['abs', s * 292, -295, -150], ['abs', s * 285, -270, -290], ['abs', s * 272, -240, -380]], 15, R);
+    for (const s of [-1, 1]) tube([['abs', s * 296, -75, -40], ['abs', s * 300, -130, 80], ['abs', s * 300, -235, 85], ['abs', s * 298, -305, 0], ['abs', s * 292, -315, -150], ['abs', s * 285, -290, -290], ['abs', s * 272, -258, -380]], 15, R);
   }
 };
 SPECS[spec]();
