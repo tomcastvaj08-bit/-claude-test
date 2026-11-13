@@ -71,7 +71,9 @@ function merge(scene) {
           if (N) { v.fromBufferAttribute(N, k).applyMatrix3(nm).normalize(); nrm.set([v.x, v.y, v.z], (vo + k) * 3); }
           if (C) ao[vo + k] = C.getX(k); // zapečené stínování v záhybech (Blender, ambient occlusion)
         }
-        if (I) for (let k = 0; k < I.count; k++) idx[io + k] = I.getX(k) + vo; else for (let k = 0; k < n; k++) idx[io + k] = vo + k;
+        const flip = M.determinant() < 0; // zrcadlené umístění dílku: otočit pořadí vrcholů, jinak by plochy byly naruby
+        const cnt = I ? I.count : n;
+        for (let k = 0; k < cnt; k++) { const kk = flip ? (k - (k % 3)) + [0, 2, 1][k % 3] : k; idx[io + k] = (I ? I.getX(kk) : kk) + vo; }
         vo += n; io += I ? I.count : n;
       }
     }
@@ -100,9 +102,15 @@ function plastic(src) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAO = ao;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vAO;')
       .replace('#include <aomap_fragment>', `#include <aomap_fragment>
-        float aoV = mix(1.0, pow(clamp(vAO, 0.0, 1.0), 0.8), 0.78); // měkké stíny v záhybech
+        float aoV = mix(1.0, pow(clamp(vAO, 0.0, 1.0), 0.6), 0.6); // měkké stíny v záhybech
         reflectedLight.indirectDiffuse *= aoV; reflectedLight.indirectSpecular *= aoV;
-        reflectedLight.directDiffuse *= mix(1.0, aoV, 0.6); reflectedLight.directSpecular *= aoV;`);
+        reflectedLight.directDiffuse *= mix(1.0, aoV, 0.35); reflectedLight.directSpecular *= aoV;
+        #ifdef USE_CLEARCOAT
+          clearcoatSpecularIndirect *= aoV; clearcoatSpecularDirect *= aoV;
+        #endif
+        #ifdef USE_SHEEN
+          sheenSpecularIndirect *= aoV; sheenSpecularDirect *= aoV;
+        #endif`);
   };
   m.customProgramCacheKey = () => 'lb-plastic';
   return m;
