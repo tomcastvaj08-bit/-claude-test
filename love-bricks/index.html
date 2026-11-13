@@ -10,7 +10,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='9' width='28' height='20' rx='3' fill='%23D01012'/%3E%3Crect x='6' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Crect x='18' y='4' width='8' height='6' rx='1.5' fill='%23D01012'/%3E%3Cpath d='M16 25s-6-3.6-6-7.6c0-2 1.5-3.4 3.2-3.4 1.2 0 2.2.7 2.8 1.7.6-1 1.6-1.7 2.8-1.7 1.7 0 3.2 1.4 3.2 3.4 0 4-6 7.6-6 7.6z' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="preload" href="fonts/bungee-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/gallery.css">
+  <link rel="stylesheet" href="css/gallery.css?v=20261114f">
   <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
   <link rel="modulepreload" href="vendor/three/three.module.min.js">
 </head>
@@ -32,8 +32,24 @@
   <div class="hang">
     <span class="hang-wire" aria-hidden="true"></span>
     <button class="hang-box" data-fwd type="button" aria-label="Posunout se dál k dalším exponátům">
-      <span class="brick-studs" aria-hidden="true"><i></i><i></i></span>
-      <span class="brick-body"><span class="hang-txt">Dál</span></span>
+      <i class="screw" aria-hidden="true"></i><i class="screw" aria-hidden="true"></i><i class="screw" aria-hidden="true"></i><i class="screw" aria-hidden="true"></i>
+      <svg class="hang-stud" viewBox="0 0 72 56" aria-hidden="true">
+        <defs>
+          <linearGradient id="hsSide" x1="0" x2="1"><stop offset="0" stop-color="#8e0710"/><stop offset=".35" stop-color="#ff3b3b"/><stop offset=".55" stop-color="#ff8a80"/><stop offset=".8" stop-color="#d4141c"/><stop offset="1" stop-color="#7a0610"/></linearGradient>
+          <radialGradient id="hsTop" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#ffb3ad"/><stop offset=".45" stop-color="#ff3d3d"/><stop offset="1" stop-color="#b30d15"/></radialGradient>
+        </defs>
+        <g opacity=".9">
+          <path d="M4 34 v10 a32 10 0 0 0 64 0 v-10 z" fill="url(#hsSide)"/>
+          <ellipse cx="36" cy="34" rx="32" ry="10" fill="url(#hsTop)"/>
+          <ellipse cx="36" cy="34" rx="32" ry="10" fill="none" stroke="#ffd0cc" stroke-opacity=".55" stroke-width="1"/>
+          <path d="M18 18 v16 a18 6 0 0 0 36 0 v-16 z" fill="url(#hsSide)"/>
+          <ellipse cx="36" cy="18" rx="18" ry="6" fill="url(#hsTop)"/>
+          <ellipse cx="36" cy="18" rx="18" ry="6" fill="none" stroke="#ffe0dc" stroke-opacity=".7" stroke-width="1"/>
+          <ellipse cx="30" cy="16" rx="7" ry="2" fill="#fff" fill-opacity=".55"/>
+          <rect x="22" y="22" width="3" height="12" rx="1.5" fill="#fff" fill-opacity=".35"/>
+        </g>
+      </svg>
+      <span class="hang-txt">Dál</span>
     </button>
   </div>
   <div class="warp-flash" aria-hidden="true"></div>
@@ -66,6 +82,6 @@
   </aside>
 
   <noscript><p style="position:fixed;inset:auto 0 0;text-align:center;padding:20px;background:#fff">Galerie potřebuje JavaScript. <a href="prehled.html">Otevřít přehled kolekce</a>.</p></noscript>
-  <script type="module" src="js/gallery.js?v=20261114e"></script>
+  <script type="module" src="js/gallery.js?v=20261114f"></script>
 </body>
 </html>
