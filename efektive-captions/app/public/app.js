@@ -894,7 +894,7 @@ $('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? K
 })();
 
 // přibalené písmo titulků (stejné na iPhonu i v počítači) – načíst hned
-if (document.fonts && document.fonts.load) for (const w of [400,500,600,700,800,900]) document.fonts.load(`${w} 60px "Inter Tight"`).catch(()=>{});
+if (document.fonts && document.fonts.load) for (const w of [400,500,600,700,800,900]) document.fonts.load(`${w} 60px "Inter Tight"`,'AaŽžŠšČčŘřĚěŮůÝýÁáÍíÉéÚúŇňŤťĎď').catch(()=>{});
 
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();

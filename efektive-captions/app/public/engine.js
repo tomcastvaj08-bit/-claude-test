@@ -78,7 +78,7 @@ E.GLOBAL_ONLY = new Set(['wpp','maxLines','maxChars','punct','sfxVol','sfxWord',
 // [rodina (CSS stack: Apple systémový font → webová náhrada), tloušťka, popisek, kurzíva]
 const ST=(apple,web)=>`"${apple}", ${web}`;
 E.FONTS = [
-  [SF,400,'SF Pro Regular'],[SF,500,'SF Pro Medium'],[SF,700,'SF Pro Bold'],[SF,900,'SF Pro Black'],
+  [SF,400,'SF Pro Regular'],[SF,500,'SF Pro Medium'],[SF,600,'SF Pro Semibold'],[SF,700,'SF Pro Bold'],[SF,800,'SF Pro Heavy'],
   [ST('Helvetica Neue','Helvetica, Arial, "Inter"'),400,'Helvetica Regular'],[ST('Helvetica Neue','Helvetica, Arial, "Inter"'),700,'Helvetica Bold'],
   ['"Inter Tight"',900,'Inter Tight Black'],['"Inter Tight"',900,'Inter Tight Black Italic',true],
   ['"Inter Tight"',700,'Inter Tight Bold'],['"Inter Tight"',700,'Inter Tight Bold Italic',true],
@@ -109,7 +109,7 @@ const common = {kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
-  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:600,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-8,trackEm:-11,cond:87,gap:60,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:18,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'none',anim:'base',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
+  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-8,trackEm:-11,cond:87,gap:60,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:18,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'none',anim:'base',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
     pv:'<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="background:linear-gradient(#ff9a00,#e8f200);-webkit-background-clip:text;color:transparent;font-weight:800;letter-spacing:-.07em">Sledovat</b>' },
   bestaccount:{ name:'Styl 2', cat:'trending', set:{...common, fontMain:SF,wMain:700,fontEm:SF,wEm:900,emItalic:false,mainLine:'mid',size:88,posX:50,posY:66,track:-4,gap:66,emScale:160,wordGap:160,tilt:18,tiltX:4,persp:60,tiltAlt:true,kinetic:45,layout:'cascade',layerOrder:'natural',cText:'#ffffff',grad:true,gA:'#ff9300',gB:'#fff200',gradDir:'v',altOn:true,altEvery:4,altA:'#8fe0ff',altB:'#0a62e6',glow:30,glowMode:'always',shadowSize:25,shadowA:45,shadowDist:10,cShadow:'#000000',fxShine:true,shineEvery:'3',shineSpeed:50,fxFlicker:false,fxWiggle:false,wiggle:0,anim:'block',fadeOut:true,capMain3:true},
     pv:'<span style="font-weight:700">Vyrostla</span><br><b style="background:linear-gradient(#ff9300,#fff200);-webkit-background-clip:text;color:transparent;font-weight:900">Vám Firma</b>' },
@@ -285,6 +285,7 @@ const easeBounce = x => { const n=7.5625,d=2.75; if(x<1/d) return n*x*x; if(x<2/
 const easeElastic = x => x===0?0:x===1?1:Math.pow(2,-10*x)*Math.sin((x*10-0.75)*(2*Math.PI/3))+1;
 E.ease={easeBack,easeBounce,easeElastic};
 function setFont(c, fam, weight, italic, px, track){
+  if (fam===SF && weight>800) weight=800;   // SF: nejtlustší je Heavy (800) – nic tlustšího
   c.font = `${italic?'italic ':''}${weight} ${px}px ${fam.includes(',')||fam.startsWith('"')?fam:'"'+fam+'"'}`;
   if ('letterSpacing' in c) c.letterSpacing=(track/100*px).toFixed(2)+'px';
 }
