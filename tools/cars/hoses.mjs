@@ -95,9 +95,10 @@ const SPECS = {
     // 4) bílá hadice přes celé dveře: zespodu vzadu nahoru a dopředu podél horní hrany až k zrcátku
     // bílá hadice přitisknutá na lištu okna: od spodku dveří po C-linii nahoru, podél střešní lišty dopředu až k zrcátku
     const sx = (z, y) => { let best = 0; for (let dz = -3; dz <= 3; dz++) for (let dy = -2; dy <= 2; dy++) { const v = SXm.get(Math.round(z / C + dz) + ',' + Math.round(y / C + dy)); if (v !== undefined && v < 330 && v > best) best = v; } return best; };
-    const path = [[-20, -80], [60, -125], [92, -200], [88, -262], [45, -312], [-60, -322], [-180, -320], [-270, -298], [-350, -262], [-385, -250]];
+    // pravidelné „C“ jako C-linie Chironu: elipsa otevřená dopředu (shora od sloupku dozadu kolem dveří a dole zpět dopředu)
+    const path = []; for (let a = -120; a <= 120; a += 8) { const t = a * Math.PI / 180; path.push([-130 + 230 * Math.cos(t), -188 + 136 * Math.sin(t)]); }
     let xs = path.map(([z, y]) => sx(z, y) + 8);
-    xs = xs.map((x, i) => (xs[Math.max(0, i - 1)] + 2 * x + xs[Math.min(xs.length - 1, i + 1)]) / 4);
+    for (let k = 0; k < 4; k++) xs = xs.map((x, i) => (xs[Math.max(0, i - 2)] + xs[Math.max(0, i - 1)] + x + xs[Math.min(xs.length - 1, i + 1)] + xs[Math.min(xs.length - 1, i + 2)]) / 5);
     for (const s of [-1, 1]) tube(path.map(([z, y], i) => ['abs', s * xs[i], y, z]), 15, R);
     console.log('door hose x', xs.map(Math.round).join(','));
   }
