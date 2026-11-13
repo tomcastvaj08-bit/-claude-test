@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114d';
+import { createModel, ready, LITE } from './builders.js?v=20261114e';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -138,28 +138,32 @@ const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 // malý bílý stojánek s názvem (jako cedulka „rezervováno“ na stole): dvě destičky opřené o sebe do trojúhelníku
 const cardFont = document.fonts?.load('700 64px Rubik').catch(() => {});
 const cardBack = new THREE.MeshStandardMaterial({ color: '#F7F6F3', roughness: 0.55 });
-function makeCard(name, fp, D) {
-  const W = 1.15, H = 0.44, lean = 0.2;
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 394;
-  const g = c.getContext('2d');
+function makeCard(p, fp, D) {
+  // stojánek do stříšky (jako „rezervováno“ na stole): bílý karton, název, cena a drobná barevná linka v barvě produktu
+  const W = 1.2, H = 0.52, lean = 0.22;
+  const c = document.createElement('canvas'); c.width = 1024; c.height = Math.round(1024 * H / W);
+  const g = c.getContext('2d'), CW = c.width, CH = c.height;
   const draw = () => {
-    g.fillStyle = '#F7F6F3'; g.fillRect(0, 0, c.width, c.height);
-    g.strokeStyle = 'rgba(0,0,0,.08)'; g.lineWidth = 6; g.strokeRect(14, 14, c.width - 28, c.height - 28);
+    g.fillStyle = '#FBFAF7'; g.fillRect(0, 0, CW, CH);
+    g.strokeStyle = 'rgba(31,26,23,.14)'; g.lineWidth = 4; g.strokeRect(22, 22, CW - 44, CH - 44);
+    g.fillStyle = p.accent || '#D3359D'; g.fillRect(CW / 2 - 60, 58, 120, 8);
     g.fillStyle = '#1F1A17'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    let fs = 96; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(name).width > c.width - 110 && fs > 30);
-    g.fillText(name, c.width / 2, c.height / 2 + 4);
+    let fs = 92; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(p.name).width > CW - 120 && fs > 30);
+    g.fillText(p.name, CW / 2, CH * 0.44);
+    g.font = '700 66px Rubik, sans-serif'; g.fillStyle = p.accent || '#D3359D';
+    g.fillText(fmt(p.price), CW / 2, CH * 0.74);
     tex.needsUpdate = true;
   };
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   draw(); cardFont?.then?.(draw);
-  const front = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 });
+  const front = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
   const geo = new THREE.BoxGeometry(W, H, 0.012); geo.translate(0, H / 2, 0);
   const grp = new THREE.Group();
   const a = new THREE.Mesh(geo, [cardBack, cardBack, cardBack, cardBack, front, cardBack]); a.rotation.x = -lean;
   const b = new THREE.Mesh(geo, cardBack); b.rotation.x = lean;
-  const off = Math.sin(lean) * H / 2; a.position.z = off; b.position.z = -off;
+  const off = Math.sin(lean) * H; a.position.z = off; b.position.z = -off;     // obě strany se potkají nahoře – nic nezakrývá nápis
   grp.add(a, b);
-  grp.position.set(fp.cx, 0, Math.max(fp.cz + fp.d / 2, D * 0.18) + 0.5);
+  grp.position.set(fp.cx, 0, Math.max(fp.cz + fp.d / 2, D * 0.18) + 0.55);
   return grp;
 }
 // střed dna modelu (body ve spodních 12 % výšky) – květináč
@@ -207,7 +211,7 @@ const exhibits = ORDER.map((id) => {
   const sh = new THREE.Mesh(shadowGeo, shMat);
   sh.rotation.x = -Math.PI / 2; sh.position.set(fp.cx, 0.003, fp.cz); sh.scale.set(fp.w * 1.35 + 0.12, fp.d * 1.35 + 0.12, 1);
   sh.visible = false; // stín pod exponáty vypnutý – stojí přímo na podlaze
-  base.add(makeCard(p.name, fp, D));
+  base.add(makeCard(p, fp, D));
   const hit = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), hitMat); hit.position.y = H / 2; spin.add(hit);
   scene.add(root);
   const ex = { id, p, m, root, base, spin, hit, car, sh, shMat, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
@@ -237,7 +241,12 @@ function place(ex, k) {
 // panáčci vykukují z okraje obrazovky (jsou přichycení ke kameře): nohy stojí dole, tělo se nakloní do obrazu,
 // vnější rukou se drží jako z okna vlaku. U každé dvojice květin vykoukne holka (srdíčka) a kluk (hvězdičky, mrknutí).
 scene.add(camera);
-const figLayer = new THREE.Group(); camera.add(figLayer);
+// panáčci se kreslí ve vlastním průchodu až nad scénou (po vymazání hloubky) – nikdy je neořízne podlaha ani exponát
+const figScene = new THREE.Scene(), figRoot = new THREE.Group(); figRoot.matrixAutoUpdate = false; figScene.add(figRoot);
+figScene.environment = scene.environment; figScene.environmentIntensity = 0.75;
+figScene.add(new THREE.HemisphereLight(0xFFFDF8, 0xC9C0B6, 1.0));
+{ const k = new THREE.DirectionalLight(0xFFF4E6, 1.6); k.position.set(-3, 6, 5); figScene.add(k); const f = new THREE.DirectionalLight(0xFFFFFF, 0.5); f.position.set(4, 2, 3); figScene.add(f); }
+const figLayer = new THREE.Group(); figRoot.add(figLayer);
 const figs = [false, true].map((girl) => {
   const f = new Figure({ girl });
   f.state.show = true; f.anim.show = 1;
@@ -250,7 +259,7 @@ const figs = [false, true].map((girl) => {
 const FIG_D = 2.4;
 function placeFig(F, dt, t) {
   const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * FIG_D, halfW = halfH * camera.aspect;
-  const sc = (halfH * 2 * (portrait() ? 0.5 : 0.62)) / 6.4;
+  const sc = (halfH * 2 * (portrait() ? 0.42 : 0.54)) / 6.4;
   F.holder.scale.setScalar(sc);
   F.k += ((F.target ? 1 : 0) - F.k) * (1 - Math.exp(-dt * (F.target ? 4.5 : 6)));
   const k = ease(clamp(F.k)), side = F.side;
@@ -390,7 +399,7 @@ function updateWindow() {
 
 // ------------------------------------------------------------ vstup
 // Po načtení exponáty napadají z nebe a poskládají se, pak sjede tlačítko na drátku.
-const introStart = performance.now() + 350;
+const introStart = performance.now() + 60;
 let introDone = false, shake = 0;
 function enter() { /* vstup je hned – ponecháno kvůli kompatibilitě */ }
 state.entered = true; state.s = 0;
@@ -602,7 +611,7 @@ function frame(now) {
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
     ex.spin.rotation.y += ((ex.user + swing) - ex.spin.rotation.y) * (1 - Math.exp(-rawDt * 6));
   }
-  if (!introDone && now - introStart > 2800) { introDone = true; document.body.classList.add('is-ready'); }
+  if (!introDone && now - introStart > 1300) { introDone = true; document.body.classList.add('is-ready'); }
   // panáčci: u zastávky (dvojice je složená) vykouknou ke květinám
   {
     let pair = [];
@@ -645,6 +654,8 @@ function frame(now) {
 
   renderReflection();
   renderer.render(scene, camera);
+  camera.updateMatrixWorld(); figRoot.matrix.copy(camera.matrixWorld); figRoot.updateMatrixWorld(true);
+  renderer.autoClear = false; renderer.clearDepth(); renderer.render(figScene, camera); renderer.autoClear = true;
 
   // adaptivní rozlišení
   frames.push(rawDt);

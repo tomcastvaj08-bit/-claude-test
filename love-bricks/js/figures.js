@@ -10,7 +10,18 @@ const LOOKS = {
   boy: { hair: '62810', short: false, shirt: '#F4F4F2', arms: '#F4F4F2', legs: '#1E2C4A', hairCol: '#6B3018' },
   girl: { hair: '35701', short: true, shirt: '#E3AFD6', arms: '#E3AFD6', legs: '#4F6F98', hairCol: '#9A4A14' } // světle růžová, šedomodrá, tmavě oranžová
 };
-const std = (color, extra = {}) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.12, specularIntensity: 0.7, ior: 1.46, side: THREE.DoubleSide, ...extra }); // lesklý ABS plast
+// jemné stínování: plochy natočené dolů a do stran jsou o něco tmavší (měkký přechod jako u skutečné figurky)
+function softShade(m) {
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWN;').replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvWN = normalize(mat3(modelMatrix) * objectNormal);');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWN;').replace('#include <aomap_fragment>', `#include <aomap_fragment>
+      float sk = mix(0.62, 1.0, smoothstep(-0.9, 0.7, normalize(vWN).y));
+      reflectedLight.indirectDiffuse *= sk; reflectedLight.directDiffuse *= mix(1.0, sk, 0.5);`);
+  };
+  m.customProgramCacheKey = () => 'lb-fig';
+  return m;
+}
+const std = (color, extra = {}) => softShade(new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.12, specularIntensity: 0.7, ior: 1.46, side: THREE.DoubleSide, ...extra })); // lesklý ABS plast
 
 // ---------- sada dílků ----------
 let KIT = null;
@@ -169,7 +180,7 @@ export class Figure {
     this.root = new THREE.Group();
     this.body = new THREE.Group(); this.root.add(this.body);
     const mShirt = std(L.shirt), mArms = std(L.arms), mLegs = std(L.legs), mSkin = std(SKIN), mHair = std(L.hairCol, { roughness: 0.35 });
-    const mPrint = new THREE.MeshPhysicalMaterial({ map: textures.torso, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.12, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+    const mPrint = softShade(new THREE.MeshPhysicalMaterial({ map: textures.torso, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.12, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
     this.faceMat = new THREE.MeshPhysicalMaterial({ map: textures.face, transparent: true, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.12, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
     this.faces = textures;
     const part = (geo, mat, M, parent, pivot) => {
