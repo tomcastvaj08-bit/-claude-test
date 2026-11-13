@@ -75,7 +75,7 @@ export function purpleHead({ open = 0 } = {}) {
   for (let k = 0; k < 3; k++) { // štít: zavěšený na šikmé tyčce, nahoru, lícem ven
     const a = k * 2 * Math.PI / 3, u = [Math.sin(-a) * -1, 0, -Math.cos(a)].map((v, j) => j === 0 ? -Math.sin(a) : v);
     const uu = norm([-Math.sin(a), 0, -Math.cos(a)]);
-    H.part('2586', col, add(scl(uu, 22), [0, -150, 0]), basis(cross(Y, uu), Y, scl(uu, -1)));
+    H.part('2586', col, add(scl(uu, 22), [0, -132, 0]), basis(cross(Y, uu), Y, scl(uu, -1)));
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
     const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
@@ -93,7 +93,7 @@ export function pinkHead({ open = 0 } = {}) {
   const yb = -110;
   for (const u of [[1, 0, 0], [-0.5, 0, -0.866], [-0.5, 0, 0.866]]) { // prkno nastojato, lícem ven
     const Mi = basis(cross(u, Y), u, Y); // prkno nastojato, líc ven, delší konec nahoru
-    H.part('90397', col, add(scl(u, E('SR', 10)), [0, E('SY', -122), 0]), mul(Mi, ry(Math.PI))); // špička prkna dolů do středu
+    H.part('90397', col, add(scl(u, E('SR', 10)), [0, E('SY', -96), 0]), mul(Mi, ry(Math.PI))); // špička prkna dolů do středu
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
     const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
@@ -118,8 +118,8 @@ export function orangeHead() {
     const P = new Asm(); P.part('7096', 25, [0, 0, 0]); P.part('98138', 191, [0, -8, 10]); P.part('15712', 191, [0, 8, 10], rx(Math.PI));
     H.add(P, { M, p: add(scl(u, 20), [0, yBar, 0]) });
   };
-  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3, -40, 0.55);                 // vnitřní řada
-  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3 + Math.PI / 3, -18, 1.0);    // vnější, víc rozevřené
+  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3, -40, E('OL1', 0.85));                 // vnitřní řada
+  for (let k = 0; k < 3; k++) petal(k * 2 * Math.PI / 3 + Math.PI / 3, -18, E('OL2', 1.3));    // vnější, víc rozevřené
   return H;
 }
 // poupě (návod 2, kroky 1–4): protáhlá limetková kopule 1744 na kopuli 49308, zelený kužel a miska
@@ -194,68 +194,72 @@ export function straightStem(head, { len = 640 } = {}) {
 // ===== kytice: 14 stonků (2 červené, 3 žluté, 2 oranžové, 2 fialové, 3 růžové, 2 poupata), 4 dlouhé + 4 krátké listy =====
 // Konce stonků se sbíhají u dna vázy (y = 0), hlavy se rozestupují nahoru a ven.
 export function bouquet() {
-  const B = new Asm();
-  const stems = [
-    // [stonek, azimut°, sklon°, posun dolů (LDU), stočení hlavy°]
-    [() => tulipStem(tulipHead({ col: 4, open: -0.1 })), 20, 9, 0, 0],
-    [() => tulipStem(tulipHead({ col: 4, open: -0.05 })), 200, 11, 40, 0],
-    [() => straightStem(tulipHead({ col: 14, disc: 28, open: -0.35 })), 95, 7, -10, 0],
-    [() => straightStem(tulipHead({ col: 14, disc: 28, open: -0.15 })), 300, 10, 30, 0],
-    [() => straightStem(tulipHead({ col: 14, disc: 28, open: -0.25 })), 165, 13, 70, 0],
-    [() => tulipStem(orangeHead()), 60, 14, 50, 0],
-    [() => straightStem(orangeHead()), 250, 12, 60, 0],
-    [() => tulipStem(purpleHead({ open: -0.1 })), 130, 12, 20, 0],
-    [() => tulipStem(purpleHead({ open: -0.05 })), 330, 13, 55, 0],
-    [() => straightStem(pinkHead({ open: -0.1 })), 0, 3, -40, 0],
-    [() => straightStem(pinkHead({ open: -0.1 })), 225, 7, -20, 0],
-    [() => straightStem(pinkHead({ open: -0.1 })), 150, 6, 10, 0],
-    [() => budStem({ side: 0.5 }), 280, 5, -60, 0],
-    [() => budStem({ side: 2.6 }), 40, 6, -50, 0],
+  // Rozmístění hlav podle produktové fotky sady (pohled zepředu = divák na -z, x doprava, y nahoru záporně).
+  // [druh, cíl hlavy x, y, z, ohyb] – ohyb: zahnutá trubička 7324 natočená do strany (jako krajní tulipány na fotce)
+  const R = (o) => tulipHead({ col: 4, open: o }), Yl = (o) => tulipHead({ col: 14, disc: 28, open: o });
+  const heads = [
+    // zadní řada (nahoře)
+    [() => pinkHead({ open: -0.05 }), -125, -800, 90, null],
+    [() => pinkHead({ open: -0.05 }), -15, -815, 110, null],
+    [() => Yl(-0.2), 85, -790, 100, null],
+    [() => pinkHead({ open: -0.05 }), 180, -795, 80, null],
+    // prostřední řada
+    [() => orangeHead(), -175, -735, 20, null],
+    [() => purpleHead({ open: -0.05 }), 35, -755, -10, null],
+    [() => R(-0.05), 140, -740, -10, null],
+    [() => Yl(-0.5), 215, -700, -40, null],
+    // přední řada (níž, k divákovi)
+    [() => R(-0.1), -215, -680, -110, -1],
+    [() => Yl(-0.6), -105, -660, -150, null],
+    [() => orangeHead(), 0, -650, -170, null],
+    [() => purpleHead({ open: -0.1 }), 115, -690, -130, 1],
+    // poupata vzadu mezi hlavami
+    [() => budStem({ side: 0.5 }), -60, -735, 125, 'bud'],
+    [() => budStem({ side: 2.6 }), 55, -720, 135, 'bud'],
   ];
-  const LEN = 640;
-  // rozložení hlav bez kolizí: hlavy (koule) se nesmí prolínat, stonky musí projít hrdlem vázy (r < 98 LDU ve výšce okraje)
-  const kind = stems.map(([mk]) => { const src = mk.toString(); return { curved: /tulipStem/.test(src), r: /orangeHead/.test(src) ? 92 : /budHead/.test(src) ? 40 : /col: 14/.test(src) ? 70 : 64 }; });
-  const P = stems.map(([, az, tl, dn]) => ({ az, tl: tl * 0.9, dn }));
-  const pose = (q, k) => { const a = q.az * Math.PI / 180, t = q.tl * Math.PI / 180, M = mul(ry(a), rz(-t)); const bottom = [0, -12 - (70 - q.dn) * 0.8, 0]; const p = sub(bottom, apply(M, [0, LEN, 0])); return { M, p, a, c: add(p, apply(M, kind[k].curved ? [94, -127, 0] : [0, -100, 0])), bottom }; };
-  const cost = (Q) => { const ps = Q.map(pose); let c = 0;
-    for (let a = 0; a < ps.length; a++) { for (let b = a + 1; b < ps.length; b++) { const d = Math.hypot(...sub(ps[a].c, ps[b].c)), m = kind[a].r + kind[b].r; if (d < m) c += (m - d) ** 2; }
-      const rimR = Math.tan(Q[a].tl * Math.PI / 180) * (320 + ps[a].bottom[1]); if (rimR > 92) c += 50 * (rimR - 92) ** 2;
-      if (Q[a].tl < 0) c += 1e4; c += 0.02 * (ps[a].c[1] + 760) ** 2 * 0.01; }
-    return c; };
-  let best = P.map((q) => ({ ...q })), bc = cost(best); let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let it = 0; it < 6000; it++) {
-    const Q = best.map((q) => ({ ...q })), k = Math.floor(rnd() * Q.length), T = 1 - it / 6000;
-    Q[k].az += (rnd() - 0.5) * 60 * T; Q[k].tl = Math.min(19, Math.max(0, Q[k].tl + (rnd() - 0.5) * 8 * T)); Q[k].dn = Math.min(70, Math.max(-60, Q[k].dn + (rnd() - 0.5) * 60 * T));
-    const c = cost(Q); if (c < bc) { bc = c; best = Q; }
+  const B = new Asm(), LEN = 640, placed = [];
+  const PINCH = [0, E('PY', -130), 0];                                    // stonky se kříží ve společném bodě v nádobě
+  for (const [mk, hx, hy, hz, bend] of heads) {
+    const target = [hx * E('SPR', 0.84), -700 + (hy + 700) * 0.85, hz * E('SPR', 0.84)];
+    const curved = bend === -1 || bend === 1;
+    const frame = (dir) => { const up = scl(dir, -1), w = curved ? [bend, 0, -0.3] : [1, 0, 0];
+      const side = norm(sub(w, scl(up, dot(w, up)))); return basis(side, up, norm(cross(side, up))); };
+    const PK = [target[0] * E('PS', 0.5), PINCH[1], target[2] * E('PS', 0.5)];   // stonky v květináči rozprostřené k okraji
+    let dir = norm(sub(target, PK)), M = frame(dir), p = target;
+    if (curved) for (let it = 0; it < 4; it++) { p = sub(target, apply(M, [23, -57, 0])); dir = norm(sub(p, PK)); M = frame(dir); }
+    const stem = bend === 'bud' ? mk() : curved ? tulipStem(mk(), { len: LEN }) : straightStem(mk(), { len: LEN });
+    B.add(stem, { M, p }); placed.push({ full: bend !== 'bud', M, p, a: Math.atan2(-hz, hx), x: hx, z: hz, y: hy, bottom: add(p, apply(M, [0, LEN, 0])) });
   }
-  if (process.env.DBG) console.log('kolize hlav (zbytek):', bc.toFixed(1));
-  const placed = [];
-  for (let k = 0; k < stems.length; k++) {
-    const { M, p, a } = pose(best[k], k);
-    B.add(stems[k][0](), { M, p }); placed.push({ M, p, a });
-  }
-  // dlouhé listy (návod str. 19): připnuté klipem na stonek, list stoupá podél stonku nad květ, lícem ven
-  // listy na krajní stonky (dva nejvíc vlevo, dva nejvíc vpravo při pohledu zepředu), list odbíhá ven
-  const byX = placed.map((st, k) => ({ k, x: apply(st.M, [0, -1, 0])[0] * 700 + st.p[0] })).sort((u, v) => u.x - v.x);
-  const leafSpots = [[byX[0].k, 110, -0.25], [byX[2].k, 130, -0.15], [byX[byX.length - 1].k, 110, 0.25], [byX[byX.length - 3].k, 130, 0.15]];
-  for (const [si, yl, tw] of leafSpots) {
+  if (process.env.DBG) console.log('konce stonků', placed.map((q) => q.bottom.map(Math.round).join(',')).join('  '));
+  // dlouhé listy (str. 19): úchyt nízko na stonku, list stoupá podél stonku za hlavami, špička vykukuje mezi hlavami
+  for (const [si, yl, tw, lean] of [[4, E('LY', 200), -0.6, -0.55], [0, E('LY', 200) + 20, -0.35, -0.3], [3, E('LY', 200) + 20, 0.35, 0.35], [7, E('LY', 200), 0.6, 0.6]]) {
     const st = placed[si], at = add(st.p, apply(st.M, [0, yl, 0]));
-    const up = norm(apply(st.M, [0, -1, 0])), back = [Math.cos(st.a), 0, -Math.sin(st.a)];
-    const out = norm([-tw, 0, -1]);                                        // líc listu k divákovi (+z), lehce do strany
+    const up = norm([Math.sin(lean), -Math.cos(lean), 0]);
+    const out = norm([-tw, 0, -1]);
     const ez = scl(up, -1), ey = scl(norm(sub(out, scl(up, dot(out, up)))), -1), ex = cross(ey, ez);
-    const Ml = mul(basis(ex, ey, ez), ry(Math.sign(tw) * 0.1)); // list odbíhá od stonku šikmo ven, špička nad květem (návod str. 19)
-    B.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 20)), [0, 0, -45]), apply(Ml, [0, 0, 140])) }); // za stonkem
+    const Ml = basis(ex, ey, ez);
+    B.add(longLeaf(), { M: Ml, p: sub(add(at, [0, 0, 45]), apply(Ml, [0, 0, 140])) }); // za stonkem, špička vykukuje do strany
   }
-  // krátké listy u okraje (fotka sady): klip na stonku nad okrajem, oblouk se přehne ven přes okraj, list visí dolů vně
-  const RIM = +(process.env.RIM || -300);
-  for (const az of [22, 68, 112, 158]) { // přední strana (k divákovi = -z), rozložené zleva doprava jako na fotce
+  // krátké listy u okraje (fotka sady): klip na stonku těsně nad okrajem, oblouk se přehne přes okraj, list visí dolů vně
+  const RIM = +(process.env.RIM || -300), POTR = +(process.env.POTR || 160);
+  const atY = (st, y) => { const d = norm(apply(st.M, [0, -1, 0])), t = (y - st.p[1]) / d[1]; return add(st.p, scl(d, t)); };
+  const used = new Set();
+  for (const az of [20, 65, 115, 160]) { // přední strana (divák na -z), zleva doprava jako na fotce
     const a = az * Math.PI / 180, out = [Math.cos(a), 0, -Math.sin(a)];
-    const yc = RIM - 95;
-    let best = null, bp = -1e9;
-    for (const st of placed) { const d = norm(apply(st.M, [0, -1, 0])), t = (yc - st.p[1]) / d[1], q = add(st.p, scl(d, t)); const pr = dot(q, out); if (pr > bp) { bp = pr; best = q; } }
+    let best = null, bi = -1, bp = -1e9;
+    placed.forEach((st, k) => { if (used.has(k) || !st.full) return; const q = atY(st, RIM - 120); const pr = dot(q, out) - 0.3 * Math.hypot(q[0], q[2]); if (pr > bp) { bp = pr; bi = k; } });
+    used.add(bi);
     const ez = [0, 1, 0], ey = scl(out, -1), ex = cross(ey, ez);
-    const Ml = mul(basis(ex, ey, ez), rx(-0.12));
-    B.add(shortLeaf(), { M: Ml, p: sub(best, apply(Ml, CLIP)) });
+    let Ml;
+    // nejnižší úchyt na stonku (a co nejmenší vyklonění), při kterém visící list mine okraj květináče
+    search: for (const tilt of [-0.15, -0.3, -0.45, -0.6]) for (let h = 40; h <= 300; h += 10) {
+      Ml = mul(basis(ex, ey, ez), rx(tilt));
+      const q = atY(placed[bi], RIM - h), p0 = sub(q, apply(Ml, CLIP));
+      const j = add(p0, apply(Ml, [0, 0, 0])), tip = add(p0, apply(Ml, [0, 0, 170]));
+      const t = (RIM - j[1]) / (tip[1] - j[1]); const at = add(j, scl(sub(tip, j), Math.max(0, Math.min(1, t))));
+      if (j[1] < RIM - 10 && Math.hypot(j[0], j[2]) > POTR + 18 && Math.hypot(at[0], at[2]) > POTR + 18) { best = p0; if (process.env.DBG) console.log('list', az, 'stonek', bi, 'h', h, 'naklon', tilt); break search; }
+    }
+    if (best) B.add(shortLeaf(), { M: Ml, p: best });
   }
   return B;
 }
