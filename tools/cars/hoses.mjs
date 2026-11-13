@@ -91,12 +91,12 @@ const SPECS = {
       const arc = []; for (let a = -70; a <= 250; a += 20) { const t = a * Math.PI / 180; if (s < 0 ? (a < 90 || a > 250) : false) continue; }
       const pts = [];
       for (let a = 20; a <= 160; a += 14) { const t = a * Math.PI / 180; pts.push(['abs', s * 56 * Math.sin(t), hy - 14, hz + 56 * Math.cos(t)]); }
-      tube(pts, 15, R);
+      tube(pts, 321, R);  // na modrém autě světle modré
     }
     // 2) šedá hadice podél spodní hrany čelního skla
     { const pts = []; for (let x = -160; x <= 160; x += 40) pts.push([x, -432, 8]); tube(pts, 71, R); }
     // 3) bílý oblouček přes černou masku vpředu dole
-    { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 15, R); }
+    { const pts = []; for (let a = 0; a <= 180; a += 12) { const t = a * Math.PI / 180; pts.push(['abs', 52 * Math.cos(t), -95 - 58 * Math.sin(t), -826]); } tube(pts, 383, R); } // stříbrná podkova
     for (const s of [-1, 1]) {
       // 4) bílá hadice podél dveří (velký oblouk na boku)
       const zc = -40, yc = -170, Rr = 125, arc = [];
@@ -104,7 +104,7 @@ const SPECS = {
       tube(arc, 15, R);
       // růžová vzpěra od střechy k blatníku
       const ra = [s * 140, (top(s * 140, -300) ?? -300) - 16, -300], rb = [s * 165, (top(s * 165, -620) ?? -180) - 22, -620];
-      tube([['abs', ...ra], ['abs', ...rb]], 272, 1.6); part('6536', 272, rb);
+      tube([['abs', ...ra], ['abs', ...rb]], 272, 1.6); part('6536', 272, rb); // tmavě modrá vzpěra
     }
   }
 };
