@@ -141,13 +141,19 @@ export function longLeaf() {
 }
 // krátký zahnutý list (krok 10): pružná špička 61406, dva oblouky 5845, sklon 85984 a úchyt
 export function shortLeaf() {
+  // krok 10: dva obloučky 5845 vedle sebe, na jejich vodorovném konci kulatá destička 2654 a dlouhý špičatý list 61406,
+  // spoj zahlazený dvěma šikmými destičkami 85984; na druhém konci oblouku destička 35480 s klipem 3484 na stonek.
+  // Místní souřadnice: +z = směr visícího listu (dolů), +y = ke stonku. Úchyt (klip) je v CLIP.
   const L = new Asm();
   L.part('5845', 10, [-10, 0, 0]); L.part('5845', 10, [10, 0, 0]);
-  L.part('61406p0a', 10, [0, 88, -90], rx(Math.PI / 2 + 0.25));
-  L.part('2654', 2, [0, 88, -78]);
-  L.part('85984', 10, [0, -8, 0]); L.part('35480', 10, [0, 8, 0]); L.part('3484', 2, [0, 16, 8]);
-  return L; // úchyt nahoře (y ≈ 0), list se zahýbá dolů
+  L.part('2654', 2, [0, 8, 10]);
+  L.part('61406p0a', 10, [0, 0, 20], ry(Math.PI));
+  L.part('85984', 10, [0, 0, 0]); L.part('85984', 10, [0, 0, 20], ry(Math.PI)); // hřbet bez zářezu
+  L.part('35480', 10, [0, 88, -80]);
+  L.part('3484', 2, [0, 96, -80], rz(Math.PI / 2));
+  return L;
 }
+export const CLIP = [0, 110, -80];
 
 // rovný stonek (růžové, žluté, poupata): hlava přímo na ose
 export function straightStem(head, { len = 640 } = {}) {
@@ -211,10 +217,16 @@ export function bouquet() {
     const Ml = mul(basis(ex, ey, ez), ry(Math.sign(tw) * 0.1)); // list odbíhá od stonku šikmo ven, špička nad květem (návod str. 19)
     B.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 20)), [0, 0, -45]), apply(Ml, [0, 0, 140])) }); // za stonkem
   }
-  // krátké zahnuté listy: připnuté na stonky nad vázou, obloukem ven a dolů
-  for (const [si, yl] of []) { // krátké listy na fotce sady nejsou vidět – ve váze je nepoužíváme // [stonek, výška na ose od hlavy]
-    const st = placed[si], at = add(st.p, apply(st.M, [0, yl, 0])), out = [Math.cos(st.a), 0, -Math.sin(st.a)];
-    B.add(shortLeaf(), { M: basis(cross(Y, out), scl(Y, -1), scl(out, -1)), p: add(at, scl(out, 8)) }); // oblouk ven a nahoru, jako na fotce
+  // krátké listy u okraje (fotka sady): klip na stonku nad okrajem, oblouk se přehne ven přes okraj, list visí dolů vně
+  const RIM = +(process.env.RIM || -215);
+  for (const az of [22, 68, 112, 158]) { // přední strana (k divákovi = -z), rozložené zleva doprava jako na fotce
+    const a = az * Math.PI / 180, out = [Math.cos(a), 0, -Math.sin(a)];
+    const yc = RIM - 95;
+    let best = null, bp = -1e9;
+    for (const st of placed) { const d = norm(apply(st.M, [0, -1, 0])), t = (yc - st.p[1]) / d[1], q = add(st.p, scl(d, t)); const pr = dot(q, out); if (pr > bp) { bp = pr; best = q; } }
+    const ez = [0, 1, 0], ey = scl(out, -1), ex = cross(ey, ez);
+    const Ml = mul(basis(ex, ey, ez), rx(-0.12));
+    B.add(shortLeaf(), { M: Ml, p: sub(best, apply(Ml, CLIP)) });
   }
   return B;
 }
@@ -229,13 +241,14 @@ if (process.env.SUB) {
   if (process.env.SUB === 'one') { // jeden červený tulipán s dlouhým listem jako na str. 19 (list namontovaný stejně jako v kytici)
     const M = [1, 0, 0, 0, 1, 0, 0, 0, 1], p = [0, -640, 0];
     A.add(straightStem(tulipHead({ col: 4, open: -0.1 })), { M, p });
-    const at = add(p, [0, +(process.env.YL || 150), 0]), up = [0, -1, 0], out = norm([-E('TW', 0.3), 0, -1]), back = [1, 0, 0];
+    const at = add(p, [0, +(process.env.YL || 150), 0]), up = [0, -1, 0], out = norm([E('TW', 0.3), 0, 1]), back = [1, 0, 0];
     const ez = scl(up, -1), ey = scl(norm(sub(out, scl(up, dot(out, up)))), -1), ex = cross(ey, ez);
-    const VR = { a: ry(E('IP', 0)), b: ry(Math.PI), c: rz(Math.PI / 2), d: rz(-Math.PI / 2), e: mul(rz(Math.PI / 2), ry(Math.PI)), f: mul(rz(-Math.PI / 2), ry(Math.PI)) }[process.env.VR || 'a'];
+    const VR = { a: ry(E('IP', 0.3)), b: ry(Math.PI), c: rz(Math.PI / 2), d: rz(-Math.PI / 2), e: mul(rz(Math.PI / 2), ry(Math.PI)), f: mul(rz(-Math.PI / 2), ry(Math.PI)) }[process.env.VR || 'a'];
     const Ml = mul(basis(ex, ey, ez), VR);
-    A.add(longLeaf(), { M: Ml, p: sub(add(add(at, scl(back, 26)), [0, 0, -20]), apply(Ml, [0, 0, 140])) });
+    A.add(longLeaf(), { M: Ml, p: sub(add(at, [0, 0, 18]), apply(Ml, [0, 0, 140])) });
   }
   if (process.env.SUB === 'long') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.part('30374', 4, [0, -40, -300], [1, 0, 0, 0, 0, -1, 0, 1, 0]); }
+  if (process.env.SUB === 'short') { A.add(shortLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); }
   if (process.env.SUB === 'leaves') { A.add(longLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); A.add(shortLeaf(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [150, 0, 0] }); }
   if (process.env.SUB === 'bouquet') A.add(bouquet(), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
   if (process.env.SUB === 'petal') A.add(outerPetal(4), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] });
