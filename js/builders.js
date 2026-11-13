@@ -10,12 +10,14 @@ export const BUILDERS = { heart: buildHeart }; // procedurální modely (srdce v
 // hotové modely z originálních dílků (LDraw), v Blenderu zjednodušené a po načtení slité do jednoho modelu
 // body = kódy barev laku pro varianty, fixed = pevné přebarvení, looks = sady přebarvení podle varianty
 const BASE = new URL('../models/', import.meta.url);
+// barevné spojovací kolíky a osy (modré, červené, žluté, šedé) ztmavit – auto pak nepůsobí rozkouskovaně
+const DECLUTTER = { 1: '#1B1D22', 4: '#1B1D22', 14: '#1B1D22', 70: '#1B1D22', 71: '#3A3D42', 72: '#2A2C30' };
 export const LD_CARS = {
   // Lamborghini Sián FKP 37 (42115): růžová a černo-zlatá replika; zlaté disky (82) zůstávají
-  sian: { file: 'sian', body: [27] },
-  sianblack: { file: 'sian', body: [27], fixed: { 1: '#C9A44C', 72: '#2A2C30' } },
+  sian: { file: 'sian', body: [27], fixed: DECLUTTER },
+  sianblack: { file: 'sian', body: [27], fixed: { ...DECLUTTER, 72: '#2A2C30' } },
   // Bugatti Chiron (42083) jako růžovo-bílá replika: přední část bílá, zadní a střecha růžová
-  chironpink: { file: 'chiron', body: [272], fixed: { 321: '#F4F4F2', 1: '#E58BB8', 0: '#1B1D22' } },
+  chironpink: { file: 'chiron', body: [272], fixed: { 321: '#D9DADC', 15: '#E2E3E5', 1: '#E58BB8', 0: '#1B1D22' } }, // bílá lehce do šeda
   // Porsche 911 GT3 RS (42056) v barvách Gulf: světle modrá, oranžové pruhy
   gulf: { file: 'gulf', body: [25], fixed: { 4: '#F07A1E', 1: '#F07A1E', 14: '#F07A1E' } },
   // Porsche 911 Turbo 3.0 (75895), černé
