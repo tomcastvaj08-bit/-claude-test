@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready } from './builders.js';
+import { createModel, ready, LITE } from './builders.js';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -26,7 +26,7 @@ const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, tinyplan
   porsche911: 6.2, sian: 6.8, chiron: 6.6 };
 const N = ORDER.length;
 const SPACING = 7.6, START = 8.5, EYE = 1.62, WINDOW = 10, REVEAL = 13.5;
-const BG = '#F6F4F1';
+const BG = '#F6F4F1', FOG = '#F7E0CF';
 
 const portrait = () => innerWidth / innerHeight < 0.9;
 const sideX = () => (portrait() ? 1.25 : 1.6);
@@ -53,15 +53,34 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.02;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(BG);
-scene.fog = new THREE.Fog(BG, 8, 22); // dál v chodbě jen bílá – exponáty se objevují až zblízka
+// golden hour: teplé růžovozlaté světlo, na konci chodby září slunce
+scene.background = (() => {
+  const c = document.createElement('canvas'); c.width = 4; c.height = 256;
+  const g = c.getContext('2d'), grd = g.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0, '#F3D6CF'); grd.addColorStop(0.55, '#FBE3CC'); grd.addColorStop(1, '#F6DCCB');
+  g.fillStyle = grd; g.fillRect(0, 0, 4, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+scene.fog = new THREE.Fog(FOG, 8, 22); // dál v chodbě jen teplý opar – exponáty se objevují až zblízka
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.7;
 pm.dispose();
-scene.add(new THREE.HemisphereLight(0xffffff, 0xdcd6cc, 1.1));
-const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(4, 10, 6); scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xFFEDE6, 0xE8C6B4, 1.0));
+// měkké světlo zepředu (aby exponáty nebyly tmavé) + nízké zlaté slunce z konce chodby
+const sun = new THREE.DirectionalLight(0xFFF1E8, 0.75); sun.position.set(4, 10, 6); scene.add(sun);
 const sunT = new THREE.Object3D(); scene.add(sunT); sun.target = sunT;
+const gold = new THREE.DirectionalLight(0xFFC98F, 1.9); scene.add(gold);
+const goldT = new THREE.Object3D(); scene.add(goldT); gold.target = goldT;
+// záře na konci chodby
+const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grd.addColorStop(0, 'rgba(255,236,190,1)'); grd.addColorStop(0.25, 'rgba(255,214,170,.75)'); grd.addColorStop(0.6, 'rgba(250,196,186,.25)'); grd.addColorStop(1, 'rgba(250,196,186,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})(), transparent: true, depthWrite: false, fog: false }));
+glow.scale.set(30, 18, 1); scene.add(glow);
 
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 90);
 
@@ -96,6 +115,30 @@ const floorTex = (() => {
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshStandardMaterial({ map: floorTex.t, bumpMap: floorTex.tb, bumpScale: 0.8, roughness: 0.07, metalness: 0.05, envMapIntensity: 1.6 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 
+// lesklá podlaha: skutečný odraz – scéna se vykreslí zrcadlově do textury (v poloviční velikosti) a vmíchá se do dlaždic
+const refl = { rt: new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }), cam: new THREE.PerspectiveCamera(), mat: new THREE.Matrix4(), k: 0.38 };
+floor.material.onBeforeCompile = (sh) => {
+  sh.uniforms.tRefl = { value: refl.rt.texture }; sh.uniforms.uTexMat = { value: refl.mat }; sh.uniforms.uReflK = { value: refl.k };
+  sh.vertexShader = 'uniform mat4 uTexMat;\nvarying vec4 vReflUv;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvReflUv = uTexMat * vec4( transformed, 1.0 );');
+  sh.fragmentShader = 'uniform sampler2D tRefl;\nuniform float uReflK;\nvarying vec4 vReflUv;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', '#include <opaque_fragment>\ngl_FragColor.rgb = mix( gl_FragColor.rgb, texture2DProj( tRefl, vReflUv ).rgb, uReflK );');
+};
+const _rp = { v: V(), look: V(), tgt: V(), n: V(0, 1, 0), rot: new THREE.Matrix4(), cp: V() };
+function renderReflection() {
+  const { cam } = refl, P = _rp;
+  camera.updateMatrixWorld(); P.cp.setFromMatrixPosition(camera.matrixWorld);
+  P.v.set(P.cp.x, -P.cp.y, P.cp.z);
+  P.rot.extractRotation(camera.matrixWorld);
+  P.look.set(0, 0, -1).applyMatrix4(P.rot).add(P.cp); P.tgt.set(P.look.x, -P.look.y, P.look.z);
+  cam.position.copy(P.v); cam.up.set(0, 1, 0).applyMatrix4(P.rot).reflect(P.n); cam.lookAt(P.tgt);
+  cam.far = camera.far; cam.updateMatrixWorld(); cam.projectionMatrix.copy(camera.projectionMatrix);
+  refl.mat.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1).multiply(cam.projectionMatrix).multiply(cam.matrixWorldInverse).multiply(floor.matrixWorld);
+  floor.visible = false; glow.visible = false; figLayer.visible = false;
+  for (const ex of exhibits) if (ex.sh) ex.sh.visible = false;
+  renderer.setRenderTarget(refl.rt); renderer.clear(); renderer.render(scene, cam); renderer.setRenderTarget(null);
+  floor.visible = true; glow.visible = true; figLayer.visible = true;
+  for (const ex of exhibits) if (ex.sh) ex.sh.visible = true;
+}
+
 const shadowTex = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d');
@@ -124,12 +167,15 @@ const exhibits = ORDER.map((id) => {
   const base = new THREE.Group(); base.add(spin);
   const root = new THREE.Group(); root.add(base);
   const W = size.x * sc, D = size.z * sc, H = size.y * sc;
-  const sh = new THREE.Mesh(shadowGeo, shadowMat);
-  sh.rotation.x = -Math.PI / 2; sh.position.y = 0.004; sh.scale.set(W * 1.35 + 0.4, D * 1.35 + 0.4, 1);
-  spin.add(sh);
+  // stín: až po dopadu, protažený k divákovi (světlo je na konci chodby)
+  const shMat = shadowMat.clone(); shMat.opacity = 0;
+  const sh = new THREE.Mesh(shadowGeo, shMat);
+  const sw = car ? D * 1.25 + 0.3 : Math.max(W, D) * 1.05 + 0.3, sl = car ? W * 1.3 + 0.6 : Math.max(W, D) * 1.9 + 0.6;
+  sh.rotation.x = -Math.PI / 2; sh.position.set(0, 0.004, sl * 0.32); sh.scale.set(sw, sl, 1);
+  root.add(sh);
   const hit = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), hitMat); hit.position.y = H / 2; spin.add(hit);
   scene.add(root);
-  const ex = { id, p, m, root, base, spin, hit, car, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
+  const ex = { id, p, m, root, base, spin, hit, car, sh, shMat, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
   hit.userData.ex = ex;
   m.setVariant(p.variant.key, p.variant.options[0][1]);
   return ex;
@@ -153,20 +199,39 @@ function place(ex, k) {
   ex.m.setProgress(0);
 }
 
-// panáčci u vchodu (v životní velikosti)
+// panáčci vykukují z okraje obrazovky (jsou přichycení ke kameře): nohy stojí dole, tělo se nakloní do obrazu,
+// vnější rukou se drží jako z okna vlaku. Holka (srdíčka v očích) vykoukne u květiny, kluk (hvězdičky, „wow“) u auta.
+scene.add(camera);
+const figLayer = new THREE.Group(); camera.add(figLayer);
 const figs = [false, true].map((girl) => {
   const f = new Figure({ girl });
-  const g = new THREE.Group(); g.add(f.root);
-  g.position.set(girl ? 2.1 : -2.1, 0, -3.9);
-  g.rotation.y = girl ? -0.45 : 0.45;
-  f.state.side = girl ? -1 : 1;
-  scene.add(g);
-  const hit = new THREE.Mesh(new THREE.BoxGeometry(2.6, 4.2, 1.8), hitMat); hit.position.y = 2.1; g.add(hit);
+  f.state.show = true; f.anim.show = 1;
+  const lean = new THREE.Group(); lean.add(f.root);
+  const holder = new THREE.Group(); holder.add(lean); figLayer.add(holder);
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(3.2, 7, 2), hitMat); hit.position.y = 3.5; lean.add(hit);
   hit.userData.fig = f;
-  return { f, g, hit };
+  return { f, girl, lean, holder, hit, k: 0, side: girl ? 1 : -1, mood: '', since: 0 };
 });
-// Figure.update řídí měřítko rootu (pop-in); měřítko 0.5 držíme na rodičovské skupině
-figs.forEach(({ g }) => { g.scale.setScalar(0.36); }); // figurka ~6,2 výstupku → ~2,2 m
+const FIG_D = 2.4;
+function placeFig(F, dt, t) {
+  const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * FIG_D, halfW = halfH * camera.aspect;
+  const sc = (halfH * 2 * (portrait() ? 0.5 : 0.62)) / 6.4;
+  F.holder.scale.setScalar(sc);
+  F.k += ((F.target ? 1 : 0) - F.k) * (1 - Math.exp(-dt * (F.target ? 4.5 : 6)));
+  const k = ease(clamp(F.k)), side = F.side;
+  // pivot u nohou těsně za okrajem obrazovky; schovaný = nakloněný ven, vykouknutí = náklon dovnitř
+  const P = portrait();
+  F.holder.position.set(side * (halfW + (P ? 1.25 : 0.55) * sc), -halfH - 0.1 * sc, -FIG_D);
+  F.lean.rotation.z = side * (-0.4 + k * (P ? 0.82 : 0.95));
+  F.holder.visible = F.k > 0.01;
+  F.f.update(dt, t);
+  F.f.body.rotation.y = -side * 0.35 * k;
+  F.f.head.rotation.z = side * 0.28 * k; F.f.head.rotation.y = -side * 0.25 * k + Math.sin(t * 1.3) * 0.05;
+  // vnější ruka se drží nahoře, vnitřní mává / ukazuje
+  const [L, R] = F.f.arms, outer = side > 0 ? L : R, inner = side > 0 ? R : L;
+  outer.shoulder.rotation.x = -2.7 * k;
+  inner.shoulder.rotation.x = -k * (0.6 + Math.sin(t * 3) * 0.15);
+}
 
 // ------------------------------------------------------------ pohyb
 const state = { autoPitch: 0, s: -3, v: 0, target: null, walk: 0, hold: 0, yaw: 0, yawT: 0, pitchT: 0, phase: 0, entered: false };
@@ -316,7 +381,7 @@ const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function pick(x, y) {
   ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const objs = exhibits.filter((e) => e.root.visible).map((e) => e.hit).concat(figs.filter((f) => f.g.visible && f.f.root.visible).map((f) => f.hit));
+  const objs = exhibits.filter((e) => e.root.visible).map((e) => e.hit).concat(figs.filter((F) => F.holder.visible && F.k > 0.5).map((F) => F.hit));
   const h = ray.intersectObjects(objs, false)[0];
   return h ? h.object.userData : null;
 }
@@ -362,7 +427,7 @@ const pointerEnd = (e) => {
   if (!pd.moved && performance.now() - pd.t < 500) {
     const hit = pick(e.clientX, e.clientY);
     if (hit?.ex && !(mode === 'focus' && hit.ex === focusEx)) focus(hit.ex);
-    else if (hit?.fig) { hit.fig.girl ? hit.fig.set('love', !hit.fig.state.love) : hit.fig.wave(); }
+    else if (hit?.fig) { hit.fig.anim.jump = 1; }
   }
   if (performance.now() - pd.lt > 80) state.v *= 0.3;
   pd = null;
@@ -423,6 +488,7 @@ window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.vi
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
+  { const k = (LITE ? 0.35 : 0.5) * dpr; refl.rt.setSize(Math.max(4, Math.round(innerWidth * k)), Math.max(4, Math.round(innerHeight * k))); }
   canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
   camera.aspect = innerWidth / innerHeight;
   camera.fov = portrait() ? 72 : 55;
@@ -490,22 +556,35 @@ function frame(now) {
     ex.root.visible = ex.shown && now >= ex.t0;
     if (!ex.root.visible) continue;
     if (ex !== focusEx) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / (ex.car ? 1300 : 2200)));
+    ex.shMat.opacity = ex.shMat.opacity + (clamp((ex.m.progress - 0.97) / 0.03) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 4));
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
     ex.spin.rotation.y += ((ex.user + swing) - ex.spin.rotation.y) * (1 - Math.exp(-rawDt * 6));
   }
   if (!introDone && now - introStart > 2800) { introDone = true; document.body.classList.add('is-ready'); }
-  // panáčci
-  const figVis = state.s < 24;
-  figs.forEach(({ f, g }, i) => {
-    g.visible = figVis;
-    if (!figVis) return;
-    f.set('show', now - introStart > 1800 && state.s < 2.6);
-    if (i === 0) f.set('point', now - introStart > 2400);
-    if (i === 1 && now - introStart > 2600 && !f.__loved) { f.__loved = true; f.set('love', true); }
-    f.update(dt, t);
-  });
+  // panáčci: u zastávky (dvojice je složená) vykoukne holka u květiny a kluk u auta
+  {
+    let pair = [];
+    if (mode === 'walk' && !state.warp && state.target == null && Math.abs(state.v) < 0.4) {
+      let best = 1e9;
+      for (const ex of exhibits) { if (!ex.inWindow || !ex.root.visible) continue; const d = slotS(ex.slot) - state.s; if (d > 1.5 && d < stopBefore() + 4.5 && d < best - 0.01) best = d; }
+      pair = exhibits.filter((ex) => ex.inWindow && ex.root.visible && Math.abs(slotS(ex.slot) - state.s - best) < 0.01 && ex.m.progress >= 0.99);
+    }
+    const flower = pair.find((ex) => !ex.car), car = pair.find((ex) => ex.car);
+    for (const F of figs) {
+      const ex = F.girl ? flower : car;
+      const want = ex ? (F.girl ? 'hearts' : 'stars') : '';
+      if (ex && (!F.target || F.side !== ex.side)) {
+        if (F.k < 0.05) { F.side = ex.side; F.target = 1; F.since = now; F.f.anim.jump = 1; }
+        else F.target = 0; // nejdřív se schová a pak vykoukne na druhé straně
+      } else if (!ex) F.target = 0;
+      // kluk po chvíli mrkne
+      const face = F.target ? (!F.girl && (now - F.since) % 4200 > 3000 && (now - F.since) % 4200 < 3350 ? 'wink' : want) : '';
+      F.f.setFace(face);
+      placeFig(F, dt, t);
+    }
+  }
 
   // kamera
   if (mode === 'focus' && focusEx) focusPose(focusEx, tmpA); else walkPose(tmpA);
@@ -520,7 +599,10 @@ function frame(now) {
   camera.lookAt(pose.tgt);
   floor.position.set(0, 0, Math.round((pose.pos.z - 60) / TILE_P) * TILE_P);
   sun.position.set(pose.pos.x + 4, 10, pose.pos.z + 6); sunT.position.set(pose.pos.x, 0, pose.pos.z - 6);
+  gold.position.set(pose.pos.x - 2, 6, pose.pos.z - 30); goldT.position.set(pose.pos.x, 0, pose.pos.z);
+  glow.position.set(pose.pos.x, 2.4, pose.pos.z - 21);
 
+  renderReflection();
   renderer.render(scene, camera);
 
   // adaptivní rozlišení
