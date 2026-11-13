@@ -766,12 +766,15 @@ $('exportBtn').onclick=()=>{
   $('exRes').innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
   const q=$('quality').value; if ([...$('exRes').options].some(o=>o.value===q)) $('exRes').value=q;
   $('exDl').classList.add('hidden'); $('exStatus').textContent=EXP.canPrecise()?'':'Tento prohlížeč neumí přesný export – použije se nahrávání v reálném čase.';
-  $('exGo').classList.remove('hidden'); $('exBarW').classList.add('hidden');
+  $('exGo').classList.remove('hidden'); $('exBarW').classList.add('hidden'); $('exMore').open=false;
   openSheet('sheetExport');
+  runExport();   // export hned po kliknutí – nastavení jsou schovaná v „Další možnosti“
 };
 let exCancel=null;
 $('exCancel').onclick=()=>{ if (exCancel) exCancel.v=true; };
-$('exGo').onclick=async()=>{
+$('exGo').onclick=()=>runExport();
+async function runExport(){
+  if (exCancel) return;
   const r=$('exRes').value, short=Math.min(fullW,fullH), sc=r==='orig'?1:(+r)/short;
   const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2, fps=+$('exFps').value, mode=segVal('exMode');
   $('exGo').classList.add('hidden'); $('exCancel').classList.remove('hidden'); $('exBarW').classList.remove('hidden'); $('exDl').classList.add('hidden');
@@ -783,7 +786,7 @@ $('exGo').onclick=async()=>{
     const o={file:videoFile,src:videoURL,w,h,fps,mode,mute:E.flags.mute,behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
-    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB${res.codec?' · '+res.codec:''}`);
+    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.audioNote?` · pozor: ${res.audioNote}`:''));
     // na iPhonu nabídnout sdílení (uložit do Fotek)
     a.onclick=async ev=>{
       // uvnitř Claude (artifact): uložení přes potvrzení „Stáhnout“
@@ -793,7 +796,7 @@ $('exGo').onclick=async()=>{
     window.__lastExport=res;
   }catch(e){ console.error(e); $('exStatus').textContent='Export se nepovedl: '+e.message; }
   finally{ $('exCancel').classList.add('hidden'); $('exGo').classList.remove('hidden'); exCancel=null; }
-};
+}
 $('quality').onchange=()=>toast('Kvalita exportu: '+$('quality').selectedOptions[0].textContent);
 
 

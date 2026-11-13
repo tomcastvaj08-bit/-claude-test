@@ -92,8 +92,9 @@ global.openFrameSource = openFrameSource;
 // Proto: zkusit napřímo, a když to nejde, vytáhnout jen zvukovou stopu (AAC) do .m4a bez obrazu a dekódovat tu.
 (function (global) {
 "use strict";
-async function audioOnlyM4A(file) {
-  if (!global.MP4Box || !global.Mp4Muxer) return null;
+// Původní zvuková stopa (AAC) jako surové vzorky – bez dekódování. Použije se i pro export bez překódování.
+async function rawAudioTrack(file) {
+  if (!global.MP4Box) return null;
   const buf = await file.arrayBuffer(); buf.fileStart = 0;
   const mp4 = MP4Box.createFile(); let info = null;
   mp4.onReady = i => { info = i; }; mp4.onError = () => {};
@@ -108,18 +109,25 @@ async function audioOnlyM4A(file) {
   if (!dsi) dsi = aacLcConfig(rate, ch);               // nouzově: standardní AAC-LC (iPhone nahrává AAC-LC)
   if (!dsi) return null;
   const samples = [];
-  mp4.onSamples = (id, u, s) => { for (const x of s) samples.push(x); };
+  mp4.onSamples = (id, u, s) => { for (const x of s) samples.push({ data: new Uint8Array(x.data), ts: x.cts / x.timescale, dur: x.duration / x.timescale }); };
   mp4.setExtractionOptions(tr.id, null, { nbSamples: 1e9 }); mp4.start(); mp4.flush();
   if (!samples.length) return null;
-  const target = new Mp4Muxer.ArrayBufferTarget();
-  const mux = new Mp4Muxer.Muxer({ target, audio: { codec: 'aac', numberOfChannels: ch, sampleRate: rate }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
-  const meta = { decoderConfig: { codec: /^mp4a\.40\.\d+$/.test(tr.codec) ? tr.codec : 'mp4a.40.' + ((dsi[0] >> 3) || 2), sampleRate: rate, numberOfChannels: ch, description: dsi } };
-  samples.forEach((s, i) => mux.addAudioChunkRaw(new Uint8Array(s.data), 'key', Math.round(s.cts / s.timescale * 1e6), Math.round(s.duration / s.timescale * 1e6), i === 0 ? meta : undefined));
-  mux.finalize();
-  // úvodní „priming“ AAC: originál ho schovává přes edit list → po dekódování ho uřízneme, ať zvuk sedí na obraz
+  // úvodní „priming“ AAC: originál ho schovává přes edit list
   let skip = 0;
   try { const t = mp4.getTrackById(tr.id), e = t.edts && t.edts.elst && t.edts.elst.entries && t.edts.elst.entries[0]; if (e && e.media_time > 0) skip = e.media_time / t.mdia.mdhd.timescale; } catch (e) {}
-  const out = target.buffer; out.skip = Math.min(0.5, skip);
+  const codec = /^mp4a\.40\.\d+$/.test(tr.codec) ? tr.codec : 'mp4a.40.' + ((dsi[0] >> 3) || 2);
+  return { codec, rate, ch, dsi, samples, skip: Math.min(0.5, skip) };
+}
+async function audioOnlyM4A(file) {
+  if (!global.Mp4Muxer) return null;
+  const a = await rawAudioTrack(file);
+  if (!a) return null;
+  const target = new Mp4Muxer.ArrayBufferTarget();
+  const mux = new Mp4Muxer.Muxer({ target, audio: { codec: 'aac', numberOfChannels: a.ch, sampleRate: a.rate }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
+  const meta = { decoderConfig: { codec: a.codec, sampleRate: a.rate, numberOfChannels: a.ch, description: a.dsi } };
+  a.samples.forEach((s, i) => mux.addAudioChunkRaw(s.data, 'key', Math.round(s.ts * 1e6), Math.round(s.dur * 1e6), i === 0 ? meta : undefined));
+  mux.finalize();
+  const out = target.buffer; out.skip = a.skip;
   return out;
 }
 // AudioSpecificConfig z boxu esds uvnitř moov (najde ho i v QuickTime .mov)
@@ -167,5 +175,6 @@ async function decodeVideoAudio(file) {
   } catch (e) { throw new Error('Zvuk z videa se nepodařilo přečíst. Zkus video uložit znovu (ve Fotkách Sdílet → Uložit video) a nahrát ho znovu.'); }
 }
 global.audioOnlyM4A = audioOnlyM4A;
+global.rawAudioTrack = rawAudioTrack;
 global.decodeVideoAudio = decodeVideoAudio;
 })(window);

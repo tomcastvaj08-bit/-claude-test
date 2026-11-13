@@ -96,12 +96,31 @@ X.exportVideo = async (opts) => {
     // ---------- celé video ----------
     const vc=await pickVideoCodec(w,h,fps); if (!vc) throw new Error('Tento prohlížeč neumí kódovat video');
     onP(0,'Připravuju zvuk…');
-    const audio=await X.buildAudio(opts.file, dur, opts.mute);
-    const ac=window.AudioEncoder?await pickAudioCodec(audio.numberOfChannels,audio.sampleRate):null;
+    // Zvuk: bez zvukových efektů (nebo když prohlížeč neumí kódovat zvuk – iPhone) se vloží původní stopa
+    // bez překódování → vždy se zvukem, rychle a v původní kvalitě. Se SFX se zvuk smíchá a zakóduje.
+    const sfxOn=E.sfxEvents().some(ev=>ev.t<dur);
+    let raw=null, audio=null, ac=null, audioNote='';
+    if (!opts.mute && (!sfxOn || !window.AudioEncoder)){ try{ raw=window.rawAudioTrack?await rawAudioTrack(opts.file):null; }catch(e){ console.warn('Původní zvuk nejde převzít',e); } }
+    if (!raw && window.AudioEncoder && !opts.mute){
+      audio=await X.buildAudio(opts.file, dur, opts.mute);
+      ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate);
+    }
+    if (raw && sfxOn) audioNote='zvukové efekty tento prohlížeč neumí přimíchat';
+    if (!raw && !ac && !opts.mute) audioNote='zvuk se nepodařilo přidat';
     const target=new Mp4Muxer.ArrayBufferTarget();
     const muxer=new Mp4Muxer.Muxer({ target, fastStart:'in-memory', firstTimestampBehavior:'offset',
       video:{codec:vc.mux,width:w,height:h,frameRate:fps},
-      audio: ac?{codec:ac.mux,numberOfChannels:audio.numberOfChannels,sampleRate:audio.sampleRate}:undefined });
+      audio: raw?{codec:'aac',numberOfChannels:raw.ch,sampleRate:raw.rate}:ac?{codec:ac.mux,numberOfChannels:audio.numberOfChannels,sampleRate:audio.sampleRate}:undefined });
+    if (raw){
+      const meta={decoderConfig:{codec:raw.codec,sampleRate:raw.rate,numberOfChannels:raw.ch,description:raw.dsi}};
+      let first=true;
+      for (const smp of raw.samples){
+        const ts=smp.ts-raw.skip;
+        if (ts < -smp.dur/2 || ts >= dur) continue;
+        muxer.addAudioChunkRaw(smp.data,'key',Math.max(0,Math.round(ts*1e6)),Math.round(smp.dur*1e6),first?meta:undefined); first=false;
+      }
+      raw.samples=null;
+    }
     let err=null;
     const venc=new VideoEncoder({output:(c,m)=>muxer.addVideoChunk(c,m), error:e=>{ err=e; }});
     venc.configure(vc.cfg);
@@ -143,7 +162,7 @@ X.exportVideo = async (opts) => {
     } finally { if (src) src.close(); }
     await venc.flush(); venc.close();
     muxer.finalize();
-    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(ac?'+'+ac.mux:'')};
+    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote};
   } finally {
     E.flags.transparent=false; E.flags.exporting=false; E.personMask=prevMask;
     if (prev) E.attach(prev[0],prev[1]);

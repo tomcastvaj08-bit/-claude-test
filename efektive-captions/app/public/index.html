@@ -162,16 +162,19 @@
 </div></div>
 
 <div class="sheet" id="sheetExport"><div class="sh">
-  <div class="sh-h"><b>Nastavení exportu</b><button class="ico" data-close>✕</button></div>
+  <div class="sh-h"><b>Export videa</b><button class="ico" data-close>✕</button></div>
+  <details class="exmore" id="exMore"><summary>Další možnosti exportu</summary>
   <div class="seg" id="exMode"><div data-v="full" class="on">Celé video</div><div data-v="captions">Jen titulky (průhledné)</div></div>
   <div class="row"><span>Rozlišení</span><select id="exRes" class="sel"></select></div>
-  <div class="row"><span>Snímková frekvence</span><select id="exFps" class="sel"><option value="60" selected>60 fps</option><option value="50">50 fps</option><option value="30">30 fps</option><option value="25">25 fps</option><option value="24">24 fps</option></select></div>
+  <div class="row"><span>Snímková frekvence</span><select id="exFps" class="sel"><option value="60">60 fps</option><option value="50">50 fps</option><option value="30" selected>30 fps</option><option value="25">25 fps</option><option value="24">24 fps</option></select></div>
+  <div class="muted">Po změně klikni na „Exportovat znovu“.</div>
+  </details>
   <div class="wmnote" id="wmNote"><div><b>Video bude s vodoznakem EFEKTIVE.</b><small>S PRO exportuješ čisté video bez loga.</small></div><button class="btn small primary" id="wmRemove">Odebrat</button></div>
-  <div class="muted" id="exInfo">Přesný export snímek po snímku – titulky jsou plynulé i na 60 fps.</div>
+  <div class="muted" id="exInfo"></div>
   <div class="pbar hidden" id="exBarW"><div id="exBar"></div></div>
   <div class="status" id="exStatus"></div>
-  <a class="btn primary hidden" id="exDl" download>⬇ Stáhnout</a>
-  <button class="btn primary" id="exGo">Exportovat</button>
+  <a class="btn primary big hidden" id="exDl" download>⬇ Uložit video</a>
+  <button class="btn" id="exGo">Exportovat znovu</button>
   <button class="btn hidden" id="exCancel">Zrušit</button>
 </div></div>
 
