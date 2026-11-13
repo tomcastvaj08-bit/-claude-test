@@ -40,7 +40,7 @@ for (let q = 0; q < 4; q++) pot.part('24599', SB, [0, -92, 0], ry(q * Math.PI / 
 for (let q = 0; q < 4; q++) pot.part('65617', SB, [0, -116, 0], ry(q * Math.PI / 2));                       // schodek 3x3
 for (let q = 0; q < 4; q++) pot.part('65617', SB, [0, -116, 0], ry(q * Math.PI / 2 + Math.PI / 4));        // druhá vrstva schodku (překrytá)
 pot.part('68327', SB, [0, -146, 0], rx(Math.PI / 2)); pot.part('68327', SB, [0, -186, 0], rx(Math.PI / 2)); // hrdlo
-pot.part('60474', TN, [0, -202, 0]); pot.part('11213', 308, [0, -190, 0]);
+pot.part('60474', DB, [0, -202, 0]); pot.part('11213', 308, [0, -190, 0]);
 A.add(pot, { M: I, p: [0, 0, 0] });
 
 // ===== rozmístění podle obrázku str. 53 =====
@@ -52,15 +52,22 @@ function branch(pts, z0 = 0) {
   const C = along(Q, 12);
   for (let s = 0; s < C.total; s += 26) { const m = C.at(s); A.part('32016', DB, m.p, mul(frameZ(m.d, [0, 0, -1]), rz(((s / 26) % 2) * Math.PI))); }
   for (const q of Q.slice(1, -1)) A.part('85861', RB, q, rx(Math.PI / 2));
+  for (const pt of C.pts) BR.push(pt);
   return Q;
 }
 // větvička na konci: trojzubec (mrkvová nať / stonek se 6 výhonky) a fialová poupátka
-function twig(px, py, dir, z = 0) {
-  const p = P(px, py, z), d = norm(dir), M = basis(cross(scl(d, -1), [0, 0, 1]), scl(d, -1), [0, 0, 1]);
+// větvička (kroky 30–34): stonek se 6 výhonky zasunutý tyčkou přímo do větve, na koncích výhonků purpurové kvítky
+const SPR = [[[-5, -7.5, 0], [-18.5, -30.8, 0]], [[3.8, -4.4, 0], [29.1, -13.6, 0]], [[2.5, -7.5, 4.3], [9.3, -30.8, 16]],
+             [[-1.9, -4.4, -3.3], [-14.6, -13.6, -25.2]], [[2.5, -7.5, -4.3], [9.3, -30.8, -16]], [[-1.9, -4.4, 3.3], [-14.6, -13.6, 25.2]]];
+const BR = [];                                                    // body všech větví (pro přichycení větviček)
+function twig(px, py, dir, z = 0, roll = 0) {
+  const t = P(px, py, z);
+  let q = BR[0]; for (const b of BR) if (Math.hypot(b[0] - t[0], b[1] - t[1]) < Math.hypot(q[0] - t[0], q[1] - t[1])) q = b;   // nejbližší bod větve
+  const d = norm(dir), y = scl(d, -1), x = norm(cross(y, [0, 0, 1])), M = mul(basis(x, y, cross(x, y)), ry(roll));
   const T = new Asm();
-  T.part('19119', DB, [0, 0, 0]);
-  for (const [x, y, zz] of [[0, -30, 0], [24, -20, 8], [-18, -22, -8], [10, -26, -20]]) T.part('24866', MA, [x, y, zz], rx(Math.PI / 2 * 0));
-  A.add(T, { M, p });
+  T.part('19119', DB, [0, -6, 0]);                                // tyčka (y 0..+10) zasunutá ve větvi
+  for (const [b, tip] of SPR) { const dd = norm(sub(tip, b)), yy = scl(dd, -1), xx = norm(cross(yy, [0, 0, 1])); T.part('24866', MA, add(add(tip, [0, -6, 0]), scl(dd, 1)), basis(xx, yy, cross(xx, yy))); }
+  A.add(T, { M, p: q });
 }
 // zvlněný konec větve (tentakl 80497) s poupátkem
 function curl(px, py, dir, flip = 1, z = 0) { // tentakl roste podél dir, ohyb nahoru
@@ -79,9 +86,12 @@ function flower(px, py, z, tilt = 0.25, yaw = 0) {
   }
   F.part('39262', MA, [0, 0, -2], rx(Math.PI / 2));                                // tmavý střed (miska)
   F.part('25516', LY, [0, 0, -4], rx(Math.PI / 2));                                // žluté tyčinky
-  A.add(F, { M: mul(rx(tilt), ry(yaw * 0.2)), p: P(px, py, z) });
+  const c = P(px, py, z); let q = BR[0]; for (const t of BR) if (Math.hypot(t[0] - c[0], t[1] - c[1]) < Math.hypot(q[0] - c[0], q[1] - c[1])) q = t;
+  const cc = [c[0], c[1], q[2] - 22];                                               // květ těsně před větví
+  A.part('59900', DB, add(q, [0, 0, -6]), rx(-Math.PI / 2));                         // kuželová stopka z větve ke květu
+  A.add(F, { M: mul(rx(tilt), ry(yaw * 0.2)), p: cc });
 }
-const pinkBud = (px, py, z = -10) => { const p = add(P(px, py, z), [0, 16, 0]); A.part('39262', MA, p); A.part('5234', DP, add(p, [0, 6, 0])); A.part('65578', DR, add(p, [0, -2, 0]), rx(Math.PI)); }; // růžové poupě v tmavé kališní misce
+const pinkBud = (px, py, z = -10) => { const t = P(px, py, z); let q = BR[0]; for (const c of BR) if (Math.hypot(c[0] - t[0], c[1] - t[1]) < Math.hypot(q[0] - t[0], q[1] - t[1])) q = c; const p = add(q, [0, -14, -6]); A.part('65578', DR, add(q, [0, -4, -6]), rx(Math.PI)); A.part('39262', MA, p); A.part('5234', DP, add(p, [0, 6, 0])); }; // růžové poupě na krátké stopce přímo na větvi
 // kmen (1:1 výkres str. 25) a větve
 branch([[215, 515], [205, 470], [218, 430], [228, 395], [248, 355], [245, 300], [235, 255], [205, 200], [165, 165], [135, 130], [105, 90], [75, 45]], 6);
 branch([[214, 448], [175, 452], [150, 445]], 8); curl(150, 445, [-1, -0.2, 0], 1, 8);
