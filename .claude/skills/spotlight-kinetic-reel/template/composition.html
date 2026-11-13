@@ -22,7 +22,8 @@
    ===================================================================== */
 const K = 1.5, W = 720, H = 1280;
 const Y = '#FDFB3D', YRGB = [253, 251, 61];
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const cv = document.getElementById('c'), ctx = cv.getContext('2d', { willReadFrequently: true });
+let FI = 1;   // integer source frame being rendered (sub-frames share it)
 const SANS = "'InterD', 'Inter Display', 'Inter', sans-serif";
 let CAM = {}, BG = null, CUT = {};
 const cfg = window.CFG || {};
@@ -66,31 +67,58 @@ function loadImg(src) { return new Promise((res, rej) => { const i = new Image()
 function layer() { const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; return [c, c.getContext('2d')]; }
 
 /* camera: screen = s*world + t (source px) */
-function cam(F) { const c = CAM[F]; return c ? { s: c[0], tx: c[1], ty: c[2] } : { s: 1, tx: 0, ty: 0 }; }
+function cam(F) {   // linear interpolation so motion-blur sub-frames move smoothly
+  const a = Math.floor(F), t = F - a, ca = CAM[a] || CAM[a + 1], cb = CAM[a + 1] || CAM[a];
+  if (!ca) return { s: 1, tx: 0, ty: 0 };
+  return { s: lerp(ca[0], cb[0], t), tx: lerp(ca[1], cb[1], t), ty: lerp(ca[2], cb[2], t) };
+}
 function setWorld(g, c) { g.setTransform(K * c.s, 0, 0, K * c.s, K * c.tx, K * c.ty); }
 function setScreen(g) { g.setTransform(K, 0, 0, K, 0, 0); }
 
 /* ---------------- primitives ---------------- */
 function fontStr(w, size, fam = SANS) { return `${w} ${size}px ${fam}`; }
 function measure(g, str, font, ls) { g.font = font; g.letterSpacing = ls + 'px'; return g.measureText(str).width - ls; }
+/* Text is rasterised once into a high-res sprite (SS px per world unit) and then
+   drawn with drawImage.  fillText snaps glyphs to the pixel grid, which makes
+   slowly moving / scaling words shimmer; a bilinear-sampled sprite moves sub-pixel. */
+const SPR = new Map(), SS = 3;
+function fontPx(font) { const m = font.match(/([\d.]+)px/); return m ? +m[1] : 40; }
+function textSprite(str, o, w) {
+  const fk = typeof o.fill === 'function' ? o.fill.toString() : (o.fill || '#fff');
+  const key = [str, o.font, o.ls || 0, fk, o.glow || 0, o.glowColor || '', o.stroke || 0].join('|');
+  let sp = SPR.get(key); if (sp) return sp;
+  const size = fontPx(o.font), pad = Math.ceil(size * 0.3 + (o.glow || 0) * 2.5 + 6);
+  const asc = Math.ceil(size * 1.05), desc = Math.ceil(size * 0.5);
+  const c = document.createElement('canvas');
+  c.width = Math.ceil((w + 2 * pad) * SS); c.height = Math.ceil((asc + desc + 2 * pad) * SS);
+  const g = c.getContext('2d');
+  g.scale(SS, SS); g.translate(pad, pad + asc);
+  g.font = o.font; g.letterSpacing = (o.ls || 0) + 'px'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  if (o.glow) { g.shadowColor = o.glowColor || Y; g.shadowBlur = o.glow * SS; }
+  g.fillStyle = typeof o.fill === 'function' ? o.fill(g, 0, 0, w) : (o.fill || '#fff');
+  g.fillText(str, 0, 0);
+  if (o.stroke) { g.lineWidth = o.stroke; g.strokeStyle = g.fillStyle; g.strokeText(str, 0, 0); }
+  sp = { c, ox: pad, oy: pad + asc };
+  if (SPR.size > 600) SPR.clear();
+  SPR.set(key, sp); return sp;
+}
 function drawText(g, str, x, y, o = {}) {
-  g.save();
-  g.font = o.font; g.letterSpacing = (o.ls || 0) + 'px';
-  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-  let w = g.measureText(str).width - (o.ls || 0);
+  const w = measure(g, str, o.font, o.ls || 0);
   if (o.align === 'center') x -= w / 2; else if (o.align === 'right') x -= w;
-  g.globalAlpha *= (o.alpha == null ? 1 : o.alpha);
+  const a = o.alpha == null ? 1 : o.alpha;
+  if (a <= 0.001 || !str) return w;
+  const sp = textSprite(str, o, w);
+  g.save();
+  g.globalAlpha *= a; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
   if (o.blur) g.filter = `blur(${o.blur * K}px)`;
-  if (o.glow) { g.shadowColor = o.glowColor || Y; g.shadowBlur = o.glow * K; }
-  g.fillStyle = typeof o.fill === 'function' ? o.fill(g, x, y, w) : (o.fill || '#fff');
-  g.fillText(str, x, y);
-  if (o.stroke) { g.lineWidth = o.stroke; g.strokeStyle = g.fillStyle; g.strokeText(str, x, y); }
+  g.drawImage(sp.c, x - sp.ox, y - sp.oy, sp.c.width / SS, sp.c.height / SS);
   g.restore();
   return w;
 }
 /* horizontal motion smear: draws fn(dx) several times with alpha falloff */
 function smear(g, amount, n, fn) {
   if (Math.abs(amount) < 0.5) { fn(0, 1); return; }
+  n = Math.max(n, Math.ceil(Math.abs(amount) * K / 2.5));   // dense copies -> continuous streak, no stepping
   for (let i = n - 1; i >= 0; i--) { const t = i / (n - 1); g.save(); g.globalAlpha *= (i === 0 ? 1 : 0.55 * (1 - t) / 1); fn(-amount * t, i === 0 ? 1 : 0.5); g.restore(); }
 }
 function silver(g, x, y, w) { const gr = g.createLinearGradient(0, y - 75, 0, y + 25); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.45, '#e9e9e9'); gr.addColorStop(0.8, '#a9a9a9'); gr.addColorStop(1, '#7e7e7e'); return gr; }
@@ -102,13 +130,32 @@ function cross(g, x, y, L, w, ang, sc = 1, alpha = 1) {
   g.restore();
 }
 function rrect(g, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function roundPoly(g, pts, radii) {
+  const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const m0 = mid(pts[n - 1], pts[0]); g.beginPath(); g.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) { const p = pts[i], q = mid(pts[i], pts[(i + 1) % n]); g.arcTo(p[0], p[1], q[0], q[1], radii[i]); }
+  g.closePath();
+}
+/* paper-plane cursor with rounded corners, soft shadow and a subtle sheen */
 function plane(g, x, y, ang, sz, alpha = 1) {
   if (alpha <= 0) return;
   g.save(); g.translate(x, y); g.rotate(ang); g.scale(sz / 26, sz / 26); g.globalAlpha *= alpha;
-  g.fillStyle = '#fff'; g.shadowColor = 'rgba(255,255,255,0.6)'; g.shadowBlur = 6 * K;
-  g.beginPath(); g.moveTo(14, 0); g.lineTo(-12, -11); g.lineTo(-6, 0); g.lineTo(-12, 11); g.closePath(); g.fill();
+  const pts = [[15, 0], [-11, -12.5], [-5, 0], [-11, 12.5]], rad = [3.2, 3.6, 4.5, 3.6];
+  g.save(); g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 7 * K; g.shadowOffsetY = 2 * K;
+  roundPoly(g, pts, rad); g.fillStyle = '#fff'; g.fill(); g.restore();
+  g.save(); g.shadowColor = 'rgba(255,255,255,0.55)'; g.shadowBlur = 8 * K;
+  const gr = g.createLinearGradient(0, -12, 0, 12); gr.addColorStop(0, '#ffffff'); gr.addColorStop(1, '#e4e4e4');
+  roundPoly(g, pts, rad); g.fillStyle = gr; g.fill(); g.restore();
+  // fold line
+  g.strokeStyle = 'rgba(0,0,0,0.12)'; g.lineWidth = 1; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(12, 0); g.lineTo(-4, 0); g.stroke();
   g.restore();
 }
+/* smoothed path sample (box filter over +-r frames removes key-frame kinks) */
+function smoothPath(keys, F, r = 1.5, n = 7) {
+  let x = 0, y = 0; for (let i = 0; i < n; i++) { const p = crPath(keys, F - r + 2 * r * i / (n - 1)); x += p[0]; y += p[1]; } return [x / n, y / n];
+}
+function lerpAng(a, b, t) { let d = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return a + d * t; }
 function badge(g, x, y, r, sc, checkA = 1, morphDot = 0) {
   if (sc <= 0) return;
   g.save(); g.translate(x, y); g.scale(sc, sc);
@@ -129,7 +176,7 @@ function drawBG(g, F) {
 
 /* ---------------- character ---------------- */
 function drawShadow(g, F) {
-  const img = CUT[F]; if (!img) return; const c = cam(F);
+  const img = CUT[FI]; if (!img) return; const c = cam(FI);
   const fy = c.s * 995 + c.ty, fx = c.s * 372 + c.tx;
   const [lc, lg] = layer();
   lg.setTransform(K, 0, 0, K, 0, 0);
@@ -140,7 +187,7 @@ function drawShadow(g, F) {
   lg.fillStyle = '#000'; lg.fillRect(0, 0, cv.width, cv.height);
   g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 0.88; g.drawImage(lc, 0, 0); g.restore();
 }
-function drawChar(g, F) { const img = CUT[F]; if (!img) return; setScreen(g); g.drawImage(img, 0, 0, W, H); }
+function drawChar(g, F) { const img = CUT[FI]; if (!img) return; setScreen(g); g.drawImage(img, 0, 0, W, H); }
 
 /* =====================================================================
    SCENE A  (F1 - F138): "You're not competing on price." -> "value."
@@ -236,7 +283,7 @@ function drawLine1(g, F) {
   if (gp < 1) {
     const bands = 6;
     for (let b = 0; b < bands; b++) {
-      const seed = Math.floor(F * 2) * 13 + b;
+      const seed = FI * 13 + b;
       const showNew = rnd(seed) < gp;
       const str = showNew ? TXT.a1b : TXT.a1;
       const cx = showNew ? 397 : 352;
@@ -245,7 +292,7 @@ function drawLine1(g, F) {
       drawText(g, str, cx + off, 320, { font, ls, align: 'center', alpha: 0.95 });
       g.restore();
     }
-    if (rnd(F * 7) > 0.5) drawText(g, TXT.a1, 352 + (rnd(F) - .5) * 30, 320, { font, ls, align: 'center', alpha: 0.25 * (1 - gp) });
+    if (rnd(FI * 7) > 0.5) drawText(g, TXT.a1, 352 + (rnd(FI) - .5) * 30, 320, { font, ls, align: 'center', alpha: 0.25 * (1 - gp) });
     return;
   }
   exitText(g, TXT.a1b, 397, 320, font, ls, exitP, 'center', 0.35);
@@ -356,8 +403,11 @@ function sceneA_front(g, F) {
   { const p = eOut3(P(F, 1, 6)); cross(g, lerp(60, 215, p), lerp(680, 562, p), 22, 4.5, base(17) + (1 - p) * 4, P(F, 1, 2.5) * outS); }
   /* paper plane (world) */
   if (F >= 35 && F < 97) {
-    const [px, py] = crPath(PLANE, F); const [qx, qy] = crPath(PLANE, F + 0.6);
-    let ang = Math.atan2(qy - py, qx - px); if (F >= 79) ang = lerp(Math.PI * 0.98, Math.PI * 0.75, P(F, 91, 96));
+    const [px, py] = smoothPath(PLANE, F);
+    const [ax, ay] = smoothPath(PLANE, F - 0.8), [bx, by] = smoothPath(PLANE, F + 0.8);
+    let ang = Math.atan2(by - ay, bx - ax);
+    ang = lerpAng(ang, Math.PI * 0.98, eIO3(P(F, 74, 80)));
+    if (F >= 80) ang = lerpAng(Math.PI * 0.98, Math.PI * 0.75, eIO3(P(F, 91, 96)));
     const sc = eOutBack(P(F, 35, 38.5)) * (1 - P(F, 94, 97) * 0.6);
     plane(g, px, py, ang, 34 * sc, 1);
   }
@@ -370,7 +420,7 @@ function sceneA_front(g, F) {
   setScreen(g);
   if (F >= 3 && F <= 28) comet(g, F);
   if (F >= 21 && F <= 28) { const p = P(F, 21, 28); const hx = lerp(150, -60, eIn3(p)); streak(g, hx, 447, 70 * (0.3 + p), 4, 1); }
-  if (F >= 98 && F <= 107) { const [px, py] = crPath(PLANE2, F); const [qx, qy] = crPath(PLANE2, F + 0.5); plane(g, px, py, Math.atan2(qy - py, qx - px), 24, 1 - P(F, 106, 107)); }
+  if (F >= 98 && F <= 107) { const [px, py] = smoothPath(PLANE2, F, 0.8); const [ax, ay] = smoothPath(PLANE2, F - 0.6, 0.8), [bx, by] = smoothPath(PLANE2, F + 0.6, 0.8); plane(g, px, py, Math.atan2(by - ay, bx - ax), 26, eOut3(P(F, 98, 99.5)) * (1 - P(F, 106, 107))); }
 }
 function comet(g, F) {
   const fade = 1 - P(F, 25.5, 28);
@@ -482,20 +532,41 @@ function globalBlur(F) {
     180: 9, 181: 8, 182: 7, 183: 5.5, 184: 4.5, 185: 3.5, 186: 2.6, 187: 1.8, 188: 1.1, 189: 0.6 };
   return t[F] || 0;
 }
-window.renderFrame = async function (F) {
-  if (F >= 139 && F <= 179) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none'; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height); sceneB(ctx, F); return cv.toDataURL('image/png'); }
-  if (!CUT[F]) CUT[F] = await loadImg(`cut/c${String(F).padStart(3, '0')}.png`);
+function drawSub(F) {   // one sub-frame at (fractional) time F of source frame FI
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none'; ctx.globalAlpha = 1;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (FI >= 139 && FI <= 179) { sceneB(ctx, F); return; }
   const [bl, bg] = layer(); // everything behind the character
   drawBG(bg, F);
-  if (F <= 138) sceneA_back(bg, F); else sceneC_back(bg, F);
-  const gb = globalBlur(F);
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = gb ? `blur(${gb * K}px)` : 'none';
+  if (FI <= 138) sceneA_back(bg, F); else sceneC_back(bg, F);
+  const gb = globalBlur(FI);
+  ctx.filter = gb ? `blur(${gb * K}px)` : 'none';
   ctx.drawImage(bl, 0, 0); ctx.filter = 'none';
   drawShadow(ctx, F);
   drawChar(ctx, F);
   const [fl, fg] = layer();
-  if (F <= 138) sceneA_front(fg, F); else sceneC_front(fg, F);
+  if (FI <= 138) sceneA_front(fg, F); else sceneC_front(fg, F);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = gb ? `blur(${gb * K}px)` : 'none'; ctx.drawImage(fl, 0, 0); ctx.filter = 'none';
+}
+/* Real motion blur: average N sub-frames across a 180-degree shutter in float. */
+window.renderFrame = async function (F) {
+  FI = F;
+  if (!(F >= 139 && F <= 179) && !CUT[F]) CUT[F] = await loadImg(`cut/c${String(F).padStart(3, '0')}.png`);
+  const FAST = [[1, 8], [26, 32], [88, 101], [122, 138], [139, 147], [174, 190]];   // fast moves: more sub-frames, no echo
+  const N = cfg.mbSamples || (FAST.some(([a, b]) => F >= a && F <= b) ? 20 : 8), shutter = cfg.shutter == null ? 0.5 : cfg.shutter;
+  let acc = null;
+  for (let k = 0; k < N; k++) {
+    drawSub(F + (N === 1 ? 0 : (k / (N - 1) - 0.5) * shutter));
+    if (N === 1) break;
+    const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+    if (!acc) acc = new Float32Array(d.length);
+    for (let i = 0; i < d.length; i++) acc[i] += d[i];
+  }
+  if (acc) {
+    const img = ctx.createImageData(cv.width, cv.height), o = img.data, inv = 1 / N;
+    for (let i = 0; i < o.length; i++) o[i] = acc[i] * inv + 0.5;
+    ctx.putImageData(img, 0, 0);
+  }
   delete CUT[F - 2];
   return cv.toDataURL('image/png');
 };

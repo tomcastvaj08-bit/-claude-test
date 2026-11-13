@@ -19,31 +19,44 @@ for f, (s, tx, ty, cc) in raw.items():
 for k in range(0, 10):
     if raw.get(180 + k, [0, 0, 0, 0])[3] < 0.9:
         cam[180 + k] = list(raw[1 + k])
-def smooth(seq):
+def smooth(seq, fast=()):
+    """Local quadratic regression (LOESS) of the track.  The ECC track wobbles by
+    1-2 px in static stretches (the legs/hands move inside the tracking mask); world
+    graphics locked to that wobble visibly shake.  sigma is wide (4 frames) where the
+    camera is steady and narrow inside the fast zoom-outs listed in `fast`."""
+    ks = sorted(seq); arr = np.array([seq[k][:3] for k in ks], float); ks = np.array(ks)
     out = {}
-    ks = sorted(seq)
     for i, f in enumerate(ks):
-        nb = [seq[g] for g in ks[max(0, i - 1):i + 2] if abs(g - f) <= 1]
-        out[f] = [float(np.mean([n[j] for n in nb])) for j in range(3)]
+        sig = 1.0 if any(a <= f <= b for a, b in fast) else 4.0
+        w = np.exp(-0.5 * ((ks - f) / sig) ** 2); m = w > 1e-3
+        x = ks[m] - f; W = w[m]
+        A = np.stack([np.ones_like(x), x, x * x], 1).astype(float)
+        AtW = A.T * W
+        coef = np.linalg.lstsq(AtW @ A, AtW @ arr[m], rcond=None)[0]
+        out[int(f)] = [float(v) for v in coef[0]]
     return out
-camA = smooth({f: v for f, v in cam.items() if f <= 138})
-camC = smooth({f: v for f, v in cam.items() if f >= 180})
+camA = smooth({f: v for f, v in cam.items() if f <= 138}, fast=[(1, 12)])
+camC = smooth({f: v for f, v in cam.items() if f >= 180}, fast=[(180, 192)])
 camA.update(camC)
 json.dump({str(k): v for k, v in camA.items()}, open(f'{OUT}/cam.json', 'w'))
 
 # ---- cutouts ----
-for name in sorted(os.listdir(MD)):
-    f = int(name[1:4])
+names = sorted(os.listdir(MD))
+idx = [int(n[1:4]) for n in names]
+mattes = {f: np.asarray(Image.open(f'{MD}/m{f:03d}.png').convert('L')).astype(np.float32) / 255 for f in idx}
+def shot(f): return 0 if f <= 138 else 1
+for f in idx:
     rgb = np.asarray(Image.open(f'{FR}/f{f:03d}.png').convert('RGB')).astype(np.float32)
-    m = np.asarray(Image.open(f'{MD}/{name}').convert('L')).astype(np.float32) / 255
+    nb = [mattes[g] for g in (f - 1, f, f + 1) if g in mattes and shot(g) == shot(f)]
+    m = np.median(np.stack(nb), 0) if len(nb) == 3 else mattes[f]
     a = np.clip((m - 0.06) / 0.86, 0, 1)
     r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
     # key out leaked yellow graphics (character is neutral/dark)
     yellow = np.clip(((r + g) / 2 - b - 40) / 40, 0, 1)
     a *= 1 - yellow
     # key out very bright flat-white pixels (text / pill) above shoulder line
-    s, tx, ty = camA[f]
-    shoulder = s * 560 + ty
+    s_, tx, ty = camA[f]
+    shoulder = s_ * 560 + ty
     lum = (r + g + b) / 3
     white = np.clip((lum - 170) / 40, 0, 1) * (np.arange(1280)[:, None] < shoulder - 40)
     a *= 1 - white

@@ -31,6 +31,15 @@ The steps are resumable. Segmentation is the slow part: about 15–25 s per fram
 - Hugging Face is blocked in some sandboxes, so faster-whisper can't load. The rembg models come from GitHub releases and do work.
 - Fonts are bundled in `assets/fonts`: Inter Display 400/500/700 and Italianno, both OFL. Don't rely on system fonts.
 
+## Smoothness rules (why it does not shake)
+
+- **Text is drawn as sprites.** Every string is rasterised once at 3 px per world unit and placed with `drawImage`. Canvas `fillText` snaps glyphs to the pixel grid, which makes slowly moving or scaling words shimmer.
+- **The camera track is smoothed with LOESS.** `prepare_plates.py` fits a local quadratic: σ = 4 frames where the camera is steady, 1 frame inside the fast zoom-outs. The raw ECC track wobbles by 1–2 px because the legs move inside the tracking mask. A slow sway of about 1 px is also in the original's graphics, so keep it.
+- **The matte gets a temporal median** of 3 frames inside each shot. This stops the edges of the character flickering without leaving ghosts on moving hands.
+- **Motion blur is real.** Each frame is the float average of sub-frames over a 180° shutter: 8 sub-frames normally, 20 inside the `FAST` ranges (intro, "price." slide, card collapse, exits, whips). `smear()` draws dense copies, so a streak never steps.
+- **Paths are filtered.** Plane and comet positions are box-filtered over ±1.5 frames, and the plane's heading is blended with `lerpAng`. The plane itself is a rounded paper-plane (`roundPoly` with arcTo corners) with a soft shadow.
+- **Grain is light** (`noise=alls=2`), so text edges don't sparkle.
+
 ## Layering (spotlight shots)
 
 1. Procedural background (`make_background.py`), in world space: wall #050505–#0c0c0c with faint vertical panel stripes, a spotlight cone from the lamp at top centre, a horizon at y≈925, and a floor light pool (an ellipse at 360,1012 with rx 420 and ry 72) plus a vignette.
