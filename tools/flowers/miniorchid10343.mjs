@@ -25,7 +25,7 @@ for (let q = 0; q < 4; q++) quarter(base, '7033', RB, -24, q);      // hnědý p
 A.add(base, { M: ry(Math.PI / 4), p: [0, 0, 0] });                   // nožky šikmo k divákovi jako na obrázku
 
 // ===== krok 7–15: květináč =====
-const T = -108;                                                       // plochá strana mísy (horní)
+const T = -88;                                                       // plochá strana mísy (horní)
 const pot = new Asm();
 for (let q = 0; q < 4; q++) quarter(pot, '76776', NG, T + 80, q, true); // mísa ze 4 čtvrtkupolí kupolí dolů
 pot.part('39789', RB, [0, T, 0]); pot.part('39789', RB, [0, T, -40]); pot.part('39789', RB, [0, T, 40]);
@@ -123,8 +123,8 @@ function longLeaf(base, tip, roll, face) {
   A.part('57360', RB, add(base, [0, 8, 0]), ry(Math.PI / 2));
 }
 const P = (px, py, z = 0) => [(px - 282) * 0.91, 53 - (720 - py) * 0.91, z];
-longLeaf(P(264, 500, 6), P(70, 290, -20), +(process.env.RL || 1.2), norm([0.2, -0.2, -1]));
-longLeaf(P(298, 498, 14), P(490, 290, 10), -(process.env.RR || 1.0), norm([-0.3, -0.2, -1]));
+longLeaf(P(264, 500, 6), P(100, 280, -30), 0, norm([0.45, -1, 0.3]));   // levý list vidět spíš z boku – prohnutý oblouk
+longLeaf(P(298, 498, 14), P(453, 312, 0), 0, norm([-0.7, -0.6, -0.4]));
 // ===== krok 18: ploché oválné listy 4x6 (4 čtvrtkruhy + 2 oblé 2x2 na světle zelené desce 2x4) =====
 function flatLeafAsm() {
   const L = new Asm();
@@ -160,15 +160,15 @@ function flower() {
   F.part('3386', GR, [0, 0, 10], rx(Math.PI / 2));                           // zelený nosič za středem
   F.part('32607', BP, [0, 0, 0], mul(rx(Math.PI / 2), ry(5 * Math.PI / 4)));  // růžové lístky nahoru
   F.part('85861', DP, [0, 0, -8], rx(Math.PI / 2));                          // tmavě růžový kroužek
-  F.part('4697b', W, [0, 2, -26]);                                            // bílý sloupek k divákovi
-  F.part('32607', RO, [0, 20, -26], mul(rx(0.35), ry(Math.PI / 4)));          // oranžový pysk
+  F.part('4697b', W, [0, 2, -18], ry(0.5));                                            // bílý sloupek k divákovi
+  F.part('32607', RO, [0, 9, -18], mul(rx(0.35), ry(Math.PI / 4)));          // oranžový pysk
   F.part('3917', PG, [0, 30, 20]);                                            // zlatý kroužek vzadu
   F.part('3484', PG, [0, 0, 28], rx(Math.PI / 2));                            // svorka na tyčku
   return F;
 }
 // květy: [střed na obrázku px, py, hloubka z, natočení kolem y, sklon]
 // květy: [index náboje, posun v obraze dx, dy (px), natočení kolem y, sklon] – posuny odměřené z obrázku návodu str. 40
-const FL = [[0, -85, -28, 0.35, 0.05], [1, 18, 19, -0.15, 0.0], [2, -46, -21, 0.1, 0.0], [3, 15, 29, -0.25, 0.05], [4, 19, -14, -0.45, 0.1]];
+const FL = [[0, -52, -36, 0.3, 0.05], [1, 47, -3, -0.2, 0.0], [2, -21, -48, 0.05, 0.0], [3, 34, 10, -0.2, 0.05], [4, 52, -7, -0.35, 0.1]]; // posuny podle fotky hotové stavebnice
 for (const [hi, dx, dy, yaw, tilt] of FL) {
   const h = hubW[hi], c = add(h, [dx * 0.91, dy * 0.91, -46]);
   const FM = mul(ry(yaw), rx(tilt)), clip = add(c, apply(FM, [0, 0, 28]));

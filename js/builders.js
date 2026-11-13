@@ -1,4 +1,5 @@
 // Registr všech modelů Love Bricks.
+export const MODEL_V = '20261113c'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
 // Bonsaj, kytice i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
 // které se po načtení slijí do jednoho modelu (js/solid.js). Procedurálně zůstalo jen srdce.
 import * as THREE from 'three';
@@ -29,7 +30,7 @@ const solidData = new Map();
 export const LITE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 820;
 export function ready(ids = Object.keys(LD_CARS)) {
   return Promise.all(ids.filter((id) => LD_CARS[id] && !solidData.has(id)).map((id) =>
-    loadSolid(new URL(LD_CARS[id].file + '.glb', BASE).href).then((s) => solidData.set(id, s))));
+    loadSolid(new URL(LD_CARS[id].file + '.glb?v=' + MODEL_V, BASE).href).then((s) => solidData.set(id, s))));
 }
 
 // realistická skleněná váza (hladké sklo, ne z kostek) – rozměry v LDU, osa Y dolů jako v LDraw
