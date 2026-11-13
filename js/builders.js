@@ -11,9 +11,13 @@ export const BUILDERS = { heart: buildHeart }; // procedurální modely (srdce v
 // body = kódy barev laku pro varianty, fixed = pevné přebarvení, looks = sady přebarvení podle varianty
 const BASE = new URL('../models/', import.meta.url);
 export const LD_CARS = {
-  porsche911: { file: 'porsche911', body: [15] },
-  sian: { file: 'sian', body: [27], fixed: { 82: '#C2309A' } },          // růžová verze: purpurové disky
-  chiron: { file: 'chiron', body: [321], fixed: { 272: '#1B1D22', 1: '#1B1D22' } }, // oranžová s černou
+  // Lamborghini Sián FKP 37 (42115): růžová a černo-zlatá replika; zlaté disky (82) zůstávají
+  sian: { file: 'sian', body: [27] },
+  sianblack: { file: 'sian', body: [27], fixed: { 1: '#C9A44C', 72: '#2A2C30' } },
+  // Porsche 911 GT3 RS (42056) v barvách Gulf: světle modrá, oranžové pruhy
+  gulf: { file: 'gulf', body: [25], fixed: { 4: '#F07A1E', 1: '#F07A1E', 14: '#F07A1E' } },
+  // Porsche 911 Turbo 3.0 (75895), černé
+  turbo: { file: 'turbo', body: [15] },
   // bonsaj 10281: varianta Sakura přebarví listy (zelená, světle zelená) na růžové květy
   bonsai: { file: 'bonsai', flower: true, key: 'foliage', looks: { '#F59BC0': { 2: '#F59BC0', 10: '#FFD3E4' } } },
   // květiny složené z dílků (tools/flowers); looks = přebarvení podle zvolené varianty (první varianta = původní barvy)

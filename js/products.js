@@ -41,15 +41,18 @@ export const ALL = [
     kicker: 'Zelená nebo v květu', desc: 'Bonsaj na dřevěném stojánku. Listy vyměníš za růžovou sakuru.',
     variant: { key: 'foliage', label: 'Koruna', options: [['Zelená', '#4B9F4A'], ['Sakura', '#F59BC0']] }, bg: '#EAF2E1', ink: '#1A2A10', accent: '#4B9F4A', word: 'BONSAJ' },
   // ------------------------------------------------ auta (skutečné modely z originálních dílků)
-  { id: 'porsche911', model: 'porsche911', name: 'Porsche 911', line: BIG, price: 4199, pieces: 1458, size: '45 cm', age: '18+', tags: ['auta', 'pary'], featured: true,
-    kicker: 'Ikona v měřítku 1:12', desc: 'Bílá devětsetjedenáctka se střechou targa.',
-    variant: { key: 'body', label: 'Lak', options: [['Bílá', '#F2F3F2'], ['Stříbrná', '#A0A5A9'], ['Červená', '#C91A09'], ['Černá', '#1B2A34']] }, bg: '#ECEEF0', ink: '#1A1D21', accent: '#C91A09', word: '911' },
-  { id: 'sian', model: 'sian', name: 'Lamborghini Sián – růžové', line: BIG, price: 1999, pieces: 3696, size: '60 cm', age: '18+', tags: ['auta', 'pary'], featured: true,
-    kicker: 'Pro holky, co milují rychlost', desc: 'Růžové Lamborghini s purpurovými disky.',
-    variant: { key: 'body', label: 'Lak', options: [['Rosa', '#F59AC4'], ['Verde', '#A5CA18'], ['Bianco', '#F2F3F2']] }, bg: '#FFE4EF', ink: '#3B0A22', accent: '#D3359D', word: 'SIÁN' },
-  { id: 'chiron', model: 'chiron', name: 'Bugatti Chiron', line: BIG, price: 7999, pieces: 3599, size: '56 cm', age: '16+', tags: ['auta', 'rodina'], featured: true,
-    kicker: 'Podkova a C-linka', desc: 'Oranžovo-černé Bugatti s motorem W16 uvnitř.',
-    variant: { key: 'body', label: 'Lak', options: [['Oranžová', '#F57C1F'], ['Modrá', '#2E7DD1'], ['Černá', '#26292F']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#F57C1F', accentInk: '#1B1D22', word: 'CHIRON', dark: true }
+  { id: 'sian', model: 'sian', name: 'Lamborghini růžové', line: BIG, price: 1490, pieces: 1280, size: '36 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
+    kicker: 'Pro holky, co milují rychlost', desc: 'Růžový supersport se zlatými disky a nůžkovými dveřmi, měřítko 1:14.',
+    variant: { key: 'body', label: 'Lak', options: [['Růžová', '#F2A7C7']] }, bg: '#FFE4EF', ink: '#3B0A22', accent: '#D3359D', word: 'ROSA' },
+  { id: 'sianblack', model: 'sianblack', name: 'Lamborghini černo-zlaté', line: BIG, price: 1490, pieces: 1280, size: '36 cm', age: '14+', tags: ['auta', 'rodina'], featured: true,
+    kicker: 'Černá se zlatou', desc: 'Černý supersport se zlatými disky a zlatými detaily, měřítko 1:14.',
+    variant: { key: 'body', label: 'Lak', options: [['Černá', '#1B1D22']] }, bg: '#1E2226', ink: '#F4F6F8', accent: '#C9A44C', accentInk: '#1B1D22', word: 'NERO', dark: true },
+  { id: 'gulf', model: 'gulf', name: 'Porsche GT3 RS Gulf', line: BIG, price: 1490, pieces: 1300, size: '33 cm', age: '14+', tags: ['auta', 'pary'], featured: true,
+    kicker: 'Závodní legenda', desc: 'Porsche v legendárních barvách Gulf, světle modrá s oranžovou a velké zadní křídlo.',
+    variant: { key: 'body', label: 'Lak', options: [['Gulf modrá', '#8EC5E8']] }, bg: '#E3F1FA', ink: '#0E2A44', accent: '#F07A1E', word: 'GULF' },
+  { id: 'turbo', model: 'turbo', name: 'Porsche 911 Turbo černé', line: CAR, price: 590, pieces: 320, size: '16 cm', age: '8+', tags: ['auta', 'rodina'], featured: true,
+    kicker: 'Malá klasika', desc: 'Černá devětsetjedenáctka Turbo s velkým zadním spoilerem, malé měřítko do poličky.',
+    variant: { key: 'body', label: 'Lak', options: [['Černá', '#1B1D22']] }, bg: '#ECEEF0', ink: '#1A1D21', accent: '#F57C1F', word: 'TURBO' }
 ];
 
 export const PRODUCTS = ALL.filter(p => p.featured);
