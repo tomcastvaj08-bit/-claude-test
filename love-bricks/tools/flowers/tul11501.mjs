@@ -22,7 +22,7 @@ const dirs3 = (a0) => [0, 1, 2].map((k) => { const a = a0 + k * 2 * Math.PI / 3;
 // vnější lístek: špička nahoru, vypouklá strana ven, zaoblené čtvrtkruhy tvoří kulaté dno hlavy (jako na fotce sady)
 function petalM(b, open) {
   const ey = scl(b, -1), up = E('PUP', 1) > 0 ? Y : scl(Y, -1);
-  return mul(basis(cross(ey, up), ey, up), rx(E('PT', -0.15) - open));
+  return mul(basis(cross(ey, up), ey, up), rx(E('PT', -0.45) - open));
 }
 // ===== hlava typu „červený tulipán“ (kroky 1–6). Počátek = horní konec zahnuté trubičky 7324, osa hlavy = -Y =====
 // col = barva lístků, inner = barva vnitřních lístků, disc = barva kroužků 85861
@@ -47,7 +47,7 @@ export function tulipHead({ col, disc = 320, open = 0 }) {
   // vnější lístky (krok 6): klip 5264 na tyčce kroužku 1941 (tečná tyčka v r = 14,4)
   [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]].forEach((b, i) => {
     const Mt = petalM(b, Array.isArray(open) ? open[i] : open), bar = add(scl(b, 14.4), [0, yb, 0]);
-    H.add(outerPetal(col), { M: Mt, p: sub(bar, apply(Mt, [0, 26, -30])) });
+    H.add(outerPetal(col), { M: Mt, p: sub(bar, apply(Mt, [0, 26 + E('PIN', -8), -30])) });
   });
   return H;
 }
@@ -79,7 +79,7 @@ export function purpleHead({ open = 0 } = {}) {
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
     const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
-    H.add(outerPetal(col, 0), { M, p: sub(bar, apply(M, [0, 26, -30])) });
+    H.add(outerPetal(col, 0), { M, p: sub(bar, apply(M, [0, 26 + E('PIN', -8), -30])) });
   }
   return H;
 }
@@ -97,7 +97,7 @@ export function pinkHead({ open = 0 } = {}) {
   }
   for (const b of [[-1, 0, 0], [0.5, 0, 0.866], [0.5, 0, -0.866]]) {
     const M = petalM(b, open), bar = add(scl(b, 14.4), [0, yb, 0]);
-    H.add(outerPetal(col), { M, p: sub(bar, apply(M, [0, 26, -30])) });
+    H.add(outerPetal(col), { M, p: sub(bar, apply(M, [0, 26 + E('PIN', -8), -30])) });
   }
   return H;
 }
