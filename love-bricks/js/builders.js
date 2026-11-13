@@ -14,6 +14,8 @@ export const LD_CARS = {
   // Lamborghini Sián FKP 37 (42115): růžová a černo-zlatá replika; zlaté disky (82) zůstávají
   sian: { file: 'sian', body: [27] },
   sianblack: { file: 'sian', body: [27], fixed: { 1: '#C9A44C', 72: '#2A2C30' } },
+  // Bugatti Chiron (42083) jako růžovo-bílá replika: přední část bílá, zadní a střecha růžová
+  chironpink: { file: 'chiron', body: [272], fixed: { 321: '#F4F4F2', 1: '#E58BB8', 0: '#1B1D22' } },
   // Porsche 911 GT3 RS (42056) v barvách Gulf: světle modrá, oranžové pruhy
   gulf: { file: 'gulf', body: [25], fixed: { 4: '#F07A1E', 1: '#F07A1E', 14: '#F07A1E' } },
   // Porsche 911 Turbo 3.0 (75895), černé

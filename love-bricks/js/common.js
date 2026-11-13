@@ -92,7 +92,7 @@ function injectChrome() {
     </div>
     <div class="legal-note">
       <p>Love Bricks je nezávislý prodejce stavebnic. Názvy Lamborghini, Ferrari, Bugatti, McLaren a Mercedes-AMG jsou ochranné známky svých vlastníků a slouží pouze k označení prodávaných modelů.</p>
-      <p>3D modely: LDraw.org Official Model Repository – Jens Brühl (Lamborghini), Philippe Hurbain (Porsche GT3 RS), Magnus Forsberg (Porsche 911 Turbo), Orion Pobursky (Bonsaj, Kytice květin); knihovna dílků LDraw.org. Licence CC BY 2.0, barvy upraveny.</p>
+      <p>3D modely: LDraw.org Official Model Repository – Jens Brühl (Lamborghini), Philippe Hurbain (Porsche GT3 RS), Magnus Forsberg (Porsche 911 Turbo), Philippe Hurbain (Bugatti), Orion Pobursky (Bonsaj, Kytice květin); knihovna dílků LDraw.org. Licence CC BY 2.0, barvy upraveny.</p>
       <p>© 2026 Love Bricks · ukázková verze webu – zatím nic neprodáváme, ceny a parametry jsou orientační.</p>
     </div>
   </footer>`;
