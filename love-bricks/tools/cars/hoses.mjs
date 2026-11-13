@@ -9,7 +9,7 @@ const top = (x, z) => { let best; for (let dx = -2; dx <= 2; dx++) for (let dz =
 const edgeX = (z, s, ythr) => { for (let x = 260; x > 0; x -= 4) { const v = top(s * x, z); if (v !== undefined && v < ythr) return x; } return 0; };
 const len = (a) => Math.hypot(...a), sub = (a, b) => a.map((v, i) => v - b[i]), add = (a, b) => a.map((v, i) => v + b[i]), scl = (a, k) => a.map((v) => v * k);
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], norm = (a) => scl(a, 1 / (len(a) || 1));
-const lines = [];
+const lines = [], REMOVE = new Set();
 // hadička: body (x,z), výška z povrchu – lift; tyčka 3L (60 LDU) natažená na délku úseku, tloušťka th
 function hose(xz, col, { lift = 5, th = 0.7, step = 10 } = {}) {
   const pts = [];
@@ -48,9 +48,9 @@ function clip(pts, end, col = 71) {
 const hoseC = (ctrl, col, th, cc = 71) => { const p = tube(ctrl, col, th); clip(p, false, cc); clip(p, true, cc); return p; };
 function seg(a, b2, col, th) {
   const d = sub(b2, a), L = len(d); if (L < 0.5) return;
-  const y = norm(d), ref = Math.abs(y[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
-  const x = scl(norm(cross(ref, y)), th), z = scl(norm(cross(x, y)), th), yy = scl(y, L / 60), f = (v) => +v.toFixed(4);
-  lines.push(`1 ${col} ${a.map(f).join(' ')} ${[x[0], yy[0], z[0], x[1], yy[1], z[1], x[2], yy[2], z[2]].map(f).join(' ')} 87994.dat`);
+  const y = norm(d), ref = Math.abs(y[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], r = th * 5;
+  const x = scl(norm(cross(ref, y)), r), z = scl(norm(cross(x, y)), r), a0 = sub(a, scl(y, r * 0.35)), yy = scl(y, L + r * 0.7), f = (v) => +v.toFixed(4);
+  lines.push(`1 ${col} ${a0.map(f).join(' ')} ${[x[0], yy[0], z[0], x[1], yy[1], z[1], x[2], yy[2], z[2]].map(f).join(' ')} 48/4-4cyli.dat`);
 }
 function part(id, col, pos, M = [1, 0, 0, 0, 1, 0, 0, 0, 1]) { const f = (v) => +v.toFixed(4); lines.push(`1 ${col} ${pos.map(f).join(' ')} ${M.map(f).join(' ')} ${id}.dat`); }
 const SPECS = {
@@ -80,25 +80,38 @@ const SPECS = {
   },
   // Chiron: bílé hadice přes kapotu a „C“ oblouk na boku, přes motor dva oblouky
   chiron() {
-    const T = 1.8, hz = -545, hy = (top(0, hz) ?? -150);
-    // šedý půlkruh uprostřed kapoty a šedá hadice obloukem kolem něj
-    part('3960', 71, [0, hy - 8, hz]);
-    hoseC([[-72, -470, 18], [-70, -600, 26], [0, -655, 30], [70, -600, 26], [72, -470, 18]], 71, 1.5);
+    // střecha: místo 4 drážkovaných panelů 3x13 dva široké hladké zaoblené panely (jako replika)
+    for (const i of [1994, 1995, 2000, 2001]) REMOVE.add(i);
+    for (const s of [-1, 1]) part('18944', 272, [s * 70, -323, -80], [1.95, 0, 0, 0, 1, 0, 0, 0, 1]);
+    const R = 1.8; // trubka: poloměr 9 LDU
+    const hz = -545, hy = (top(0, hz) ?? -150);
+    part('3960', 71, [0, hy - 8, hz]);                      // šedý kulatý díl uprostřed kapoty
+    const con = {};
     for (const s of [-1, 1]) {
-      // bílá hadice z předního rohu obloukem nahoru ke spojce u skla
-      hoseC([[s * 150, -745, 8], [s * 140, -660, 34], [s * 110, -520, 40], [s * 80, -420, 30]], 15, T);
-      // bílá hadice přes blatník k boku
-      hoseC([[s * 175, -720, 10], [s * 215, -620, 40], [s * 245, -500, 34], [s * 250, -400, 18]], 15, T);
-      // bílý oblouk kolem dveří (svislá rovina boku), uchycený nahoře pod střechou a dole u prahu
-      const zc = -40, yc = -170, R = 120, arc = [];
-      for (let a = -100; a <= 100; a += 10) { const t = a * Math.PI / 180; arc.push(['abs', s * 300, yc + R * Math.sin(t), zc + R * Math.cos(t)]); }
-      const ap = tube(arc, 15, T); clip(ap, false); clip(ap, true);
-      // růžová vzpěra od střechy dopředu, na obou koncích růžové spojky
-      const ra = [s * 140, (top(s * 140, -300) ?? -300) - 16, -300], rb = [s * 165, (top(s * 165, -620) ?? -180) - 22, -620];
-      const rp = tube([['abs', ...ra], ['abs', ...rb]], 272, 1.7); clip(rp, false, 272); clip(rp, true, 272);
+      const cx = s * 78, cz = -425, cy = (top(cx, cz) ?? -170) - 12;
+      part('32184', 71, [cx, cy, cz], [1, 0, 0, 0, 0, -1, 0, 1, 0]); // šedá spojka u paty sloupku
+      con[s] = [cx, cy, cz];
     }
-    // bílá šikmá hadice přes kapotu zprava dolů doleva
-    hoseC([[95, -440, 30], [60, -560, 44], [-10, -680, 30], [-40, -750, 10]], 15, T);
+    const C = (s, dz = 0) => ['abs', con[s][0], con[s][1], con[s][2] - 18 + dz];
+    // šedá smyčka ze spojky kolem kulatého dílu zpět do druhé spojky
+    tube([C(-1), [-70, hz + 30, 12], [-62, hz - 70, 12], [0, hz - 92, 12], [62, hz - 70, 12], [70, hz + 30, 12], C(1)], 71, R * 0.8);
+    for (const s of [-1, 1]) {
+      // bílá: ze spojky dopředu ven k světlu
+      tube([C(s), [s * 120, -520, 16], [s * 160, -650, 14], [s * 175, -760, -4]], 15, R);
+      // bílá: ze spojky přes blatník na bok
+      tube([C(s, 10), [s * 150, -470, 18], [s * 225, -560, 16], [s * 262, -640, -6]], 15, R);
+    }
+    // bílá šikmo přes kapotu: z pravé spojky dolů doleva ke středu masky
+    tube([C(1, 6), [40, -560, 18], [-10, -680, 14], [-30, -770, -6]], 15, R);
+    for (const s of [-1, 1]) {
+      // velký bílý oblouk kolem dveří, konce zapuštěné do karoserie
+      const zc = -40, yc = -170, Rr = 125, arc = [];
+      for (let a = -105; a <= 105; a += 9) { const t = a * Math.PI / 180; arc.push(['abs', s * 298, yc + Rr * Math.sin(t), zc + Rr * Math.cos(t)]); }
+      tube(arc, 15, R);
+      // růžová vzpěra od střechy k blatníku
+      const ra = [s * 140, (top(s * 140, -300) ?? -300) - 16, -300], rb = [s * 165, (top(s * 165, -620) ?? -180) - 22, -620];
+      tube([['abs', ...ra], ['abs', ...rb]], 272, 1.6); part('6536', 272, rb);
+    }
   }
 };
 SPECS[spec]();
@@ -108,7 +121,7 @@ let idx = text.findIndex((l, i) => i > 0 && /^0\s+FILE\s/.test(l));
 if (idx < 0) idx = text.length;
 text.splice(idx, 0, ...lines);
 fs.writeFileSync(dst, text.join('\n'));
-const keep = JSON.parse(fs.readFileSync(keepIn, 'utf8'));
+const keep = JSON.parse(fs.readFileSync(keepIn, 'utf8')).filter((i) => !REMOVE.has(i));
 for (let i = 0; i < lines.length; i++) keep.push(S.n + i);
 fs.writeFileSync(keepOut, JSON.stringify(keep));
 console.log(spec, 'hose segments', lines.length);
