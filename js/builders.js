@@ -13,9 +13,9 @@ const BASE = new URL('../models/', import.meta.url);
 // barevné spojovací kolíky a osy (modré, červené, žluté, šedé) ztmavit – auto pak nepůsobí rozkouskovaně
 const DECLUTTER = { 40: '#26292E', 1: '#1B1D22', 4: '#1B1D22', 14: '#1B1D22', 70: '#1B1D22', 71: '#3A3D42', 72: '#2A2C30' };
 export const LD_CARS = {
-  // Lamborghini Sián FKP 37 (42115): růžová a černo-zlatá replika; zlaté disky (82) zůstávají
-  sian: { file: 'sian', body: [27], fixed: DECLUTTER },
-  sianblack: { file: 'sian', body: [27], fixed: { ...DECLUTTER, 72: '#2A2C30' } },
+  // malé Lambo (replika 21 cm) postavené z dílků podle fotek – tools/cars/pinklambo.mjs; kód 70 = disky
+  sian: { file: 'pinklambo', body: [29], fixed: { 70: '#1B1D22' } },
+  sianblack: { file: 'pinklambo', body: [29], fixed: { 70: '#A8873A', 0: '#1B1D22' } },
   // Bugatti Chiron (42083) v modré jako replika 0090B: světle modrá příď a boky, tmavě modrá záď a střecha
   chiron: { file: 'chiron', body: [321], fixed: { 272: '#1E3A5F', 15: '#F4F5F6', 383: '#C9CDD2', 1: '#1B1D22', 4: '#1B1D22', 14: '#1B1D22', 70: '#1B1D22', 71: '#2A2C30', 72: '#2A2C30' } },
   // Porsche 911 GT3 RS (42056) v barvách Gulf: světle modrá, oranžové pruhy
