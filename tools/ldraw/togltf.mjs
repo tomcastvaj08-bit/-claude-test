@@ -25,7 +25,7 @@ function walk(name, m, color) {
 walk(mpd.main, I, 7);
 let used = placements;
 if (keepFile && fs.existsSync(keepFile)) { const keep = new Set(JSON.parse(fs.readFileSync(keepFile, 'utf8'))); used = placements.filter((_, i) => keep.has(i)); }
-{ // volné kousky mimo auto pryč
+if (!process.env.KEEP_ALL) { // volné kousky mimo auto pryč (u květin vypnuto: KEEP_ALL=1)
   const pct = (arr, q) => { const s = arr.slice().sort((a, b) => a - b); return s[Math.floor(q * (s.length - 1))]; };
   const lim = [9, 10, 11].map((k) => { const v = used.map((p) => p.m[k]); const lo = pct(v, 0.02), hi = pct(v, 0.98), e = (hi - lo) * 0.1 + 20; return [lo - e, hi + e]; });
   used = used.filter((p) => [9, 10, 11].every((k, j) => p.m[k] >= lim[j][0] && p.m[k] <= lim[j][1]));

@@ -1,32 +1,40 @@
-import { Build, D, rx, ry, rz, mul, face, alignY, bezier, add, sub, scl, norm, rnd, setSeed, leaf } from './lib.mjs';
-// Kvetoucí kaktus: světle modrý oválný květináč, dva žebrované kaktusy s bodlinkami, velký růžový květ a poupata
+import { Build, D, rx, ry, rz, mul, alignY, add, sub, scl, norm, rnd, setSeed, ring } from './lib.mjs';
+// Kvetoucí kaktus 11509: světle modrý květináč ve tvaru zaobleného čtverce, vysoký žebrovaný kaktus s béžovými
+// bodlinami a velkým růžovým lotosovým květem, menší zakulacený kaktus s růžičkami. Líc = LDraw -z.
 const b = new Build('cactus'); setSeed(9);
-const POT = 212, SOIL = 70, CAC = 378, SPIKE = 19, PINK = 29, MAG = 26;
-// oválný květináč: rohy 4x4 rozdělené rovnými stěnami 1x4
+const POT = 212, SOIL = 70, CAC = 378, RIB = 288, SPIKE = 19, PINK = 29, DPINK = 5, YEL = 14, LIME = 27;
+const I = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+// květináč: 4 zaoblené rohy + rovné stěny mezi nimi, 3 vrstvy
 for (let l = 0; l < 4; l++) {
-  b.part('2577', POT, [40, 24 * l, 0], ry(0)); b.part('2577', POT, [40, 24 * l, 0], ry(-Math.PI / 2));
-  b.part('2577', POT, [-40, 24 * l, 0], ry(Math.PI)); b.part('2577', POT, [-40, 24 * l, 0], ry(Math.PI / 2));
-  b.part('3010', POT, [0, 24 * l, 70]); b.part('3010', POT, [0, 24 * l, -70]);
+  const y = 24 * l;
+  [[60, 60, -Math.PI / 2], [60, -60, 0], [-60, -60, Math.PI / 2], [-60, 60, Math.PI]].forEach(([x, z, a]) => b.part('2577', POT, [x, y, z], ry(a)));
+  b.part('3009', POT, [0, y, 130]); b.part('3009', POT, [0, y, -130]);
+  b.part('3009', POT, [130, y, 0], ry(Math.PI / 2)); b.part('3009', POT, [-130, y, 0], ry(Math.PI / 2));
 }
-for (const x of [-40, 40]) b.part('60474', SOIL, [x, -2, 0]);
-b.part('3020', SOIL, [0, -2, 0], ry(Math.PI / 2));
-for (let k = 0; k < 10; k++) b.part('6141', 28, [(rnd() - 0.5) * 140, -6, (rnd() - 0.5) * 70]);
-// kaktus: kulaté kostky 4x4 + bodlinky (kulaté destičky 1x1 po obvodu)
-function cactus(x, z, levels, top) {
-  for (let l = 0; l < levels; l++) {
-    b.part(l === levels - 1 ? '30367a' : '87081', CAC, [x, -24 - l * 24, z].map((v, i) => (i === 1 ? v : v)), I());
-    if (l < levels - 1) for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2 + (l % 2) * 0.45; b.part('4589', 15, [x + Math.sin(a) * 30, -30 - l * 24, z + Math.cos(a) * 30], alignY([Math.sin(a), 0.5, Math.cos(a)])); }
+// hlína a oblázky
+for (const [x, z] of [[-60, -60], [60, -60], [-60, 60], [60, 60], [0, 0], [0, -60], [0, 60], [-60, 0], [60, 0]]) b.part('60474', SOIL, [x, -4, z]);
+for (let k = 0; k < 22; k++) b.part(k % 3 ? '98138' : '6141', k % 2 ? SOIL : 28, [(rnd() - 0.5) * 220, -12, (rnd() - 0.5) * 220]);
+// žebrovaný kaktus: jádro z kulatých kostek 4x4, po obvodu žebra z kulatých 1x1 a bodliny mezi nimi
+function cactus(cx, cz, levels, R = 46, ribs = 9) {
+  for (let l = 0; l < levels; l++) b.part('87081', CAC, [cx, -24 - l * 24, cz]);
+  for (let k = 0; k < ribs; k++) {
+    const a = (k / ribs) * Math.PI * 2;
+    for (let l = 0; l < levels; l++) {
+      const taper = l >= levels - 2 ? (l - levels + 3) * 6 : 0;
+      b.part('3062b', k % 2 ? RIB : CAC, [cx + Math.sin(a) * (R - taper), -24 - l * 24, cz + Math.cos(a) * (R - taper)]);
+      if (l % 2 === 1 && l < levels - 1) { const a2 = a + Math.PI / ribs; b.part('87747', SPIKE, [cx + Math.sin(a2) * (R + 2), -36 - l * 24, cz + Math.cos(a2) * (R + 2)], mul(ry(a2), rx(-35 * D))); }
+    }
   }
-  return [x, -24 - (levels - 1) * 24 - 4, z];
+  b.part('60474', CAC, [cx, -24 - levels * 24 + 16, cz]); b.part('4032a', CAC, [cx, -24 - levels * 24 + 8, cz]);
+  return [cx, -24 - levels * 24, cz];
 }
-function I() { return [1, 0, 0, 0, 1, 0, 0, 0, 1]; }
-// válec 4x4 + horní kopule 2x2 jako zakulacení
-const t1 = cactus(40, 0, 9), t2 = cactus(-44, 6, 5);
-// velký květ: dvě vrstvy lístků + střed
-const fc = add(t1, [0, -2, 0]);
-for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; b.part('11477', k % 2 ? MAG : PINK, add(fc, [Math.sin(a) * 22, -6, Math.cos(a) * 22]), mul(ry(a), rx((-90 - 58) * D))); }
-for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2 + 0.3; b.part('11477', PINK, add(fc, [Math.sin(a) * 12, -16, Math.cos(a) * 12]), mul(ry(a), rx((-90 - 30) * D))); }
-b.part('98262', 14, add(fc, [0, -18, 0]));
-// poupata na malém kaktusu
-[[0, 0], [16, 10], [-14, 8]].forEach(([dx, dz], k) => { b.part('3062b', k ? MAG : PINK, add(t2, [dx, 8 - k * 6, dz])); b.part('24866', PINK, add(t2, [dx, -16 - k * 6 + 8, dz])); });
+const t1 = cactus(55, 10, 9);
+// velký lotosový květ na vrcholu
+const fc = add(t1, [0, 14, 0]);
+for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2; b.part('61678', PINK, add(fc, [Math.sin(a) * 40, -6, Math.cos(a) * 40]), mul(ry(a), rz(Math.PI), rx(-28 * D))); }
+for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2 + 0.3; b.part('61678', DPINK, add(fc, [Math.sin(a) * 26, -14, Math.cos(a) * 26]), mul(ry(a), rz(Math.PI), rx(-50 * D))); }
+b.part('87081', YEL, add(fc, [0, -24, 0])); b.part('3941', YEL, add(fc, [0, -48, 0])); b.part('6141', LIME, add(fc, [0, -52, 0]));
+// malý zakulacený kaktus s růžičkami
+const t2 = cactus(-60, -20, 5, 46, 9);
+[[0, 0], [22, 10], [-20, 12], [8, -22], [-12, -18]].forEach(([dx, dz], k) => b.part('95829', k % 2 ? DPINK : PINK, add(t2, [dx, 8 - (k ? 0 : 10), dz])));
 b.save('cactus.ldr'); console.log('cactus', b.n);
