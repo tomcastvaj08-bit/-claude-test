@@ -31,12 +31,19 @@ A.add(pot, { M: I, p: [0, 0, 0] });
 const TOPS = SOIL - 8;
 
 // ===== žebro kaktusu (krok 54): deska 1xN, oblé destičky, oblé konce, trny =====
+// žebro (krok 55): deska 1xN, oblé destičky 1x2 s otevřenými výstupky, zelené kulaté destičky, dvojité svahy 1x1 jako hřbet,
+// na koncích oblé díly 2x1 svažující se ke koncům (zaoblený vršek a spodek), trny = béžové kulaté destičky + trojzubce
 function rib(len, base, spines) {
-  const R = new Asm(), h = len * 10;
-  R.part(len === 10 ? '4477' : '3666', len === 10 ? SG : DG, [0, 0, 0]);
-  R.part('11477', SG, [h - 20, 0, 0], ry(E('ER', -Math.PI / 2))); R.part('11477', SG, [-h + 20, 0, 0], ry(-E('ER', -Math.PI / 2)));
-  for (let x = -h + 60; x <= h - 60; x += 40) R.part('35480', SG, [x, -8, 0]);
-  spines.forEach((t) => { const x = -h + 30 + t * (2 * h - 60); R.part('85861', DT, [x, -16, 0]); R.part('68211', TN, [x, -20, 0], ry(t * 3)); });
+  const R = new Asm(), h = len * 10, col = len === 10 ? SG : DG;
+  R.part(len === 10 ? '4477' : '3666', col, [0, 0, 0]);
+  R.part('11477', SG, [h - 20, 0, 0], ry(-Math.PI / 2)); R.part('11477', SG, [-h + 20, 0, 0], ry(Math.PI / 2));
+  const inner = [];
+  for (let x = -h + 40; x <= h - 40; x += 20) inner.push(x);
+  inner.forEach((x, i) => {
+    if (i % 2 === 0) { R.part('35480', SG, [x + 10, -8, 0]); }
+  });
+  for (let x = -h + 50; x <= h - 50; x += 40) R.part('35464', SG, [x, 0, 0], ry(Math.PI / 2));
+  spines.forEach((t) => { const x = Math.round((-h + 50 + t * (2 * h - 100)) / 20) * 20 + 10; R.part('85861', DT, [x, -12, 0]); R.part('68211', TN, [x, -16, 0], ry(t * 3)); });
   return R;
 }
 function column(cx, cz, ribs, len, r, spineSets, yaw = 0) {
@@ -55,24 +62,28 @@ A.part('4032a', SG, [SX, TOPS - 126, SZ]);
 
 // ===== květ na velkém kaktusu (kroky 91–96): žlutý střed, 8 tmavě růžových štítů, 4 purpurové trojúhelníky =====
 function bloom(c) {
+  // krok 91–96: purpurový rám 7068 na vršku, 8 ramen 59230 paprskovitě šikmo vzhůru, na koncích tmavě růžové štíty,
+  // mezi nimi 4 purpurové trojúhelníky; uprostřed žluté kolečko a ozubené kolo (tyčinky), limetkový vršek
   const F = new Asm();
-  F.part('18674', YE, [0, -10, 0]); F.part('69762', YE, [0, -22, 0], rx(Math.PI / 2)); F.part('85861', LM, [0, -32, 0]);
-  const petal = (id, col, a, r, y, tilt) => {
-    const w = [Math.cos(a), 0, Math.sin(a)], up = norm(add(scl(w, Math.sin(tilt)), [0, -Math.cos(tilt), 0]));
-    const zz = norm(cross(w, [0, 1, 0])), yy = cross(zz, up);
-    F.part(id, col, add(scl(w, r), [0, y, 0]), basis(cross(yy, zz), yy, zz).map((v) => v) && mul(basis(zz, up, cross(zz, up)), rz(0)));
+  F.part('7068', MA, [0, 0, 0]); F.part('18674', YE, [0, -8, 0]); F.part('69762', YE, [0, -30, 0], rx(-Math.PI / 2)); F.part('85861', LM, [0, -44, 0]); F.part('3062b', LM, [0, -48, 0]);
+  const arm = (a, elev, L, id, col, sc, tw = 0) => {
+    const w = [Math.cos(a), 0, Math.sin(a)], d = norm(add(scl(w, Math.cos(elev)), [0, -Math.sin(elev), 0]));
+    const yy = d, xx = norm(cross(d, [0, -1, 0])), zz = cross(xx, yy);
+    F.part('59230', MA, add(scl(w, 12), [0, -4, 0]), basis(xx, yy, zz));                            // rameno: tyčka +y podél d (ven a nahoru)
+    const tip = add(add(scl(w, 12), [0, -4, 0]), scl(d, 44));
+    const up = norm(add(scl(w, E('PO', 1.0)), [0, -1, 0])), side = norm(cross([0, 1, 0], w)), nrm = cross(side, up);
+    F.part(id, col, tip, mul(basis(side, scl(up, -1), scl(nrm, -1)), rz(tw), S(sc)));            // lístek na konci ramene
   };
-  for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, w = [Math.cos(a), 0, Math.sin(a)];
-    const out = norm(add(scl(w, 0.9), [0, -0.8, 0])), side = norm(cross([0, 1, 0], w)), nrm = cross(side, out);
-    F.part('65676a', MA, add(scl(w, 30), [0, -4, 0]), mul(basis(side, scl(out, E('TF', -1)), scl(nrm, E('TF', -1))), S(1.45))); }
-  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, w = [Math.cos(a), 0, Math.sin(a)];
-    const out = norm(add(scl(w, E('SW', 1.3)), [0, -0.55, 0])), side = norm(cross([0, 1, 0], w)), nrm = cross(side, out);
-    F.part('3846', DP, add(scl(w, 20), [0, -10, 0]), mul(basis(side, out, scl(nrm, -1)), S(1.3))); }
+  for (let k = 0; k < 8; k++) arm(k * Math.PI / 4 + Math.PI / 8, E('AE', 0.6), 44, '3846', DP, E('PS', 0.9));
+  for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, w = [Math.cos(a), 0, Math.sin(a)], up = norm(add(scl(w, E('TO', 1.4)), [0, -1, 0])), side = norm(cross([0, 1, 0], w)), nrm = cross(side, up);
+    F.part('65676a', MA, add(scl(w, 36), [0, -22, 0]), mul(basis(side, scl(up, -1), scl(nrm, -1)), S(E('TS', 1.2)))); }
   A.add(F, { M: I, p: c });
 }
-bloom([BX, TOPS - 214, BZ]);
+if (process.env.SUB !== 'bloom') bloom([BX, TOPS - 214, BZ]);
 // poupata na malém kaktusu (kroky 99–103): pivoňkové kvítky a purpurové kvítky
 for (const [dx, dz, id, col] of [[-16, -8, '5904', DP], [14, -12, '5904', DP], [-6, 16, '5904', DP], [18, 14, '24866', MA], [-20, 12, '24866', MA], [0, -20, '5904', DP]])
   A.part(id, col, [SX + dx, TOPS - 128, SZ + dz]);
 
+if (process.env.SUB === 'bloom') { A.items = []; bloom([0, 0, 0]); const b = new Build('sub'); A.emit(b); b.save('sub.ldr'); process.exit(0); }
+if (process.env.SUB === 'rib') { const b = new Build('sub'), X = new Asm(); X.add(rib(10, 0, [0.1, 0.5, 0.9]), { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], p: [0, 0, 0] }); X.emit(b); b.save('sub.ldr'); process.exit(0); }
 const b = new Build('cactus11509'); A.emit(b); b.save('cactus11509.ldr'); console.log('cactus11509 parts', b.n);

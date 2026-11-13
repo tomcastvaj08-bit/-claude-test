@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114a';
+import { createModel, ready, LITE } from './builders.js?v=20261114b';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -162,6 +162,15 @@ function makeCard(name, fp, D) {
   grp.position.set(fp.cx, 0, Math.max(fp.cz + fp.d / 2, D * 0.18) + 0.5);
   return grp;
 }
+// střed dna modelu (body ve spodních 12 % výšky) – květináč
+function baseCenter(obj, box) {
+  obj.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(obj.matrixWorld).invert(), v = new THREE.Vector3(), lim = box.min.y + (box.max.y - box.min.y) * 0.12;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  obj.traverse((o) => { if (!o.isMesh) return; const P = o.geometry.attributes.position, st = Math.max(1, Math.floor(P.count / 6000));
+    for (let i = 0; i < P.count; i += st) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); if (v.y > lim) continue; v.applyMatrix4(inv); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); z0 = Math.min(z0, v.z); z1 = Math.max(z1, v.z); } });
+  return isFinite(x0) ? new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2) : box.getCenter(new THREE.Vector3());
+}
 // půdorys spodní části modelu (body do výšky band nad zemí) v souřadnicích nadřazené skupiny
 function footprint(obj, band) {
   obj.updateMatrixWorld(true);
@@ -183,7 +192,8 @@ const exhibits = ORDER.map((id) => {
   selected[id] = 0;
   const m = createModel(p.model, { drop: 30 });
   const box = m.box, size = box.getSize(V()), c = box.getCenter(V());
-  m.group.position.set(-c.x, -box.min.y, -c.z);
+  const bc = baseCenter(m.group, box); // střed podle květináče (dno modelu), ne podle listů a poupat
+  m.group.position.set(-bc.x, -box.min.y, -bc.z);
   const car = p.tags.includes('auta');
   const sc = car ? SIZE[id] / size.x : SIZE[id] / size.y;
   const inner = new THREE.Group(); inner.add(m.group); inner.scale.setScalar(sc);

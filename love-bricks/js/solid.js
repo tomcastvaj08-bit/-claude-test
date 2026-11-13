@@ -90,7 +90,7 @@ function merge(scene) {
 
 // Realistický ABS plast: lesklý lak (clearcoat), jemné odlesky okolí, zapečené stínování v záhybech.
 const METAL = new Set([82, 297, 80, 383, 334, 135, 179]); // kovové zlaté a stříbrné barvy
-function plastic(src) {
+function plastic(src, aoK = 1) { // aoK > 1 = výraznější stíny v záhybech (husté květy)
   const code = codeOf(src), metal = METAL.has(code) || src.metalness > 0.5;
   const m = new THREE.MeshPhysicalMaterial({
     color: src.color, transparent: src.transparent, opacity: src.opacity, depthWrite: !src.transparent, side: THREE.DoubleSide,
@@ -102,9 +102,9 @@ function plastic(src) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAO = ao;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vAO;')
       .replace('#include <aomap_fragment>', `#include <aomap_fragment>
-        float aoV = mix(1.0, pow(clamp(vAO, 0.0, 1.0), 0.6), 0.6); // měkké stíny v záhybech
+        float aoV = mix(1.0, pow(clamp(vAO, 0.0, 1.0), ${(0.6 * aoK).toFixed(3)}), ${Math.min(0.92, 0.6 * aoK).toFixed(3)}); // měkké stíny v záhybech
         reflectedLight.indirectDiffuse *= aoV; reflectedLight.indirectSpecular *= aoV;
-        reflectedLight.directDiffuse *= mix(1.0, aoV, 0.35); reflectedLight.directSpecular *= aoV;
+        reflectedLight.directDiffuse *= mix(1.0, aoV, ${Math.min(0.8, 0.35 * aoK).toFixed(3)}); reflectedLight.directSpecular *= aoV;
         #ifdef USE_CLEARCOAT
           clearcoatSpecularIndirect *= aoV; clearcoatSpecularDirect *= aoV;
         #endif
@@ -112,7 +112,7 @@ function plastic(src) {
           sheenSpecularIndirect *= aoV; sheenSpecularDirect *= aoV;
         #endif`);
   };
-  m.customProgramCacheKey = () => 'lb-plastic';
+  m.customProgramCacheKey = () => 'lb-plastic' + aoK;
   return m;
 }
 const codeOf = (mat) => { const m = /ld_(\d+)/.exec(mat?.name || ''); return m ? +m[1] : -1; };
@@ -129,7 +129,7 @@ export class SolidModel {
       o.material = (Array.isArray(o.material) ? o.material : [o.material]).map((src) => {
         const code = codeOf(src);
         if (this.mats.has(code)) return this.mats.get(code);
-        const m = plastic(src);
+        const m = plastic(src, opts.ao ?? 1);
         this.mats.set(code, m); this.base.set(code, src.color.clone());
         return m;
       });
