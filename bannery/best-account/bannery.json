@@ -326,7 +326,7 @@
     "bgColor": "#D9E0E7",
     "bgFeather": 260,
     "bgFeatherSide": "right",
-    "headline": "Účetní,\nkteří vás\n*vyslechnou.*",
+    "headline": "Účetní,\nkteří vás\n*vyslechnou*",
     "top": 250,
     "body": [
       "Probereme s vámi i vaše\nplány a vize do budoucna.",
@@ -336,8 +336,9 @@
     "contact": {
       "style": "tab",
       "phone": "+420 721 075 783",
-      "w": 650,
-      "h": 150
+      "w": 500,
+      "h": 104,
+      "size": 42
     },
     "hex": [
       [
