@@ -39,12 +39,6 @@ export const ALL = [
   { id: 'bamboo', model: 'bamboo', name: 'Šťastný bambus', line: BOT, price: 899, pieces: 325, size: '32 cm', age: '18+', tags: ['rodina', 'pary'],
     kicker: 'Pro štěstí a pohodu', desc: 'Tři stonky bambusu se svěžími listy v zemité míse se zlatým pásem.',
     variant: { key: null, label: 'Provedení', options: [['', '#4B9F4A']] }, bg: '#EAF4E3', ink: '#14290F', accent: '#3E9B3A', word: 'BAMBUS' },
-  { id: 'vaseroses', model: 'vaseroses', name: 'Rudé růže ve váze', line: 'Kytice ve váze', price: 649, pieces: 313, size: '20 cm', age: '14+', tags: ['pary', 'maminka'],
-    kicker: 'Láska, která nezvadne', desc: 'Kytice rudých růží s bílými kvítky v lesklé černé kulaté váze.',
-    variant: { key: null, label: 'Provedení', options: [['', '#B40000']] }, bg: '#FBE6E6', ink: '#3B0A0A', accent: '#C8102E', word: 'RŮŽE' },
-  { id: 'vasesun', model: 'vasesun', name: 'Slunečnice ve zlaté váze', line: 'Kytice ve váze', price: 599, pieces: 288, size: '20 cm', age: '14+', tags: ['maminka', 'rodina'],
-    kicker: 'Kousek slunce na stůl', desc: 'Slunečnice a kopretiny ve zlaté kulaté váze.',
-    variant: { key: null, label: 'Provedení', options: [['', '#F2C500']] }, bg: '#FFF6D9', ink: '#3A2A00', accent: '#E0A100', word: 'SLUNEČNICE' },
 ];
 
 export const PRODUCTS = ALL.filter(p => p.featured);
