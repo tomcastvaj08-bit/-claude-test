@@ -13,7 +13,7 @@ html,body{overflow:hidden;background:var(--navy)}
 #c > *{position:absolute}
 #glow,#hex{inset:0}
 #lion{object-fit:cover}
-#mark{opacity:.95;filter:drop-shadow(0 0 10px rgba(0,136,218,.9)) drop-shadow(0 0 30px rgba(0,136,218,.45));-webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.55) 55%,transparent 92%)}
+#mark{opacity:.11}
 #logo img{position:absolute}
 #txt .eyebrow{display:flex;align-items:center;font-weight:700;color:var(--blue);text-transform:uppercase}
 #txt .eyebrow i{display:block;background:var(--blue)}
@@ -32,9 +32,9 @@ html,body{overflow:hidden;background:var(--navy)}
 </head>
 <body>
 <div id="c">
-  <img id="lion" src="pozadi/lev-pf.png" alt="">
   <div id="glow"></div>
-  <img id="mark" src="assets/logo_obrys.png" alt="">
+  <img id="mark" src="assets/logo_icon_hd.png" alt="">
+  <img id="lion" src="pozadi/lev-pf.png" alt="">
   <svg id="hex"></svg>
   <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img src="assets/logo_word_white.png" id="word" alt=""></div>
   <div id="txt"></div>
@@ -64,15 +64,14 @@ function render(o){
   const lw=o.lionW*u, lh=lw*1080/604, lx=W-lw+o.lionShift*u, ly=o.lionTop*u;
   const lion=document.getElementById('lion');
   Object.assign(lion.style,{left:lx+'px',top:ly+'px',width:lw+'px',height:lh+'px',
-    webkitMaskImage:`linear-gradient(90deg,transparent 0,rgba(0,0,0,.6) ${lw*0.07}px,#000 ${lw*0.2}px), linear-gradient(0deg,transparent 0,#000 ${lh*0.22}px)`,
+    webkitMaskImage:`linear-gradient(90deg,transparent 0,rgba(0,0,0,.18) ${lw*0.1}px,rgba(0,0,0,.6) ${lw*0.22}px,#000 ${lw*0.36}px), linear-gradient(0deg,transparent 0,#000 ${lh*0.22}px)`,
     webkitMaskComposite:'source-in'});
   document.getElementById('glow').style.background=[
-    `linear-gradient(90deg, rgba(8,22,58,1) 0px, rgba(8,22,58,1) ${lx}px, rgba(8,22,58,.45) ${lx+lw*0.08}px, rgba(8,22,58,0) ${lx+lw*0.24}px)`,
     `radial-gradient(${1300*u}px ${900*u}px at ${W*0.47}px ${H*0.45}px, rgba(0,136,218,.16), rgba(0,136,218,0) 70%)`
   ].join(',');
   // průhledné logo v pozadí
   const ms=o.markSize*u;
-  Object.assign(document.getElementById('mark').style,{left:(o.markX*u-ms/2)+'px',top:(H/2-ms/2+o.markDy*u)+'px',width:ms+'px',height:ms+'px'});
+  Object.assign(document.getElementById('mark').style,{left:(o.markX*u-ms/2)+'px',top:(H/2-ms/2+o.markDy*u)+'px',width:ms+'px',height:ms+'px',transform:`rotate(${o.markRot}deg)`});
   // úl vlevo za textem
   const hx=document.getElementById('hex'); hx.setAttribute('viewBox',`0 0 ${W} ${H}`); hx.setAttribute('width',W); hx.setAttribute('height',H);
   hx.innerHTML=hexes(W,H,u,-60*u,H*0.66,1400*u);
@@ -88,7 +87,7 @@ function render(o){
    <div class="yr" style="font-size:${560*u}px;margin:${14*u}px 0 0 ${-24*u}px">2027</div>
    <h1 style="font-size:${128*u}px;line-height:${132*u}px;margin-top:${64*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
    <p style="font-size:${60*u}px;line-height:${80*u}px;margin-top:${64*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${60*u}px;line-height:${80*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
+   <p class="sig" style="font-size:${78*u}px;line-height:${90*u}px;margin-top:${44*u}px">${fmt(o.sign)}</p>`;
   Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
