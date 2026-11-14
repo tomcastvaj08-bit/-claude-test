@@ -21,61 +21,20 @@
     "arrow": false
   },
   {
-    "id": "tirolova-01b-modra",
-    "theme": "blue",
-    "side": "left",
-    "person": {
-      "src": "pozadi/tirolova-svetla-sedi-vyrez.png",
-      "box": [
-        245,
-        -32,
-        1237
-      ]
-    },
-    "glow": [
-      960,
-      380,
-      620
-    ],
-    "headline": "Nabíráme\nnové *klienty.*",
-    "top": 296,
-    "body": [
-      "Účetnictví a daně\nsvěřte profesionálům."
-    ],
-    "bSize": 44,
-    "contact": {
-      "label": "Ozvěte se nám ještě dnes:",
-      "phone": "+420 721 075 783"
-    },
-    "proof": {
-      "y": 915
-    },
-    "badges": {},
-    "web": "www.BestAccount.cz",
-    "arrow": false,
-    "hex": [
-      [
-        0,
-        1254,
-        430
-      ]
-    ]
-  },
-  {
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",
     "deco": "lightblue",
     "glow": [
-      960,
-      420,
-      660
+      940,
+      560,
+      700
     ],
     "person": {
       "src": "pozadi/tirolova-svetla-sedi-vyrez.png",
       "box": [
         245,
-        -32,
+        -6,
         1237
       ]
     },
@@ -88,9 +47,10 @@
     ],
     "bSize": 44,
     "mockup": {
-      "x": 96,
-      "y": 815,
-      "rot": -7
+      "x": 70,
+      "y": 880,
+      "rot": -6,
+      "scale": 1.32
     },
     "badges": {},
     "web": "www.BestAccount.cz",

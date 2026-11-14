@@ -187,11 +187,12 @@ function deco(B, theme){
     ].filter(Boolean).join(',');
   }else if(mode==='lightblue'){
     d.style.background = [
-      g?`radial-gradient(${g[2]}px ${g[2]}px at ${g[0]}px ${g[1]}px, rgba(36,118,255,.95) 0%, rgba(36,118,255,.55) 38%, rgba(36,118,255,0) 70%)`:'',
-      'radial-gradient(820px 560px at 100% 105%, rgba(0,92,255,.55) 0%, rgba(0,92,255,0) 70%)',
-      'linear-gradient(160deg, #FFFFFF 0%, #F2F7FF 40%, #D9E8FF 100%)'
+      g?`radial-gradient(${g[2]}px ${Math.round(g[2]*1.15)}px at ${g[0]}px ${g[1]}px, rgba(0,104,255,.42) 0%, rgba(0,104,255,.22) 40%, rgba(0,104,255,.07) 62%, rgba(0,104,255,0) 80%)`:'',
+      'radial-gradient(900px 620px at 105% 108%, rgba(0,104,255,.30) 0%, rgba(0,104,255,0) 72%)',
+      'linear-gradient(165deg, #FFFFFF 0%, #F6F9FF 38%, #E4EEFF 100%)'
     ].filter(Boolean).join(',');
   }
+  if(mode==='lightblue' && !B.particles) return;
   // vodoznak lva
   if(B.watermark!==false){
     const w=B.watermark||[640,300,860];
@@ -237,7 +238,7 @@ function extras(B, theme){
     const m=B.mockup;
     const keys=[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']];
     h+=`<div class="mock" style="left:${m.x}px;top:${m.y}px;transform:rotate(${m.rot??0}deg) scale(${m.scale??1});transform-origin:top left"><div class="scr"><div class="isl"></div><div class="st"><span>9:41</span><span>●●● ▮</span></div>
-      <div class="brand"><img class="i" src="assets/logo_icon_hd.png"><img class="w" src="assets/logo_word_black.png" style="clip-path:inset(0 0 0 31%);margin-left:-44px"></div>
+      <div class="brand"><img class="i" src="assets/logo_icon_hd.png"><img class="w" src="assets/logo_word_black.png" style="clip-path:inset(0 0 0 31%);margin-left:-50px"></div>
       <div class="no">${esc(m.phone||B.phoneNo||'+420 721 075 783')}</div>
       <div class="keys">${keys.map(k=>`<div><span>${k[0]}</span>${k[1]?`<i>${k[1]}</i>`:''}</div>`).join('')}</div>
       <div class="call">${PHONE_SOLID.replace('<path','<path fill="#fff"')}</div></div></div>`;
@@ -261,7 +262,7 @@ function render(B){
   document.getElementById('icon').src = theme==='blue' ? 'assets/logo_icon_hd_inverzni.png' : 'assets/logo_icon_hd.png';
   deco(B, theme);
   const pe=document.getElementById('person');
-  if(B.person){ pe.src=B.person.src; Object.assign(pe.style,{display:'block',left:B.person.box[0]+'px',top:B.person.box[1]+'px',width:B.person.box[2]+'px',filter:B.person.shadow===false?'':'drop-shadow(0 20px 40px rgba(0,20,90,.35))'}); }
+  if(B.person){ pe.src=B.person.src; Object.assign(pe.style,{display:'block',left:B.person.box[0]+'px',top:B.person.box[1]+'px',width:B.person.box[2]+'px',filter:B.person.shadow===false?'':(theme==='light'?'drop-shadow(0 18px 36px rgba(0,40,120,.16))':'drop-shadow(0 20px 40px rgba(0,20,90,.35))')}); }
   else pe.style.display='none';
   extras(B, theme);
   // závoj pro čitelnost textu na straně textu
