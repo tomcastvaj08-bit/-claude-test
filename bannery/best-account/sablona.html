@@ -70,7 +70,7 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 .blue .rule i{left:2px;width:128px}.blue .rule b{left:142px;width:7px;height:7px;top:3px}
 .blue .phone{color:#fff}
 #deco,#extra,#tone{position:absolute;inset:0;pointer-events:none}
-#ext{position:absolute;top:0;bottom:0;pointer-events:none}
+#ext,#blend{position:absolute;top:0;bottom:0;pointer-events:none}
 #tone{mix-blend-mode:lighten}
 #deco canvas{position:absolute;inset:0}
 #person{position:absolute;display:none}
@@ -142,6 +142,7 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 <div id="c">
   <div id="ext"></div>
   <img id="bg" alt="">
+  <div id="blend"></div>
   <div id="tone"></div>
   <div id="deco"></div>
   <img id="person" alt="">
@@ -287,9 +288,17 @@ function render(B){
   if(B.bgExtend && B.bgBox){
     const to=B.bgColor || (theme==='light' ? '#fff' : '#08163A');
     const sd=B.bgFeatherSide||'left', f=B.bgFeather??180;
-    if(sd==='right'){ const x0=B.bgBox[0]+B.bgBox[2]-f; Object.assign(ex.style,{display:'block',left:x0+'px',right:'0',background:`linear-gradient(90deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
+    if(sd==='right'){ const x0=B.bgBox[0]+B.bgBox[2]-f; Object.assign(ex.style,{display:'block',left:x0+'px',right:'0',background:B.blendFrom!=null?B.bgExtend:`linear-gradient(90deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
     else { const x1=B.bgBox[0]+f; Object.assign(ex.style,{display:'block',left:'0',width:x1+'px',background:`linear-gradient(270deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
   } else ex.style.display='none';
+  // blendFrom: plynulý (vyhlazený) přechod do barvy banneru od zadané x až k okraji – jen vpravo od postavy
+  const bl=document.getElementById('blend');
+  if(B.blendFrom!=null){
+    const to=B.bgColor || (theme==='light' ? '#fff' : '#08163A');
+    const h=to.replace('#',''); const rgb=[0,2,4].map(i=>parseInt(h.substr(i,2),16)).join(',');
+    const stops=[]; for(let i=0;i<=12;i++){ const t=i/12, e=t*t*(3-2*t); stops.push(`rgba(${rgb},${(e*(B.blendMax??1)).toFixed(3)}) ${(t*100).toFixed(1)}%`); }
+    Object.assign(bl.style,{display:'block',left:B.blendFrom+'px',right:'0',background:`linear-gradient(90deg, ${stops.join(',')})`});
+  } else bl.style.display='none';
   document.getElementById('word').src = theme==='light' ? 'assets/logo_word_black.png' : 'assets/logo_word_white.png';
   document.getElementById('icon').src = theme==='blue' ? 'assets/logo_icon_hd_inverzni.png' : 'assets/logo_icon_hd.png';
   document.getElementById('tone').style.background = B.tone || 'none';
