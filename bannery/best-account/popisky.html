@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Best Account – bannery a popisky ke schválení</title>
+<style>
+@font-face{font-family:"Urbanist";font-weight:100 900;src:url(assets/fonts/urbanist-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+2020,U+20A0-20AB,U+20AD-20C0}
+@font-face{font-family:"Urbanist";font-weight:100 900;src:url(assets/fonts/urbanist-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
+@page{size:A4;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Urbanist",sans-serif;color:#0B0B0B;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:210mm;height:297mm;padding:13mm 16mm 14mm;page-break-after:always;position:relative;overflow:hidden}
+.page:last-child{page-break-after:auto}
+.head{display:flex;align-items:center;justify-content:space-between;padding-bottom:4mm;border-bottom:1.5px solid #E3E8EF;margin-bottom:6mm}
+.head .brand{display:flex;align-items:center;gap:3mm}
+.head .brand img.i{width:11mm;height:11mm}
+.head .brand img.w{height:11mm;width:auto;clip-path:inset(0 0 0 31%);margin-left:-9.5mm}
+.head .tag{font-size:10pt;font-weight:600;color:#5A6472}
+.cover{display:flex;flex-direction:column;justify-content:center;height:calc(297mm - 30mm)}
+.cover h1{font-size:40pt;line-height:1.02;font-weight:800;letter-spacing:-0.01em}
+.cover h1 em{font-style:normal;color:#0088DA}
+.cover .rule{display:flex;align-items:center;gap:0;margin:9mm 0 8mm}
+.cover .rule b{width:4mm;height:4mm;border-radius:50%;background:#0088DA}
+.cover .rule i{width:70mm;height:1mm;background:#0088DA;margin-left:-1mm}
+.cover p{font-size:13pt;line-height:1.5;color:#2A323D;max-width:150mm}
+.cover p + p{margin-top:4mm}
+.cover ul{margin-top:8mm;list-style:none;columns:2;column-gap:10mm;font-size:12pt;line-height:1.9;font-weight:600}
+.cover ul li span{color:#0088DA;margin-right:2mm}
+.grid{display:grid;grid-template-columns:62mm 1fr;gap:8mm;align-items:center}
+.grid img.b{width:62mm;height:62mm;border-radius:3mm;box-shadow:0 2mm 6mm rgba(0,40,90,.15)}
+.meta .n{font-size:10pt;font-weight:700;color:#0088DA;letter-spacing:.06em;text-transform:uppercase}
+.meta h2{font-size:21pt;line-height:1.08;font-weight:800;margin-top:2mm}
+.meta .info{margin-top:4mm;font-size:10pt;line-height:1.55;color:#5A6472}
+.meta .info b{color:#0B0B0B;font-weight:700}
+.vars{margin-top:6mm;display:flex;flex-direction:column;gap:3.5mm}
+.var{border:1.5px solid #E3E8EF;border-radius:3mm;padding:3.5mm 5mm}
+.var .lbl{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5mm}
+.var .lbl strong{font-size:11pt;font-weight:800}
+.var .lbl small{font-size:9pt;font-weight:600;color:#5A6472}
+.var .box{display:inline-block;width:4.5mm;height:4.5mm;border:1.5px solid #0088DA;border-radius:1mm;margin-right:2mm;vertical-align:-0.8mm}
+.var p{font-size:9.5pt;line-height:1.38;white-space:pre-line;color:#1A1F27}
+.var p .h{color:#0088DA}
+.foot{position:absolute;left:16mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;font-size:8.5pt;color:#8A94A3}
+.notes{margin-top:9mm;font-size:10pt;line-height:1.6;color:#5A6472;border-top:1.5px solid #E3E8EF;padding-top:5mm}
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="head"><div class="brand"><img class="i" src="assets/logo_icon_hd.png"><img class="w" src="assets/logo_word_black.png"></div><div class="tag">Ke schválení</div></div>
+  <div class="cover">
+    <h1>Bannery<br>a popisky<br><em>ke schválení</em></h1>
+    <div class="rule"><b></b><i></i></div>
+    <p>7 bannerů podle nápadů paní Tirolové. Ke každému jsou tři varianty popisku pro Instagram a Facebook.</p>
+    <p>U každého banneru prosím zaškrtněte vybranou variantu, nebo připište úpravy.</p>
+    <ul>
+      <li><span>01</span>Nabíráme nové klienty</li>
+      <li><span>02</span>Už žádné krabice účtenek</li>
+      <li><span>03</span>Kontroly nechte na nás</li>
+      <li><span>04</span>Není jen Má dáti / Dal</li>
+      <li><span>05</span>Účetní, kteří vás vyslechnou</li>
+      <li><span>06</span>Zapomeňte na nudné tabulky</li>
+      <li><span>07</span>Doklady pošlete online</li>
+    </ul>
+    <div class="notes">Varianta <b>A</b> je krátká a úderná, <b>B</b> osobnější a delší, <b>C</b> přehledná s odrážkami. Kontakt je ve všech uvedený stejně jako v dosavadních příspěvcích: „Volejte na tel. č. 721 075 783 nebo nám napište“.</div>
+  </div>
+  <div class="foot"><span>Best Account</span><span>www.BestAccount.cz</span></div>
+</section>
+
+<!-- BANNERY -->
+<div id="pages"></div>
+
+<script>
+const H = '\n\n<span class="h">#účetnictví #daně #účetní #podnikání #bestaccount</span>';
+const C = 'Volejte na tel. č. 721 075 783 nebo nám napište.\n🌐 www.BestAccount.cz';
+const B = [
+ {img:'vystup/pdf/tirolova-01c-svetla-mobil.jpg', t:'Nabíráme nové klienty.', info:'<b>Světlý</b> · číslo v mobilu', v:[
+  `Nabíráme nové klienty! 🦁\n\nÚčetnictví a daně svěřte profesionálům. My pohlídáme čísla, vy se věnujte svému podnikání.\n\n📞 ${C}`,
+  `Hledáte účetní, na kterou se můžete spolehnout?\n\nV Best Account máme volnou kapacitu a rádi přivítáme nové klienty. Účetnictví a daně za vás zvládneme pečlivě, včas a bez zbytečného stresu. Důvěřuje nám už více než 700 spokojených klientů.\n\nOzvěte se nám ještě dnes. 📞 ${C}`,
+  `Best Account nabírá nové klienty 🦁\n\n✅ účetnictví\n✅ daně\n✅ osobní přístup\n✅ přes 700 spokojených klientů\n\n📞 ${C}`]},
+ {img:'vystup/pdf/tirolova-02d-tmava.jpg', t:'Už žádné krabice účtenek.', info:'<b>Tmavý</b> · číslo v ikonce + 700+ klientů', v:[
+  `Už žádné krabice od bot plné účtenek. 📦❌\n\nÚčetnictví děláme moderně a online. Přijímáme nové klienty.\n\n📞 ${C}`,
+  `Znáte to: konec měsíce a hledání účtenek po kapsách, autě a šuplících. 🙈\n\nU nás to jde jinak. Doklady nám posíláte online a my se postaráme o zbytek. Účetnictví máte v pořádku a vy máte čas na to podstatné.\n\nPřijímáme nové klienty. 📞 ${C}`,
+  `Moderní účetnictví bez papírů 💻\n\n✅ doklady posíláte online\n✅ žádné krabice účtenek\n✅ vše máte přehledně a včas\n✅ přes 700 spokojených klientů\n\n📞 ${C}`]},
+ {img:'vystup/pdf/tirolova-03b-tmava.jpg', t:'Kontroly nechte na nás.', info:'<b>Tmavý</b> · číslo na tlačítku v rohu', v:[
+  `Kontroly nechte na nás. 🦁\n\nPapírování přenechte nám, vy se věnujte svému byznysu.\n\n📞 ${C}`,
+  `Máte strach z kontrol a nekonečného papírování? Nemusíte.\n\nPostaráme se o to, aby vaše účetnictví bylo v pořádku a vše bylo podané včas. Když přijde kontrola, víme, co dělat, a jsme vám po boku.\n\nVy se zatím můžete naplno věnovat svému podnikání. 📞 ${C}`,
+  `Klid při kontrole začíná u dobrého účetnictví ✅\n\n✅ účetnictví v pořádku\n✅ termíny hlídáme za vás\n✅ při kontrole jsme s vámi\n✅ vy se věnujete byznysu\n\n📞 ${C}`]},
+ {img:'vystup/pdf/tirolova-04b-tmava.jpg', t:'Účetnictví není jen Má dáti / Dal.', info:'<b>Tmavý</b> · číslo v mobilu', v:[
+  `Účetnictví není jen Má dáti / Dal. 📊\n\nNasloucháme vašim plánům a rosteme spolu s vámi.\n\n📞 ${C}`,
+  `Pro nás nejste jen další složka v šanonu.\n\nÚčetnictví bereme jako partnerství. Zajímají nás vaše plány, pomáháme s rozhodnutími a rosteme společně s vámi. Čísla jsou jen začátek.\n\nHledáte partnera pro růst? 📞 ${C}`,
+  `Víc než jen čísla 🦁\n\n✅ nasloucháme vašim plánům\n✅ radíme s rozhodnutími\n✅ rosteme spolu s vámi\n✅ jsme váš partner pro růst\n\n📞 ${C}`]},
+ {img:'vystup/pdf/tirolova-05a-svetla.jpg', t:'Účetní, kteří vás vyslechnou', info:'<b>Světlý</b> · číslo v modrém pruhu', v:[
+  `Účetní, kteří vás vyslechnou. 🤝\n\nProbereme s vámi i vaše plány a vize do budoucna. Rádi přivítáme právě vás.\n\n📞 ${C}`,
+  `Hledáte účetní, se kterými můžete probrat i své vize a plány?\n\nU nás nejde jen o čísla. Rádi si sedneme, vyslechneme vás a společně najdeme cestu, jak vaše podnikání posunout dál.\n\nRádi přivítáme právě vás. 📞 ${C}`,
+  `Účetnictví s lidským přístupem 🤝\n\n✅ vyslechneme vás\n✅ probereme vaše plány a vize\n✅ poradíme, jak dál\n✅ přijímáme nové klienty\n\n📞 ${C}`]},
+ {img:'vystup/pdf/tirolova-06a-svetla.jpg', t:'Zapomeňte na nudné tabulky.', info:'<b>Světlý</b> · číslo v kartičce + 700+ klientů', v:[
+  `Zapomeňte na nudné tabulky. 📈\n\nZa čísly vidíme vaše plány a potřeby. Přijímáme nové klienty.\n\n📞 ${C}`,
+  `Účetnictví nemusí být jen nudné tabulky a čísla.\n\nZa každým číslem vidíme vaše podnikání, plány a potřeby. Proto k účetnictví přistupujeme s nadhledem a srozumitelně, aby vám skutečně pomáhalo. Důvěřuje nám už přes 700 klientů.\n\nPřijímáme nové klienty. 📞 ${C}`,
+  `Čísla, která dávají smysl 📊\n\n✅ srozumitelně, bez nudných tabulek\n✅ za čísly vidíme vaše plány\n✅ přes 700 spokojených klientů\n✅ přijímáme nové klienty\n\n📞 ${C}`]},
+ {img:'vystup/pdf/tirolova-07a-svetla.jpg', t:'Doklady pošlete online.', info:'<b>Světlý</b> · číslo v ikonce v rohu', v:[
+  `Doklady pošlete online. 📲\n\nStarosti s daněmi hoďte za hlavu. Přijímáme nové klienty!\n\n📞 ${C}`,
+  `Předávejte nám doklady online a hoďte starosti s daněmi za hlavu.\n\nŽádné nošení šanonů ani domlouvání schůzek kvůli papírům. Doklady nám pošlete pohodlně online a my se postaráme o účetnictví i daně.\n\nBest Account přijímá nové klienty! 📞 ${C}`,
+  `Účetnictví bez papírování 📲\n\n✅ doklady posíláte online\n✅ daně řešíme za vás\n✅ žádné šanony ani běhání\n✅ přijímáme nové klienty\n\n📞 ${C}`]},
+];
+const nm=['A – krátká','B – osobnější','C – s odrážkami'];
+document.getElementById('pages').outerHTML = B.map((b,i)=>`
+<section class="page">
+  <div class="head"><div class="brand"><img class="i" src="assets/logo_icon_hd.png"><img class="w" src="assets/logo_word_black.png"></div><div class="tag">Banner ${i+1} / ${B.length}</div></div>
+  <div class="grid"><img class="b" src="${b.img}"><div class="meta"><div class="n">Banner ${String(i+1).padStart(2,'0')}</div><h2>${b.t}</h2><div class="info">${b.info}<br>Formát 1254 × 1254 px</div></div></div>
+  <div class="vars">${b.v.map((v,k)=>`<div class="var"><div class="lbl"><strong><span class="box"></span>Varianta ${nm[k]}</strong><small>Instagram / Facebook</small></div><p>${v}${H}</p></div>`).join('')}</div>
+  <div class="foot"><span>Best Account – popisky ke schválení</span><span>${i+2}</span></div>
+</section>`).join('');
+</script>
+</body>
+</html>
