@@ -71,29 +71,29 @@ body.is-focus .corner-legal { opacity: 0; pointer-events: none; }
 
 /* ---------- tlačítko na provázku ---------- */
 .hang { position: fixed; z-index: 12; left: 50%; top: 0; height: calc(100vh - 128px); height: calc(100dvh - 128px); width: 0; pointer-events: none;
-  transform: translateY(-110%); transform-origin: 50% 0; }
+  transform: translateY(-110%); transform-origin: 50% 0; transition: height .16s cubic-bezier(.3,.7,.4,1); }
+/* zatažení: provázek se natáhne a tlačítko jede dolů s ním (nikdy se neodpojí) */
+.hang.is-pulled { height: calc(100vh - 108px); height: calc(100dvh - 108px); transition-duration: .12s; }
 body.is-ready .hang { animation: hangDrop 1.2s linear forwards; }
 body.is-focus .hang { opacity: 0; transition: opacity .3s; }
 body.is-focus .hang * { pointer-events: none !important; }
 .hang-wire { position: absolute; left: -1px; top: 0; bottom: 104px; width: 2px; background: linear-gradient(#b8b3ab, #2b2a28); border-radius: 1px; }
 .hang-wire::after { content: ''; position: absolute; left: -5px; bottom: -8px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #2b2a28; }
 /* tlačítko: vyrenderované ze skutečných dílků stejným materiálem jako květiny (šedá destička 2x2, průhledný červený kulatý dílek 1x1 s nápisem DÁL) */
-.hang-box { position: absolute; left: 0; bottom: 6px; width: 92px; height: 92px; transform: translateX(-48.5%); pointer-events: auto; cursor: pointer; border: 0; padding: 0; background: none;
+.hang-box { position: absolute; left: 0; bottom: 6px; width: 92px; height: 92px; transform: translateX(-48.5%); transform-origin: 50% 0; pointer-events: auto; cursor: pointer; border: 0; padding: 0; background: none;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .1s; }
 .hang-img { position: relative; display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; pointer-events: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,.4)); }
 .hang-glow, .hang-flare { position: absolute; left: 48.4%; top: 48.3%; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; }
 /* červený dílek svítí a pomalu „dýchá“ jako skutečná kontrolka – měkká záře, plynulé přechody */
 .hang-glow { width: 150%; height: 150%; mix-blend-mode: screen; background: radial-gradient(circle, rgba(255,60,30,.55) 0%, rgba(255,40,20,.38) 24%, rgba(255,30,20,.16) 42%, rgba(255,20,20,.05) 56%, rgba(255,20,20,0) 68%); filter: blur(3px); animation: studBreath 2.6s cubic-bezier(.45,0,.55,1) infinite alternate; }
 .hang-flare { width: 64%; height: 64%; mix-blend-mode: screen; background: radial-gradient(circle, rgba(255,150,120,.5) 0%, rgba(255,70,40,.3) 55%, rgba(255,30,20,0) 78%); animation: studCore 2.6s cubic-bezier(.45,0,.55,1) infinite alternate; }
-.hang-box:active { transform: translateX(-48.5%) translateY(4px) scale(.97); }
+.hang-box:active { transform: translateX(-48.5%) scale(.97); } /* stisk: zmáčkne se od horní hrany – drží na provázku */
 .hang-box:active .hang-glow, .hang-box:active .hang-flare { animation: none; opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
 .hang-box:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-.hang.is-pulled .hang-box { animation: tug .5s ease; }
 @keyframes studBreath { 0% { opacity: .35; transform: translate(-50%, -50%) scale(.9); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } }
 @keyframes studCore { 0% { opacity: .15; } 100% { opacity: .85; } }
 @keyframes hangDrop { 0% { transform: translateY(-110%) rotate(0); animation-timing-function: cubic-bezier(.5,0,.85,.45); } 40% { transform: translateY(0) rotate(0); animation-timing-function: cubic-bezier(.25,.6,.45,1); } 52% { transform: translateY(-9px) rotate(-1.4deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 66% { transform: translateY(2px) rotate(1deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 80% { transform: translateY(0) rotate(-.5deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 91% { transform: translateY(0) rotate(.2deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 100% { transform: translateY(0) rotate(0); } }
-@keyframes tug { 0% { transform: translateX(-48.5%) translateY(0); } 35% { transform: translateX(-48.5%) translateY(22px); } 100% { transform: translateX(-48.5%) translateY(0); } }
-@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang-box { width: 84px; height: 84px; } .hang-wire { bottom: 96px; } }
+@media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang.is-pulled { height: calc(100dvh - 130px); } .hang-box { width: 84px; height: 84px; } .hang-wire { bottom: 96px; } }
 
 /* ---------- teleport: rozmazání ---------- */
 body.is-warp #gl { animation: warpBlur .8s cubic-bezier(.45, 0, .3, 1); }
