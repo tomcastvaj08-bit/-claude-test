@@ -5,10 +5,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { RoundedBoxGeometry } from '../vendor/three/addons/RoundedBoxGeometry.js';
-import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115a';
-import { byId, fmt } from './products.js?v=20261115a';
-import { createModel, ready, LITE } from './builders.js?v=20261115a';
-import { Figure, loadFigureKit } from './figures.js?v=20261115a';
+import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115c';
+import { byId, fmt } from './products.js?v=20261115c';
+import { createModel, ready, LITE } from './builders.js?v=20261115c';
+import { Figure, loadFigureKit } from './figures.js?v=20261115c';
 
 initCommon();
 
@@ -698,13 +698,16 @@ requestAnimationFrame(frame);
 // „Nevím, co chci koupit“ → do cesty před tebe spadne automat z kostek, plný zabalených dárečků. Otočí klikou,
 // vypadne krabička s mašlí, přikutálí se k tobě, otevře se a vyletí z ní zmenšenina náhodné květiny.
 const gacha = { active: false };
-{
+let gachaBuilt = null;
+function buildGacha() {
   // stejný plast jako u květin (lak, jemný lesk) + zaoblené hrany dílků
   const plast = (c, o = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.32, clearcoat: 0.55, clearcoatRoughness: 0.16, sheen: 0.08, sheenColor: '#fff', envMapIntensity: 1.1, ...o });
   const RED = plast('#C8100F'), GREY = plast('#5B6068'), LGREY = plast('#A0A5A9'), DARK = plast('#1E1A1A', { roughness: 0.6, clearcoat: 0.2 }), WHITE = plast('#F6F4F0'),
     GOLD = plast('#C9A13A', { metalness: 0.85, roughness: 0.28, clearcoat: 0.3 }), CHROME = plast('#D8DCE0', { metalness: 1, roughness: 0.16, clearcoat: 0.2 });
   const GLASS = new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.03, transmission: 1, thickness: 0.05, ior: 1.45, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, envMapIntensity: 1.4, side: THREE.DoubleSide });
-  const rb = (w, h, d, m, x, y, z, r = 0.012) => { const o = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m); o.position.set(x, y, z); return o; };
+  const geoCache = new Map(); // stejné rozměry = jedna sdílená geometrie (šetří paměť telefonu)
+  const rbGeo = (w, h, d, r) => { const k = [w, h, d, r].map((v) => v.toFixed(4)).join(); if (!geoCache.has(k)) geoCache.set(k, new RoundedBoxGeometry(w, h, d, 2, r)); return geoCache.get(k); };
+  const rb = (w, h, d, m, x, y, z, r = 0.012) => { const o = new THREE.Mesh(rbGeo(w, h, d, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m); o.position.set(x, y, z); return o; };
   const cyl = (r, h, m, seg = 32) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), m);
   const studG = new THREE.CylinderGeometry(0.048, 0.048, 0.034, 28);
   const studsOn = (g, m, y, xs, zs) => { for (const x of xs) for (const z of zs) { const s = new THREE.Mesh(studG, m); s.position.set(x, y + 0.017, z); g.add(s); } };
@@ -723,7 +726,7 @@ const gacha = { active: false };
   const lab = document.createElement('canvas'); lab.width = 512; lab.height = 128;
   const drawLab = () => { const g = lab.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#C8100F'; g.font = '72px Bungee, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KVĚTOMAT', 256, 70); labTex.needsUpdate = true; };
   const labTex = new THREE.CanvasTexture(lab); labTex.colorSpace = THREE.SRGBColorSpace; drawLab(); document.fonts?.load('72px Bungee', 'KVĚTOMAT').then(drawLab);
-  const label = new THREE.Mesh(new RoundedBoxGeometry(0.52, 0.13, 0.02, 2, 0.008), [WHITE, WHITE, WHITE, WHITE, plast('#fff', { map: labTex }), WHITE]); label.position.set(0, 0.665, 0.31); M.add(label);
+  const label = new THREE.Mesh(rbGeo(0.52, 0.13, 0.02, 0.008), [WHITE, WHITE, WHITE, WHITE, plast('#fff', { map: labTex }), WHITE]); label.position.set(0, 0.665, 0.31); M.add(label);
   const crank = new THREE.Group(); crank.position.set(0, 0.44, 0.31); M.add(crank);
   { const disc = cyl(0.12, 0.035, CHROME, 48); disc.rotation.x = Math.PI / 2; crank.add(disc);
     const rim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.012, 12, 48), GOLD); crank.add(rim);
@@ -738,8 +741,9 @@ const gacha = { active: false };
   const RIB = { '#E4569A': '#FFFFFF', '#F5C518': '#C8100F', '#4B9F4A': '#F5C518', '#0055BF': '#F5C518', '#FE8A18': '#FFFFFF', '#9B5FC0': '#F5C518', '#2CB1C9': '#FFFFFF', '#FFFFFF': '#C8100F' };
   // zabalená krabička s mašlí (s = hrana), víko zvlášť (aby šlo odklopit)
   const bowG = new THREE.TorusGeometry(0.22, 0.07, 10, 24);
-  function gift(sz, col) {
-    const g = new THREE.Group(), pm = plast(col), rm = plast(RIB[col] || '#fff'), hb = sz * 0.82, hl = sz * 0.22;
+  const matCache = new Map(), matOf = (c) => { if (!matCache.has(c)) matCache.set(c, plast(c)); return matCache.get(c); };
+  function gift(sz, col, own = false) {
+    const g = new THREE.Group(), pm = own ? plast(col) : matOf(col), rm = own ? plast(RIB[col] || '#fff') : matOf(RIB[col] || '#FFFFFF'), hb = sz * 0.82, hl = sz * 0.22;
     const body = rb(sz, hb, sz, pm, 0, hb / 2, 0, sz * 0.06); g.add(body);
     g.add(rb(sz * 1.005, hb * 1.001, sz * 0.16, rm, 0, hb / 2, 0, sz * 0.02), rb(sz * 0.16, hb * 1.001, sz * 1.005, rm, 0, hb / 2, 0, sz * 0.02));
     const lid = new THREE.Group(); lid.position.y = hb; g.add(lid);
@@ -756,7 +760,7 @@ const gacha = { active: false };
   const dome = new THREE.Mesh(new THREE.SphereGeometry(DR, 56, 36), GLASS); dome.position.copy(DC); M.add(dome);
   { const c = cyl(0.17, 0.09, RED, 40); c.position.y = DC.y + DR + 0.0; M.add(c); studsOn(M, RED, DC.y + DR + 0.045, [-0.06, 0.06], [-0.06, 0.06]); }
   // dárek, který vypadne, a zmenšená květina v něm
-  let out = gift(0.13, '#E4569A'); out.visible = false; G.add(out);
+  let out = gift(0.13, '#E4569A', true); out.visible = false; G.add(out);
   const mini = new THREE.Group(); mini.visible = false; G.add(mini);
   const miniCache = new Map();
   function miniOf(id) {
@@ -785,7 +789,7 @@ const gacha = { active: false };
   function choose() {
     const pool = ORDER.filter((id) => id !== last); last = pool[Math.floor(Math.random() * pool.length)]; pick = byId(last);
     const col = COLS[Math.floor(Math.random() * COLS.length)];
-    G.remove(out); out = gift(0.13, col); out.visible = false; G.add(out);
+    G.remove(out); out = gift(0.13, col, true); out.visible = false; G.add(out);
     mini.clear(); mini.add(miniOf(pick.id)); mini.visible = false;
     res.style.setProperty('--accent', pick.accent);
     res.innerHTML = `<h3>${pick.name}</h3><p><b>Tahle se jí bude líbit.</b> Věř mi.</p><p class="price-line">${fmt(pick.price)} · ${pick.pieces} dílků</p>
@@ -871,13 +875,18 @@ const gacha = { active: false };
     const arrive = () => { if (state.warp) return requestAnimationFrame(arrive); updateWindow(); if (ex.slot === k) focus(ex); };
     requestAnimationFrame(arrive);
   }
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-gacha]')) { e.stopPropagation(); open(); return; }
-    if (!gacha.active) return;
-    e.stopPropagation();
-    if (e.target.closest('.gacha-close')) close();
-    else if (e.target.closest('[data-gacha-again]')) again();
-    else if (e.target.closest('[data-gacha-show]') && !gacha.busy) { const id = pick.id; close(() => showInGallery(id)); }
-  }, true);
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && gacha.active) close(); });
+  return { open, close, again, show: () => { const id = pick.id; close(() => showInGallery(id)); } };
 }
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-gacha]')) {
+    e.stopPropagation();
+    try { gachaBuilt ||= buildGacha(); gachaBuilt.open(); } catch (err) { console.warn('Automat se nepodařilo postavit', err); }
+    return;
+  }
+  if (!gacha.active || !gachaBuilt) return;
+  e.stopPropagation();
+  if (e.target.closest('.gacha-close')) gachaBuilt.close();
+  else if (e.target.closest('[data-gacha-again]')) gachaBuilt.again();
+  else if (e.target.closest('[data-gacha-show]') && !gacha.busy) gachaBuilt.show();
+}, true);
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && gacha.active) gachaBuilt?.close(); });

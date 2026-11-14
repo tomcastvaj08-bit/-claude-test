@@ -38,9 +38,8 @@ function applyAO(group, buf) {
   if (a.length !== total) { console.warn('AO nesedí k modelu', a.length, total); return group; }
   let o = 0;
   for (const m of group.children) {
-    const n = m.geometry.attributes.position.count, ao = new Float32Array(n);
-    for (let k = 0; k < n; k++) ao[k] = a[o + k] / 255;
-    m.geometry.setAttribute('ao', new THREE.BufferAttribute(ao, 1)); o += n;
+    const n = m.geometry.attributes.position.count;
+    m.geometry.setAttribute('ao', new THREE.BufferAttribute(a.slice(o, o + n), 1, true)); o += n; // 1 bajt na vrchol
   }
   return group;
 }
@@ -79,8 +78,11 @@ function merge(scene) {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
-    g.setAttribute('ao', new THREE.BufferAttribute(ao, 1));
+    // úsporné uložení (paměť telefonu): normály 3 bajty, stínování 1 bajt na vrchol
+    const n8 = new Int8Array(nrm.length); for (let k = 0; k < nrm.length; k++) n8[k] = Math.round(nrm[k] * 127);
+    const a8 = new Uint8Array(ao.length); for (let k = 0; k < ao.length; k++) a8[k] = Math.round(Math.min(1, Math.max(0, ao[k])) * 255);
+    g.setAttribute('normal', new THREE.BufferAttribute(n8, 3, true));
+    g.setAttribute('ao', new THREE.BufferAttribute(a8, 1, true));
     g.setIndex(new THREE.BufferAttribute(idx, 1));
     g.computeBoundingBox(); g.computeBoundingSphere();
     out.add(new THREE.Mesh(g, G.mat));
