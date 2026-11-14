@@ -13,7 +13,8 @@ html,body{overflow:hidden;background:var(--navy)}
 #c > *{position:absolute}
 #glow,#hex{inset:0}
 #lion{object-fit:cover}
-#mark{opacity:.11}
+#marks{inset:0;pointer-events:none}
+#marks img{position:absolute;filter:drop-shadow(0 0 10px rgba(0,136,218,.85)) drop-shadow(0 0 28px rgba(0,136,218,.35))}
 #logo img{position:absolute}
 #txt .eyebrow{display:flex;align-items:center;font-weight:700;color:var(--blue);text-transform:uppercase}
 #txt .eyebrow i{display:block;background:var(--blue)}
@@ -33,8 +34,8 @@ html,body{overflow:hidden;background:var(--navy)}
 <body>
 <div id="c">
   <div id="glow"></div>
-  <img id="mark" src="assets/logo_icon_hd.png" alt="">
   <img id="lion" src="pozadi/lev-pf.png" alt="">
+  <div id="marks"></div>
   <svg id="hex"></svg>
   <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img src="assets/logo_word_white.png" id="word" alt=""></div>
   <div id="txt"></div>
@@ -71,7 +72,11 @@ function render(o){
   ].join(',');
   // průhledné logo v pozadí
   const ms=o.markSize*u;
-  Object.assign(document.getElementById('mark').style,{left:(o.markX*u-ms/2)+'px',top:(H/2-ms/2+o.markDy*u)+'px',width:ms+'px',height:ms+'px',transform:`rotate(${o.markRot}deg)`});
+  const mk=document.getElementById('marks'), mcx=o.markX*u, mcy=H/2+o.markDy*u;
+  mk.innerHTML=[[1,.9,''],[1.2,.5,'_stit'],[1.42,.26,'_stit'],[1.66,.12,'_stit']].map(([sc,op,f])=>{const z=ms*sc; return `<img src="assets/logo_obrys${f}.png" style="left:${mcx-z/2}px;top:${mcy-z/2}px;width:${z}px;height:${z}px;opacity:${op};transform:rotate(${o.markRot}deg)">`}).join('');
+  // obrysy plynule mizí v místě lva (žádná ostrá hrana)
+  const ex=lx+lw*0.64, ey=ly+lh*0.52, rx=lw*0.48, ry=lh*0.56;
+  mk.style.webkitMaskImage=`radial-gradient(${rx}px ${ry}px at ${ex}px ${ey}px, transparent 0%, transparent 55%, rgba(0,0,0,.35) 78%, #000 100%)`;
   // úl vlevo za textem
   const hx=document.getElementById('hex'); hx.setAttribute('viewBox',`0 0 ${W} ${H}`); hx.setAttribute('width',W); hx.setAttribute('height',H);
   hx.innerHTML=hexes(W,H,u,-60*u,H*0.66,1400*u);
