@@ -334,14 +334,10 @@
     ],
     "bSize": 42,
     "contact": {
-      "style": "pill",
-      "label": "Zavolejte nám:",
+      "style": "tab",
       "phone": "+420 721 075 783",
-      "corner": [
-        77,
-        62,
-        "right"
-      ]
+      "w": 650,
+      "h": 150
     },
     "hex": [
       [
