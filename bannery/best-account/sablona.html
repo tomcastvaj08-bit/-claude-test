@@ -354,6 +354,7 @@ function render(B){
     document.getElementById('extra').insertAdjacentHTML('beforeend', `<div class="corner" style="position:absolute;${B.contact.corner[2]==='right'?`right:${B.contact.corner[0]}px;text-align:right`:`left:${B.contact.corner[0]}px`};bottom:${B.contact.corner[1]}px">${cHtml}</div>`); }
   if(B.proof && B.proof.inline){ const p=B.proof; h+=`<div class="proof inline" style="margin-top:${p.mt??40}px"><div class="row"><img src="assets/avatary.png"><span class="num">${esc(p.count||'700+')}</span></div><p>${fmt(p.text||'Více než 700 spokojených klientů')}</p>${p.stars===false?'':`<div class="stars">${STAR.repeat(5)}</div>`}</div>`; }
   const t=document.getElementById('txt'); t.innerHTML=h;
+  t.style.setProperty('--rule-after', (B.ruleAfter??31)+'px');
   if(side==='right' && B.align!=='left'){ t.style.left='auto'; t.style.right=(B.xr??77)+'px'; }
   else { t.style.right=''; t.style.left = B.x!=null ? B.x+'px' : ''; }
   // horní okraj: vrchol verzálky prvního řádku nadpisu = B.top (výchozí 292 px jako v originálech)

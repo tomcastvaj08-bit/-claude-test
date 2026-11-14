@@ -350,7 +350,8 @@
     "badges": {},
     "web": "www.BestAccount.cz",
     "webLeft": true,
-    "arrow": false
+    "arrow": false,
+    "ruleAfter": 64
   },
   {
     "id": "tirolova-01c-svetla-mobil",
