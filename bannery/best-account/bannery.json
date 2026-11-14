@@ -314,6 +314,48 @@
     "hLh": 121
   },
   {
+    "id": "tirolova-05a-svetla",
+    "theme": "light",
+    "side": "right",
+    "bg": "pozadi/tirolova-zaves.jpg",
+    "bgBox": [
+      -223,
+      -22,
+      1236
+    ],
+    "bgColor": "#D9E0E7",
+    "bgFeather": 260,
+    "bgFeatherSide": "right",
+    "headline": "Účetní,\nkteří vás\n*vyslechnou.*",
+    "top": 250,
+    "body": [
+      "Probereme s vámi i vaše\nplány a vize do budoucna.",
+      "**Rádi přivítáme právě vás.**"
+    ],
+    "bSize": 42,
+    "contact": {
+      "style": "pill",
+      "label": "Zavolejte nám:",
+      "phone": "+420 721 075 783",
+      "corner": [
+        77,
+        62,
+        "right"
+      ]
+    },
+    "hex": [
+      [
+        1254,
+        1254,
+        520
+      ]
+    ],
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "webLeft": true,
+    "arrow": false
+  },
+  {
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",
