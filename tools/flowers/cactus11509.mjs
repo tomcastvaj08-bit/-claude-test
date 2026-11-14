@@ -12,12 +12,13 @@ const A = new Asm();
 const pot = new Asm();
 for (let q = 0; q < 4; q++) {
   const R = ry(q * Math.PI / 2), c = (y) => apply(R, [40, y, -40]);
-  pot.part('5649', LBL, c(-24), mul(R, ry(E('CR', 0))));                         // zkosený roh dna
+  const FY = [1, 0, 0, 0, -1, 0, 0, 0, 1];                                            // převrácení vzhůru nohama (zkosení dolů k zemi)
+  pot.part('5649', LBL, c(0), mul(mul(R, ry(E('CR', 0))), FY));                     // zkosený roh dna – zkosením dolů
   pot.part('48092', LBL, c(-48), mul(R, ry(E('CR', 0))));                        // zaoblené rohy stěn
   pot.part('48092', LBL, c(-72), mul(R, ry(E('CR', 0))));
   pot.part('80015', LBL, c(-80), mul(R, ry(E('CR', 0))));                        // okraj s přesahem
   const s = (y) => apply(R, [E('SX', 110), y, 0]);
-  pot.part('5540', LBL, add(s(-24), apply(R, [-20, 0, 0])), mul(R, ry(E('SR', -Math.PI / 2))));             // zkosená strana dna
+  pot.part('5540', LBL, add(s(0), apply(R, [-20, 0, 0])), mul(mul(R, ry(E('SR', -Math.PI / 2))), FY));      // zkosená strana dna – zkosením dolů
   pot.part('3004', LBL, add(s(-48), apply(R, [0, 0, -20])), mul(R, ry(Math.PI / 2))); pot.part('3004', LBL, add(s(-48), apply(R, [0, 0, 20])), mul(R, ry(Math.PI / 2)));
   pot.part('3004', LBL, add(s(-72), apply(R, [0, 0, -20])), mul(R, ry(Math.PI / 2))); pot.part('3004', LBL, add(s(-72), apply(R, [0, 0, 20])), mul(R, ry(Math.PI / 2)));
   pot.part('3710', LBL, add(s(-80), [0, 0, 0]), mul(R, ry(Math.PI / 2)));

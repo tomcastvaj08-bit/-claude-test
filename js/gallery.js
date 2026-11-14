@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114p';
+import { createModel, ready, LITE } from './builders.js?v=20261114q';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -437,7 +437,7 @@ function teleport(dir) {
   document.body.classList.add('is-warp');
   setTimeout(() => document.body.classList.remove('is-warp'), reduceMotion ? 0 : 820);
   hang.classList.add('is-pulled');
-  setTimeout(() => hang.classList.remove('is-pulled'), 600);
+  setTimeout(() => hang.classList.remove('is-pulled'), 170);
 }
 
 // ------------------------------------------------------------ ovládání
