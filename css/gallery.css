@@ -113,7 +113,7 @@ body.is-warp .warp-flash { animation: warpFlash .8s ease; }
 .gacha.is-open .gacha-close { opacity: 1; }
 .gacha-flash { position: absolute; left: 50%; top: 50%; width: 120vmax; height: 120vmax; transform: translate(-50%, -50%) scale(0); border-radius: 50%; pointer-events: none; z-index: 2;
   background: repeating-conic-gradient(from 0deg, rgba(255,214,90,.55) 0 8deg, rgba(255,255,255,0) 8deg 20deg); mask: radial-gradient(circle, #000 0 18%, transparent 55%); -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 55%); }
-.gacha-result { position: absolute; z-index: 3; left: 50%; top: 50%; width: min(86vw, 360px); transform: translate(-50%, -50%) scale(.6); opacity: 0; pointer-events: none; text-align: center; padding: 20px 18px 18px;
+.gacha-result { position: absolute; z-index: 3; left: 50%; top: auto; bottom: calc(18px + env(safe-area-inset-bottom)); width: min(90vw, 380px); transform: translate(-50%, 40px) scale(.7); opacity: 0; pointer-events: none; text-align: center; padding: 20px 18px 18px;
   --stud-w: 16px; --stud-h: 7px; --stud-cap: 7px; --stud-pitch: 26px; color: #1B1D22; }
 .gacha.is-done .gacha-result { pointer-events: auto; }
 .gacha-result img { width: 62%; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: radial-gradient(circle at 50% 60%, #fff, var(--tint, #F3EEE6) 75%); }
