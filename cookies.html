@@ -1,11 +1,16 @@
 <!doctype html>
 <html lang="cs">
 <head>
+  <script>
+    // vždy aktuální verze: když prohlížeč drží starou stránku v mezipaměti, jednou ji přenačte s novou adresou
+    (function () { var V = '20261115d'; try { fetch('version.txt?' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : V; }).then(function (t) { t = (t || '').trim();
+      if (t && t !== V && sessionStorage.getItem('lb-ver') !== t) { sessionStorage.setItem('lb-ver', t); var u = new URL(location.href); u.searchParams.set('v', t); location.replace(u.href); } }).catch(function () {}); } catch (e) {} })();
+  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Zásady cookies – Love Bricks</title>
   <meta name="description" content="Jaké cookies používá Love Bricks a jak změnit svůj souhlas.">
-  <link rel="stylesheet" href="css/style.css?v=20261115c">
+  <link rel="stylesheet" href="css/style.css?v=20261115d">
 </head>
 <body>
   <div id="lb-header"></div>
@@ -45,6 +50,6 @@
     </article>
   </main>
   <div id="lb-footer"></div>
-  <script type="module" src="js/legal.js?v=20261115c"></script>
+  <script type="module" src="js/legal.js?v=20261115d"></script>
 </body>
 </html>

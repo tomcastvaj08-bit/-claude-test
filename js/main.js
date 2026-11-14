@@ -1,11 +1,11 @@
 // Love Bricks – hlavní stránka: 3D scény, scroll choreografie, katalog, košík.
 import * as THREE from 'three';
-import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js?v=20261115c';
-import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js?v=20261115c';
-import { Stage3D } from './stage3d.js?v=20261115c';
-import { createModel, ready } from './builders.js?v=20261115c';
+import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js?v=20261115d';
+import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js?v=20261115d';
+import { Stage3D } from './stage3d.js?v=20261115d';
+import { createModel, ready } from './builders.js?v=20261115d';
 await Promise.all([ready(), loadFigureKit()]);
-import { Figure, loadFigureKit } from './figures.js?v=20261115c';
+import { Figure, loadFigureKit } from './figures.js?v=20261115d';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
