@@ -296,7 +296,7 @@ function render(B){
   if(B.blendFrom!=null){
     const to=B.bgColor || (theme==='light' ? '#fff' : '#08163A');
     const h=to.replace('#',''); const rgb=[0,2,4].map(i=>parseInt(h.substr(i,2),16)).join(',');
-    const stops=[]; for(let i=0;i<=12;i++){ const t=i/12, e=t*t*(3-2*t); stops.push(`rgba(${rgb},${(e*(B.blendMax??1)).toFixed(3)}) ${(t*100).toFixed(1)}%`); }
+    const stops=[]; for(let i=0;i<=12;i++){ const t=i/12, e=t*t*(3-2*t); const span=B.blendTo!=null?(B.blendTo-B.blendFrom)/(1254-B.blendFrom):1; stops.push(`rgba(${rgb},${(e*(B.blendMax??1)).toFixed(3)}) ${(t*span*100).toFixed(1)}%`); }
     Object.assign(bl.style,{display:'block',left:B.blendFrom+'px',right:'0',background:`linear-gradient(90deg, ${stops.join(',')})`});
   } else bl.style.display='none';
   document.getElementById('word').src = theme==='light' ? 'assets/logo_word_black.png' : 'assets/logo_word_white.png';

@@ -174,7 +174,8 @@
     "webLeft": true,
     "fade": 0,
     "bgExtend": "#18181A",
-    "blendFrom": 650
+    "blendFrom": 500,
+    "blendTo": 1020
   },
   {
     "id": "tirolova-01c-svetla-mobil",
