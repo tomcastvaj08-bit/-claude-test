@@ -395,6 +395,42 @@
     ]
   },
   {
+    "id": "tirolova-07a-svetla",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/tirolova-stul.jpg",
+    "bgBox": [
+      -76,
+      0,
+      2052
+    ],
+    "bgColor": "#E8E8E8",
+    "bgFeather": 10,
+    "headline": "Doklady\npošlete\n*online.*",
+    "top": 250,
+    "ruleAfter": 48,
+    "body": [
+      "Starosti s daněmi\nhoďte za hlavu.",
+      "**Přijímáme nové klienty.**"
+    ],
+    "bSize": 42,
+    "contact": {
+      "style": "box",
+      "label": "Kontaktujte nás:",
+      "phone": "+420 721 075 783",
+      "ink": true,
+      "size": 46,
+      "corner": [
+        77,
+        44
+      ]
+    },
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "webBottom": 44,
+    "arrow": false
+  },
+  {
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",
