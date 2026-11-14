@@ -1,0 +1,68 @@
+[
+  {
+    "id": "01-konec-roku",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/01.png",
+    "headline": "Konec roku\nse blíží.\n*Máte hotovo?*",
+    "body": [
+      "Uzávěrka, inventura\ni daňové přiznání.",
+      "Připravíme vše včas –\nbez stresu na poslední chvíli."
+    ],
+    "bSize": 44
+  },
+  {
+    "id": "02-mzdy",
+    "theme": "dark",
+    "side": "right",
+    "bg": "pozadi/02.png",
+    "x": 700,
+    "headline": "Mzdy\nbez chyb\n*a včas.*",
+    "checks": [
+      "mzdy a výplatnice",
+      "ČSSZ a pojišťovny",
+      "roční zúčtování daně",
+      "termíny hlídáme za vás"
+    ]
+  },
+  {
+    "id": "03-doklady",
+    "theme": "light",
+    "side": "right",
+    "bg": "pozadi/03.png",
+    "x": 700,
+    "headline": "Doklady\nstačí\n*vyfotit.*",
+    "body": [
+      "Účtenky a faktury\nnám pošlete z mobilu.",
+      "Žádné krabice papírů\nani běhání se šanony."
+    ],
+    "bSize": 44
+  },
+  {
+    "id": "04-zmena-ucetni",
+    "theme": "dark",
+    "side": "left",
+    "bg": "pozadi/04.png",
+    "headline": "Měníte\n*účetní?*",
+    "top": 330,
+    "body": [
+      "Převezmeme vaše účetnictví\nhladce a bez výpadku.",
+      "Komunikaci s předchozí\núčetní vyřešíme za vás."
+    ],
+    "bSize": 44
+  },
+  {
+    "id": "05-pojdme-se-poznat",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/05.png",
+    "headline": "Pojďme\nse *poznat.*",
+    "top": 330,
+    "body": [
+      "Zavolejte a domluvte\nsi nezávaznou schůzku."
+    ],
+    "bSize": 46,
+    "phone": "+420 721 075 783",
+    "arrow": false
+  }
+]

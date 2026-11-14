@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Best Account – šablona banneru</title>
+<style>
+@font-face{font-family:"Urbanist";font-weight:100 900;font-display:block;src:url(assets/fonts/urbanist-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Urbanist";font-weight:100 900;font-display:block;src:url(assets/fonts/urbanist-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+/* ===== DESIGN TOKENY (změřeno z původních bannerů 1254×1254) ===== */
+:root{
+  --size:1254px;
+  --blue:#0068FF;          /* akcent na světlém */
+  --blue-dark:#1673FF;     /* akcent na tmavém */
+  --ink:#0B0B0B;           /* nadpis na světlém */
+  --body-ink:#151515;      /* text na světlém */
+  --navy:#08163A;          /* tmavé pozadí */
+  --margin-left:77px;      /* levý okraj textu */
+  --col-right:690px;       /* začátek textu u pravé varianty */
+  --h-size:114px;          /* nadpis */
+  --h-lh:109px;            /* rozteč řádků nadpisu */
+  --h-track:-0.01em;
+  --b-size:48px;           /* běžný text */
+  --b-lh:59px;             /* rozteč řádků textu */
+  --b-weight:500;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--size);height:var(--size);overflow:hidden;background:#fff}
+#c{position:relative;width:var(--size);height:var(--size);overflow:hidden;font-family:"Urbanist",sans-serif;-webkit-font-smoothing:antialiased}
+#bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#fade{position:absolute;inset:0}
+#hex{position:absolute;inset:0;pointer-events:none}
+#logo{position:absolute;left:62px;top:80px;width:388px;height:116px}
+#logo img{position:absolute;inset:0}
+#txt{position:absolute;left:var(--margin-left)}
+.side-right #txt{left:var(--col-right)}
+h1{font-weight:800;font-size:var(--h-size);line-height:var(--h-lh);letter-spacing:var(--h-track);color:var(--ink);white-space:nowrap}
+h1 em{font-style:normal;color:var(--blue)}
+.rule{position:relative;height:14px;margin:var(--rule-gap,34px) 0 var(--rule-after,31px)}
+.rule i{position:absolute;top:5px;height:3px;background:var(--blue);border-radius:2px}
+.rule b{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--blue);top:0}
+/* světlá: tečka vlevo + dlouhá linka */
+.light .rule b{left:0}.light .rule i{left:6px;width:406px}
+/* tmavá: krátká linka + malá tečka za mezerou */
+.dark .rule i{left:2px;width:128px}.dark .rule b{left:142px;width:7px;height:7px;top:3px}
+p.b{font-size:var(--b-size);line-height:var(--b-lh);font-weight:var(--b-weight);color:var(--body-ink);letter-spacing:0.004em;white-space:nowrap}
+p.b + p.b{margin-top:22px}
+p.b strong{font-weight:700}
+ul.checks{list-style:none}
+ul.checks li{position:relative;padding-left:66px;font-size:40px;line-height:50px;font-weight:var(--b-weight);color:var(--body-ink);white-space:nowrap}
+ul.checks li + li{margin-top:24px}
+ul.checks li svg{position:absolute;left:0;top:6px;width:42px;height:38px}
+ul.checks li strong{display:block;font-weight:700;font-size:40px}
+ul.checks li span{display:block;font-size:36px;line-height:46px;opacity:.95}
+ul.checks + p.b, p.b + ul.checks{margin-top:30px}
+.phone{display:flex;align-items:center;gap:22px;margin-top:46px;font-weight:700;font-size:42px;color:var(--blue);letter-spacing:-0.005em}
+.phone svg{width:50px;height:50px}
+#arrow{position:absolute;left:1093px;top:1138px;width:102px;height:48px}
+/* tmavá varianta */
+.dark h1{color:#fff}.dark h1 em{color:var(--blue-dark)}
+.dark p.b,.dark ul.checks li{color:#F4F7FF}
+.dark .rule i,.dark .rule b{background:var(--blue-dark)}
+.dark .phone{color:#fff}
+</style>
+</head>
+<body>
+<div id="c">
+  <img id="bg" alt="">
+  <div id="fade"></div>
+  <svg id="hex" viewBox="0 0 1254 1254"></svg>
+  <div id="logo"><img src="assets/logo_icon.png" alt=""><img id="word" src="assets/logo_word_black.png" alt=""></div>
+  <div id="txt"></div>
+  <svg id="arrow" viewBox="0 0 102 48" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24H97M76 4L97 24L76 44"/></svg>
+</div>
+<script>
+const CHECK = '<svg viewBox="0 0 42 38"><path d="M4 20L15 31L38 6" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PHONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+// *modře* = akcent, **tučně** = tučně, \n = nový řádek
+const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+
+function hexes(theme, corners){
+  // hexagony "na špičku" (pointy-top), R = 76 px
+  const R=76, W=Math.sqrt(3)*R, V=1.5*R;
+  let s='<defs>';
+  corners.forEach((k,i)=>{
+    const [cx,cy,rad]=k;
+    s+=`<radialGradient id="m${i}" cx="${cx}" cy="${cy}" r="${rad}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".55" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="k${i}"><rect width="1254" height="1254" fill="url(#m${i})"/></mask>`;
+  });
+  s+='</defs>';
+  let seed=7; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);
+  corners.forEach((k,i)=>{
+    const [cx,cy,rad]=k; let g='';
+    for(let row=-2; row<16; row++){
+      for(let col=-2; col<14; col++){
+        const x=col*W+(row%2?W/2:0)-30, y=row*V-10;
+        if(Math.hypot(x-cx,y-cy)>rad+R) continue;
+        let pts=[];for(let a=0;a<6;a++){const t=Math.PI/180*(60*a-90);pts.push((x+(R-3)*Math.cos(t)).toFixed(1)+','+(y+(R-3)*Math.sin(t)).toFixed(1));}
+        if(theme==='light'){
+          const o=(0.35+rnd()*0.55).toFixed(2);
+          g+=`<polygon points="${pts}" fill="#5B9BFF" fill-opacity="${o*0.55}" stroke="#fff" stroke-opacity=".9" stroke-width="3"/>`;
+        }else{
+          const o=(0.15+rnd()*0.35).toFixed(2);
+          g+=`<polygon points="${pts}" fill="#0E2A6E" fill-opacity="${o}" stroke="#2F7BFF" stroke-opacity=".85" stroke-width="2.2"/>`;
+        }
+      }
+    }
+    s+=`<g mask="url(#k${i})"${theme==='dark'?' style="filter:drop-shadow(0 0 6px rgba(40,120,255,.55))"':''}>${g}</g>`;
+  });
+  return s;
+}
+
+function render(B){
+  const c=document.getElementById('c');
+  const theme=B.theme||'light', side=B.side||'left';
+  c.className=theme+' side-'+side;
+  document.body.style.background = theme==='dark' ? '#08163A' : '#fff';
+  const bg=document.getElementById('bg');
+  if(B.bg){bg.src=B.bg;bg.style.display='';bg.style.objectPosition=B.bgPos||'center';} else bg.style.display='none';
+  document.getElementById('word').src = theme==='dark' ? 'assets/logo_word_white.png' : 'assets/logo_word_black.png';
+  // závoj pro čitelnost textu na straně textu
+  const col = theme==='dark' ? '8,22,58' : '255,255,255';
+  const dir = side==='left' ? '90deg' : '270deg';
+  const f = B.fade ?? 1;
+  document.getElementById('fade').style.background =
+    B.fade===0 ? 'none' :
+    `linear-gradient(${dir}, rgba(${col},${.94*f}) 0%, rgba(${col},${.82*f}) 30%, rgba(${col},${.45*f}) 48%, rgba(${col},0) 64%)`;
+  // hexagony v rozích
+  const corners = B.hex ?? (side==='left' ? [[0,1254,560]] : [[1254,1254,520],[1254,0,330]]);
+  document.getElementById('hex').innerHTML = hexes(theme, corners);
+  // text
+  let h='';
+  h+=`<h1 style="${B.hSize?`font-size:${B.hSize}px;line-height:${Math.round(B.hSize*0.956)}px`:''}">${fmt(B.headline)}</h1>`;
+  if(B.rule!==false) h+='<div class="rule"><i></i><b></b></div>';
+  (B.body||[]).forEach(p=>{ h+= typeof p==='string' ? `<p class="b"${B.bSize?` style="font-size:${B.bSize}px;line-height:${Math.round(B.bSize*1.3)}px"`:''}>${fmt(p)}</p>` : ''; });
+  if(B.checks){
+    h+='<ul class="checks">'+B.checks.map(x=>{
+      const ic=`<span style="color:var(--${theme==='dark'?'blue-dark':'blue'})">${CHECK}</span>`;
+      return typeof x==='string' ? `<li>${ic}${fmt(x)}</li>` : `<li>${ic}<strong>${fmt(x.title)}</strong><span>${fmt(x.text)}</span></li>`;
+    }).join('')+'</ul>';
+  }
+  (B.after||[]).forEach(p=>{ h+=`<p class="b">${fmt(p)}</p>`; });
+  if(B.phone) h+=`<div class="phone">${PHONE}<span>${esc(B.phone)}</span></div>`;
+  const t=document.getElementById('txt'); t.innerHTML=h;
+  t.style.left = B.x!=null ? B.x+'px' : '';
+  // horní okraj: vrchol verzálky prvního řádku nadpisu = B.top (výchozí 292 px jako v originálech)
+  const capTop = B.top ?? 296;
+  const hs = B.hSize || 114, lh = B.hSize?Math.round(B.hSize*0.956):109;
+  // Urbanist: ascent .95, descent .25, cap height .70 (v em)
+  const half=(lh-(0.95+0.25)*hs)/2;
+  t.style.top = (capTop - half - (0.95-0.70)*hs) + 'px';
+  document.getElementById('arrow').style.display = B.arrow===false ? 'none' : '';
+}
+window.render=render;
+if(!window.__AUTOMATED){
+  render({theme:'light',side:'left',headline:'Rozrostlo se\nvám\n*podnikání?*',body:['A obyčejná tabulka\nv Excelu už vám\npřestává stačit?']});
+}
+</script>
+</body>
+</html>
