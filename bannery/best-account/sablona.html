@@ -90,6 +90,8 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 .pillwrap small,.bignum small{display:block;font-size:34px;line-height:40px;font-weight:500;color:var(--body-ink);margin-bottom:16px}
 .pill{display:inline-flex;align-items:center;gap:20px;padding:22px 42px 22px 30px;border-radius:999px;background:var(--blue);color:#fff;font-size:46px;font-weight:800;letter-spacing:-0.005em;white-space:nowrap;box-shadow:0 14px 30px rgba(0,136,218,.30)}
 .pill svg{width:46px;height:46px}.pill svg path{fill:#fff}
+/* kontakt v rohu */
+.corner .pillwrap,.corner .contact,.corner .bignum{margin-top:0}
 /* kontakt jako velké číslo */
 .dark .pillwrap small,.dark .bignum small,.blue .pillwrap small{color:#EEF4FF}
 .light .bignum b.ink{color:var(--ink)}
@@ -335,9 +337,12 @@ function render(B){
   }
   (B.after||[]).forEach(p=>{ h+=`<p class="b">${fmt(p)}</p>`; });
   if(B.phone) h+=`<div class="phone">${PHONE}<span>${esc(B.phone)}</span></div>`;
+  const _h0=h.length;
   if(B.contact && B.contact.style==='pill') h+=`<div class="pillwrap"${B.contact.mt!=null?` style="margin-top:${B.contact.mt}px"`:''}>${B.contact.label?`<small>${fmt(B.contact.label)}</small>`:''}<div class="pill">${PHONE_SOLID}<span>${esc(B.contact.phone||'+420 721 075 783')}</span></div></div>`;
   else if(B.contact && B.contact.style==='big') h+=`<div class="bignum"${B.contact.mt!=null?` style="margin-top:${B.contact.mt}px"`:''}>${B.contact.label?`<small>${fmt(B.contact.label)}</small>`:''}<b${B.contact.size?` style="font-size:${B.contact.size}px;line-height:${Math.round(B.contact.size*1.08)}px"`:''}>${esc(B.contact.phone||'+420 721 075 783')}</b></div>`;
   else if(B.contact) h+=`<div class="contact${B.contact.ink?' ink':''}"${B.contact.mt!=null?` style="margin-top:${B.contact.mt}px"`:''}><div class="ic">${PHONE_SOLID}</div><div>${B.contact.label?`<small>${fmt(B.contact.label)}</small>`:''}<b${B.contact.size?` style="font-size:${B.contact.size}px;line-height:${Math.round(B.contact.size*1.15)}px"`:''}>${esc(B.contact.phone||'+420 721 075 783')}</b></div></div>`;
+  if(B.contact && B.contact.corner){ const cHtml=h.slice(_h0); h=h.slice(0,_h0);
+    document.getElementById('extra').insertAdjacentHTML('beforeend', `<div class="corner" style="position:absolute;left:${B.contact.corner[0]}px;bottom:${B.contact.corner[1]}px">${cHtml}</div>`); }
   if(B.proof && B.proof.inline){ const p=B.proof; h+=`<div class="proof inline" style="margin-top:${p.mt??40}px"><div class="row"><img src="assets/avatary.png"><span class="num">${esc(p.count||'700+')}</span></div><p>${fmt(p.text||'Více než 700 spokojených klientů')}</p>${p.stars===false?'':`<div class="stars">${STAR.repeat(5)}</div>`}</div>`; }
   const t=document.getElementById('txt'); t.innerHTML=h;
   if(side==='right' && B.align!=='left'){ t.style.left='auto'; t.style.right=(B.xr??77)+'px'; }

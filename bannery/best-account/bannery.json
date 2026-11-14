@@ -239,11 +239,11 @@
       "style": "pill",
       "label": "Zavolejte nám:",
       "phone": "+420 721 075 783",
-      "mt": 34
-    },
-    "proof": {
-      "inline": true,
-      "mt": 34
+      "mt": 34,
+      "corner": [
+        77,
+        62
+      ]
     },
     "badges": {},
     "web": "www.BestAccount.cz",
