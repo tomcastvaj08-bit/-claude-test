@@ -471,3 +471,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.05; m
 }
 /* klikací produkty v přehledu */
 .gcard, .pcard { cursor: pointer; }
+/* odkaz na stránku produktu přes celou kartu (spolehlivé i na iPhonu); tlačítka a vzorky zůstávají nad ním */
+.gcard { position: relative; }
+.plink { color: inherit; text-decoration: none; }
+.plink::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+.gcard .brick-btn, .pcard .brick-btn, .pcard .swatch, .pcard .variants { position: relative; z-index: 2; }
