@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
-import { createModel, ready } from './builders.js?v=20261114s';
+import { createModel, ready } from './builders.js?v=20261114t';
 await Promise.all([ready(), loadFigureKit()]);
 import { Figure, loadFigureKit } from './figures.js';
 
@@ -29,7 +29,6 @@ function stageHTML(p, i) {
       <div class="stage-model" data-model="${p.model}" role="img" aria-label="3D model: ${p.name}. Táhni do strany pro otočení.">
         <div class="fig boy" title="Ahoj!"></div><div class="fig girl" title="♥"></div>
       </div>
-      <div class="stage-build" aria-hidden="true"><div class="bar"><i></i></div><span data-count>Skládám…</span></div>
     </div>
     <div class="stage-front">
       <div class="stage-meta"><span class="tile-print stage-num">${String(i + 1).padStart(2, '0')} / ${String(PRODUCTS.length).padStart(2, '0')}</span><span class="tile-print">${p.kicker}</span></div>
@@ -40,7 +39,7 @@ function stageHTML(p, i) {
         <p class="pcard-desc">${p.desc}</p>
         ${v.options.length < 2 ? '' : `<div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === 0}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[0][0]}</em></div>`}
         <div class="buy"><div class="price brick" data-studs>${p.old ? `<s>${fmt(p.old)}</s>` : ''}<strong>${fmt(p.price)}</strong></div><button class="brick-btn" data-studs data-add="${p.id}">${BAG} Do košíku</button></div>
-        <ul class="perks"><li>Skladem</li><li>Odesíláme do 24 h</li><li>Dárkové balení zdarma</li></ul>
+        <ul class="perks"><li>Skladem</li><li>Odesíláme do 24 h</li></ul>
       </article>
     </div>
   </section>`;
@@ -140,34 +139,31 @@ const stages = $$('.stage').map((el, i) => {
   const p = byId(el.dataset.id);
   const modelEl = $('.stage-model', el);
   modelEl.dataset.pid = p.id;
-  const st = { el, p, modelEl, boyEl: $('.fig.boy', el), girlEl: $('.fig.girl', el), count: $('[data-count]', el), b: -1, c: -1 };
+  const st = { el, p, modelEl, boyEl: $('.fig.boy', el), girlEl: $('.fig.girl', el) };
   const car = byId(p.id).tags.includes('auta');
-  modelSlot(modelEl, p.model, { startProgress: 0, swing: car ? 0.6 : 0.42, rotY: car ? -0.55 : 0, phase: i, radiusK: car ? 0.92 : 1, elevation: car ? 0.32 : 0.16 });
+  modelSlot(modelEl, p.model, { startProgress: 1, swing: car ? 0.6 : 0.42, rotY: car ? -0.55 : 0, phase: i, radiusK: car ? 0.92 : 1, elevation: car ? 0.32 : 0.16 });
   figSlot(st.boyEl, false, 1, { phase: i + 1 });
   figSlot(st.girlEl, true, -1, { phase: i + 2 });
   return st;
 });
-// Scéna se složí sama a rychle, jakmile se objeví (nečeká se na další scroll):
-// b = postup skládání, c = vyjetí karty a panáčků.
+// Scéna: jakmile se sekce objeví, květina (už složená) přiletí z boku, pak vyjede karta a panáčci.
+// Žádné zápisy do stylů během scrollu – jen jednou se přidá třída (animace řeší CSS).
 function updateStages(now) {
   const vh = innerHeight;
   for (const st of stages) {
+    if (st.done) continue;
     const r = st.el.getBoundingClientRect();
-    if (r.bottom < -60 || r.top > vh + 60) continue;
-    if (!st.t0 && r.top < vh * 0.65) st.t0 = now;
-    const k = st.t0 ? (now - st.t0) / 1000 : 0;
-    const b = reduceMotion ? (st.t0 ? 1 : 0) : clamp(k / 0.9);
-    const c = reduceMotion ? b : clamp((k - 0.55) / 0.6);
-    if (Math.abs(b - st.b) > 1e-4) {
-      st.b = b; st.el.style.setProperty('--sb', b.toFixed(4));
-      st.count.textContent = b >= 1 ? `Hotovo · ${st.p.pieces} dílků ♥` : `Skládám… ${Math.round(b * st.p.pieces)} / ${st.p.pieces}`;
+    if (!st.t0) {
+      if (r.top < vh * 0.78 && r.bottom > 0) { st.t0 = now; st.el.classList.add('is-in'); }
+      else continue;
     }
-    if (Math.abs(c - st.c) > 1e-4) { st.c = c; st.el.style.setProperty('--sc', c.toFixed(4)); }
     const ctl = st.modelEl.__ctl;
-    if (ctl && !ctl.auto) ctl.model.setProgress(easeInOut(b));
+    if (ctl && !ctl.auto && ctl.model.progress < 1) ctl.model.setProgress(1);
+    const k = (now - st.t0) / 1000;
     const boy = st.boyEl.__fig, girl = st.girlEl.__fig;
-    if (boy) { boy.set('show', c > 0.1); boy.set('point', c > 0.55); }
-    if (girl) { girl.set('show', c > 0.22); girl.set('love', c > 0.85); }
+    if (boy) { boy.set('show', k > 0.6); boy.set('point', k > 1.0); }
+    if (girl) { girl.set('show', k > 0.75); girl.set('love', k > 1.3); }
+    if (k > 1.5 && boy && girl && ctl) st.done = true;
   }
 }
 

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114s';
+import { createModel, ready, LITE } from './builders.js?v=20261114t';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -352,7 +352,7 @@ function details(p) {
     <p class="pcard-line">${p.pieces} dílků · ${p.size}</p>
     <p class="pcard-desc">${p.desc}</p>
     ${v.options.length < 2 ? '' : `<div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === selected[p.id]}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[selected[p.id]][0]}</em></div>`}
-    <p class="ex-note">Doprava zdarma od 1 500 Kč · vrácení do 14 dnů</p>`;
+    <p class="ex-note">Skladem · vrácení do 14 dnů</p>`;
 }
 function openPanel(ex) {
   const p = ex.p;
