@@ -27,3 +27,7 @@
 - Font: Urbanist (nejbližší volná náhrada Gilroy) – nadpis 800 / 114 px / rozteč 109 px / tracking −0,01 em, text 500 / 48 px / rozteč 59 px
 - Levý okraj textu 77 px, logo vlevo nahoře (62, 80), šipka vpravo dole (1093, 1138)
 - Dělicí čára 56 px pod účařím nadpisu: světlá = tečka + linka 412 px, tmavá = linka 128 px + tečka
+
+## Pravidla (schváleno)
+- Barvy jen podle bannerů: bílé pozadí, černý nadpis, modrý akcent `#0068FF`, modré hexagony vlevo dole. Žádné jiné gradienty, záře ani částice.
+- Fotky lidí nevyřezávat – nechat jejich originální pozadí a jen ho plynule prolnout do banneru (`bgBox` + `bgFeather`, bílý přechod zleva).
