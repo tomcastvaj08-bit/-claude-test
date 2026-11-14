@@ -31,3 +31,6 @@
 ## Pravidla (schváleno)
 - Barvy jen podle bannerů: bílé pozadí, černý nadpis, modrý akcent `#0068FF`, modré hexagony vlevo dole. Žádné jiné gradienty, záře ani částice.
 - Fotky lidí nevyřezávat – nechat jejich originální pozadí a jen ho plynule prolnout do banneru (`bgBox` + `bgFeather`, bílý přechod zleva).
+- Na fotku člověka nikdy nedávat barevný závoj ani tónování – přechod do banneru jen na okraji fotky, mimo postavu.
+- Text vpravo = zarovnat úplně doprava (nadpis, linka, text, kontakt i počet klientů).
+- Tmavá verze: tmavé studiové fotky, pozadí `#08163A`, bílý nadpis, modrý akcent `#1673FF`.

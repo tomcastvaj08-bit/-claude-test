@@ -35,17 +35,19 @@
     "bgFeather": 260,
     "bgFeatherSide": "right",
     "headline": "Už žádné\nkrabice\n*účtenek.*",
-    "top": 270,
+    "top": 240,
     "body": [
       "Účetnictví děláme\nmoderně a online.",
-      "**Přijímáme\nnové klienty.**"
+      "**Přijímáme nové klienty.**"
     ],
     "bSize": 42,
     "contact": {
       "style": "box",
       "label": "Kontaktujte nás:",
       "phone": "+420 721 075 783",
-      "size": 46
+      "ink": true,
+      "size": 46,
+      "mt": 36
     },
     "hex": [
       [
@@ -57,7 +59,12 @@
     "badges": {},
     "web": "www.BestAccount.cz",
     "arrow": false,
-    "webInk": true
+    "webInk": false,
+    "proof": {
+      "inline": true,
+      "mt": 36
+    },
+    "webLeft": true
   },
   {
     "id": "tirolova-02b-gauc",
@@ -134,8 +141,7 @@
       962
     ],
     "bgColor": "#08163A",
-    "tone": "#08163A",
-    "bgFeather": 240,
+    "bgFeather": 200,
     "bgFeatherSide": "right",
     "headline": "Už žádné\nkrabice\n*účtenek.*",
     "top": 240,
@@ -165,7 +171,8 @@
     "badges": {},
     "web": "www.BestAccount.cz",
     "arrow": false,
-    "webLeft": true
+    "webLeft": true,
+    "fade": 0
   },
   {
     "id": "tirolova-01c-svetla-mobil",

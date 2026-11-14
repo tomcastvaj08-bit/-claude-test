@@ -126,6 +126,15 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 .mock .keys div i{display:block;font-style:normal;font-size:10px;font-weight:700;letter-spacing:.14em;color:#333;margin-top:2px}
 .mock .call{position:absolute;bottom:36px;left:50%;width:74px;height:74px;margin-left:-37px;border-radius:50%;background:#2DC653;display:grid;place-items:center}
 .mock .call svg{width:36px;height:36px}
+
+/* ===== zarovnání doprava (text vpravo) ===== */
+.align-right #txt{text-align:right}
+.align-right.light .rule b{left:auto;right:0}.align-right.light .rule i{left:auto;right:6px}
+.align-right.dark .rule i,.align-right.blue .rule i{left:auto;right:2px}
+.align-right.dark .rule b,.align-right.blue .rule b{left:auto;right:142px}
+.align-right .contact{flex-direction:row-reverse}
+.align-right .proof .row{flex-direction:row-reverse}
+.align-right .proof .stars{justify-content:flex-end}
 </style>
 </head>
 <body>
@@ -263,7 +272,7 @@ function extras(B, theme){
 function render(B){
   const c=document.getElementById('c');
   const theme=B.theme||'light', side=B.side||'left';
-  c.className=theme+' side-'+side;
+  c.className=theme+' side-'+side+((side==='right' && B.align!=='left')?' align-right':'');
   document.body.style.background = theme==='dark' ? '#08163A' : '#fff';
   const bg=document.getElementById('bg');
   if(B.bg){bg.src=B.bg;bg.style.display='';bg.style.objectPosition=B.bgPos||'center';} else bg.style.display='none';
@@ -307,7 +316,8 @@ function render(B){
   else if(B.contact) h+=`<div class="contact${B.contact.ink?' ink':''}"${B.contact.mt!=null?` style="margin-top:${B.contact.mt}px"`:''}><div class="ic">${PHONE_SOLID}</div><div>${B.contact.label?`<small>${fmt(B.contact.label)}</small>`:''}<b${B.contact.size?` style="font-size:${B.contact.size}px;line-height:${Math.round(B.contact.size*1.15)}px"`:''}>${esc(B.contact.phone||'+420 721 075 783')}</b></div></div>`;
   if(B.proof && B.proof.inline){ const p=B.proof; h+=`<div class="proof inline" style="margin-top:${p.mt??40}px"><div class="row"><img src="assets/avatary.png"><span class="num">${esc(p.count||'700+')}</span></div><p>${fmt(p.text||'Více než 700 spokojených klientů')}</p>${p.stars===false?'':`<div class="stars">${STAR.repeat(5)}</div>`}</div>`; }
   const t=document.getElementById('txt'); t.innerHTML=h;
-  t.style.left = B.x!=null ? B.x+'px' : '';
+  if(side==='right' && B.align!=='left'){ t.style.left='auto'; t.style.right=(B.xr??77)+'px'; }
+  else { t.style.right=''; t.style.left = B.x!=null ? B.x+'px' : ''; }
   // horní okraj: vrchol verzálky prvního řádku nadpisu = B.top (výchozí 292 px jako v originálech)
   const capTop = B.top ?? 296;
   const hs = B.hSize || 114, lh = B.hSize?Math.round(B.hSize*0.956):109;
