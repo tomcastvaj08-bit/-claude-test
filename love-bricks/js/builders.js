@@ -1,10 +1,10 @@
 // Registr všech modelů Love Bricks.
-export const MODEL_V = '20261114z'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
+export const MODEL_V = '20261115a'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
 // Bonsaj, kytice i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
 // které se po načtení slijí do jednoho modelu (js/solid.js). Procedurálně zůstalo jen srdce.
 import * as THREE from 'three';
-import { BrickModel, buildHeart } from './models.js?v=20261114z';
-import { loadSolid, SolidModel } from './solid.js?v=20261114z';
+import { BrickModel, buildHeart } from './models.js?v=20261115a';
+import { loadSolid, SolidModel } from './solid.js?v=20261115a';
 
 export const BUILDERS = { heart: buildHeart }; // procedurální modely (srdce v úvodu přehledu)
 

@@ -4,10 +4,11 @@
 // a vyjede panel s popisem a košíkem.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
-import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261114z';
-import { byId, fmt } from './products.js?v=20261114z';
-import { createModel, ready, LITE } from './builders.js?v=20261114z';
-import { Figure, loadFigureKit } from './figures.js?v=20261114z';
+import { RoundedBoxGeometry } from '../vendor/three/addons/RoundedBoxGeometry.js';
+import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115a';
+import { byId, fmt } from './products.js?v=20261115a';
+import { createModel, ready, LITE } from './builders.js?v=20261115a';
+import { Figure, loadFigureKit } from './figures.js?v=20261115a';
 
 initCommon();
 
@@ -694,49 +695,82 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // ------------------------------------------------------------ automat na kvítka (gašapon) – 3D, přímo v galerii
-// „Nevím, co chci koupit“ → do cesty před tebe spadne automat z kostek, otočí klikou, kulička se kutálí k tobě,
-// otevře se a v ní náhodná květina: „Tahle se jí bude líbit. Věř mi.“
+// „Nevím, co chci koupit“ → do cesty před tebe spadne automat z kostek, plný zabalených dárečků. Otočí klikou,
+// vypadne krabička s mašlí, přikutálí se k tobě, otevře se a vyletí z ní zmenšenina náhodné květiny.
 const gacha = { active: false };
 {
-  const plast = (c, o = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.34, clearcoat: 0.45, clearcoatRoughness: 0.18, sheen: 0.06, sheenColor: '#fff', ...o });
-  const RED = plast('#D01012'), GREY = plast('#4A4E55'), DARK = plast('#2A1E1E', { roughness: 0.7, clearcoat: 0 }), WHITE = plast('#F4F2EE'), YEL = plast('#F5C518');
-  const GLASS = new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.04, transmission: 1, thickness: 0.06, ior: 1.45, clearcoat: 1, clearcoatRoughness: 0.03, transparent: true, opacity: 1, envMapIntensity: 1.2, side: THREE.DoubleSide });
-  const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
-  const studG = new THREE.CylinderGeometry(0.048, 0.048, 0.034, 24);
+  // stejný plast jako u květin (lak, jemný lesk) + zaoblené hrany dílků
+  const plast = (c, o = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.32, clearcoat: 0.55, clearcoatRoughness: 0.16, sheen: 0.08, sheenColor: '#fff', envMapIntensity: 1.1, ...o });
+  const RED = plast('#C8100F'), GREY = plast('#5B6068'), LGREY = plast('#A0A5A9'), DARK = plast('#1E1A1A', { roughness: 0.6, clearcoat: 0.2 }), WHITE = plast('#F6F4F0'),
+    GOLD = plast('#C9A13A', { metalness: 0.85, roughness: 0.28, clearcoat: 0.3 }), CHROME = plast('#D8DCE0', { metalness: 1, roughness: 0.16, clearcoat: 0.2 });
+  const GLASS = new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.03, transmission: 1, thickness: 0.05, ior: 1.45, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, envMapIntensity: 1.4, side: THREE.DoubleSide });
+  const rb = (w, h, d, m, x, y, z, r = 0.012) => { const o = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m); o.position.set(x, y, z); return o; };
+  const cyl = (r, h, m, seg = 32) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), m);
+  const studG = new THREE.CylinderGeometry(0.048, 0.048, 0.034, 28);
   const studsOn = (g, m, y, xs, zs) => { for (const x of xs) for (const z of zs) { const s = new THREE.Mesh(studG, m); s.position.set(x, y + 0.017, z); g.add(s); } };
   const range = (a, b, n) => Array.from({ length: n }, (_, i) => a + (b - a) * (n === 1 ? 0.5 : i / (n - 1)));
   const G = new THREE.Group(); G.visible = false; scene.add(G);
-  const M = new THREE.Group(); G.add(M);                 // samotný automat (padá, přimáčkne se)
-  // podstavec + tělo z cihliček (střídavé spáry jako u skutečné stavby)
-  M.add(box(0.98, 0.08, 0.78, GREY, 0, 0.04, 0)); studsOn(M, GREY, 0.08, [-0.44, 0.44], range(-0.33, 0.33, 4));
+  const M = new THREE.Group(); G.add(M);
+  // podstavec: tmavě šedá deska s výstupky + zlatý lem
+  M.add(rb(1.02, 0.08, 0.8, GREY, 0, 0.04, 0, 0.015)); studsOn(M, GREY, 0.08, [-0.45, 0.45], range(-0.34, 0.34, 4)); studsOn(M, GREY, 0.08, range(-0.35, 0.35, 6), [0.36]);
+  M.add(rb(0.86, 0.025, 0.66, GOLD, 0, 0.0925, 0, 0.008));
+  // tělo z červených cihliček (zaoblené hrany = viditelné spáry jako u skutečné stavby)
   for (let L = 0; L < 4; L++) {
-    const y = 0.08 + L * 0.16 + 0.08, off = L % 2 ? 0.1 : -0.1;
-    for (const [x0, x1] of [[-0.4, off - 0.003], [off + 0.003, 0.4]]) M.add(box(x1 - x0, 0.154, 0.6, RED, (x0 + x1) / 2, y, 0));
+    const y = 0.105 + L * 0.16 + 0.08, off = L % 2 ? 0.1 : -0.1;
+    for (const [x0, x1] of [[-0.4, off], [off, 0.4]]) M.add(rb(x1 - x0 - 0.004, 0.156, 0.6, RED, (x0 + x1) / 2, y, 0, 0.014));
   }
-  // přední panel: štítek, klika, mince, výdejní otvor
-  const lab = document.createElement('canvas'); lab.width = 512; lab.height = 128; { const g = lab.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#1B1D22'; g.font = '72px Bungee, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KVĚTOMAT', 256, 70); }
-  const labTex = new THREE.CanvasTexture(lab); labTex.colorSpace = THREE.SRGBColorSpace;
-  document.fonts?.load('72px Bungee', 'KVĚTOMAT').then(() => { const g = lab.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#1B1D22'; g.font = '72px Bungee, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KVĚTOMAT', 256, 70); labTex.needsUpdate = true; });
-  const label = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.125, 0.02), [WHITE, WHITE, WHITE, WHITE, plast('#fff', { map: labTex }), WHITE]); label.position.set(0, 0.63, 0.31); M.add(label);
-  const crank = new THREE.Group(); crank.position.set(0, 0.42, 0.31); M.add(crank);
-  { const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.04, 40), WHITE); disc.rotation.x = Math.PI / 2; crank.add(disc);
-    const bar = box(0.2, 0.05, 0.05, GREY, 0, 0, 0.04); crank.add(bar); const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.06, 20), RED); hub.rotation.x = Math.PI / 2; hub.position.z = 0.06; crank.add(hub); }
-  M.add(box(0.07, 0.16, 0.02, DARK, 0.29, 0.42, 0.31)); M.add(box(0.012, 0.11, 0.024, YEL, 0.29, 0.42, 0.312));
-  M.add(box(0.32, 0.17, 0.05, DARK, 0, 0.19, 0.29));
-  // krk s výstupky, kopule se skleněným leskem, kuličky, čepička nahoře
-  M.add(box(0.86, 0.06, 0.66, GREY, 0, 0.75, 0)); studsOn(M, GREY, 0.78, range(-0.36, 0.36, 7), [-0.28, 0.28]); studsOn(M, GREY, 0.78, [-0.36, 0.36], range(-0.28, 0.28, 5));
-  const DC = new THREE.Vector3(0, 1.17, 0), DR = 0.42;
-  const balls = new THREE.Group(); balls.position.copy(DC); M.add(balls);
-  const COLS = ['#E4569A', '#F5C518', '#4B9F4A', '#0055BF', '#FE8A18', '#D01012', '#9B5FC0', '#2CB1C9'];
-  const hemi = (r, top) => new THREE.SphereGeometry(r, 28, 14, 0, Math.PI * 2, top ? 0 : Math.PI / 2, Math.PI / 2);
-  const capsule = (r, col) => { const c = new THREE.Group(); const t = new THREE.Mesh(hemi(r, true), plast(col)); const b = new THREE.Mesh(hemi(r, false), plast('#FAFAF8')); c.add(t, b); c.userData = { t, b }; return c; };
-  { let k = 0; const P = []; for (let tries = 0; tries < 900 && P.length < 22; tries++) { const v = new THREE.Vector3((Math.random() * 2 - 1) * 0.3, -0.33 + Math.random() * 0.36, (Math.random() * 2 - 1) * 0.3); if (v.length() > DR - 0.1 || P.some((q) => q.distanceTo(v) < 0.17)) continue; P.push(v); }
-    P.sort((a, b) => a.y - b.y).forEach((v) => { const c = capsule(0.088, COLS[k++ % COLS.length]); c.position.copy(v); c.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6); balls.add(c); }); }
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(DR, 48, 32), GLASS); dome.position.copy(DC); M.add(dome);
-  M.add(box(0.28, 0.1, 0.28, RED, 0, DC.y + DR + 0.01, 0)); studsOn(M, RED, DC.y + DR + 0.06, [-0.07, 0.07], [-0.07, 0.07]);
-  const out = capsule(0.088, '#E4569A'); out.visible = false; G.add(out);
+  // přední panel: bílý štítek, chromovaná klika, štěrbina na minci, výdejní otvor se zlatým rámečkem
+  const lab = document.createElement('canvas'); lab.width = 512; lab.height = 128;
+  const drawLab = () => { const g = lab.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#C8100F'; g.font = '72px Bungee, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KVĚTOMAT', 256, 70); labTex.needsUpdate = true; };
+  const labTex = new THREE.CanvasTexture(lab); labTex.colorSpace = THREE.SRGBColorSpace; drawLab(); document.fonts?.load('72px Bungee', 'KVĚTOMAT').then(drawLab);
+  const label = new THREE.Mesh(new RoundedBoxGeometry(0.52, 0.13, 0.02, 2, 0.008), [WHITE, WHITE, WHITE, WHITE, plast('#fff', { map: labTex }), WHITE]); label.position.set(0, 0.665, 0.31); M.add(label);
+  const crank = new THREE.Group(); crank.position.set(0, 0.44, 0.31); M.add(crank);
+  { const disc = cyl(0.12, 0.035, CHROME, 48); disc.rotation.x = Math.PI / 2; crank.add(disc);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.012, 12, 48), GOLD); crank.add(rim);
+    crank.add(rb(0.22, 0.05, 0.05, LGREY, 0, 0, 0.04, 0.02)); const hub = cyl(0.036, 0.06, RED, 24); hub.rotation.x = Math.PI / 2; hub.position.z = 0.07; crank.add(hub); }
+  M.add(rb(0.08, 0.17, 0.03, CHROME, 0.3, 0.44, 0.31, 0.01)); M.add(rb(0.014, 0.11, 0.03, DARK, 0.3, 0.44, 0.318, 0.005));
+  M.add(rb(0.36, 0.2, 0.03, GOLD, 0, 0.2, 0.3, 0.02)); M.add(rb(0.31, 0.15, 0.05, DARK, 0, 0.2, 0.3, 0.02));
+  // krk s výstupky, kulatá patka kopule, skleněná kopule plná dárečků, čepička s výstupky
+  M.add(rb(0.88, 0.06, 0.68, GREY, 0, 0.775, 0, 0.012)); studsOn(M, GREY, 0.805, range(-0.37, 0.37, 7), [-0.29, 0.29]); studsOn(M, GREY, 0.805, [-0.37, 0.37], range(-0.29, 0.29, 5));
+  { const c = cyl(0.36, 0.05, GOLD, 48); c.position.y = 0.83; M.add(c); }
+  const DC = new THREE.Vector3(0, 1.2, 0), DR = 0.42;
+  const COLS = ['#E4569A', '#F5C518', '#4B9F4A', '#0055BF', '#FE8A18', '#9B5FC0', '#2CB1C9', '#FFFFFF'];
+  const RIB = { '#E4569A': '#FFFFFF', '#F5C518': '#C8100F', '#4B9F4A': '#F5C518', '#0055BF': '#F5C518', '#FE8A18': '#FFFFFF', '#9B5FC0': '#F5C518', '#2CB1C9': '#FFFFFF', '#FFFFFF': '#C8100F' };
+  // zabalená krabička s mašlí (s = hrana), víko zvlášť (aby šlo odklopit)
+  const bowG = new THREE.TorusGeometry(0.22, 0.07, 10, 24);
+  function gift(sz, col) {
+    const g = new THREE.Group(), pm = plast(col), rm = plast(RIB[col] || '#fff'), hb = sz * 0.82, hl = sz * 0.22;
+    const body = rb(sz, hb, sz, pm, 0, hb / 2, 0, sz * 0.06); g.add(body);
+    g.add(rb(sz * 1.005, hb * 1.001, sz * 0.16, rm, 0, hb / 2, 0, sz * 0.02), rb(sz * 0.16, hb * 1.001, sz * 1.005, rm, 0, hb / 2, 0, sz * 0.02));
+    const lid = new THREE.Group(); lid.position.y = hb; g.add(lid);
+    lid.add(rb(sz * 1.08, hl, sz * 1.08, pm, 0, hl / 2, 0, sz * 0.06));
+    lid.add(rb(sz * 1.09, hl * 1.01, sz * 0.16, rm, 0, hl / 2, 0, sz * 0.02), rb(sz * 0.16, hl * 1.01, sz * 1.09, rm, 0, hl / 2, 0, sz * 0.02));
+    for (const s of [-1, 1]) { const b = new THREE.Mesh(bowG, rm); b.scale.setScalar(sz); b.position.set(s * sz * 0.17, hl + sz * 0.13, 0); b.rotation.set(0, Math.PI / 2, s * 0.6); lid.add(b); }
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(sz * 0.09, 12, 10), rm); knot.position.y = hl + sz * 0.06; lid.add(knot);
+    g.userData = { lid, hb, mats: [pm, rm] };
+    return g;
+  }
+  const gifts = new THREE.Group(); gifts.position.copy(DC); M.add(gifts);
+  { const P = []; for (let t = 0; t < 1500 && P.length < 20; t++) { const v = new THREE.Vector3((Math.random() * 2 - 1) * 0.28, -0.36 + Math.random() * 0.34, (Math.random() * 2 - 1) * 0.28); if (v.length() > DR - 0.13 || P.some((q) => q.distanceTo(v) < 0.165)) continue; P.push(v); }
+    P.sort((a, b) => a.y - b.y).forEach((v, i) => { const c = gift(0.12, COLS[i % COLS.length]); c.position.copy(v).add(new THREE.Vector3(0, -0.05, 0)); c.rotation.set((Math.random() - 0.5) * 0.9, Math.random() * 6, (Math.random() - 0.5) * 0.9); gifts.add(c); }); }
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(DR, 56, 36), GLASS); dome.position.copy(DC); M.add(dome);
+  { const c = cyl(0.17, 0.09, RED, 40); c.position.y = DC.y + DR + 0.0; M.add(c); studsOn(M, RED, DC.y + DR + 0.045, [-0.06, 0.06], [-0.06, 0.06]); }
+  // dárek, který vypadne, a zmenšená květina v něm
+  let out = gift(0.13, '#E4569A'); out.visible = false; G.add(out);
+  const mini = new THREE.Group(); mini.visible = false; G.add(mini);
+  const miniCache = new Map();
+  function miniOf(id) {
+    if (!miniCache.has(id)) {
+      const m = createModel(id); m.setProgress(1);
+      const g = new THREE.Group(); g.add(m.group);
+      const box = new THREE.Box3().setFromObject(m.group), sz = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+      m.group.position.set(-c.x, -box.min.y, -c.z);
+      g.userData.h = sz.y; miniCache.set(id, g);
+    }
+    return miniCache.get(id);
+  }
 
-  // HTML: zavřít + výsledek (karta)
+  // HTML: zavřít + výsledek (karta pod zmenšeninou)
   const el = document.createElement('div');
   el.className = 'gacha'; el.setAttribute('aria-hidden', 'true');
   el.innerHTML = `<div class="gacha-dim"></div><div class="gacha-flash"></div>
@@ -746,26 +780,29 @@ const gacha = { active: false };
   const res = $('.gacha-result', el), flash = $('.gacha-flash', el);
   let tl = null, last = null, pick = null, onDone = null;
   const ease = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2, k01 = (t, a, b) => clamp((t - a) / (b - a));
+  const back = (x) => 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2);
 
   function choose() {
     const pool = ORDER.filter((id) => id !== last); last = pool[Math.floor(Math.random() * pool.length)]; pick = byId(last);
-    out.userData.t.material.color.set(pick.accent);
+    const col = COLS[Math.floor(Math.random() * COLS.length)];
+    G.remove(out); out = gift(0.13, col); out.visible = false; G.add(out);
+    mini.clear(); mini.add(miniOf(pick.id)); mini.visible = false;
     res.style.setProperty('--accent', pick.accent);
-    res.innerHTML = `<img src="img/p/${pick.id}.webp" alt="" width="200" height="200"><h3>${pick.name}</h3><p><b>Tahle se jí bude líbit.</b> Věř mi.</p><p class="price-line">${fmt(pick.price)} · ${pick.pieces} dílků</p>
+    res.innerHTML = `<h3>${pick.name}</h3><p><b>Tahle se jí bude líbit.</b> Věř mi.</p><p class="price-line">${fmt(pick.price)} · ${pick.pieces} dílků</p>
       <div class="row"><button class="brick-btn sm" data-studs type="button" data-gacha-show>Ukázat mi ji</button><button class="brick-btn sm white" data-studs type="button" data-gacha-again>Zkusit znovu</button></div>
       <a class="more" href="produkt.html?id=${pick.id}">Detail produktu ›</a>`;
     studify(res);
   }
   function showCard(on) {
     el.classList.toggle('is-done', on);
-    res.animate(on ? [{ transform: 'translate(-50%,-50%) scale(.4) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.06) rotate(1deg)', opacity: 1, offset: .65 }, { transform: 'translate(-50%,-50%) scale(1) rotate(0)', opacity: 1 }]
-      : [{ opacity: 1, transform: 'translate(-50%,-50%) scale(1)' }, { opacity: 0, transform: 'translate(-50%,-50%) scale(.85)' }], { duration: on ? 520 : 220, easing: on ? 'cubic-bezier(.2,.9,.3,1.2)' : 'ease-in', fill: 'forwards' });
+    res.animate(on ? [{ transform: 'translate(-50%, 40px) scale(.7)', opacity: 0 }, { transform: 'translate(-50%, -6px) scale(1.03)', opacity: 1, offset: .65 }, { transform: 'translate(-50%, 0) scale(1)', opacity: 1 }]
+      : [{ opacity: 1, transform: 'translate(-50%, 0) scale(1)' }, { opacity: 0, transform: 'translate(-50%, 30px) scale(.9)' }], { duration: on ? 480 : 220, easing: on ? 'cubic-bezier(.2,.9,.3,1.2)' : 'ease-in', fill: 'forwards' });
   }
-  // časová osa (s): pád 0–0.7, klika 1.0–2.3, kulička ven 2.3–2.8, kutálení 2.8–3.5, ke kameře 3.5–4.2, otevření 4.4
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z), E_Y = EYE - 0.62;
+  // časová osa „spin“ (s): klika 0–1.3, dárek ven 1.3–1.8, kutálí se k tobě 1.8–2.6, usadí se 2.6–3.0, víko odletí 3.0, kytka vyletí 3.0–3.9
   function frame(now) {
     if (!tl) return;
     const t = window.__gT ?? (now - tl.t0) / 1000 * (reduceMotion ? 20 : 1); // __gT: jen pro testy (zastavení v čase)
-    const cz = -state.s;                                            // kamera stojí v z = -s, automat 3,3 m před ní
     if (tl.kind === 'drop') {
       const f = k01(t, 0, 0.7), y = 5 * (1 - f * f);
       const u = k01(t, 0.7, 1.15), sq = t < 0.7 ? 0 : Math.sin(Math.PI * Math.min(1, u * 1.2)) * Math.exp(-u * 2.5) * 0.09;
@@ -774,41 +811,49 @@ const gacha = { active: false };
       if (t >= 1.0) { tl = { kind: 'spin', t0: now }; choose(); }
     } else if (tl.kind === 'spin') {
       crank.rotation.z = -ease(k01(t, 0, 1.3)) * Math.PI * 4;
-      const w = t < 1.3 ? Math.sin(t * 38) * 0.05 * Math.sin(Math.PI * k01(t, 0, 1.3)) : 0; balls.rotation.set(w, w * 0.6, w * 0.8);
-      const a = k01(t, 1.3, 1.8), b = k01(t, 1.8, 2.5), c = k01(t, 2.5, 3.2);
-      out.visible = t > 1.3; const R = 0.088;
-      const pChute = new THREE.Vector3(0, 0.19, 0.26), pLip = new THREE.Vector3(0, R, 0.42), pFloor = new THREE.Vector3(0.05, R, 1.55);
-      const camLocal = new THREE.Vector3(0, EYE - 0.12 - G.position.y, (cz - 1.0) - G.position.z);
-      let s = 1;
-      if (t < 1.8) { out.position.lerpVectors(pChute, pLip, ease(a)); out.rotation.set(a * 2, 0, 0); }
-      else if (t < 2.5) { out.position.lerpVectors(pLip, pFloor, b); out.position.y = R + Math.abs(Math.sin(b * Math.PI * 2)) * 0.05 * (1 - b); out.rotation.set(2 + b * (pFloor.z - pLip.z) / R, 0, b * 0.3); }
-      else { const e = ease(c); out.position.lerpVectors(pFloor, camLocal, e); out.position.y = R + (camLocal.y - R) * e + Math.sin(c * Math.PI) * 0.25; s = 1 + e * 1.3; out.rotation.x = 2 + (pFloor.z - pLip.z) / R + e * 3; out.rotation.y = -e * 0.6; }
-      if (t >= 3.2 && t < 3.6) { const q = k01(t, 3.2, 3.6); out.rotation.z = Math.sin(q * Math.PI * 3) * 0.25 * (1 - q); out.rotation.x = 0; out.rotation.y = 0; }
-      out.scale.setScalar(s * (t >= 3.2 ? 2.3 : 1));
-      if (t >= 3.2) { out.position.copy(camLocal); out.scale.setScalar(2.3); }
-      if (t >= 3.6 && !tl.popped) {
-        tl.popped = true;
-        flash.animate([{ transform: 'translate(-50%,-50%) scale(0) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1) rotate(40deg)', opacity: .9, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.1) rotate(70deg)', opacity: 0 }], { duration: 1100, easing: 'ease-out', fill: 'forwards' });
-        setTimeout(() => showCard(true), 140);
+      const w = t < 1.3 ? Math.sin(t * 34) * 0.06 * Math.sin(Math.PI * k01(t, 0, 1.3)) : 0; gifts.rotation.set(w, w * 2, w * 0.8); gifts.position.y = DC.y + Math.abs(w) * 0.3;
+      const a = k01(t, 1.3, 1.8), b = k01(t, 1.8, 2.6), c = k01(t, 2.6, 3.0);
+      out.visible = t > 1.3 && !tl.opened; const hb = out.userData.hb;
+      const pChute = V3(0, 0.15, 0.24), pLip = V3(0, 0, 0.42), F = V3(0, E_Y, 1.3);   // F: kde se dárek vznáší před tebou
+      if (t < 1.8) { out.position.lerpVectors(pChute, pLip, ease(a)); out.position.y = 0.15 * (1 - a * a); out.rotation.set(a * 0.8, 0.3, 0); out.scale.setScalar(1); }
+      else if (t < 2.6) { // vyskočí obloukem k tobě, přitom se kutálí a roste
+        const e = ease(b); out.position.lerpVectors(pLip, F, e); out.position.y = F.y * e + Math.sin(b * Math.PI) * 0.35;
+        out.rotation.set(0.8 + b * Math.PI * 2, 0.3 + b * 0.6, b * 0.4); out.scale.setScalar(1 + e * 0.9);
+      } else { // zastaví se ve vzduchu, zahoupe se a usadí
+        out.position.copy(F); out.position.y = F.y + Math.sin(c * Math.PI * 2) * 0.02; out.rotation.set(Math.sin(c * Math.PI * 3) * 0.2 * (1 - c), 0.9 - 0.5 * ease(c), Math.sin(c * Math.PI * 2) * 0.12 * (1 - c)); out.scale.setScalar(1.9 + Math.sin(c * Math.PI) * 0.1);
       }
-      if (tl.popped) { const q = k01(t, 3.6, 4.2); out.userData.t.position.set(-q * 0.05, q * 0.12, 0); out.userData.t.rotation.z = q * 1.2; out.userData.b.position.set(q * 0.04, -q * 0.1, 0); out.userData.b.rotation.z = -q * 0.8;
-        out.userData.t.material.opacity = out.userData.b.material.opacity = 1 - q; out.userData.t.material.transparent = out.userData.b.material.transparent = true; if (q >= 1) out.visible = false; }
-      if (t >= 4.2) { tl = null; gacha.busy = false; }
+      // otevření: víko vyskočí a odletí, z krabice vystřelí zmenšená květina, otočí se a vznáší se
+      if (t >= 3.0) {
+        if (!tl.popped) { tl.popped = true;
+          flash.animate([{ transform: 'translate(-50%,-50%) scale(0) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1) rotate(40deg)', opacity: .9, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.1) rotate(70deg)', opacity: 0 }], { duration: 1100, easing: 'ease-out', fill: 'forwards' });
+          try { navigator.vibrate?.(12); } catch (_) {} }
+        const o = k01(t, 3.0, 3.6), lid = out.userData.lid;
+        lid.position.set(-o * 0.55, hb + o * 0.9 - o * o * 0.5, -o * 0.1); lid.rotation.set(o * 0.6, 0, o * 2.4);
+        for (const m of out.userData.mats) { if (t > 3.35) { m.transparent = true; m.opacity = 1 - k01(t, 3.35, 3.9); } }
+        out.visible = t < 3.9;
+        const f = k01(t, 3.0, 3.85), H = mini.children[0]?.userData.h || 1, target = 0.62 / H;
+        mini.visible = true;
+        const base = V3(F.x, F.y + hb * 1.9, F.z), top = V3(0, E_Y + 0.22, F.z - 0.05);
+        mini.position.lerpVectors(base, top, back(f)); mini.position.y = base.y + (top.y - base.y) * back(f);
+        mini.scale.setScalar(Math.max(0.0001, target * back(f)));
+        mini.rotation.y = (1 - ease(f)) * Math.PI * 3 + (t - 3.85 > 0 ? Math.sin((t - 3.85) * 1.6) * 0.35 : 0);
+        if (t >= 3.95 && !tl.card) { tl.card = true; showCard(true); gacha.busy = false; }
+      }
     } else if (tl.kind === 'up') {
-      const f = k01(t, 0, 0.5); M.position.y = 5 * f * f; out.visible = false;
-      if (f >= 1) { tl = null; G.visible = false; gacha.active = false; gacha.busy = false; el.classList.remove('is-open'); el.setAttribute('aria-hidden', 'true'); document.body.classList.remove('is-gacha'); onDone?.(); onDone = null; }
+      const f = k01(t, 0, 0.5); M.position.y = 5 * f * f; out.visible = false; mini.scale.multiplyScalar(0.85);
+      if (f >= 1) { tl = null; G.visible = false; mini.visible = false; gacha.active = false; gacha.busy = false; el.classList.remove('is-open'); el.setAttribute('aria-hidden', 'true'); document.body.classList.remove('is-gacha'); onDone?.(); onDone = null; }
     }
     if (tl) requestAnimationFrame(frame);
   }
-  function resetCapsule() { out.visible = false; out.scale.setScalar(1); for (const h of [out.userData.t, out.userData.b]) { h.position.set(0, 0, 0); h.rotation.set(0, 0, 0); h.material.opacity = 1; h.material.transparent = false; } }
+  function resetGift() { out.visible = false; out.scale.setScalar(1); out.userData.lid.position.set(0, out.userData.hb, 0); out.userData.lid.rotation.set(0, 0, 0); for (const m of out.userData.mats) { m.opacity = 1; m.transparent = false; } mini.visible = false; }
   function open() {
     if (gacha.active || mode === 'focus' || state.warp) return;
     gacha.active = gacha.busy = true; state.v = 0; state.target = null; state.hold = 0;
-    G.position.set(0, 0, -state.s - 2.9); G.rotation.y = 0; M.position.y = 5; M.scale.set(1, 1, 1); crank.rotation.z = 0; resetCapsule(); G.visible = true;
+    G.position.set(0, 0, -state.s - 2.9); M.position.y = 5; M.scale.set(1, 1, 1); crank.rotation.z = 0; resetGift(); G.visible = true;
     el.classList.add('is-open'); el.setAttribute('aria-hidden', 'false'); document.body.classList.add('is-gacha');
     tl = { kind: 'drop', t0: performance.now() }; requestAnimationFrame(frame);
   }
-  function again() { if (gacha.busy) return; gacha.busy = true; showCard(false); resetCapsule(); crank.rotation.z = 0; tl = { kind: 'spin', t0: performance.now() + 250 }; setTimeout(() => choose(), 0); requestAnimationFrame(frame); }
+  function again() { if (gacha.busy) return; gacha.busy = true; showCard(false); resetGift(); crank.rotation.z = 0; tl = { kind: 'spin', t0: performance.now() + 250 }; choose(); requestAnimationFrame(frame); }
   function close(after) {
     if (!gacha.active || (gacha.busy && !after)) return;
     gacha.busy = true; onDone = after || null;
@@ -823,7 +868,7 @@ const gacha = { active: false };
     const to = Math.max(0, slotS(k) - stop);
     document.body.classList.add('is-moved');
     if (Math.abs(to - state.s) > 0.05) { state.warp = { from: state.s, to, t: 0, dur: reduceMotion ? 0.01 : 0.8 }; state.v = 0; state.target = null; }
-    const arrive = () => { if (state.warp) return requestAnimationFrame(arrive); updateWindow(); if (ex.slot === k) focus(ex); }; // až doletíš, otevře se detail
+    const arrive = () => { if (state.warp) return requestAnimationFrame(arrive); updateWindow(); if (ex.slot === k) focus(ex); };
     requestAnimationFrame(arrive);
   }
   document.addEventListener('click', (e) => {
