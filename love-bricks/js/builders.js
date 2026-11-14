@@ -1,5 +1,5 @@
 // Registr všech modelů Love Bricks.
-export const MODEL_V = '20261114q'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
+export const MODEL_V = '20261114r'; // zvýšit při každé změně modelů (obejde mezipaměť prohlížeče)
 // Bonsaj, kytice i květiny jsou stavby z originálních dílků (LDraw → Blender → .glb),
 // které se po načtení slijí do jednoho modelu (js/solid.js). Procedurálně zůstalo jen srdce.
 import * as THREE from 'three';
@@ -51,18 +51,20 @@ function addVase(sm, { bottom, top, r, rb = r * 0.7 }) {
   const soil = new THREE.MeshStandardMaterial({ color: '#3B2A1F', roughness: 1 });
   const yb = -bottom / 20, yt = -top / 20, H = yt - yb, R = r / 20, Rb = rb / 20, Rt = R * 0.885, yc = yb + H * 0.77, T = R * 0.11, f = 0.16;
   const body = (y) => Rb + (Rt - Rb) * (y - yb) / (yc - yb);
+  // profil s velkými zaobleními – žádná ostrá hrana (dno, přechod do límce, oblý horní okraj)
   const pts = [new THREE.Vector2(0.001, yb)];
-  for (let k = 0; k <= 6; k++) { const a = (k / 6) * Math.PI / 2; pts.push(new THREE.Vector2(Rb - f + Math.sin(a) * f, yb + f - Math.cos(a) * f)); } // zaoblené dno
-  pts.push(new THREE.Vector2(body(yc), yc));                                                        // kónické tělo
-  for (let k = 0; k <= 4; k++) { const a = (k / 4) * Math.PI / 2; pts.push(new THREE.Vector2(body(yc) + (R - body(yc)) * Math.sin(a), yc + 0.12 * (1 - Math.cos(a)))); } // zaoblený spodek límce
-  pts.push(new THREE.Vector2(R, yt - 0.12));
-  for (let k = 0; k <= 6; k++) { const a = (k / 6) * Math.PI / 2; pts.push(new THREE.Vector2(R - 0.12 + Math.cos(a) * 0.12, yt - 0.12 + Math.sin(a) * 0.12)); } // oblá vnější hrana
-  pts.push(new THREE.Vector2(R - T + 0.08, yt));
-  for (let k = 0; k <= 4; k++) { const a = (k / 4) * Math.PI / 2; pts.push(new THREE.Vector2(R - T + 0.08 - Math.sin(a) * 0.08, yt - 0.08 + Math.cos(a) * 0.08)); } // oblá vnitřní hrana
+  const fb = Math.min(0.9, Rb * 0.16);                                                                // zaoblené dno
+  for (let k = 0; k <= 10; k++) { const a = (k / 10) * Math.PI / 2; pts.push(new THREE.Vector2(Rb - fb + Math.sin(a) * fb, yb + fb - Math.cos(a) * fb)); }
+  const rc = Math.min(0.8, (R - Rt) * 0.9 + 0.3), y1 = yc - 0.5, P1 = new THREE.Vector2(body(y1), y1), P2 = new THREE.Vector2(R, yc + rc);
+  const C1 = new THREE.Vector2(body(yc - 0.15), yc - 0.15), C2 = new THREE.Vector2(R, yc - 0.05);      // měkký oblý spodek límce (Bézier)
+  for (let k = 0; k <= 14; k++) { const t = k / 14, u = 1 - t;
+    pts.push(new THREE.Vector2(u * u * u * P1.x + 3 * u * u * t * C1.x + 3 * u * t * t * C2.x + t * t * t * P2.x, u * u * u * P1.y + 3 * u * u * t * C1.y + 3 * u * t * t * C2.y + t * t * t * P2.y)); }
+  const rl = T / 2;                                                                                   // horní okraj: celý půlkruh
+  for (let k = 0; k <= 16; k++) { const a = (k / 16) * Math.PI; pts.push(new THREE.Vector2(R - rl + Math.cos(a) * rl, yt - rl + Math.sin(a) * rl)); }
   pts.push(new THREE.Vector2(R - T, yt - H * 0.1));                                                 // vnitřní stěna
   const pot = new THREE.Mesh(new THREE.LatheGeometry(pts, 128), mat);
   const fill = new THREE.Mesh(new THREE.CircleGeometry(R - T, 64), soil);                          // hlína kousek pod okrajem
-  fill.rotation.x = -Math.PI / 2; fill.position.y = yt - H * 0.1;
+  fill.rotation.x = -Math.PI / 2; fill.position.y = yt - H * 0.1 + 0.01;
   sm.model.add(pot, fill);
   const py = sm.model.position.y; sm.model.position.y = 0; sm.model.updateMatrixWorld(true);
   sm.box = new THREE.Box3().setFromObject(sm.model);
