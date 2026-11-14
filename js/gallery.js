@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114r';
+import { createModel, ready, LITE } from './builders.js?v=20261114s';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -403,7 +403,7 @@ function neighbour(d) {
 
 // ------------------------------------------------------------ okno exponátů (nekonečná smyčka)
 function updateWindow() {
-  const k0 = Math.max(0, Math.floor((state.s - 12) / SPACING) * 2);
+  const k0 = Math.max(0, Math.floor((state.s - 6) / SPACING) * 2); // okno sahá dost dopředu – nové exponáty se připraví ještě v mlze, ne těsně před tebou
   const used = new Set();
   for (let k = k0; k < k0 + WINDOW; k++) {
     const ex = exhibits[k % N];
@@ -421,6 +421,7 @@ function updateWindow() {
 const introStart = performance.now() + 60;
 let introDone = false, shake = 0;
 const DROP = 650; // délka pádu orchidejí (ms) – všechno (orchideje i tlačítko) padá najednou
+const FADE = 650; // prolnutí ostatních exponátů při objevení
 function enter() { /* vstup je hned – ponecháno kvůli kompatibilitě */ }
 state.entered = true; state.s = 0;
 document.body.classList.add('is-in');
@@ -548,7 +549,7 @@ document.addEventListener('click', (e) => {
 // ------------------------------------------------------------ smyčka
 let last = performance.now(), frames = [];
 const perf = { n: 0, sum: 0, max: 0, reset() { this.n = 0; this.sum = 0; this.max = 0; }, get avg() { return this.n ? this.sum / this.n : 0; } };
-window.__lb = { perf, stats: {}, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)), _box: () => exhibits.map((e) => [e.id, +new THREE.Box3().setFromObject(e.m.group, true).min.y.toFixed(3), e.root.position.y]), _ex: () => exhibits.map((e) => [e.id, e.slot, e.inWindow, e.shown, e.dropped, e.root.visible, +e.m.progress.toFixed(2), +(slotS(e.slot) - state.s).toFixed(1)]) };
+window.__lb = { perf, stats: {}, _s: (v) => { state.s = v; state.target = null; updateWindow(); }, visible: () => exhibits.filter((e) => e.root.visible).map((e) => e.id), get s() { return state.s; }, focusId: () => focusEx?.id || null, goTo, enter, _focus: (id) => focus(exhibits.find((e) => e.id === id)), _box: () => exhibits.map((e) => [e.id, +new THREE.Box3().setFromObject(e.m.group, true).min.y.toFixed(3), e.root.position.y]), _ex: () => exhibits.map((e) => [e.id, e.slot, e.inWindow, e.shown, e.dropped, e.root.visible, +e.m.progress.toFixed(2), +(slotS(e.slot) - state.s).toFixed(1)]) };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -621,10 +622,12 @@ function frame(now) {
       if (!ex.shown) { ex.shown = true; ex.m.m.appear = false; ex.t0 = introStart; ex.m.setProgress(0); }
       if (!ex.landed && now >= ex.t0 + DROP * 0.72) { ex.landed = true; if (!reduceMotion) shake = Math.max(shake, 1); }
       if (now >= ex.t0 + DROP) { ex.dropped = true; ex.m.setProgress(1); }
-    } else if (!ex.dropped || !ex.shown) { ex.shown = true; ex.dropped = true; ex.t0 = 0; ex.m.setProgress(1); }
+    } else if (!ex.shown) {   // ostatní se plynule vynoří (prolnutí), žádné náhlé vyskočení
+      ex.shown = true; ex.m.m.appear = true; ex.dropped = false; ex.t0 = now; ex.m.setProgress(0);
+    } else if (!ex.dropped && now >= ex.t0 + FADE) { ex.dropped = true; ex.m.setProgress(1); }
     ex.root.visible = ex.shown && now >= ex.t0 && (ex === focusEx || (d > -8 && d < 26));
     if (!ex.root.visible) continue;
-    if (ex !== focusEx && !ex.dropped) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / DROP));
+    if (ex !== focusEx && !ex.dropped) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / (ex.slot < 2 ? DROP : FADE)));
     ex.shMat.opacity = ex.shMat.opacity + (0.55 * clamp((ex.m.progress - 0.7) / 0.3) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 8)); // lehký stín, naplno až po dopadu
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
