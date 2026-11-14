@@ -4,10 +4,10 @@
 // a vyjede panel s popisem a košíkem.
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
-import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
-import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114x';
-import { Figure, loadFigureKit } from './figures.js';
+import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261114y';
+import { byId, fmt } from './products.js?v=20261114y';
+import { createModel, ready, LITE } from './builders.js?v=20261114y';
+import { Figure, loadFigureKit } from './figures.js?v=20261114y';
 
 initCommon();
 

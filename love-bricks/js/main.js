@@ -1,11 +1,11 @@
 // Love Bricks – hlavní stránka: 3D scény, scroll choreografie, katalog, košík.
 import * as THREE from 'three';
-import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
-import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
-import { Stage3D } from './stage3d.js';
-import { createModel, ready } from './builders.js?v=20261114x';
+import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js?v=20261114y';
+import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js?v=20261114y';
+import { Stage3D } from './stage3d.js?v=20261114y';
+import { createModel, ready } from './builders.js?v=20261114y';
 await Promise.all([ready(), loadFigureKit()]);
-import { Figure, loadFigureKit } from './figures.js';
+import { Figure, loadFigureKit } from './figures.js?v=20261114y';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -34,7 +34,7 @@ function stageHTML(p, i) {
       <div class="stage-meta"><span class="tile-print stage-num">${String(i + 1).padStart(2, '0')} / ${String(PRODUCTS.length).padStart(2, '0')}</span><span class="tile-print">${p.kicker}</span></div>
       <article class="pcard brick-card" data-studs data-product="${p.id}">
         <div class="pcard-tags">${p.tags.map(t => `<span class="chip">${OCCASIONS[t]}</span>`).join('')}</div>
-        <h3>${p.name}</h3>
+        <h3><a class="plink" href="produkt.html?id=${p.id}">${p.name}</a></h3>
         <p class="pcard-line">${p.line} · ${p.pieces} dílků · ${p.size} · ${p.age}</p>
         <p class="pcard-desc">${p.desc}</p>
         ${v.options.length < 2 ? '' : `<div class="variants" role="group" aria-label="${v.label}"><span>${v.label}:</span>${v.options.map(([n, c], k) => `<button class="swatch" style="--c:${c}" aria-label="${n}" aria-pressed="${k === 0}" data-variant="${k}"></button>`).join('')}<em data-vname>${v.options[0][0]}</em></div>`}
@@ -52,7 +52,7 @@ $('#grid').innerHTML = ALL.map((p) => `
     <div class="gcard-slot" data-gmodel="${p.model}" style="--tint:${TINT[p.id] || '#F3EEE6'}" role="img" aria-label="3D model: ${p.name}"></div>
     <div class="gcard-body">
       <div><span class="chip">${p.line}</span></div>
-      <h3>${p.name}</h3>
+      <h3><a class="plink" href="produkt.html?id=${p.id}">${p.name}</a></h3>
       <p class="gcard-meta">${p.pieces} dílků · ${p.size} · ${p.age}</p>
       <div class="gcard-foot"><strong>${fmt(p.price)}</strong><button class="brick-btn sm" data-studs data-add="${p.id}">Do košíku</button></div>
     </div>
