@@ -61,13 +61,69 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 .dark p.b,.dark ul.checks li{color:#F4F7FF}
 .dark .rule i,.dark .rule b{background:var(--blue-dark)}
 .dark .phone{color:#fff}
+
+/* ===== MODRÁ varianta (pestřejší: gradient, záře, částice) ===== */
+.blue{--accent:#8CCBFF}
+.blue h1{color:#fff}.blue h1 em{color:var(--accent)}
+.blue p.b,.blue ul.checks li{color:#EEF4FF}
+.blue .rule i,.blue .rule b{background:var(--accent)}
+.blue .rule i{left:2px;width:128px}.blue .rule b{left:142px;width:7px;height:7px;top:3px}
+.blue .phone{color:#fff}
+#deco,#extra{position:absolute;inset:0;pointer-events:none}
+#deco canvas{position:absolute;inset:0}
+#person{position:absolute;display:none}
+/* kontakt v boxu */
+.contact{display:flex;align-items:center;gap:26px;margin-top:44px}
+.contact .ic{width:96px;height:96px;border-radius:24px;display:grid;place-items:center;background:var(--blue);color:#fff;flex:none;box-shadow:0 10px 28px rgba(0,60,200,.35)}
+.blue .contact .ic{background:#fff;color:var(--blue);box-shadow:0 10px 30px rgba(0,20,90,.35)}
+.contact .ic svg{width:52px;height:52px}
+.contact .ic svg path{fill:currentColor;stroke:none}
+.contact small{display:block;font-size:34px;line-height:40px;font-weight:500;color:var(--body-ink)}
+.contact b{display:block;font-size:54px;line-height:62px;font-weight:800;letter-spacing:-0.01em;color:var(--blue);white-space:nowrap}
+.blue .contact small{color:#DCE8FF}.blue .contact b{color:#fff}
+.dark .contact small{color:#DCE8FF}.dark .contact b{color:#fff}
+/* sociální důkaz */
+.proof{position:absolute}
+.proof .row{display:flex;align-items:center;gap:22px}
+.proof .row img{height:96px}
+.proof .num{font-size:92px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:var(--ink)}
+.blue .proof .num,.dark .proof .num{color:#fff}
+.proof p{font-size:34px;line-height:42px;font-weight:500;margin-top:14px;color:var(--body-ink);white-space:nowrap}
+.blue .proof p,.dark .proof p{color:#EEF4FF}
+.proof .stars{display:flex;gap:8px;margin-top:12px}
+.proof .stars svg{width:40px;height:40px}
+/* komory */
+.badges{position:absolute;top:84px;right:60px;display:flex;align-items:center;gap:26px}
+.badges img{height:104px}
+.badges img.ka{height:100px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.18))}
+/* web */
+.web{position:absolute;right:62px;bottom:62px;font-size:34px;font-weight:600;letter-spacing:.01em;color:#fff;text-shadow:0 2px 12px rgba(0,20,80,.45)}
+.light .web.ink{color:var(--ink);text-shadow:none}
+/* mockup telefonu */
+.mock{position:absolute;width:330px;height:640px;border-radius:58px;background:#11141a;padding:12px;box-shadow:0 30px 60px rgba(0,30,110,.35),inset 0 0 0 2px #3a3f48}
+.mock .scr{position:relative;width:100%;height:100%;border-radius:47px;background:#fff;overflow:hidden;font-family:"Urbanist",sans-serif}
+.mock .isl{position:absolute;left:50%;top:13px;width:108px;height:32px;border-radius:20px;background:#0b0d10;transform:translateX(-50%)}
+.mock .st{position:absolute;top:17px;left:30px;right:26px;display:flex;justify-content:space-between;font-size:17px;font-weight:700;color:#111}
+.mock .brand{position:absolute;top:84px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:10px}
+.mock .brand img.i{width:44px;height:44px}
+.mock .brand img.w{height:44px;width:auto;margin-left:-6px}
+.mock .no{position:absolute;top:150px;left:0;right:0;text-align:center;font-size:33px;font-weight:600;color:#111;letter-spacing:.01em}
+.mock .keys{position:absolute;top:226px;left:34px;right:34px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px 20px;justify-items:center}
+.mock .keys div{width:70px;height:70px;border-radius:50%;background:#EEF0F4;display:grid;place-items:center;text-align:center;line-height:1}
+.mock .keys div span{display:block;font-size:30px;font-weight:500;color:#111}
+.mock .keys div i{display:block;font-style:normal;font-size:10px;font-weight:700;letter-spacing:.14em;color:#333;margin-top:2px}
+.mock .call{position:absolute;bottom:36px;left:50%;width:74px;height:74px;margin-left:-37px;border-radius:50%;background:#2DC653;display:grid;place-items:center}
+.mock .call svg{width:36px;height:36px}
 </style>
 </head>
 <body>
 <div id="c">
   <img id="bg" alt="">
+  <div id="deco"></div>
+  <img id="person" alt="">
   <div id="fade"></div>
   <svg id="hex" viewBox="0 0 1254 1254"></svg>
+  <div id="extra"></div>
   <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt="" style="left:10px;top:8px;width:101px;height:100px"><img id="word" src="assets/logo_word_black.png" alt=""></div>
   <div id="txt"></div>
   <svg id="arrow" viewBox="0 0 102 48" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24H97M76 4L97 24L76 44"/></svg>
@@ -99,15 +155,95 @@ function hexes(theme, corners){
         if(theme==='light'){
           const o=(0.35+rnd()*0.55).toFixed(2);
           g+=`<polygon points="${pts}" fill="#5B9BFF" fill-opacity="${o*0.55}" stroke="#fff" stroke-opacity=".9" stroke-width="3"/>`;
+        }else if(theme==='blue'){
+          const o=(0.05+rnd()*0.22).toFixed(2);
+          g+=`<polygon points="${pts}" fill="#9CC8FF" fill-opacity="${o}" stroke="#BFDBFF" stroke-opacity=".55" stroke-width="2.2"/>`;
         }else{
           const o=(0.15+rnd()*0.35).toFixed(2);
           g+=`<polygon points="${pts}" fill="#0E2A6E" fill-opacity="${o}" stroke="#2F7BFF" stroke-opacity=".85" stroke-width="2.2"/>`;
         }
       }
     }
-    s+=`<g mask="url(#k${i})"${theme==='dark'?' style="filter:drop-shadow(0 0 6px rgba(40,120,255,.55))"':''}>${g}</g>`;
+    s+=`<g mask="url(#k${i})"${theme==='dark'?' style="filter:drop-shadow(0 0 6px rgba(40,120,255,.55))"':theme==='blue'?' style="filter:drop-shadow(0 0 8px rgba(160,210,255,.6))"':''}>${g}</g>`;
   });
   return s;
+}
+
+const STAR='<svg viewBox="0 0 24 24"><path fill="#FFC21A" d="M12 1.8l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.9l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z"/></svg>';
+const PHONE_SOLID='<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>';
+
+// pozadí: modrý gradient, záře, částice, vodoznak lva
+function deco(B, theme){
+  const d=document.getElementById('deco'); d.innerHTML=''; d.style.background='';
+  const mode = B.deco ?? (theme==='blue' ? 'blue' : null);
+  if(!mode) return;
+  const g=B.glow; // [x,y,r] záře za postavou
+  if(mode==='blue'){
+    d.style.background = [
+      g?`radial-gradient(${g[2]}px ${g[2]}px at ${g[0]}px ${g[1]}px, rgba(214,232,255,.92) 0%, rgba(140,190,255,.55) 32%, rgba(60,130,255,0) 70%)`:'',
+      'radial-gradient(760px 620px at 0px 1254px, rgba(4,30,120,.85) 0%, rgba(4,30,120,0) 70%)',
+      'radial-gradient(900px 520px at 20% -8%, rgba(70,150,255,.75) 0%, rgba(70,150,255,0) 70%)',
+      'linear-gradient(140deg, #0B5BFF 0%, #0A48D8 34%, #0835A8 64%, #06226E 100%)'
+    ].filter(Boolean).join(',');
+  }else if(mode==='lightblue'){
+    d.style.background = [
+      g?`radial-gradient(${g[2]}px ${g[2]}px at ${g[0]}px ${g[1]}px, rgba(36,118,255,.95) 0%, rgba(36,118,255,.55) 38%, rgba(36,118,255,0) 70%)`:'',
+      'radial-gradient(820px 560px at 100% 105%, rgba(0,92,255,.55) 0%, rgba(0,92,255,0) 70%)',
+      'linear-gradient(160deg, #FFFFFF 0%, #F2F7FF 40%, #D9E8FF 100%)'
+    ].filter(Boolean).join(',');
+  }
+  // vodoznak lva
+  if(B.watermark!==false){
+    const w=B.watermark||[640,300,860];
+    d.innerHTML+=`<img src="assets/logo_icon_hd.png" style="position:absolute;left:${w[0]}px;top:${w[1]}px;width:${w[2]}px;opacity:${mode==='blue'?.10:.07};${mode==='blue'?'filter:brightness(3) saturate(0);mix-blend-mode:soft-light;opacity:.35':''}">`;
+  }
+  // částice / bokeh
+  const cv=document.createElement('canvas'); cv.width=1254; cv.height=1254; d.appendChild(cv);
+  const x=cv.getContext("2d"); let seed=11; const r=()=>((seed=(seed*16807)%2147483647)/2147483647);
+  const light = mode==='blue';
+  for(let i=0;i<26;i++){ // bokeh
+    const px=r()*1254, py=r()*1254, rr=14+r()*46;
+    const gr=x.createRadialGradient(px,py,0,px,py,rr);
+    const c= light?'255,255,255':'0,104,255';
+    gr.addColorStop(0,`rgba(${c},${(light?.10:.08)+r()*.08})`); gr.addColorStop(1,`rgba(${c},0)`);
+    x.fillStyle=gr; x.beginPath(); x.arc(px,py,rr,0,7); x.fill();
+  }
+  for(let i=0;i<110;i++){ // jiskry
+    const px=r()*1254, py=r()*1254, rr=.8+r()*2.6, o=.25+r()*.6;
+    x.fillStyle= light?`rgba(220,236,255,${o})`:`rgba(0,104,255,${o*.55})`;
+    x.shadowColor= light?'rgba(160,210,255,.9)':'rgba(0,104,255,.6)'; x.shadowBlur=8;
+    x.beginPath(); x.arc(px,py,rr,0,7); x.fill();
+  }
+  x.shadowBlur=0;
+  // jemné světelné paprsky
+  if(light){
+    x.globalCompositeOperation='screen';
+    for(const [a,o] of [[-0.42,.07],[-0.30,.05]]){
+      x.save(); x.translate(1254,0); x.rotate(a);
+      const lg=x.createLinearGradient(-1600,0,0,0); lg.addColorStop(0,'rgba(255,255,255,0)'); lg.addColorStop(1,`rgba(200,225,255,${o})`);
+      x.fillStyle=lg; x.fillRect(-1600,-60,1600,120); x.restore();
+    }
+  }
+}
+
+function extras(B, theme){
+  const e=document.getElementById('extra'); let h='';
+  if(B.badges) h+=`<div class="badges" style="${B.badges.top?`top:${B.badges.top}px;`:''}"><img class="ka" src="assets/komora_auditoru.png"><img src="assets/komora_danovych_poradcu${theme==='light'?'_navy':''}.png"></div>`;
+  if(B.proof){
+    const p=B.proof;
+    h+=`<div class="proof" style="left:${p.x??77}px;top:${p.y}px"><div class="row"><img src="assets/avatary.png"><span class="num">${esc(p.count||'700+')}</span></div><p>${fmt(p.text||'Více než 700 spokojených klientů')}</p>${p.stars===false?'':`<div class="stars">${STAR.repeat(5)}</div>`}</div>`;
+  }
+  if(B.mockup){
+    const m=B.mockup;
+    const keys=[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']];
+    h+=`<div class="mock" style="left:${m.x}px;top:${m.y}px;transform:rotate(${m.rot??0}deg) scale(${m.scale??1});transform-origin:top left"><div class="scr"><div class="isl"></div><div class="st"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="brand"><img class="i" src="assets/logo_icon_hd.png"><img class="w" src="assets/logo_word_black.png" style="clip-path:inset(0 0 0 31%);margin-left:-44px"></div>
+      <div class="no">${esc(m.phone||B.phoneNo||'+420 721 075 783')}</div>
+      <div class="keys">${keys.map(k=>`<div><span>${k[0]}</span>${k[1]?`<i>${k[1]}</i>`:''}</div>`).join('')}</div>
+      <div class="call">${PHONE_SOLID.replace('<path','<path fill="#fff"')}</div></div></div>`;
+  }
+  if(B.web) h+=`<div class="web${B.webInk?' ink':''}">${esc(B.web)}</div>`;
+  e.innerHTML=h;
 }
 
 function render(B){
@@ -120,14 +256,20 @@ function render(B){
   // bgBox: [vlevo, nahoře, šířka] – ruční umístění fotky (portréty apod.), bgColor = barva okolo fotky
   if(B.bgBox){Object.assign(bg.style,{inset:'auto',left:B.bgBox[0]+'px',top:B.bgBox[1]+'px',width:B.bgBox[2]+'px',height:'auto',objectFit:'fill',webkitMaskImage:`linear-gradient(90deg,transparent 0,#000 ${B.bgFeather??180}px)`});}
   else Object.assign(bg.style,{inset:'0',left:'',top:'',width:'100%',height:'100%',objectFit:'cover',webkitMaskImage:''});
-  c.style.background = B.bgColor || (theme==='dark' ? '#08163A' : '#fff');
-  document.getElementById('word').src = theme==='dark' ? 'assets/logo_word_white.png' : 'assets/logo_word_black.png';
+  c.style.background = B.bgColor || (theme==='light' ? '#fff' : '#08163A');
+  document.getElementById('word').src = theme==='light' ? 'assets/logo_word_black.png' : 'assets/logo_word_white.png';
+  document.getElementById('icon').src = theme==='blue' ? 'assets/logo_icon_hd_inverzni.png' : 'assets/logo_icon_hd.png';
+  deco(B, theme);
+  const pe=document.getElementById('person');
+  if(B.person){ pe.src=B.person.src; Object.assign(pe.style,{display:'block',left:B.person.box[0]+'px',top:B.person.box[1]+'px',width:B.person.box[2]+'px',filter:B.person.shadow===false?'':'drop-shadow(0 20px 40px rgba(0,20,90,.35))'}); }
+  else pe.style.display='none';
+  extras(B, theme);
   // závoj pro čitelnost textu na straně textu
   const col = theme==='dark' ? '8,22,58' : '255,255,255';
   const dir = side==='left' ? '90deg' : '270deg';
   const f = B.fade ?? 1;
   document.getElementById('fade').style.background =
-    B.fade===0 ? 'none' :
+    (B.fade===0 || (theme==='blue' && B.fade==null)) ? 'none' :
     `linear-gradient(${dir}, rgba(${col},${.94*f}) 0%, rgba(${col},${.82*f}) 30%, rgba(${col},${.45*f}) 48%, rgba(${col},0) 64%)`;
   // hexagony v rozích
   const corners = B.hex ?? (side==='left' ? [[0,1254,560]] : [[1254,1254,520],[1254,0,330]]);
@@ -145,6 +287,7 @@ function render(B){
   }
   (B.after||[]).forEach(p=>{ h+=`<p class="b">${fmt(p)}</p>`; });
   if(B.phone) h+=`<div class="phone">${PHONE}<span>${esc(B.phone)}</span></div>`;
+  if(B.contact) h+=`<div class="contact"${B.contact.mt!=null?` style="margin-top:${B.contact.mt}px"`:''}><div class="ic">${PHONE_SOLID}</div><div>${B.contact.label?`<small>${fmt(B.contact.label)}</small>`:''}<b>${esc(B.contact.phone||'+420 721 075 783')}</b></div></div>`;
   const t=document.getElementById('txt'); t.innerHTML=h;
   t.style.left = B.x!=null ? B.x+'px' : '';
   // horní okraj: vrchol verzálky prvního řádku nadpisu = B.top (výchozí 292 px jako v originálech)
