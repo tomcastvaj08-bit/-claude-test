@@ -39,6 +39,9 @@ export const ALL = [
   { id: 'bamboo', model: 'bamboo', name: 'Šťastný bambus', line: BOT, price: 899, pieces: 325, size: '32 cm', age: '18+', tags: ['rodina', 'pary'],
     kicker: 'Pro štěstí a pohodu', desc: 'Tři stonky bambusu se svěžími listy v zemité míse se zlatým pásem.',
     variant: { key: null, label: 'Provedení', options: [['', '#4B9F4A']] }, bg: '#EAF4E3', ink: '#14290F', accent: '#3E9B3A', word: 'BAMBUS' },
+  { id: 'sunflowers', model: 'sunflowers', name: 'Slunečnice a kopretiny', line: BOT, price: 699, pieces: 329, size: '40 cm', age: '14+', tags: ['maminka', 'rodina'],
+    kicker: 'Kousek léta na stůl', desc: 'Dvě slunečnice a čtyři kopretiny s listy – letní kytice, která nezvadne.',
+    variant: { key: null, label: 'Provedení', options: [['', '#F2C500']] }, bg: '#FFF6D9', ink: '#3A2A00', accent: '#E0A100', word: 'SLUNEČNICE' },
 ];
 
 export const PRODUCTS = ALL.filter(p => p.featured);
