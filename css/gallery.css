@@ -72,7 +72,7 @@ body.is-focus .corner-legal { opacity: 0; pointer-events: none; }
 /* ---------- tlačítko na provázku ---------- */
 .hang { position: fixed; z-index: 12; left: 50%; top: 0; height: calc(100vh - 128px); height: calc(100dvh - 128px); width: 0; pointer-events: none;
   transform: translateY(-110%); transform-origin: 50% 0; }
-body.is-ready .hang { animation: hangDrop 1.25s linear forwards, hangSwing 3.6s 1.25s linear infinite; }
+body.is-ready .hang { animation: hangDrop 1.2s linear forwards; }
 body.is-focus .hang { opacity: 0; transition: opacity .3s; }
 body.is-focus .hang * { pointer-events: none !important; }
 .hang-wire { position: absolute; left: -1px; top: 0; bottom: 104px; width: 2px; background: linear-gradient(#b8b3ab, #2b2a28); border-radius: 1px; }
@@ -91,8 +91,7 @@ body.is-focus .hang * { pointer-events: none !important; }
 .hang.is-pulled .hang-box { animation: tug .5s ease; }
 @keyframes studBreath { 0% { opacity: .35; transform: translate(-50%, -50%) scale(.9); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } }
 @keyframes studCore { 0% { opacity: .15; } 100% { opacity: .85; } }
-@keyframes hangDrop { 0% { transform: translateY(-110%) rotate(0); animation-timing-function: cubic-bezier(.55,0,.85,.4); } 55% { transform: translateY(0) rotate(0); animation-timing-function: cubic-bezier(.2,.6,.45,1); } 70% { transform: translateY(-16px) rotate(-1.6deg); animation-timing-function: cubic-bezier(.55,0,.6,1); } 84% { transform: translateY(3px) rotate(1deg); animation-timing-function: cubic-bezier(.4,0,.6,1); } 100% { transform: translateY(0) rotate(0); } }
-@keyframes hangSwing { 0% { transform: rotate(0); animation-timing-function: cubic-bezier(.61,1,.88,1); } 25% { transform: rotate(-1.3deg); animation-timing-function: cubic-bezier(.12,0,.39,0); } 50% { transform: rotate(0); animation-timing-function: cubic-bezier(.61,1,.88,1); } 75% { transform: rotate(1.3deg); animation-timing-function: cubic-bezier(.12,0,.39,0); } 100% { transform: rotate(0); } }
+@keyframes hangDrop { 0% { transform: translateY(-110%) rotate(0); animation-timing-function: cubic-bezier(.5,0,.85,.45); } 40% { transform: translateY(0) rotate(0); animation-timing-function: cubic-bezier(.25,.6,.45,1); } 52% { transform: translateY(-9px) rotate(-1.4deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 66% { transform: translateY(2px) rotate(1deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 80% { transform: translateY(0) rotate(-.5deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 91% { transform: translateY(0) rotate(.2deg); animation-timing-function: cubic-bezier(.5,0,.5,1); } 100% { transform: translateY(0) rotate(0); } }
 @keyframes tug { 0% { transform: translateX(-48.5%) translateY(0); } 35% { transform: translateX(-48.5%) translateY(22px); } 100% { transform: translateX(-48.5%) translateY(0); } }
 @media (max-width: 900px), (max-aspect-ratio: 9/10) { .hang { height: calc(100dvh - 150px); } .hang-box { width: 84px; height: 84px; } .hang-wire { bottom: 96px; } }
 

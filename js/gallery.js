@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114n';
+import { createModel, ready, LITE } from './builders.js?v=20261114o';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -407,6 +407,7 @@ function updateWindow() {
 // Po načtení exponáty napadají z nebe a poskládají se, pak sjede tlačítko na drátku.
 const introStart = performance.now() + 60;
 let introDone = false, shake = 0;
+const DROP = 650; // délka pádu orchidejí (ms) – všechno (orchideje i tlačítko) padá najednou
 function enter() { /* vstup je hned – ponecháno kvůli kompatibilitě */ }
 state.entered = true; state.s = 0;
 document.body.classList.add('is-in');
@@ -604,27 +605,27 @@ function frame(now) {
     const dT = state.warp ? slotS(ex.slot) - state.warp.to : d;
     // první dvojice (orchideje) spadne z nebe při vstupu; ostatní už stojí a jen se vynoří z bílé dálky (mlha)
     if (ex.slot < 2 && !ex.dropped) {
-      if (!ex.shown) { ex.shown = true; ex.m.m.appear = false; ex.t0 = introStart + ex.slot * 180; ex.m.setProgress(0); }
-      if (!ex.landed && now >= ex.t0 + 760 * 0.72) { ex.landed = true; if (!reduceMotion) shake = Math.max(shake, 1); }
-      if (now >= ex.t0 + 760) { ex.dropped = true; ex.m.setProgress(1); }
+      if (!ex.shown) { ex.shown = true; ex.m.m.appear = false; ex.t0 = introStart; ex.m.setProgress(0); }
+      if (!ex.landed && now >= ex.t0 + DROP * 0.72) { ex.landed = true; if (!reduceMotion) shake = Math.max(shake, 1); }
+      if (now >= ex.t0 + DROP) { ex.dropped = true; ex.m.setProgress(1); }
     } else if (!ex.dropped || !ex.shown) { ex.shown = true; ex.dropped = true; ex.t0 = 0; ex.m.setProgress(1); }
     ex.root.visible = ex.shown && now >= ex.t0 && (ex === focusEx || (d > -8 && d < 26));
     if (!ex.root.visible) continue;
-    if (ex !== focusEx && !ex.dropped) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / 760));
+    if (ex !== focusEx && !ex.dropped) ex.m.setProgress(reduceMotion ? 1 : clamp((now - ex.t0) / DROP));
     ex.shMat.opacity = ex.shMat.opacity + (0.55 * clamp((ex.m.progress - 0.7) / 0.3) - ex.shMat.opacity) * (1 - Math.exp(-rawDt * 8)); // lehký stín, naplno až po dopadu
     // otáčení zaostřeného exponátu
     if (ex === focusEx && !pd) { ex.user += ex.vel; ex.vel *= Math.pow(0.9, rawDt * 60); }
     const swing = ex === focusEx ? Math.sin(t * 0.35) * 0.3 : 0;
     ex.spin.rotation.y += ((ex.user + swing) - ex.spin.rotation.y) * (1 - Math.exp(-rawDt * 6));
   }
-  if (!introDone && now - introStart > 1300) { introDone = true; document.body.classList.add('is-ready'); }
+  if (!introDone && now >= introStart) { introDone = true; document.body.classList.add('is-ready'); }
   // panáčci: u zastávky (dvojice je složená) vykouknou ke květinám
   {
     let pair = [];
     if (mode === 'walk' && !state.warp && state.target == null && Math.abs(state.v) < 0.4) {
       let best = 1e9;
       for (const ex of exhibits) { if (!ex.inWindow || !ex.root.visible) continue; const d = slotS(ex.slot) - state.s; if (d > 1.5 && d < stopBefore() + 4.5 && d < best - 0.01) best = d; }
-      pair = exhibits.filter((ex) => ex.inWindow && ex.root.visible && Math.abs(slotS(ex.slot) - state.s - best) < 0.01 && ex.m.progress >= 0.99);
+      pair = exhibits.filter((ex) => ex.inWindow && ex.root.visible && Math.abs(slotS(ex.slot) - state.s - best) < 0.01 && ex.m.progress >= 0.6); // panáčci vyskočí spolu s dopadem květin
     }
     // dvojice květin: holka vykoukne u jedné (srdíčka v očích), kluk u druhé (hvězdičky, občas mrkne)
     const sorted = pair.slice().sort((a, b) => a.side - b.side);
