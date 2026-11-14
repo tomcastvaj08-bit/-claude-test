@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114l';
+import { createModel, ready, LITE } from './builders.js?v=20261114m';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -138,30 +138,40 @@ const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 // malý bílý stojánek s názvem (jako cedulka „rezervováno“ na stole): dvě destičky opřené o sebe do trojúhelníku
 const cardFont = document.fonts?.load('700 64px Rubik').catch(() => {});
 const cardBack = new THREE.MeshStandardMaterial({ color: '#F7F6F3', roughness: 0.55 });
-function makeCard(p, fp, D) {
-  // stojánek do stříšky (jako „rezervováno“ na stole): bílý karton v jednoduchém černém rámečku, jen název
-  const W = 1.2, H = 0.42, lean = 0.22;
+function makeCard(p, rest) {
+  // obyčejná rovná deska (karton) s tlustým černým rámečkem a názvem, opřená o květináč / rostlinu
+  const W = CARD.W, H = CARD.H, T = 0.022;
   const c = document.createElement('canvas'); c.width = 1024; c.height = Math.round(1024 * H / W);
   const g = c.getContext('2d'), CW = c.width, CH = c.height;
   const draw = () => {
     g.fillStyle = '#FBFAF7'; g.fillRect(0, 0, CW, CH);
-    g.strokeStyle = '#111'; g.lineWidth = 12; g.strokeRect(30, 30, CW - 60, CH - 60);
+    g.strokeStyle = '#111'; g.lineWidth = 26; g.strokeRect(13, 13, CW - 26, CH - 26);
     g.fillStyle = '#1F1A17'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    let fs = 104; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(p.name).width > CW - 140 && fs > 30);
+    let fs = 104; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(p.name).width > CW - 150 && fs > 30);
     g.fillText(p.name, CW / 2, CH * 0.53);
     tex.needsUpdate = true;
   };
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   draw(); cardFont?.then?.(draw);
   const front = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
-  const geo = new THREE.BoxGeometry(W, H, 0.012); geo.translate(0, H / 2, 0);
-  const grp = new THREE.Group();
-  const a = new THREE.Mesh(geo, [cardBack, cardBack, cardBack, cardBack, front, cardBack]); a.rotation.x = -lean;
-  const b = new THREE.Mesh(geo, cardBack); b.rotation.x = lean;
-  const off = Math.sin(lean) * H; a.position.z = off; b.position.z = -off;     // obě strany se potkají nahoře – nic nezakrývá nápis
-  grp.add(a, b);
-  grp.position.set(fp.cx, 0, Math.max(fp.cz + fp.d / 2, D * 0.18) + 0.55);
-  return grp;
+  const geo = new THREE.BoxGeometry(W, H, T); geo.translate(0, H / 2, T / 2); // zadní plocha v z = 0, spodní hrana na zemi
+  const card = new THREE.Mesh(geo, [cardBack, cardBack, cardBack, cardBack, front, cardBack]);
+  card.rotation.x = -CARD.lean; // horní hrana se opírá dozadu o rostlinu
+  card.position.set(rest.x, 0, rest.z);
+  return card;
+}
+const CARD = { W: 1.05, H: 0.4, lean: 0.24 };
+// kam postavit desku, aby se horní částí opírala o rostlinu: rovina desky nesmí projít žádným bodem modelu v její šířce
+function cardRest(obj, fp) {
+  obj.updateMatrixWorld(true);
+  const inv = obj.parent ? new THREE.Matrix4().copy(obj.parent.matrixWorld).invert() : new THREE.Matrix4();
+  const v = new THREE.Vector3(), tl = Math.tan(CARD.lean), yTop = CARD.H * Math.cos(CARD.lean), hw = CARD.W / 2;
+  let zb = -Infinity;
+  obj.traverse((o) => { if (!o.isMesh) return; const P = o.geometry.attributes.position, st = Math.max(1, Math.floor(P.count / 6000));
+    for (let i = 0; i < P.count; i += st) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld).applyMatrix4(inv);
+      if (v.y > yTop || Math.abs(v.x - fp.cx) > hw) continue; zb = Math.max(zb, v.z + v.y * tl); } });
+  if (!isFinite(zb)) zb = fp.cz + fp.d / 2 + CARD.H * Math.sin(CARD.lean);
+  return { x: fp.cx, z: zb + 0.006 };
 }
 // střed dna modelu (body ve spodních 12 % výšky) – květináč
 function baseCenter(obj, box) {
@@ -203,12 +213,12 @@ const exhibits = ORDER.map((id) => {
   const root = new THREE.Group(); root.add(base);
   const W = size.x * sc, D = size.z * sc, H = size.y * sc;
   // kontaktní stín: jen pod tím, co skutečně stojí na zemi (dno květináče / vázy), lehký a přímo pod exponátem
-  m.setProgress(1); const fp = footprint(inner, H * 0.04); m.setProgress(0);
+  m.setProgress(1); const fp = footprint(inner, H * 0.04), rest = cardRest(inner, fp); m.setProgress(0);
   const shMat = shadowMat.clone(); shMat.opacity = 0;
   const sh = new THREE.Mesh(shadowGeo, shMat);
   sh.rotation.x = -Math.PI / 2; sh.position.set(fp.cx, 0.003, fp.cz); sh.scale.set(fp.w * 1.35 + 0.12, fp.d * 1.35 + 0.12, 1);
   sh.visible = false; // stín pod exponáty vypnutý – stojí přímo na podlaze
-  base.add(makeCard(p, fp, D));
+  base.add(makeCard(p, rest));
   const hit = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), hitMat); hit.position.y = H / 2; spin.add(hit);
   scene.add(root);
   const ex = { id, p, m, root, base, spin, hit, car, sh, shMat, shown: false, t0: 0, H, r: Math.hypot(W, D) / 2, W, D, slot: null, side: 1, user: 0, vel: 0 };
