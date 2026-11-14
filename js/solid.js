@@ -91,11 +91,12 @@ function merge(scene) {
 }
 
 // Realistický ABS plast: lesklý lak (clearcoat), jemné odlesky okolí, zapečené stínování v záhybech.
-const METAL = new Set([82, 297, 80, 383, 334, 135, 179]); // kovové zlaté a stříbrné barvy
+const METAL = new Set([82, 297, 80, 383, 334, 135, 179, 64]); // kovové zlaté a stříbrné barvy
 const _hsl = {};
 function plastic(src, aoK = 1) {
   src = src.clone(); src.color.getHSL(_hsl); src.color.setHSL(_hsl.h, Math.min(1, _hsl.s * 1.12), _hsl.l); // o něco sytější barvy jako skutečný ABS // aoK > 1 = výraznější stíny v záhybech (husté květy)
   const code = codeOf(src), metal = METAL.has(code) || src.metalness > 0.5;
+  if (code === 64) src.color.set('#141619'); // lesklá černá (chromovaná) váza
   const m = new THREE.MeshPhysicalMaterial({
     color: src.color, transparent: src.transparent, opacity: src.opacity, depthWrite: !src.transparent, side: THREE.DoubleSide,
     roughness: src.transparent ? 0.05 : metal ? 0.3 : 0.34, metalness: metal ? 0.85 : 0, sheen: metal ? 0 : 0.06, sheenRoughness: 0.8, sheenColor: '#ffffff',

@@ -5,10 +5,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { RoundedBoxGeometry } from '../vendor/three/addons/RoundedBoxGeometry.js';
-import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115d';
-import { byId, fmt } from './products.js?v=20261115d';
-import { createModel, ready, LITE } from './builders.js?v=20261115d';
-import { Figure, loadFigureKit } from './figures.js?v=20261115d';
+import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115e';
+import { byId, fmt } from './products.js?v=20261115e';
+import { createModel, ready, LITE } from './builders.js?v=20261115e';
+import { Figure, loadFigureKit } from './figures.js?v=20261115e';
 
 initCommon();
 
@@ -20,9 +20,9 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
 
 // pořadí v chodbě: dvojice květin naproti sobě
-const ORDER = ['orchid', 'miniorchid', 'tulips', 'bonsai', 'bouquet', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'bamboo']; // obě orchideje hned na začátku
+const ORDER = ['orchid', 'miniorchid', 'tulips', 'bonsai', 'bouquet', 'chrysanthemum', 'peacelily', 'plum', 'cactus', 'bamboo', 'vaseroses', 'vasesun']; // obě orchideje hned na začátku
 // velikost v metrech (výška obřích květin)
-const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7, bamboo: 3.6,
+const SIZE = { orchid: 3.6, miniorchid: 3.1, tulips: 3.3, bouquet: 3.6, cactus: 3.1, chrysanthemum: 3.5, peacelily: 3.4, plum: 4.0, bonsai: 2.7, bamboo: 3.6, vaseroses: 2.4, vasesun: 2.4,
   };
 const N = ORDER.length;
 const SPACING = 8.2, START = 6.0, EYE = 1.62, WINDOW = 8, REVEAL = 13.5; // okno max. N exponátů (jinak se první místo přepíše)
