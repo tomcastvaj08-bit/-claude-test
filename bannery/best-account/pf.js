@@ -7,19 +7,20 @@ const TEXT = {
   sign: 'Tým Best Account',
 };
 const SIZES = [
-  { w: 3400, h: 1800, top: 380, lionW: 1250, lionTop: -60, lionShift: 0, markX: 2050, markSize: 1050, markDy: 40, markRot: -12, tabW: 860 },
-  { w: 3000, h: 1350, top: 375, lionW: 1350, lionTop: -150, lionShift: 0, markX: 2230, markSize: 1150, markDy: 40, markRot: -12, tabW: 860 },
+  { w: 3400, h: 1800, top: 380, lionW: 1250, lionTop: -60, lionShift: 0, markX: 2250, markSize: 1500, markDy: 60, markRot: -14, tabW: 860 },
+  { w: 3000, h: 1350, top: 375, lionW: 1350, lionTop: -150, lionShift: 0, markX: 2380, markSize: 1550, markDy: 60, markRot: -14, tabW: 860 },
 ];
+const VARIANTS = [{ name: 'A-logo', markMode: 'fill', hexPhoto: false }, { name: 'B-ul', markMode: 'none', hexPhoto: true }];
 (async () => {
   const dir = __dirname;
   const b = await chromium.launch();
-  for (const s of SIZES) {
+  for (const v of VARIANTS) for (const s0 of SIZES) { const s = { ...s0, ...v };
     const p = await b.newPage({ viewport: { width: s.w, height: s.h } });
     await p.goto('file://' + path.join(dir, 'pf.html'));
     await p.evaluate(o => render(o), { ...s, ...TEXT });
     await p.evaluate(() => document.fonts.ready);
     await p.evaluate(() => Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))));
-    const out = path.join(dir, 'vystup', `PF2027-${s.w}x${s.h}.png`);
+    const out = path.join(dir, 'vystup', `PF2027-${s.name}-${s.w}x${s.h}.png`);
     await p.screenshot({ path: out });
     console.log('✓', out);
     await p.close();

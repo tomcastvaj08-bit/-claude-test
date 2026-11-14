@@ -36,6 +36,7 @@ html,body{overflow:hidden;background:var(--navy)}
   <div id="glow"></div>
   <img id="lion" src="pozadi/lev-pf.png" alt="">
   <div id="marks"></div>
+  <svg id="hex2" style="inset:0"></svg>
   <svg id="hex"></svg>
   <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img src="assets/logo_word_white.png" id="word" alt=""></div>
   <div id="txt"></div>
@@ -73,13 +74,18 @@ function render(o){
   // průhledné logo v pozadí
   const ms=o.markSize*u;
   const mk=document.getElementById('marks'), mcx=o.markX*u, mcy=H/2+o.markDy*u;
-  mk.innerHTML=[[1,.9,''],[1.2,.5,'_stit'],[1.42,.26,'_stit'],[1.66,.12,'_stit']].map(([sc,op,f])=>{const z=ms*sc; return `<img src="assets/logo_obrys${f}.png" style="left:${mcx-z/2}px;top:${mcy-z/2}px;width:${z}px;height:${z}px;opacity:${op};transform:rotate(${o.markRot}deg)">`}).join('');
-  // obrysy plynule mizí v místě lva (žádná ostrá hrana)
+  if(o.markMode==='fill'){ mk.innerHTML=`<img src="assets/logo_icon_hd.png" style="left:${mcx-ms/2}px;top:${mcy-ms/2}px;width:${ms}px;height:${ms}px;opacity:.11;filter:none;transform:rotate(${o.markRot}deg)">`; }
+  else mk.innerHTML='';
+  if(o.hexPhoto){ const hs=document.createElementNS('http://www.w3.org/2000/svg','svg'); }
   const ex=lx+lw*0.64, ey=ly+lh*0.52, rx=lw*0.48, ry=lh*0.56;
-  mk.style.webkitMaskImage=`radial-gradient(${rx}px ${ry}px at ${ex}px ${ey}px, transparent 0%, transparent 55%, rgba(0,0,0,.35) 78%, #000 100%)`;
+  mk.style.webkitMaskImage=`radial-gradient(${rx}px ${ry}px at ${ex}px ${ey}px, transparent 0%, transparent 40%, rgba(0,0,0,.4) 75%, #000 105%)`;
   // úl vlevo za textem
   const hx=document.getElementById('hex'); hx.setAttribute('viewBox',`0 0 ${W} ${H}`); hx.setAttribute('width',W); hx.setAttribute('height',H);
   hx.innerHTML=hexes(W,H,u,-60*u,H*0.66,1400*u);
+  const h2=document.getElementById('hex2'); h2.setAttribute('viewBox',`0 0 ${W} ${H}`); h2.setAttribute('width',W); h2.setAttribute('height',H);
+  h2.innerHTML = o.hexPhoto ? hexes(W,H,u,W+80*u,H*0.35,1150*u).replace(/id="m"/g,'id="m2"').replace(/url\(#m\)/g,'url(#m2)').replace(/id="k"/g,'id="k2"').replace(/url\(#k\)/g,'url(#k2)') : '';
+  h2.style.opacity=.55;
+  { const ex=W-o.lionW*u+o.lionShift*u+o.lionW*u*0.64, ly2=o.lionTop*u, lh2=o.lionW*u*1080/604, ey=ly2+lh2*0.45; h2.style.webkitMaskImage=`radial-gradient(${o.lionW*u*0.42}px ${lh2*0.5}px at ${ex}px ${ey}px, transparent 0%, transparent 50%, rgba(0,0,0,.4) 78%, #000 105%)`; }
   // logo
   const k=1.55*u, L=document.getElementById('logo');
   Object.assign(L.style,{left:(M-15*k)+'px',top:150*u+'px',width:388*k+'px',height:116*k+'px'});
