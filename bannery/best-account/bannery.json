@@ -24,21 +24,6 @@
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",
-    "deco": "lightblue",
-    "glow": [
-      940,
-      560,
-      700
-    ],
-    "person": {
-      "src": "pozadi/tirolova-svetla-sedi-vyrez.png",
-      "box": [
-        245,
-        -6,
-        1237
-      ]
-    },
-    "fade": 0.55,
     "headline": "Nabíráme\nnové *klienty.*",
     "top": 296,
     "body": [
@@ -55,11 +40,18 @@
     "badges": {},
     "web": "www.BestAccount.cz",
     "arrow": false,
+    "bg": "pozadi/tirolova-svetla-sedi.jpg",
+    "bgBox": [
+      215,
+      -6,
+      1237
+    ],
+    "bgColor": "#E6ECF1",
     "hex": [
       [
         0,
         1254,
-        380
+        660
       ]
     ]
   },
