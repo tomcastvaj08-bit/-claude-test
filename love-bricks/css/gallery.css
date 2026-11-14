@@ -125,3 +125,8 @@ body.is-warp .warp-flash { animation: warpFlash .8s ease; }
 .gacha-result .row .brick-btn { flex: 1; min-width: 130px; font-size: 13px; }
 .gacha-result .more { display: inline-block; margin-top: 12px; font-size: 13px; color: var(--ink-2); }
 body.is-gacha .hud, body.is-gacha .hang { opacity: 0; pointer-events: none; transition: opacity .3s; }
+
+/* načítání galerie */
+.gal-loading { position: fixed; z-index: 11; left: 50%; top: 52%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; animation: galLoad 1.4s ease-in-out infinite alternate; }
+body.is-in .gal-loading { display: none; }
+@keyframes galLoad { from { opacity: .45; } to { opacity: 1; } }
