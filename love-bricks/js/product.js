@@ -1,9 +1,9 @@
 // Love Bricks – detail produktu (produkt.html?id=…): 3D model k otáčení, popis, parametry, košík.
 import * as THREE from 'three';
-import { initCommon, studify, cart, toast, flyBrick } from './common.js?v=20261114y';
-import { ALL, OCCASIONS, byId, fmt } from './products.js?v=20261114y';
-import { Stage3D } from './stage3d.js?v=20261114y';
-import { createModel, ready } from './builders.js?v=20261114y';
+import { initCommon, studify, cart, toast, flyBrick } from './common.js?v=20261114z';
+import { ALL, OCCASIONS, byId, fmt } from './products.js?v=20261114z';
+import { Stage3D } from './stage3d.js?v=20261114z';
+import { createModel, ready } from './builders.js?v=20261114z';
 
 const $ = (s, r = document) => r.querySelector(s);
 const BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16l-1.3 12H5.3z"/><path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
