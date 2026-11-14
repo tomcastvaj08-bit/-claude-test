@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114o';
+import { createModel, ready, LITE } from './builders.js?v=20261114p';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -160,17 +160,30 @@ function makeCard(p, rest) {
 }
 const CARD = { W: 1.05, H: 0.4, lean: 0.24 };
 const cardEdge = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.6 });
-// kam postavit desku, aby se horní částí opírala o rostlinu: rovina desky nesmí projít žádným bodem modelu v její šířce
+// kam postavit desku, aby se horní částí opírala o rostlinu: rovina desky nesmí projít žádnou plochou modelu v její šířce.
+// Kontrolují se celé hrany trojúhelníků (ne jen vrcholy) – např. kuželový květináč má body jen u dna a u okraje.
 function cardRest(obj, fp) {
   obj.updateMatrixWorld(true);
   const inv = obj.parent ? new THREE.Matrix4().copy(obj.parent.matrixWorld).invert() : new THREE.Matrix4();
-  const v = new THREE.Vector3(), tl = Math.tan(CARD.lean), yTop = CARD.H * Math.cos(CARD.lean), hw = CARD.W / 2;
+  const tl = Math.tan(CARD.lean), yTop = CARD.H * Math.cos(CARD.lean) + 0.04, hw = CARD.W / 2 + 0.04;
+  const A = new THREE.Vector3(), B = new THREE.Vector3(), Q = new THREE.Vector3(), M = new THREE.Matrix4();
   let zb = -Infinity;
-  obj.traverse((o) => { if (!o.isMesh) return; const P = o.geometry.attributes.position, st = Math.max(1, Math.floor(P.count / 6000));
-    for (let i = 0; i < P.count; i += st) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld).applyMatrix4(inv);
-      if (v.y > yTop || Math.abs(v.x - fp.cx) > hw) continue; zb = Math.max(zb, v.z + v.y * tl); } });
+  const test = (v) => { if (v.y <= yTop && Math.abs(v.x - fp.cx) <= hw) zb = Math.max(zb, v.z + v.y * tl); };
+  const edge = (a, b) => { // lineární funkce na hraně → maximum v krajních bodech nebo v místě, kde hrana protne výšku / okraj desky
+    test(a); test(b);
+    for (const [ka, kb] of [[a.y - yTop, b.y - yTop], [a.x - fp.cx - hw, b.x - fp.cx - hw], [a.x - fp.cx + hw, b.x - fp.cx + hw]])
+      if (ka * kb < 0) { Q.lerpVectors(a, b, ka / (ka - kb)); test(Q); }
+  };
+  obj.traverse((o) => { if (!o.isMesh || !o.geometry.attributes.position) return;
+    M.multiplyMatrices(inv, o.matrixWorld);
+    const P = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P.count;
+    const get = (k, v) => v.fromBufferAttribute(P, I ? I.getX(k) : k).applyMatrix4(M);
+    const C = new THREE.Vector3();
+    for (let k = 0; k + 2 < n; k += 3) { get(k, A); get(k + 1, B); get(k + 2, C);
+      if (A.y > yTop && B.y > yTop && C.y > yTop) continue;
+      edge(A, B); edge(B, C); edge(C, A); } });
   if (!isFinite(zb)) zb = fp.cz + fp.d / 2 + CARD.H * Math.sin(CARD.lean);
-  return { x: fp.cx, z: zb + 0.006 };
+  return { x: fp.cx, z: zb + 0.035 }; // kousek před rostlinou
 }
 // střed dna modelu (body ve spodních 12 % výšky) – květináč
 function baseCenter(obj, box) {
