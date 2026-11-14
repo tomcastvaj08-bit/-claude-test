@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
-import { createModel, ready } from './builders.js?v=20261114t';
+import { createModel, ready } from './builders.js?v=20261114u';
 await Promise.all([ready(), loadFigureKit()]);
 import { Figure, loadFigureKit } from './figures.js';
 
