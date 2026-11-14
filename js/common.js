@@ -220,7 +220,7 @@ export function renderCart() {
     list.innerHTML = cart.items.map(i => {
       const p = byId(i.id); if (!p) return '';
       return `<div class="citem brick-card" data-studs>
-        <div class="citem-chip brick" data-studs style="--c:${i.color || '#D01012'}"></div>
+        <img class="citem-img" src="${BASE}img/p/${p.id}.webp" alt="" width="64" height="64">
         <div><h4>${p.name}</h4><p>${i.variant ? i.variant + ' · ' : ''}${fmt(p.price)}</p></div>
         <div class="qty"><button class="brick-btn" data-q="-1" data-key="${i.key}" aria-label="Ubrat">−</button><span>${i.qty}</span><button class="brick-btn" data-q="1" data-key="${i.key}" aria-label="Přidat">+</button></div>
       </div>`;

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { initCommon, studify, cart, toast, pix, ICONS, reduceMotion, flyBrick } from './common.js';
 import { PRODUCTS, ALL, OCCASIONS, byId, fmt } from './products.js';
 import { Stage3D } from './stage3d.js';
-import { createModel, ready } from './builders.js?v=20261114u';
+import { createModel, ready } from './builders.js?v=20261114v';
 await Promise.all([ready(), loadFigureKit()]);
 import { Figure, loadFigureKit } from './figures.js';
 
@@ -211,6 +211,14 @@ document.addEventListener('click', (e) => {
   if (occ) { setFilter(occ.dataset.occ); $('#kolekce').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); }
   const f = e.target.closest('[data-filter]');
   if (f) setFilter(f.dataset.filter);
+  // klik na produkt (kartu v kolekci nebo název / popis ve scéně) → stránka produktu
+  // (klepnutí na 3D model taky, jen ne když se s ním otáčelo tažením)
+  const slotEl = e.target.closest('.gcard-slot, .stage-model');
+  if (!add && !sw && !e.target.closest('button, a, .fig') && !(slotEl && slotEl.__slot?.dragging)) {
+    const card = e.target.closest('.gcard, .pcard');
+    const pid = card?.dataset.product || (slotEl && e.target.closest('.stage')?.dataset.id);
+    if (pid) { location.href = `produkt.html?id=${pid}`; return; }
+  }
   const hl = e.target.closest('.hl');
   if (hl) { hl.style.animation = 'none'; void hl.offsetWidth; hl.style.animation = 'hop .45s var(--ease-snap)'; }
 });
