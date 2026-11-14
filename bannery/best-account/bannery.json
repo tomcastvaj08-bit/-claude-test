@@ -178,6 +178,78 @@
     "blendTo": 1020
   },
   {
+    "id": "tirolova-03a-svetla",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/tirolova-gauc.jpg",
+    "bgBox": [
+      441,
+      -10,
+      893
+    ],
+    "bgColor": "#D9E0E3",
+    "bgFeather": 260,
+    "headline": "Kontroly\nnechte\n*na nás.*",
+    "top": 250,
+    "body": [
+      "Papírování přenechte nám –\núčetnictví máte v pořádku.",
+      "**Vy se věnujte svému byznysu.**"
+    ],
+    "bSize": 42,
+    "contact": {
+      "style": "pill",
+      "label": "Zavolejte nám:",
+      "phone": "+420 721 075 783",
+      "mt": 34
+    },
+    "proof": {
+      "inline": true,
+      "mt": 34
+    },
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "webInk": true,
+    "arrow": false
+  },
+  {
+    "id": "tirolova-03b-tmava",
+    "theme": "dark",
+    "side": "left",
+    "bg": "pozadi/tirolova-tmava-profil.jpg",
+    "bgBox": [
+      300,
+      -80,
+      1000
+    ],
+    "bgColor": "#08163A",
+    "bgFeather": 160,
+    "bgFeatherSide": "left",
+    "bgExtend": "#0B0C10",
+    "blendFrom": 620,
+    "blendTo": 160,
+    "fade": 0,
+    "headline": "Kontroly\nnechte\n*na nás.*",
+    "top": 250,
+    "body": [
+      "Papírování přenechte nám –\núčetnictví máte v pořádku.",
+      "**Vy se věnujte svému byznysu.**"
+    ],
+    "bSize": 42,
+    "contact": {
+      "style": "pill",
+      "label": "Zavolejte nám:",
+      "phone": "+420 721 075 783",
+      "mt": 34
+    },
+    "proof": {
+      "inline": true,
+      "mt": 34
+    },
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "arrow": false
+  },
+  {
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",

@@ -91,6 +91,8 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 .pill{display:inline-flex;align-items:center;gap:20px;padding:22px 42px 22px 30px;border-radius:999px;background:var(--blue);color:#fff;font-size:46px;font-weight:800;letter-spacing:-0.005em;white-space:nowrap;box-shadow:0 14px 30px rgba(0,136,218,.30)}
 .pill svg{width:46px;height:46px}.pill svg path{fill:#fff}
 /* kontakt jako velké číslo */
+.dark .pillwrap small,.dark .bignum small,.blue .pillwrap small{color:#EEF4FF}
+.light .bignum b.ink{color:var(--ink)}
 .bignum{margin-top:44px}
 .bignum b{display:block;font-size:68px;line-height:72px;font-weight:800;letter-spacing:-0.015em;color:var(--blue);white-space:nowrap}
 /* sociální důkaz */
@@ -288,16 +290,19 @@ function render(B){
   if(B.bgExtend && B.bgBox){
     const to=B.bgColor || (theme==='light' ? '#fff' : '#08163A');
     const sd=B.bgFeatherSide||'left', f=B.bgFeather??180;
-    if(sd==='right'){ const x0=B.bgBox[0]+B.bgBox[2]-f; Object.assign(ex.style,{display:'block',left:x0+'px',right:'0',background:B.blendFrom!=null?B.bgExtend:`linear-gradient(90deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
-    else { const x1=B.bgBox[0]+f; Object.assign(ex.style,{display:'block',left:'0',width:x1+'px',background:`linear-gradient(270deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
+    if(sd==='right'){ const x0=B.bgBox[0]+B.bgBox[2]-f; Object.assign(ex.style,{display:'block',left:x0+'px',right:'0',width:'auto',background:B.blendFrom!=null?B.bgExtend:`linear-gradient(90deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
+    else { const x1=B.bgBox[0]+f; Object.assign(ex.style,{display:'block',left:'0',right:'auto',width:x1+'px',background:B.blendFrom!=null?B.bgExtend:`linear-gradient(270deg, ${B.bgExtend} 0px, ${B.bgExtend} ${f}px, ${to} 100%)`}); }
   } else ex.style.display='none';
   // blendFrom: plynulý (vyhlazený) přechod do barvy banneru od zadané x až k okraji – jen vpravo od postavy
   const bl=document.getElementById('blend');
   if(B.blendFrom!=null){
     const to=B.bgColor || (theme==='light' ? '#fff' : '#08163A');
     const h=to.replace('#',''); const rgb=[0,2,4].map(i=>parseInt(h.substr(i,2),16)).join(',');
-    const stops=[]; for(let i=0;i<=12;i++){ const t=i/12, e=t*t*(3-2*t); const span=B.blendTo!=null?(B.blendTo-B.blendFrom)/(1254-B.blendFrom):1; stops.push(`rgba(${rgb},${(e*(B.blendMax??1)).toFixed(3)}) ${(t*span*100).toFixed(1)}%`); }
-    Object.assign(bl.style,{display:'block',left:B.blendFrom+'px',right:'0',background:`linear-gradient(90deg, ${stops.join(',')})`});
+    const L=(B.bgFeatherSide||'left')==='left';  // fotka vpravo => přechod jde doleva
+    const span = L ? (B.blendTo!=null?(B.blendFrom-B.blendTo)/B.blendFrom:1) : (B.blendTo!=null?(B.blendTo-B.blendFrom)/(1254-B.blendFrom):1);
+    const stops=[]; for(let i=0;i<=12;i++){ const t=i/12, e=t*t*(3-2*t); stops.push(`rgba(${rgb},${(e*(B.blendMax??1)).toFixed(3)}) ${(t*span*100).toFixed(1)}%`); }
+    if(L) Object.assign(bl.style,{display:'block',left:'0',right:'auto',width:B.blendFrom+'px',background:`linear-gradient(270deg, ${stops.join(',')})`});
+    else Object.assign(bl.style,{display:'block',left:B.blendFrom+'px',right:'0',width:'auto',background:`linear-gradient(90deg, ${stops.join(',')})`});
   } else bl.style.display='none';
   document.getElementById('word').src = theme==='light' ? 'assets/logo_word_black.png' : 'assets/logo_word_white.png';
   document.getElementById('icon').src = theme==='blue' ? 'assets/logo_icon_hd_inverzni.png' : 'assets/logo_icon_hd.png';
