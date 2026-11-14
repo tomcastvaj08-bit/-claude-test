@@ -107,17 +107,10 @@ body.is-warp .warp-flash { animation: warpFlash .8s ease; }
 /* ---------- automat na kvítka (gašapon) ---------- */
 .gacha { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; }
 .gacha.is-open { pointer-events: auto; }
-.gacha-dim { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.55), rgba(40,30,25,.55)); opacity: 0; transition: opacity .35s; }
+.gacha-dim { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 40%, rgba(40,30,25,.22)); opacity: 0; transition: opacity .35s; } /* automat je ve 3D scéně – jen jemná vinětace */
 .gacha.is-open .gacha-dim { opacity: 1; }
 .gacha-close { position: absolute; top: calc(env(safe-area-inset-top) + 14px); right: 14px; z-index: 3; opacity: 0; transition: opacity .3s .4s; }
 .gacha.is-open .gacha-close { opacity: 1; }
-.gacha-machine { position: relative; width: min(74vw, 330px); aspect-ratio: 320 / 520; transform: translateY(-130vh); }
-.gacha-machine svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 24px 24px rgba(0,0,0,.35)); }
-.gacha-crank { transform-box: fill-box; transform-origin: 50% 50%; }
-.gacha-balls { transform-box: view-box; transform-origin: 160px 150px; }
-.gacha-cap { position: absolute; left: 50%; top: 0; width: 34%; aspect-ratio: 1; pointer-events: none; opacity: 0; z-index: 2; }
-.gacha-cap svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 10px 10px rgba(0,0,0,.3)); }
-.gacha-cap .half { transform-box: fill-box; transform-origin: 50% 100%; }
 .gacha-flash { position: absolute; left: 50%; top: 50%; width: 120vmax; height: 120vmax; transform: translate(-50%, -50%) scale(0); border-radius: 50%; pointer-events: none; z-index: 2;
   background: repeating-conic-gradient(from 0deg, rgba(255,214,90,.55) 0 8deg, rgba(255,255,255,0) 8deg 20deg); mask: radial-gradient(circle, #000 0 18%, transparent 55%); -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 55%); }
 .gacha-result { position: absolute; z-index: 3; left: 50%; top: 50%; width: min(86vw, 360px); transform: translate(-50%, -50%) scale(.6); opacity: 0; pointer-events: none; text-align: center; padding: 20px 18px 18px;
