@@ -5,10 +5,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { RoundedBoxGeometry } from '../vendor/three/addons/RoundedBoxGeometry.js';
-import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115c';
-import { byId, fmt } from './products.js?v=20261115c';
-import { createModel, ready, LITE } from './builders.js?v=20261115c';
-import { Figure, loadFigureKit } from './figures.js?v=20261115c';
+import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js?v=20261115d';
+import { byId, fmt } from './products.js?v=20261115d';
+import { createModel, ready, LITE } from './builders.js?v=20261115d';
+import { Figure, loadFigureKit } from './figures.js?v=20261115d';
 
 initCommon();
 
@@ -701,7 +701,29 @@ const gacha = { active: false };
 let gachaBuilt = null;
 function buildGacha() {
   // stejný plast jako u květin (lak, jemný lesk) + zaoblené hrany dílků
-  const plast = (c, o = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.32, clearcoat: 0.55, clearcoatRoughness: 0.16, sheen: 0.08, sheenColor: '#fff', envMapIntensity: 1.1, ...o });
+  // stínování automatu (jako zapečené stíny u květin): tmavší u podlahy, pod převisy a dole v kopuli mezi dárky
+  const shade = (m, dome = false) => {
+    m.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
+        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(modelMatrix) * objectNormal);');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
+        .replace('#include <aomap_fragment>', `#include <aomap_fragment>
+          float gy = vWP.y - gFloor;
+          float aoG = mix(0.45, 1.0, smoothstep(0.0, 0.32, gy));                       // u podlahy tmavší
+          aoG *= mix(0.55, 1.0, clamp(vWN.y * 0.5 + 0.5, 0.0, 1.0));                   // spodní plochy (pod převisy) ve stínu
+          ${dome ? 'aoG *= mix(0.5, 1.0, smoothstep(0.82, 1.2, gy));' : ''}                // dárky dole v kopuli zastíněné ostatními
+          reflectedLight.indirectDiffuse *= aoG; reflectedLight.indirectSpecular *= mix(1.0, aoG, 0.7);
+          reflectedLight.directDiffuse *= mix(1.0, aoG, 0.55);
+          #ifdef USE_CLEARCOAT
+            clearcoatSpecularIndirect *= aoG;
+          #endif`).replace('void main() {', 'uniform float gFloor;\nvoid main() {');
+      sh.uniforms.gFloor = gFloorU;
+    };
+    m.customProgramCacheKey = () => 'gacha-ao' + (dome ? 'd' : '');
+    return m;
+  };
+  const gFloorU = { value: 0 };
+  const plast = (c, o = {}, dome = false) => shade(new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.32, clearcoat: 0.55, clearcoatRoughness: 0.16, sheen: 0.08, sheenColor: '#fff', envMapIntensity: 1.1, ...o }), dome);
   const RED = plast('#C8100F'), GREY = plast('#5B6068'), LGREY = plast('#A0A5A9'), DARK = plast('#1E1A1A', { roughness: 0.6, clearcoat: 0.2 }), WHITE = plast('#F6F4F0'),
     GOLD = plast('#C9A13A', { metalness: 0.85, roughness: 0.28, clearcoat: 0.3 }), CHROME = plast('#D8DCE0', { metalness: 1, roughness: 0.16, clearcoat: 0.2 });
   const GLASS = new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.03, transmission: 1, thickness: 0.05, ior: 1.45, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, envMapIntensity: 1.4, side: THREE.DoubleSide });
@@ -714,6 +736,10 @@ function buildGacha() {
   const range = (a, b, n) => Array.from({ length: n }, (_, i) => a + (b - a) * (n === 1 ? 0.5 : i / (n - 1)));
   const G = new THREE.Group(); G.visible = false; scene.add(G);
   const M = new THREE.Group(); G.add(M);
+  const blob = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const gr = g.createRadialGradient(64, 64, 8, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(0,0,0,.5)'); gr.addColorStop(0.55, 'rgba(0,0,0,.25)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.004; m.renderOrder = 1; G.add(m); return m; })();
   // podstavec: tmavě šedá deska s výstupky + zlatý lem
   M.add(rb(1.02, 0.08, 0.8, GREY, 0, 0.04, 0, 0.015)); studsOn(M, GREY, 0.08, [-0.45, 0.45], range(-0.34, 0.34, 4)); studsOn(M, GREY, 0.08, range(-0.35, 0.35, 6), [0.36]);
   M.add(rb(0.86, 0.025, 0.66, GOLD, 0, 0.0925, 0, 0.008));
@@ -741,7 +767,7 @@ function buildGacha() {
   const RIB = { '#E4569A': '#FFFFFF', '#F5C518': '#C8100F', '#4B9F4A': '#F5C518', '#0055BF': '#F5C518', '#FE8A18': '#FFFFFF', '#9B5FC0': '#F5C518', '#2CB1C9': '#FFFFFF', '#FFFFFF': '#C8100F' };
   // zabalená krabička s mašlí (s = hrana), víko zvlášť (aby šlo odklopit)
   const bowG = new THREE.TorusGeometry(0.22, 0.07, 10, 24);
-  const matCache = new Map(), matOf = (c) => { if (!matCache.has(c)) matCache.set(c, plast(c)); return matCache.get(c); };
+  const matCache = new Map(), matOf = (c) => { if (!matCache.has(c)) matCache.set(c, plast(c, {}, true)); return matCache.get(c); };
   function gift(sz, col, own = false) {
     const g = new THREE.Group(), pm = own ? plast(col) : matOf(col), rm = own ? plast(RIB[col] || '#fff') : matOf(RIB[col] || '#FFFFFF'), hb = sz * 0.82, hl = sz * 0.22;
     const body = rb(sz, hb, sz, pm, 0, hb / 2, 0, sz * 0.06); g.add(body);
@@ -810,7 +836,7 @@ function buildGacha() {
     if (tl.kind === 'drop') {
       const f = k01(t, 0, 0.7), y = 5 * (1 - f * f);
       const u = k01(t, 0.7, 1.15), sq = t < 0.7 ? 0 : Math.sin(Math.PI * Math.min(1, u * 1.2)) * Math.exp(-u * 2.5) * 0.09;
-      M.position.y = y; M.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5);
+      M.position.y = y; M.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5); blob.material.opacity = clamp(1 - y / 3); blob.scale.setScalar(0.6 + 0.4 * clamp(1 - y / 5));
       if (t >= 0.7 && !tl.landed) { tl.landed = true; if (!reduceMotion) shake = Math.max(shake, 1.2); try { navigator.vibrate?.(20); } catch (_) {} }
       if (t >= 1.0) { tl = { kind: 'spin', t0: now }; choose(); }
     } else if (tl.kind === 'spin') {
@@ -844,7 +870,7 @@ function buildGacha() {
         if (t >= 3.95 && !tl.card) { tl.card = true; showCard(true); gacha.busy = false; }
       }
     } else if (tl.kind === 'up') {
-      const f = k01(t, 0, 0.5); M.position.y = 5 * f * f; out.visible = false; mini.scale.multiplyScalar(0.85);
+      const f = k01(t, 0, 0.5); M.position.y = 5 * f * f; blob.material.opacity = clamp(1 - M.position.y / 3); out.visible = false; mini.scale.multiplyScalar(0.85);
       if (f >= 1) { tl = null; G.visible = false; mini.visible = false; gacha.active = false; gacha.busy = false; el.classList.remove('is-open'); el.setAttribute('aria-hidden', 'true'); document.body.classList.remove('is-gacha'); onDone?.(); onDone = null; }
     }
     if (tl) requestAnimationFrame(frame);

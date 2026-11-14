@@ -1,2 +1,2 @@
-import { initCommon } from './common.js?v=20261115c';
+import { initCommon } from './common.js?v=20261115d';
 initCommon();
