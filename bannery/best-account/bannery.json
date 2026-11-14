@@ -303,14 +303,15 @@
     ],
     "bSize": 42,
     "mockup": {
-      "x": 70,
-      "y": 880,
+      "x": 215,
+      "y": 915,
       "rot": -6,
       "scale": 1.32
     },
     "badges": {},
     "web": "www.BestAccount.cz",
-    "arrow": false
+    "arrow": false,
+    "hLh": 121
   },
   {
     "id": "tirolova-01c-svetla-mobil",

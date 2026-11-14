@@ -326,7 +326,7 @@ function render(B){
   document.getElementById('hex').innerHTML = hexes(theme, corners);
   // text
   let h='';
-  h+=`<h1 style="${B.hSize?`font-size:${B.hSize}px;line-height:${Math.round(B.hSize*0.956)}px`:''}">${fmt(B.headline)}</h1>`;
+  h+=`<h1 style="${B.hSize?`font-size:${B.hSize}px;line-height:${Math.round(B.hSize*0.956)}px;`:''}${B.hLh?`line-height:${B.hLh}px;`:''}">${fmt(B.headline)}</h1>`;
   if(B.rule!==false) h+='<div class="rule"><i></i><b></b></div>';
   (B.body||[]).forEach(p=>{ h+= typeof p==='string' ? `<p class="b"${B.bSize?` style="font-size:${B.bSize}px;line-height:${Math.round(B.bSize*1.3)}px"`:''}>${fmt(p)}</p>` : ''; });
   if(B.checks){
@@ -349,7 +349,7 @@ function render(B){
   else { t.style.right=''; t.style.left = B.x!=null ? B.x+'px' : ''; }
   // horní okraj: vrchol verzálky prvního řádku nadpisu = B.top (výchozí 292 px jako v originálech)
   const capTop = B.top ?? 296;
-  const hs = B.hSize || 114, lh = B.hSize?Math.round(B.hSize*0.956):109;
+  const hs = B.hSize || 114, lh = B.hLh || (B.hSize?Math.round(B.hSize*0.956):109);
   // Urbanist: ascent .95, descent .25, cap height .70 (v em)
   const half=(lh-(0.95+0.25)*hs)/2;
   t.style.top = (capTop - half - (0.95-0.70)*hs) + 'px';
