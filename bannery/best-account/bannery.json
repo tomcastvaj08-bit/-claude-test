@@ -21,6 +21,102 @@
     "arrow": false
   },
   {
+    "id": "tirolova-02a-zaves",
+    "theme": "light",
+    "side": "right",
+    "x": 690,
+    "bg": "pozadi/tirolova-zaves.jpg",
+    "bgBox": [
+      -223,
+      -22,
+      1236
+    ],
+    "bgColor": "#D9E0E7",
+    "bgFeather": 260,
+    "bgFeatherSide": "right",
+    "headline": "Už žádné\nkrabice\n*účtenek.*",
+    "top": 270,
+    "body": [
+      "Účetnictví děláme\nmoderně a online.",
+      "**Přijímáme\nnové klienty.**"
+    ],
+    "bSize": 42,
+    "contact": {
+      "style": "box",
+      "label": "Kontaktujte nás:",
+      "phone": "+420 721 075 783",
+      "size": 46
+    },
+    "hex": [
+      [
+        1254,
+        1254,
+        520
+      ]
+    ],
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "arrow": false,
+    "webInk": true
+  },
+  {
+    "id": "tirolova-02b-gauc",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/tirolova-gauc.jpg",
+    "bgBox": [
+      441,
+      -10,
+      893
+    ],
+    "bgColor": "#D9E0E3",
+    "bgFeather": 260,
+    "headline": "Už žádné\nkrabice\n*účtenek.*",
+    "top": 270,
+    "body": [
+      "Účetnictví děláme\nmoderně a online.",
+      "**Přijímáme nové klienty.**"
+    ],
+    "bSize": 44,
+    "contact": {
+      "style": "pill",
+      "label": "Zavolejte nám:",
+      "phone": "+420 721 075 783"
+    },
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "arrow": false,
+    "webInk": true
+  },
+  {
+    "id": "tirolova-02c-stul",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/tirolova-stul.jpg",
+    "bgBox": [
+      -76,
+      0,
+      2052
+    ],
+    "bgColor": "#E8E8E8",
+    "bgFeather": 10,
+    "headline": "Už žádné\nkrabice\n*účtenek.*",
+    "top": 270,
+    "body": [
+      "Účetnictví děláme\nmoderně a online.",
+      "**Přijímáme nové klienty.**"
+    ],
+    "bSize": 44,
+    "contact": {
+      "style": "big",
+      "label": "Volejte ještě dnes:",
+      "phone": "+420 721 075 783",
+      "size": 60
+    },
+    "web": "www.BestAccount.cz",
+    "arrow": false
+  },
+  {
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",
