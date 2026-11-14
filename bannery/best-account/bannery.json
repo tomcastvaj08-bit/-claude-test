@@ -1,5 +1,26 @@
 [
   {
+    "id": "tirolova-01-nabirame",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/tirolova-svetla-sedi.jpg",
+    "bgBox": [
+      215,
+      -32,
+      1237
+    ],
+    "bgColor": "#E6ECF1",
+    "headline": "Nabíráme\nnové *klienty.*",
+    "top": 300,
+    "body": [
+      "Účetnictví a daně\nsvěřte profesionálům.",
+      "**Ozvěte se nám ještě dnes.**"
+    ],
+    "bSize": 44,
+    "phone": "+420 721 075 783",
+    "arrow": false
+  },
+  {
     "id": "01-konec-roku",
     "theme": "light",
     "side": "left",

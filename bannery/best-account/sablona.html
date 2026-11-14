@@ -117,6 +117,10 @@ function render(B){
   document.body.style.background = theme==='dark' ? '#08163A' : '#fff';
   const bg=document.getElementById('bg');
   if(B.bg){bg.src=B.bg;bg.style.display='';bg.style.objectPosition=B.bgPos||'center';} else bg.style.display='none';
+  // bgBox: [vlevo, nahoře, šířka] – ruční umístění fotky (portréty apod.), bgColor = barva okolo fotky
+  if(B.bgBox){Object.assign(bg.style,{inset:'auto',left:B.bgBox[0]+'px',top:B.bgBox[1]+'px',width:B.bgBox[2]+'px',height:'auto',objectFit:'fill',webkitMaskImage:`linear-gradient(90deg,transparent 0,#000 ${B.bgFeather??180}px)`});}
+  else Object.assign(bg.style,{inset:'0',left:'',top:'',width:'100%',height:'100%',objectFit:'cover',webkitMaskImage:''});
+  c.style.background = B.bgColor || (theme==='dark' ? '#08163A' : '#fff');
   document.getElementById('word').src = theme==='dark' ? 'assets/logo_word_white.png' : 'assets/logo_word_black.png';
   // závoj pro čitelnost textu na straně textu
   const col = theme==='dark' ? '8,22,58' : '255,255,255';
