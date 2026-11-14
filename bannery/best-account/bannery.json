@@ -388,7 +388,11 @@
       "text": "spokojených klientů",
       "mt": 40
     },
-    "webBottom": 34
+    "webBottom": 34,
+    "bottomGroup": [
+      77,
+      44
+    ]
   },
   {
     "id": "tirolova-01c-svetla-mobil",
