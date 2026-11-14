@@ -10,8 +10,8 @@
 /* ===== DESIGN TOKENY (změřeno z původních bannerů 1254×1254) ===== */
 :root{
   --size:1254px;
-  --blue:#0068FF;          /* akcent na světlém */
-  --blue-dark:#1673FF;     /* akcent na tmavém */
+  --blue:#0088DA;          /* akcent na světlém */
+  --blue-dark:#0088DA;     /* akcent na tmavém */
   --ink:#0B0B0B;           /* nadpis na světlém */
   --body-ink:#151515;      /* text na světlém */
   --navy:#08163A;          /* tmavé pozadí */
@@ -76,7 +76,7 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 #person{position:absolute;display:none}
 /* kontakt v boxu */
 .contact{display:flex;align-items:center;gap:26px;margin-top:44px}
-.contact .ic{width:96px;height:96px;border-radius:24px;display:grid;place-items:center;background:var(--blue);color:#fff;flex:none;box-shadow:0 10px 28px rgba(0,60,200,.35)}
+.contact .ic{width:96px;height:96px;border-radius:24px;display:grid;place-items:center;background:var(--blue);color:#fff;flex:none;box-shadow:0 10px 28px rgba(0,100,170,.30)}
 .blue .contact .ic{background:#fff;color:var(--blue);box-shadow:0 10px 30px rgba(0,20,90,.35)}
 .contact .ic svg{width:52px;height:52px}
 .contact .ic svg path{fill:currentColor;stroke:none}
@@ -88,7 +88,7 @@ ul.checks + p.b, p.b + ul.checks{margin-top:30px}
 /* kontakt jako tlačítko */
 .pillwrap{margin-top:46px}
 .pillwrap small,.bignum small{display:block;font-size:34px;line-height:40px;font-weight:500;color:var(--body-ink);margin-bottom:16px}
-.pill{display:inline-flex;align-items:center;gap:20px;padding:22px 42px 22px 30px;border-radius:999px;background:var(--blue);color:#fff;font-size:46px;font-weight:800;letter-spacing:-0.005em;white-space:nowrap;box-shadow:0 14px 30px rgba(0,104,255,.30)}
+.pill{display:inline-flex;align-items:center;gap:20px;padding:22px 42px 22px 30px;border-radius:999px;background:var(--blue);color:#fff;font-size:46px;font-weight:800;letter-spacing:-0.005em;white-space:nowrap;box-shadow:0 14px 30px rgba(0,136,218,.30)}
 .pill svg{width:46px;height:46px}.pill svg path{fill:#fff}
 /* kontakt jako velké číslo */
 .bignum{margin-top:44px}
@@ -179,17 +179,17 @@ function hexes(theme, corners){
         let pts=[];for(let a=0;a<6;a++){const t=Math.PI/180*(60*a-90);pts.push((x+(R-3)*Math.cos(t)).toFixed(1)+','+(y+(R-3)*Math.sin(t)).toFixed(1));}
         if(theme==='light'){
           const o=(0.35+rnd()*0.55).toFixed(2);
-          g+=`<polygon points="${pts}" fill="#5B9BFF" fill-opacity="${o*0.55}" stroke="#fff" stroke-opacity=".9" stroke-width="3"/>`;
+          g+=`<polygon points="${pts}" fill="#3AA2E6" fill-opacity="${o*0.55}" stroke="#fff" stroke-opacity=".9" stroke-width="3"/>`;
         }else if(theme==='blue'){
           const o=(0.05+rnd()*0.22).toFixed(2);
           g+=`<polygon points="${pts}" fill="#9CC8FF" fill-opacity="${o}" stroke="#BFDBFF" stroke-opacity=".55" stroke-width="2.2"/>`;
         }else{
           const o=(0.15+rnd()*0.35).toFixed(2);
-          g+=`<polygon points="${pts}" fill="#0E2A6E" fill-opacity="${o}" stroke="#2F7BFF" stroke-opacity=".85" stroke-width="2.2"/>`;
+          g+=`<polygon points="${pts}" fill="#0E2A6E" fill-opacity="${o}" stroke="#1E9BE8" stroke-opacity=".85" stroke-width="2.2"/>`;
         }
       }
     }
-    s+=`<g mask="url(#k${i})"${theme==='dark'?' style="filter:drop-shadow(0 0 6px rgba(40,120,255,.55))"':theme==='blue'?' style="filter:drop-shadow(0 0 8px rgba(160,210,255,.6))"':''}>${g}</g>`;
+    s+=`<g mask="url(#k${i})"${theme==='dark'?' style="filter:drop-shadow(0 0 6px rgba(0,136,218,.55))"':theme==='blue'?' style="filter:drop-shadow(0 0 8px rgba(160,210,255,.6))"':''}>${g}</g>`;
   });
   return s;
 }
@@ -213,7 +213,7 @@ function deco(B, theme){
   }else if(mode==='lightblue'){
     d.style.background = [
       g?`radial-gradient(${g[2]}px ${Math.round(g[2]*1.15)}px at ${g[0]}px ${g[1]}px, rgba(0,104,255,.42) 0%, rgba(0,104,255,.22) 40%, rgba(0,104,255,.07) 62%, rgba(0,104,255,0) 80%)`:'',
-      'radial-gradient(900px 620px at 105% 108%, rgba(0,104,255,.30) 0%, rgba(0,104,255,0) 72%)',
+      'radial-gradient(900px 620px at 105% 108%, rgba(0,136,218,.30) 0%, rgba(0,104,255,0) 72%)',
       'linear-gradient(165deg, #FFFFFF 0%, #F6F9FF 38%, #E4EEFF 100%)'
     ].filter(Boolean).join(',');
   }
