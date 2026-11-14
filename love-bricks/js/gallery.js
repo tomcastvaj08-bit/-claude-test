@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114k';
+import { createModel, ready, LITE } from './builders.js?v=20261114l';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -139,19 +139,16 @@ const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 const cardFont = document.fonts?.load('700 64px Rubik').catch(() => {});
 const cardBack = new THREE.MeshStandardMaterial({ color: '#F7F6F3', roughness: 0.55 });
 function makeCard(p, fp, D) {
-  // stojánek do stříšky (jako „rezervováno“ na stole): bílý karton, název, cena a drobná barevná linka v barvě produktu
-  const W = 1.2, H = 0.52, lean = 0.22;
+  // stojánek do stříšky (jako „rezervováno“ na stole): bílý karton v jednoduchém černém rámečku, jen název
+  const W = 1.2, H = 0.42, lean = 0.22;
   const c = document.createElement('canvas'); c.width = 1024; c.height = Math.round(1024 * H / W);
   const g = c.getContext('2d'), CW = c.width, CH = c.height;
   const draw = () => {
     g.fillStyle = '#FBFAF7'; g.fillRect(0, 0, CW, CH);
-    g.strokeStyle = 'rgba(31,26,23,.14)'; g.lineWidth = 4; g.strokeRect(22, 22, CW - 44, CH - 44);
-    g.fillStyle = p.accent || '#D3359D'; g.fillRect(CW / 2 - 60, 58, 120, 8);
+    g.strokeStyle = '#111'; g.lineWidth = 12; g.strokeRect(30, 30, CW - 60, CH - 60);
     g.fillStyle = '#1F1A17'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    let fs = 92; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(p.name).width > CW - 120 && fs > 30);
-    g.fillText(p.name, CW / 2, CH * 0.44);
-    g.font = '700 66px Rubik, sans-serif'; g.fillStyle = p.accent || '#D3359D';
-    g.fillText(fmt(p.price), CW / 2, CH * 0.74);
+    let fs = 104; do { g.font = `700 ${fs}px Rubik, sans-serif`; fs -= 4; } while (g.measureText(p.name).width > CW - 140 && fs > 30);
+    g.fillText(p.name, CW / 2, CH * 0.53);
     tex.needsUpdate = true;
   };
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
