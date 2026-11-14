@@ -141,7 +141,7 @@
       962
     ],
     "bgColor": "#08163A",
-    "bgFeather": 200,
+    "bgFeather": 140,
     "bgFeatherSide": "right",
     "headline": "Už žádné\nkrabice\n*účtenek.*",
     "top": 240,
@@ -172,7 +172,8 @@
     "web": "www.BestAccount.cz",
     "arrow": false,
     "webLeft": true,
-    "fade": 0
+    "fade": 0,
+    "bgExtend": "#18181A"
   },
   {
     "id": "tirolova-01c-svetla-mobil",

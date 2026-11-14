@@ -34,3 +34,4 @@
 - Na fotku člověka nikdy nedávat barevný závoj ani tónování – přechod do banneru jen na okraji fotky, mimo postavu.
 - Text vpravo = zarovnat úplně doprava (nadpis, linka, text, kontakt i počet klientů).
 - Tmavá verze: tmavé studiové fotky, pozadí `#08163A`, bílý nadpis, modrý akcent `#1673FF`.
+- Pozadí fotky nechat, jak je; přechod do barvy banneru dělat za okrajem fotky (`bgExtend` = barva pozadí fotky u okraje), ne přes postavu. Text může částečně ležet i na fotce.
