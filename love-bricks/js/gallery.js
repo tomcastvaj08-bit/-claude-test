@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114w';
+import { createModel, ready, LITE } from './builders.js?v=20261114x';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -574,7 +574,8 @@ function frame(now) {
   const dt = Math.min(0.05, rawDt);
   const t = now / 1000;
 
-  // pohyb
+  // pohyb (při automatu stojíš na místě)
+  if (gacha.active) { state.v = 0; state.target = null; state.hold = 0; }
   if (mode === 'walk' && state.warp) {
     const W = state.warp; W.t += rawDt;
     const k = ease(clamp(W.t / W.dur));
@@ -692,109 +693,127 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-// ------------------------------------------------------------ automat na kvítka (gašapon)
-// „Nevím, co chci koupit“ → před tebe spadne automat z kostek, otočí se klikou, vypadne kulička
-// a v ní náhodná květina: „Tahle se jí bude líbit. Věř mi.“
+// ------------------------------------------------------------ automat na kvítka (gašapon) – 3D, přímo v galerii
+// „Nevím, co chci koupit“ → do cesty před tebe spadne automat z kostek, otočí klikou, kulička se kutálí k tobě,
+// otevře se a v ní náhodná květina: „Tahle se jí bude líbit. Věř mi.“
+const gacha = { active: false };
 {
-  const BALL_POS = [[160,232],[118,222],[202,222],[139,190],[181,190],[97,192],[223,192],[118,158],[160,160],[202,158],[80,155],[240,155],[139,126],[181,126],[100,120],[220,120]];
-  const BALL_COL = ['#E4569A', '#F5C518', '#4B9F4A', '#0055BF', '#FE8A18', '#D01012', '#9B5FC0', '#2CB1C9'];
-  const ball = (x, y, col, rot, extra = '') => `<g ${extra} transform="translate(${x} ${y}) rotate(${rot})"><circle r="21" fill="#fff" fill-opacity=".92"/><path d="M-21 0 A21 21 0 0 1 21 0 Z" fill="${col}"/><path d="M-21 0 H21" stroke="rgba(0,0,0,.2)" stroke-width="2"/><circle r="21" fill="none" stroke="rgba(0,0,0,.16)" stroke-width="1.2"/><ellipse cx="-8" cy="-10" rx="6" ry="4" fill="#fff" fill-opacity=".65" transform="rotate(-30 -8 -10)"/></g>`;
-  const studs = (y, x0, x1, step, col) => { let s = ''; for (let x = x0; x <= x1; x += step) s += `<rect x="${x - 9}" y="${y - 7}" width="18" height="8" rx="2" fill="${col}"/><ellipse cx="${x}" cy="${y - 7}" rx="9" ry="3" fill="#fff" fill-opacity=".28"/>`; return s; };
-  const machineSVG = `<svg viewBox="0 0 320 520" aria-hidden="true">
-    <defs>
-      <radialGradient id="gGlass" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".6" stop-color="#DDEFFF" stop-opacity=".22"/><stop offset="1" stop-color="#9CC8EC" stop-opacity=".35"/></radialGradient>
-      <linearGradient id="gBody" x1="0" x2="1"><stop offset="0" stop-color="#B80D10"/><stop offset=".18" stop-color="#E01A1C"/><stop offset=".8" stop-color="#D01012"/><stop offset="1" stop-color="#9E0B0D"/></linearGradient>
-      <linearGradient id="gGrey" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5A5E66"/><stop offset="1" stop-color="#33363B"/></linearGradient>
-      <clipPath id="gDome"><circle cx="160" cy="150" r="106"/></clipPath>
-    </defs>
-    <ellipse cx="160" cy="506" rx="132" ry="12" fill="#000" fill-opacity=".18"/>
-    <rect x="36" y="470" width="248" height="30" rx="5" fill="url(#gGrey)"/>
-    <rect x="36" y="470" width="248" height="5" rx="2" fill="#fff" fill-opacity=".18"/>
-    <rect x="50" y="258" width="220" height="214" rx="10" fill="url(#gBody)"/>
-    <rect x="62" y="272" width="196" height="186" rx="8" fill="#fff" fill-opacity=".07"/>
-    <rect x="50" y="258" width="220" height="6" rx="3" fill="#fff" fill-opacity=".25"/>
-    <g class="gacha-dome">
-      <circle cx="160" cy="150" r="108" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="3" stroke-opacity=".9"/>
-      <g clip-path="url(#gDome)"><g class="gacha-balls">${BALL_POS.map(([x, y], i) => ball(x, y, BALL_COL[i % BALL_COL.length], (i * 47) % 360 - 180, `data-i="${i}"`)).join('')}</g></g>
-      <circle cx="160" cy="150" r="106" fill="url(#gGlass)"/>
-      <path d="M86 92 A90 90 0 0 1 150 54" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-opacity=".75"/>
-      <path d="M74 128 A92 92 0 0 1 78 112" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-opacity=".6"/>
-    </g>
-    <rect x="116" y="30" width="88" height="24" rx="5" fill="url(#gBody)"/>${studs(30, 134, 186, 26, '#D01012')}
-    <rect x="62" y="244" width="196" height="22" rx="4" fill="url(#gGrey)"/>${studs(244, 82, 238, 26, '#4A4E55')}
-    <rect x="98" y="282" width="124" height="30" rx="4" fill="#fff"/><text x="160" y="303" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="17" fill="#1B1D22">KVĚTOMAT</text>
-    <g class="gacha-crank"><circle cx="160" cy="362" r="34" fill="#F4F2EE" stroke="#C9C3B8" stroke-width="3"/><rect x="132" y="355" width="56" height="14" rx="7" fill="#8C9099"/><circle cx="160" cy="362" r="10" fill="#D01012"/><circle cx="156" cy="358" r="3" fill="#fff" fill-opacity=".7"/></g>
-    <rect x="226" y="338" width="28" height="48" rx="5" fill="#1B1D22" fill-opacity=".85"/><rect x="238" y="346" width="4" height="32" rx="2" fill="#F5C518"/>
-    <rect x="66" y="344" width="44" height="36" rx="5" fill="#fff" fill-opacity=".9"/><text x="88" y="360" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="9" fill="#D01012">1</text><text x="88" y="372" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="7" fill="#1B1D22">KOSTKA</text>
-    <rect x="114" y="404" width="92" height="52" rx="14" fill="#2A1E1E"/><rect x="118" y="408" width="84" height="20" rx="10" fill="#fff" fill-opacity=".12"/>
-  </svg>`;
+  const plast = (c, o = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.34, clearcoat: 0.45, clearcoatRoughness: 0.18, sheen: 0.06, sheenColor: '#fff', ...o });
+  const RED = plast('#D01012'), GREY = plast('#4A4E55'), DARK = plast('#2A1E1E', { roughness: 0.7, clearcoat: 0 }), WHITE = plast('#F4F2EE'), YEL = plast('#F5C518');
+  const GLASS = new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.04, transmission: 1, thickness: 0.06, ior: 1.45, clearcoat: 1, clearcoatRoughness: 0.03, transparent: true, opacity: 1, envMapIntensity: 1.2, side: THREE.DoubleSide });
+  const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
+  const studG = new THREE.CylinderGeometry(0.048, 0.048, 0.034, 24);
+  const studsOn = (g, m, y, xs, zs) => { for (const x of xs) for (const z of zs) { const s = new THREE.Mesh(studG, m); s.position.set(x, y + 0.017, z); g.add(s); } };
+  const range = (a, b, n) => Array.from({ length: n }, (_, i) => a + (b - a) * (n === 1 ? 0.5 : i / (n - 1)));
+  const G = new THREE.Group(); G.visible = false; scene.add(G);
+  const M = new THREE.Group(); G.add(M);                 // samotný automat (padá, přimáčkne se)
+  // podstavec + tělo z cihliček (střídavé spáry jako u skutečné stavby)
+  M.add(box(0.98, 0.08, 0.78, GREY, 0, 0.04, 0)); studsOn(M, GREY, 0.08, [-0.44, 0.44], range(-0.33, 0.33, 4));
+  for (let L = 0; L < 4; L++) {
+    const y = 0.08 + L * 0.16 + 0.08, off = L % 2 ? 0.1 : -0.1;
+    for (const [x0, x1] of [[-0.4, off - 0.003], [off + 0.003, 0.4]]) M.add(box(x1 - x0, 0.154, 0.6, RED, (x0 + x1) / 2, y, 0));
+  }
+  // přední panel: štítek, klika, mince, výdejní otvor
+  const lab = document.createElement('canvas'); lab.width = 512; lab.height = 128; { const g = lab.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#1B1D22'; g.font = '72px Bungee, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KVĚTOMAT', 256, 70); }
+  const labTex = new THREE.CanvasTexture(lab); labTex.colorSpace = THREE.SRGBColorSpace;
+  document.fonts?.load('72px Bungee', 'KVĚTOMAT').then(() => { const g = lab.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#1B1D22'; g.font = '72px Bungee, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('KVĚTOMAT', 256, 70); labTex.needsUpdate = true; });
+  const label = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.125, 0.02), [WHITE, WHITE, WHITE, WHITE, plast('#fff', { map: labTex }), WHITE]); label.position.set(0, 0.63, 0.31); M.add(label);
+  const crank = new THREE.Group(); crank.position.set(0, 0.42, 0.31); M.add(crank);
+  { const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.04, 40), WHITE); disc.rotation.x = Math.PI / 2; crank.add(disc);
+    const bar = box(0.2, 0.05, 0.05, GREY, 0, 0, 0.04); crank.add(bar); const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.06, 20), RED); hub.rotation.x = Math.PI / 2; hub.position.z = 0.06; crank.add(hub); }
+  M.add(box(0.07, 0.16, 0.02, DARK, 0.29, 0.42, 0.31)); M.add(box(0.012, 0.11, 0.024, YEL, 0.29, 0.42, 0.312));
+  M.add(box(0.32, 0.17, 0.05, DARK, 0, 0.19, 0.29));
+  // krk s výstupky, kopule se skleněným leskem, kuličky, čepička nahoře
+  M.add(box(0.86, 0.06, 0.66, GREY, 0, 0.75, 0)); studsOn(M, GREY, 0.78, range(-0.36, 0.36, 7), [-0.28, 0.28]); studsOn(M, GREY, 0.78, [-0.36, 0.36], range(-0.28, 0.28, 5));
+  const DC = new THREE.Vector3(0, 1.17, 0), DR = 0.42;
+  const balls = new THREE.Group(); balls.position.copy(DC); M.add(balls);
+  const COLS = ['#E4569A', '#F5C518', '#4B9F4A', '#0055BF', '#FE8A18', '#D01012', '#9B5FC0', '#2CB1C9'];
+  const hemi = (r, top) => new THREE.SphereGeometry(r, 28, 14, 0, Math.PI * 2, top ? 0 : Math.PI / 2, Math.PI / 2);
+  const capsule = (r, col) => { const c = new THREE.Group(); const t = new THREE.Mesh(hemi(r, true), plast(col)); const b = new THREE.Mesh(hemi(r, false), plast('#FAFAF8')); c.add(t, b); c.userData = { t, b }; return c; };
+  { let k = 0; const P = []; for (let tries = 0; tries < 900 && P.length < 22; tries++) { const v = new THREE.Vector3((Math.random() * 2 - 1) * 0.3, -0.33 + Math.random() * 0.36, (Math.random() * 2 - 1) * 0.3); if (v.length() > DR - 0.1 || P.some((q) => q.distanceTo(v) < 0.17)) continue; P.push(v); }
+    P.sort((a, b) => a.y - b.y).forEach((v) => { const c = capsule(0.088, COLS[k++ % COLS.length]); c.position.copy(v); c.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6); balls.add(c); }); }
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(DR, 48, 32), GLASS); dome.position.copy(DC); M.add(dome);
+  M.add(box(0.28, 0.1, 0.28, RED, 0, DC.y + DR + 0.01, 0)); studsOn(M, RED, DC.y + DR + 0.06, [-0.07, 0.07], [-0.07, 0.07]);
+  const out = capsule(0.088, '#E4569A'); out.visible = false; G.add(out);
+
+  // HTML: zavřít + výsledek (karta)
   const el = document.createElement('div');
   el.className = 'gacha'; el.setAttribute('aria-hidden', 'true');
   el.innerHTML = `<div class="gacha-dim"></div><div class="gacha-flash"></div>
     <button class="brick-btn sm white gacha-close" data-studs type="button" aria-label="Zavřít automat">Zavřít</button>
-    <div class="gacha-machine">${machineSVG}<div class="gacha-cap"><svg viewBox="-24 -24 48 48"><g class="half bot"><path d="M-21 0 A21 21 0 0 0 21 0 Z" fill="#fff"/></g><g class="half top"><path d="M-21 0 A21 21 0 0 1 21 0 Z" fill="#E4569A"/><ellipse cx="-8" cy="-10" rx="6" ry="4" fill="#fff" fill-opacity=".65"/></g><path d="M-21 0 H21" stroke="rgba(0,0,0,.2)" stroke-width="2"/></svg></div></div>
     <div class="gacha-result brick-card" data-studs role="dialog" aria-live="polite"></div>`;
-  document.body.appendChild(el);
-  studify(el);
-  const M = $('.gacha-machine', el), crank = $('.gacha-crank', el), balls = $('.gacha-balls', el), cap = $('.gacha-cap', el), capTop = $('.half.top', el), capBot = $('.half.bot', el), res = $('.gacha-result', el), flash = $('.gacha-flash', el);
-  let busy = false, last = null, pick = null;
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const A = (node, kf, o) => node.animate(kf, { fill: 'forwards', ...o }).finished;
+  document.body.appendChild(el); studify(el);
+  const res = $('.gacha-result', el), flash = $('.gacha-flash', el);
+  let tl = null, last = null, pick = null, onDone = null;
+  const ease = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2, k01 = (t, a, b) => clamp((t - a) / (b - a));
 
-  async function spin() {
-    busy = true; el.classList.remove('is-done');
-    const pool = ORDER.filter((id) => id !== last); last = pool[Math.floor(Math.random() * pool.length)];
-    pick = byId(last);
-    $('path', capTop).setAttribute('fill', pick.accent);
+  function choose() {
+    const pool = ORDER.filter((id) => id !== last); last = pool[Math.floor(Math.random() * pool.length)]; pick = byId(last);
+    out.userData.t.material.color.set(pick.accent);
     res.style.setProperty('--accent', pick.accent);
     res.innerHTML = `<img src="img/p/${pick.id}.webp" alt="" width="200" height="200"><h3>${pick.name}</h3><p><b>Tahle se jí bude líbit.</b> Věř mi.</p><p class="price-line">${fmt(pick.price)} · ${pick.pieces} dílků</p>
       <div class="row"><button class="brick-btn sm" data-studs type="button" data-gacha-show>Ukázat mi ji</button><button class="brick-btn sm white" data-studs type="button" data-gacha-again>Zkusit znovu</button></div>
       <a class="more" href="produkt.html?id=${pick.id}">Detail produktu ›</a>`;
     studify(res);
-    const quick = reduceMotion ? 0.01 : 1;
-    // kulička zpět do automatu, výsledek pryč
-    cap.getAnimations().forEach((a) => a.cancel()); capTop.getAnimations().forEach((a) => a.cancel()); capBot.getAnimations().forEach((a) => a.cancel());
-    res.getAnimations().forEach((a) => a.cancel()); M.getAnimations().filter((a) => a.id === 'dimm').forEach((a) => a.cancel());
-    // otočení klikou + zatřesení kuliček
-    const shake = balls.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: 'translate(-4px,2px) rotate(-3deg)' }, { transform: 'translate(4px,-2px) rotate(3deg)' }, { transform: 'translate(-3px,1px) rotate(-2deg)' }, { transform: 'translate(0,0) rotate(0)' }], { duration: 300 * quick, iterations: 4 });
-    await A(crank, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(720deg)' }], { duration: 1300 * quick, easing: 'cubic-bezier(.45,0,.3,1)', fill: 'none' });
-    shake.cancel();
-    // kulička vypadne z výdejního otvoru a přiletí k tobě
-    cap.style.opacity = 1;
-    await A(cap, [{ transform: 'translate(-50%, 318%) scale(.42)', opacity: 0 }, { transform: 'translate(-50%, 340%) scale(.45)', opacity: 1, offset: .4 }, { transform: 'translate(-50%, 352%) scale(.47)' }], { duration: 520 * quick, easing: 'ease-in' });
-    await A(cap, [{ transform: 'translate(-50%, 352%) scale(.47)' }, { transform: 'translate(-50%, 150%) scale(2.1) rotate(-25deg)', offset: .7 }, { transform: 'translate(-50%, 170%) scale(2) rotate(-10deg)' }], { duration: 760 * quick, easing: 'cubic-bezier(.2,.8,.3,1)' });
-    await A(cap, [{ transform: 'translate(-50%, 170%) scale(2) rotate(-10deg)' }, { transform: 'translate(-50%, 170%) scale(2) rotate(8deg)' }, { transform: 'translate(-50%, 170%) scale(2) rotate(-6deg)' }, { transform: 'translate(-50%, 170%) scale(2.05) rotate(0)' }], { duration: 420 * quick });
-    // otevření: vršek odletí, záblesk, ukáže se květina
-    A(capTop, [{ transform: 'translate(0,0) rotate(0)' }, { transform: 'translate(-14px,-34px) rotate(-60deg)', opacity: 0 }], { duration: 520 * quick, easing: 'ease-out' });
-    A(capBot, [{ transform: 'translate(0,0)' }, { transform: 'translate(10px,26px) rotate(40deg)', opacity: 0 }], { duration: 520 * quick, easing: 'ease-out' });
-    A(flash, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1) rotate(40deg)', opacity: .9, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.1) rotate(70deg)', opacity: 0 }], { duration: 1100 * quick, easing: 'ease-out' });
-    M.animate([{ opacity: 1, filter: 'none' }, { opacity: .35, filter: 'blur(2px)' }], { duration: 400, fill: 'forwards', id: 'dimm' });
-    await wait(120 * quick);
-    await A(res, [{ transform: 'translate(-50%,-50%) scale(.4) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.06) rotate(1deg)', opacity: 1, offset: .65 }, { transform: 'translate(-50%,-50%) scale(1) rotate(0)', opacity: 1 }], { duration: 560 * quick, easing: 'cubic-bezier(.2,.9,.3,1.2)' });
-    cap.style.opacity = 0;
-    el.classList.add('is-done'); busy = false;
   }
-  async function open() {
-    if (busy || el.classList.contains('is-open') || mode === 'focus') return;
-    busy = true;
+  function showCard(on) {
+    el.classList.toggle('is-done', on);
+    res.animate(on ? [{ transform: 'translate(-50%,-50%) scale(.4) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.06) rotate(1deg)', opacity: 1, offset: .65 }, { transform: 'translate(-50%,-50%) scale(1) rotate(0)', opacity: 1 }]
+      : [{ opacity: 1, transform: 'translate(-50%,-50%) scale(1)' }, { opacity: 0, transform: 'translate(-50%,-50%) scale(.85)' }], { duration: on ? 520 : 220, easing: on ? 'cubic-bezier(.2,.9,.3,1.2)' : 'ease-in', fill: 'forwards' });
+  }
+  // časová osa (s): pád 0–0.7, klika 1.0–2.3, kulička ven 2.3–2.8, kutálení 2.8–3.5, ke kameře 3.5–4.2, otevření 4.4
+  function frame(now) {
+    if (!tl) return;
+    const t = window.__gT ?? (now - tl.t0) / 1000 * (reduceMotion ? 20 : 1); // __gT: jen pro testy (zastavení v čase)
+    const cz = -state.s;                                            // kamera stojí v z = -s, automat 3,3 m před ní
+    if (tl.kind === 'drop') {
+      const f = k01(t, 0, 0.7), y = 5 * (1 - f * f);
+      const u = k01(t, 0.7, 1.15), sq = t < 0.7 ? 0 : Math.sin(Math.PI * Math.min(1, u * 1.2)) * Math.exp(-u * 2.5) * 0.09;
+      M.position.y = y; M.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5);
+      if (t >= 0.7 && !tl.landed) { tl.landed = true; if (!reduceMotion) shake = Math.max(shake, 1.2); try { navigator.vibrate?.(20); } catch (_) {} }
+      if (t >= 1.0) { tl = { kind: 'spin', t0: now }; choose(); }
+    } else if (tl.kind === 'spin') {
+      crank.rotation.z = -ease(k01(t, 0, 1.3)) * Math.PI * 4;
+      const w = t < 1.3 ? Math.sin(t * 38) * 0.05 * Math.sin(Math.PI * k01(t, 0, 1.3)) : 0; balls.rotation.set(w, w * 0.6, w * 0.8);
+      const a = k01(t, 1.3, 1.8), b = k01(t, 1.8, 2.5), c = k01(t, 2.5, 3.2);
+      out.visible = t > 1.3; const R = 0.088;
+      const pChute = new THREE.Vector3(0, 0.19, 0.26), pLip = new THREE.Vector3(0, R, 0.42), pFloor = new THREE.Vector3(0.05, R, 1.55);
+      const camLocal = new THREE.Vector3(0, EYE - 0.12 - G.position.y, (cz - 1.0) - G.position.z);
+      let s = 1;
+      if (t < 1.8) { out.position.lerpVectors(pChute, pLip, ease(a)); out.rotation.set(a * 2, 0, 0); }
+      else if (t < 2.5) { out.position.lerpVectors(pLip, pFloor, b); out.position.y = R + Math.abs(Math.sin(b * Math.PI * 2)) * 0.05 * (1 - b); out.rotation.set(2 + b * (pFloor.z - pLip.z) / R, 0, b * 0.3); }
+      else { const e = ease(c); out.position.lerpVectors(pFloor, camLocal, e); out.position.y = R + (camLocal.y - R) * e + Math.sin(c * Math.PI) * 0.25; s = 1 + e * 1.3; out.rotation.x = 2 + (pFloor.z - pLip.z) / R + e * 3; out.rotation.y = -e * 0.6; }
+      if (t >= 3.2 && t < 3.6) { const q = k01(t, 3.2, 3.6); out.rotation.z = Math.sin(q * Math.PI * 3) * 0.25 * (1 - q); out.rotation.x = 0; out.rotation.y = 0; }
+      out.scale.setScalar(s * (t >= 3.2 ? 2.3 : 1));
+      if (t >= 3.2) { out.position.copy(camLocal); out.scale.setScalar(2.3); }
+      if (t >= 3.6 && !tl.popped) {
+        tl.popped = true;
+        flash.animate([{ transform: 'translate(-50%,-50%) scale(0) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1) rotate(40deg)', opacity: .9, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.1) rotate(70deg)', opacity: 0 }], { duration: 1100, easing: 'ease-out', fill: 'forwards' });
+        setTimeout(() => showCard(true), 140);
+      }
+      if (tl.popped) { const q = k01(t, 3.6, 4.2); out.userData.t.position.set(-q * 0.05, q * 0.12, 0); out.userData.t.rotation.z = q * 1.2; out.userData.b.position.set(q * 0.04, -q * 0.1, 0); out.userData.b.rotation.z = -q * 0.8;
+        out.userData.t.material.opacity = out.userData.b.material.opacity = 1 - q; out.userData.t.material.transparent = out.userData.b.material.transparent = true; if (q >= 1) out.visible = false; }
+      if (t >= 4.2) { tl = null; gacha.busy = false; }
+    } else if (tl.kind === 'up') {
+      const f = k01(t, 0, 0.5); M.position.y = 5 * f * f; out.visible = false;
+      if (f >= 1) { tl = null; G.visible = false; gacha.active = false; gacha.busy = false; el.classList.remove('is-open'); el.setAttribute('aria-hidden', 'true'); document.body.classList.remove('is-gacha'); onDone?.(); onDone = null; }
+    }
+    if (tl) requestAnimationFrame(frame);
+  }
+  function resetCapsule() { out.visible = false; out.scale.setScalar(1); for (const h of [out.userData.t, out.userData.b]) { h.position.set(0, 0, 0); h.rotation.set(0, 0, 0); h.material.opacity = 1; h.material.transparent = false; } }
+  function open() {
+    if (gacha.active || mode === 'focus' || state.warp) return;
+    gacha.active = gacha.busy = true; state.v = 0; state.target = null; state.hold = 0;
+    G.position.set(0, 0, -state.s - 2.9); G.rotation.y = 0; M.position.y = 5; M.scale.set(1, 1, 1); crank.rotation.z = 0; resetCapsule(); G.visible = true;
     el.classList.add('is-open'); el.setAttribute('aria-hidden', 'false'); document.body.classList.add('is-gacha');
-    const quick = reduceMotion ? 0.01 : 1;
-    // automat spadne před tebe (dopad s přimáčknutím)
-    await A(M, [{ transform: 'translateY(-130vh)' }, { transform: 'translateY(0) scaleY(1)', offset: .62, easing: 'ease-out' }, { transform: 'translateY(0) scale(1.04, .93)', offset: .74 }, { transform: 'translateY(-14px) scale(.98, 1.03)', offset: .86 }, { transform: 'translateY(0) scale(1, 1)' }], { duration: 900 * quick, easing: 'cubic-bezier(.55,0,.85,.4)' });
-    try { navigator.vibrate?.(18); } catch (_) {}
-    await wait(200 * quick);
-    await spin();
+    tl = { kind: 'drop', t0: performance.now() }; requestAnimationFrame(frame);
   }
-  async function close(after) {
-    if (busy && !after) return;
-    busy = true; el.classList.remove('is-done');
-    const quick = reduceMotion ? 0.01 : 1;
-    A(res, [{ opacity: 1 }, { opacity: 0, transform: 'translate(-50%,-50%) scale(.8)' }], { duration: 220 * quick });
-    M.getAnimations().filter((a) => a.id === 'dimm').forEach((a) => a.cancel());
-    await A(M, [{ transform: 'translateY(0)' }, { transform: 'translateY(-130vh)' }], { duration: 520 * quick, easing: 'cubic-bezier(.5,0,.9,.5)' });
-    el.classList.remove('is-open'); el.setAttribute('aria-hidden', 'true'); document.body.classList.remove('is-gacha');
-    busy = false;
-    after?.();
+  function again() { if (gacha.busy) return; gacha.busy = true; showCard(false); resetCapsule(); crank.rotation.z = 0; tl = { kind: 'spin', t0: performance.now() + 250 }; setTimeout(() => choose(), 0); requestAnimationFrame(frame); }
+  function close(after) {
+    if (!gacha.active || (gacha.busy && !after)) return;
+    gacha.busy = true; onDone = after || null;
+    if (el.classList.contains('is-done')) showCard(false);
+    tl = { kind: 'up', t0: performance.now() }; requestAnimationFrame(frame);
   }
   function showInGallery(id) {
     const i = ORDER.indexOf(id), ex = exhibits[i]; if (!ex) return;
@@ -809,10 +828,11 @@ requestAnimationFrame(frame);
   }
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-gacha]')) { e.stopPropagation(); open(); return; }
-    if (!el.classList.contains('is-open')) return;
-    if (e.target.closest('.gacha-close') || e.target.classList.contains('gacha-dim')) close();
-    else if (e.target.closest('[data-gacha-again]') && !busy) spin();
-    else if (e.target.closest('[data-gacha-show]') && !busy) { const id = pick.id; close(() => showInGallery(id)); }
+    if (!gacha.active) return;
+    e.stopPropagation();
+    if (e.target.closest('.gacha-close')) close();
+    else if (e.target.closest('[data-gacha-again]')) again();
+    else if (e.target.closest('[data-gacha-show]') && !gacha.busy) { const id = pick.id; close(() => showInGallery(id)); }
   }, true);
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && el.classList.contains('is-open')) close(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && gacha.active) close(); });
 }
