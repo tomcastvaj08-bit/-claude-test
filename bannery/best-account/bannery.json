@@ -250,6 +250,69 @@
     "arrow": false
   },
   {
+    "id": "tirolova-04a-svetla",
+    "theme": "light",
+    "side": "left",
+    "bg": "pozadi/tirolova-stul.jpg",
+    "bgBox": [
+      -76,
+      0,
+      2052
+    ],
+    "bgColor": "#E8E8E8",
+    "bgFeather": 10,
+    "headline": "Účetnictví\nnení jen\n*Má dáti / Dal.*",
+    "top": 250,
+    "body": [
+      "Nasloucháme vašim plánům\na rosteme spolu s vámi.",
+      "**Jsme váš partner pro růst.**"
+    ],
+    "bSize": 42,
+    "mockup": {
+      "x": 70,
+      "y": 880,
+      "rot": -6,
+      "scale": 1.32
+    },
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "arrow": false
+  },
+  {
+    "id": "tirolova-04b-tmava",
+    "theme": "dark",
+    "side": "left",
+    "bg": "pozadi/tirolova-tmava-zidle.jpg",
+    "bgBox": [
+      344,
+      -40,
+      1100
+    ],
+    "bgColor": "#08163A",
+    "bgFeather": 160,
+    "bgFeatherSide": "left",
+    "bgExtend": "linear-gradient(180deg, rgb(11,12,14) 0px, rgb(13,14,18) 227px, rgb(15,16,20) 418px, rgb(15,17,20) 609px, rgb(13,14,18) 800px, rgb(8,8,10) 991px, rgb(9,9,10) 1254px)",
+    "blendFrom": 640,
+    "blendTo": 160,
+    "fade": 0,
+    "headline": "Účetnictví\nnení jen\n*Má dáti / Dal.*",
+    "top": 250,
+    "body": [
+      "Nasloucháme vašim plánům\na rosteme spolu s vámi.",
+      "**Jsme váš partner pro růst.**"
+    ],
+    "bSize": 42,
+    "mockup": {
+      "x": 70,
+      "y": 880,
+      "rot": -6,
+      "scale": 1.32
+    },
+    "badges": {},
+    "web": "www.BestAccount.cz",
+    "arrow": false
+  },
+  {
     "id": "tirolova-01c-svetla-mobil",
     "theme": "light",
     "side": "left",
