@@ -7,8 +7,8 @@ const TEXT = {
   sign: 'Tým Best Account',
 };
 const SIZES = [
-  { w: 3400, h: 1800, top: 440, lionW: 1250, lionTop: -60, lionShift: 0, markX: 1950, markSize: 1350, markDy: 40, tabW: 860 },
-  { w: 3000, h: 1350, top: 400, lionW: 1350, lionTop: -150, lionShift: 0, markX: 2150, markSize: 1450, markDy: 40, tabW: 860 },
+  { w: 3400, h: 1800, top: 470, lionW: 1250, lionTop: -60, lionShift: 0, markX: 1690, markSize: 1350, markDy: 170, tabW: 860 },
+  { w: 3000, h: 1350, top: 420, lionW: 1350, lionTop: -150, lionShift: 0, markX: 1900, markSize: 1450, markDy: 170, tabW: 860 },
 ];
 (async () => {
   const dir = __dirname;
