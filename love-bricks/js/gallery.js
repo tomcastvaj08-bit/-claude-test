@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { initCommon, studify, cart, toast, reduceMotion, flyBrick } from './common.js';
 import { byId, fmt } from './products.js';
-import { createModel, ready, LITE } from './builders.js?v=20261114v';
+import { createModel, ready, LITE } from './builders.js?v=20261114w';
 import { Figure, loadFigureKit } from './figures.js';
 
 initCommon();
@@ -691,3 +691,128 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// ------------------------------------------------------------ automat na kvítka (gašapon)
+// „Nevím, co chci koupit“ → před tebe spadne automat z kostek, otočí se klikou, vypadne kulička
+// a v ní náhodná květina: „Tahle se jí bude líbit. Věř mi.“
+{
+  const BALL_POS = [[160,232],[118,222],[202,222],[139,190],[181,190],[97,192],[223,192],[118,158],[160,160],[202,158],[80,155],[240,155],[139,126],[181,126],[100,120],[220,120]];
+  const BALL_COL = ['#E4569A', '#F5C518', '#4B9F4A', '#0055BF', '#FE8A18', '#D01012', '#9B5FC0', '#2CB1C9'];
+  const ball = (x, y, col, rot, extra = '') => `<g ${extra} transform="translate(${x} ${y}) rotate(${rot})"><circle r="21" fill="#fff" fill-opacity=".92"/><path d="M-21 0 A21 21 0 0 1 21 0 Z" fill="${col}"/><path d="M-21 0 H21" stroke="rgba(0,0,0,.2)" stroke-width="2"/><circle r="21" fill="none" stroke="rgba(0,0,0,.16)" stroke-width="1.2"/><ellipse cx="-8" cy="-10" rx="6" ry="4" fill="#fff" fill-opacity=".65" transform="rotate(-30 -8 -10)"/></g>`;
+  const studs = (y, x0, x1, step, col) => { let s = ''; for (let x = x0; x <= x1; x += step) s += `<rect x="${x - 9}" y="${y - 7}" width="18" height="8" rx="2" fill="${col}"/><ellipse cx="${x}" cy="${y - 7}" rx="9" ry="3" fill="#fff" fill-opacity=".28"/>`; return s; };
+  const machineSVG = `<svg viewBox="0 0 320 520" aria-hidden="true">
+    <defs>
+      <radialGradient id="gGlass" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".6" stop-color="#DDEFFF" stop-opacity=".22"/><stop offset="1" stop-color="#9CC8EC" stop-opacity=".35"/></radialGradient>
+      <linearGradient id="gBody" x1="0" x2="1"><stop offset="0" stop-color="#B80D10"/><stop offset=".18" stop-color="#E01A1C"/><stop offset=".8" stop-color="#D01012"/><stop offset="1" stop-color="#9E0B0D"/></linearGradient>
+      <linearGradient id="gGrey" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5A5E66"/><stop offset="1" stop-color="#33363B"/></linearGradient>
+      <clipPath id="gDome"><circle cx="160" cy="150" r="106"/></clipPath>
+    </defs>
+    <ellipse cx="160" cy="506" rx="132" ry="12" fill="#000" fill-opacity=".18"/>
+    <rect x="36" y="470" width="248" height="30" rx="5" fill="url(#gGrey)"/>
+    <rect x="36" y="470" width="248" height="5" rx="2" fill="#fff" fill-opacity=".18"/>
+    <rect x="50" y="258" width="220" height="214" rx="10" fill="url(#gBody)"/>
+    <rect x="62" y="272" width="196" height="186" rx="8" fill="#fff" fill-opacity=".07"/>
+    <rect x="50" y="258" width="220" height="6" rx="3" fill="#fff" fill-opacity=".25"/>
+    <g class="gacha-dome">
+      <circle cx="160" cy="150" r="108" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="3" stroke-opacity=".9"/>
+      <g clip-path="url(#gDome)"><g class="gacha-balls">${BALL_POS.map(([x, y], i) => ball(x, y, BALL_COL[i % BALL_COL.length], (i * 47) % 360 - 180, `data-i="${i}"`)).join('')}</g></g>
+      <circle cx="160" cy="150" r="106" fill="url(#gGlass)"/>
+      <path d="M86 92 A90 90 0 0 1 150 54" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-opacity=".75"/>
+      <path d="M74 128 A92 92 0 0 1 78 112" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-opacity=".6"/>
+    </g>
+    <rect x="116" y="30" width="88" height="24" rx="5" fill="url(#gBody)"/>${studs(30, 134, 186, 26, '#D01012')}
+    <rect x="62" y="244" width="196" height="22" rx="4" fill="url(#gGrey)"/>${studs(244, 82, 238, 26, '#4A4E55')}
+    <rect x="98" y="282" width="124" height="30" rx="4" fill="#fff"/><text x="160" y="303" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="17" fill="#1B1D22">KVĚTOMAT</text>
+    <g class="gacha-crank"><circle cx="160" cy="362" r="34" fill="#F4F2EE" stroke="#C9C3B8" stroke-width="3"/><rect x="132" y="355" width="56" height="14" rx="7" fill="#8C9099"/><circle cx="160" cy="362" r="10" fill="#D01012"/><circle cx="156" cy="358" r="3" fill="#fff" fill-opacity=".7"/></g>
+    <rect x="226" y="338" width="28" height="48" rx="5" fill="#1B1D22" fill-opacity=".85"/><rect x="238" y="346" width="4" height="32" rx="2" fill="#F5C518"/>
+    <rect x="66" y="344" width="44" height="36" rx="5" fill="#fff" fill-opacity=".9"/><text x="88" y="360" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="9" fill="#D01012">1</text><text x="88" y="372" text-anchor="middle" font-family="Bungee, Arial Black, sans-serif" font-size="7" fill="#1B1D22">KOSTKA</text>
+    <rect x="114" y="404" width="92" height="52" rx="14" fill="#2A1E1E"/><rect x="118" y="408" width="84" height="20" rx="10" fill="#fff" fill-opacity=".12"/>
+  </svg>`;
+  const el = document.createElement('div');
+  el.className = 'gacha'; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = `<div class="gacha-dim"></div><div class="gacha-flash"></div>
+    <button class="brick-btn sm white gacha-close" data-studs type="button" aria-label="Zavřít automat">Zavřít</button>
+    <div class="gacha-machine">${machineSVG}<div class="gacha-cap"><svg viewBox="-24 -24 48 48"><g class="half bot"><path d="M-21 0 A21 21 0 0 0 21 0 Z" fill="#fff"/></g><g class="half top"><path d="M-21 0 A21 21 0 0 1 21 0 Z" fill="#E4569A"/><ellipse cx="-8" cy="-10" rx="6" ry="4" fill="#fff" fill-opacity=".65"/></g><path d="M-21 0 H21" stroke="rgba(0,0,0,.2)" stroke-width="2"/></svg></div></div>
+    <div class="gacha-result brick-card" data-studs role="dialog" aria-live="polite"></div>`;
+  document.body.appendChild(el);
+  studify(el);
+  const M = $('.gacha-machine', el), crank = $('.gacha-crank', el), balls = $('.gacha-balls', el), cap = $('.gacha-cap', el), capTop = $('.half.top', el), capBot = $('.half.bot', el), res = $('.gacha-result', el), flash = $('.gacha-flash', el);
+  let busy = false, last = null, pick = null;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const A = (node, kf, o) => node.animate(kf, { fill: 'forwards', ...o }).finished;
+
+  async function spin() {
+    busy = true; el.classList.remove('is-done');
+    const pool = ORDER.filter((id) => id !== last); last = pool[Math.floor(Math.random() * pool.length)];
+    pick = byId(last);
+    $('path', capTop).setAttribute('fill', pick.accent);
+    res.style.setProperty('--accent', pick.accent);
+    res.innerHTML = `<img src="img/p/${pick.id}.webp" alt="" width="200" height="200"><h3>${pick.name}</h3><p><b>Tahle se jí bude líbit.</b> Věř mi.</p><p class="price-line">${fmt(pick.price)} · ${pick.pieces} dílků</p>
+      <div class="row"><button class="brick-btn sm" data-studs type="button" data-gacha-show>Ukázat mi ji</button><button class="brick-btn sm white" data-studs type="button" data-gacha-again>Zkusit znovu</button></div>
+      <a class="more" href="produkt.html?id=${pick.id}">Detail produktu ›</a>`;
+    studify(res);
+    const quick = reduceMotion ? 0.01 : 1;
+    // kulička zpět do automatu, výsledek pryč
+    cap.getAnimations().forEach((a) => a.cancel()); capTop.getAnimations().forEach((a) => a.cancel()); capBot.getAnimations().forEach((a) => a.cancel());
+    res.getAnimations().forEach((a) => a.cancel()); M.getAnimations().filter((a) => a.id === 'dimm').forEach((a) => a.cancel());
+    // otočení klikou + zatřesení kuliček
+    const shake = balls.animate([{ transform: 'translate(0,0) rotate(0)' }, { transform: 'translate(-4px,2px) rotate(-3deg)' }, { transform: 'translate(4px,-2px) rotate(3deg)' }, { transform: 'translate(-3px,1px) rotate(-2deg)' }, { transform: 'translate(0,0) rotate(0)' }], { duration: 300 * quick, iterations: 4 });
+    await A(crank, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(720deg)' }], { duration: 1300 * quick, easing: 'cubic-bezier(.45,0,.3,1)', fill: 'none' });
+    shake.cancel();
+    // kulička vypadne z výdejního otvoru a přiletí k tobě
+    cap.style.opacity = 1;
+    await A(cap, [{ transform: 'translate(-50%, 318%) scale(.42)', opacity: 0 }, { transform: 'translate(-50%, 340%) scale(.45)', opacity: 1, offset: .4 }, { transform: 'translate(-50%, 352%) scale(.47)' }], { duration: 520 * quick, easing: 'ease-in' });
+    await A(cap, [{ transform: 'translate(-50%, 352%) scale(.47)' }, { transform: 'translate(-50%, 150%) scale(2.1) rotate(-25deg)', offset: .7 }, { transform: 'translate(-50%, 170%) scale(2) rotate(-10deg)' }], { duration: 760 * quick, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    await A(cap, [{ transform: 'translate(-50%, 170%) scale(2) rotate(-10deg)' }, { transform: 'translate(-50%, 170%) scale(2) rotate(8deg)' }, { transform: 'translate(-50%, 170%) scale(2) rotate(-6deg)' }, { transform: 'translate(-50%, 170%) scale(2.05) rotate(0)' }], { duration: 420 * quick });
+    // otevření: vršek odletí, záblesk, ukáže se květina
+    A(capTop, [{ transform: 'translate(0,0) rotate(0)' }, { transform: 'translate(-14px,-34px) rotate(-60deg)', opacity: 0 }], { duration: 520 * quick, easing: 'ease-out' });
+    A(capBot, [{ transform: 'translate(0,0)' }, { transform: 'translate(10px,26px) rotate(40deg)', opacity: 0 }], { duration: 520 * quick, easing: 'ease-out' });
+    A(flash, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1) rotate(40deg)', opacity: .9, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.1) rotate(70deg)', opacity: 0 }], { duration: 1100 * quick, easing: 'ease-out' });
+    M.animate([{ opacity: 1, filter: 'none' }, { opacity: .35, filter: 'blur(2px)' }], { duration: 400, fill: 'forwards', id: 'dimm' });
+    await wait(120 * quick);
+    await A(res, [{ transform: 'translate(-50%,-50%) scale(.4) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.06) rotate(1deg)', opacity: 1, offset: .65 }, { transform: 'translate(-50%,-50%) scale(1) rotate(0)', opacity: 1 }], { duration: 560 * quick, easing: 'cubic-bezier(.2,.9,.3,1.2)' });
+    cap.style.opacity = 0;
+    el.classList.add('is-done'); busy = false;
+  }
+  async function open() {
+    if (busy || el.classList.contains('is-open') || mode === 'focus') return;
+    busy = true;
+    el.classList.add('is-open'); el.setAttribute('aria-hidden', 'false'); document.body.classList.add('is-gacha');
+    const quick = reduceMotion ? 0.01 : 1;
+    // automat spadne před tebe (dopad s přimáčknutím)
+    await A(M, [{ transform: 'translateY(-130vh)' }, { transform: 'translateY(0) scaleY(1)', offset: .62, easing: 'ease-out' }, { transform: 'translateY(0) scale(1.04, .93)', offset: .74 }, { transform: 'translateY(-14px) scale(.98, 1.03)', offset: .86 }, { transform: 'translateY(0) scale(1, 1)' }], { duration: 900 * quick, easing: 'cubic-bezier(.55,0,.85,.4)' });
+    try { navigator.vibrate?.(18); } catch (_) {}
+    await wait(200 * quick);
+    await spin();
+  }
+  async function close(after) {
+    if (busy && !after) return;
+    busy = true; el.classList.remove('is-done');
+    const quick = reduceMotion ? 0.01 : 1;
+    A(res, [{ opacity: 1 }, { opacity: 0, transform: 'translate(-50%,-50%) scale(.8)' }], { duration: 220 * quick });
+    M.getAnimations().filter((a) => a.id === 'dimm').forEach((a) => a.cancel());
+    await A(M, [{ transform: 'translateY(0)' }, { transform: 'translateY(-130vh)' }], { duration: 520 * quick, easing: 'cubic-bezier(.5,0,.9,.5)' });
+    el.classList.remove('is-open'); el.setAttribute('aria-hidden', 'true'); document.body.classList.remove('is-gacha');
+    busy = false;
+    after?.();
+  }
+  function showInGallery(id) {
+    const i = ORDER.indexOf(id), ex = exhibits[i]; if (!ex) return;
+    const stop = stopBefore();
+    let k = i, best = Infinity;
+    for (let m = 0; m < 50; m++) { const kk = i + m * N, d = Math.abs(slotS(kk) - stop - state.s); if (d < best) { best = d; k = kk; } }
+    const to = Math.max(0, slotS(k) - stop);
+    document.body.classList.add('is-moved');
+    if (Math.abs(to - state.s) > 0.05) { state.warp = { from: state.s, to, t: 0, dur: reduceMotion ? 0.01 : 0.8 }; state.v = 0; state.target = null; }
+    const arrive = () => { if (state.warp) return requestAnimationFrame(arrive); updateWindow(); if (ex.slot === k) focus(ex); }; // až doletíš, otevře se detail
+    requestAnimationFrame(arrive);
+  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-gacha]')) { e.stopPropagation(); open(); return; }
+    if (!el.classList.contains('is-open')) return;
+    if (e.target.closest('.gacha-close') || e.target.classList.contains('gacha-dim')) close();
+    else if (e.target.closest('[data-gacha-again]') && !busy) spin();
+    else if (e.target.closest('[data-gacha-show]') && !busy) { const id = pick.id; close(() => showInGallery(id)); }
+  }, true);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && el.classList.contains('is-open')) close(); });
+}
