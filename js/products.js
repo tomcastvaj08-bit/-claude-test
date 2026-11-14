@@ -36,7 +36,9 @@ export const ALL = [
   { id: 'bonsai', model: 'bonsai', name: 'Bonsaj', line: BOT, price: 1399, pieces: 878, size: '18 cm', age: '18+', tags: ['rodina', 'pary'], featured: true,
     kicker: 'Zelená nebo v květu', desc: 'Bonsaj na dřevěném stojánku. Listy vyměníš za růžovou sakuru.',
     variant: { key: null, label: 'Provedení', options: [['', '#4B9F4A']] }, bg: '#EAF2E1', ink: '#1A2A10', accent: '#4B9F4A', word: 'BONSAJ' },
-
+  { id: 'bamboo', model: 'bamboo', name: 'Šťastný bambus', line: BOT, price: 899, pieces: 325, size: '32 cm', age: '18+', tags: ['rodina', 'pary'],
+    kicker: 'Pro štěstí a pohodu', desc: 'Tři stonky bambusu se svěžími listy v zemité míse se zlatým pásem.',
+    variant: { key: null, label: 'Provedení', options: [['', '#4B9F4A']] }, bg: '#EAF4E3', ink: '#14290F', accent: '#3E9B3A', word: 'BAMBUS' },
 ];
 
 export const PRODUCTS = ALL.filter(p => p.featured);

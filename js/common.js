@@ -1,6 +1,6 @@
 // Sdílené UI pro všechny stránky Love Bricks: hlavička, patička, výstupky,
 // cookies, košík (úložiště + šuplík), toast.
-import { byId, fmt, FREE_SHIP } from './products.js?v=20261114y';
+import { byId, fmt, FREE_SHIP } from './products.js?v=20261114z';
 
 export const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const store = {
