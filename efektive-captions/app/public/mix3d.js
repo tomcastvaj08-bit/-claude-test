@@ -84,13 +84,15 @@ function sprite(word,kind,px){
   set();
   const m=x.measureText(word), asc=Math.max(m.actualBoundingBoxAscent||0,px*0.75), desc=Math.max(m.actualBoundingBoxDescent||0,px*0.25);
   const tw=Math.ceil(Math.max(m.width, (m.actualBoundingBoxRight||0)+(m.actualBoundingBoxLeft||0)));
-  const pad=Math.ceil(px*0.45), w=tw+pad*2, h=Math.ceil(asc+desc)+pad*2, base=pad+asc;
+  const pad=Math.ceil(px*0.75), w=tw+pad*2, h=Math.ceil(asc+desc)+pad*2, base=pad+asc;
   c.width=w; c.height=h; set();
   const g=x.createLinearGradient(0,base-asc,0,base+desc*0.3);
   if (kind==='hi'){ g.addColorStop(0,G.mixA||'#ffa21e'); g.addColorStop(1,G.mixB||'#f38b00'); }
   else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d6d8dc'); }
   // měkký atmosférický stín (tmavé písmo pod přední vrstvou, z něj zůstane jen stín)
-  x.save(); x.shadowColor='rgba(0,0,0,0.38)'; x.shadowBlur=px*0.32; x.shadowOffsetY=px*0.03; x.fillStyle='#000'; x.fillText(word,pad,base); x.restore();
+  x.save(); x.fillStyle='#000';
+  x.shadowColor='rgba(0,0,0,0.62)'; x.shadowBlur=px*0.5; x.shadowOffsetY=px*0.05; x.fillText(word,pad,base);
+  x.shadowColor='rgba(0,0,0,0.55)'; x.shadowBlur=px*0.18; x.shadowOffsetY=px*0.03; x.fillText(word,pad,base); x.restore();
   x.fillStyle=g; x.fillText(word,pad,base);
   o={c,w,h,pad,tw,base,asc}; SPR.set(key,o); if (SPR.size>200) SPR.delete(SPR.keys().next().value);
   return o;
@@ -108,6 +110,8 @@ function drawBlur(c,o,dx,dy,dw,dh,blur){
 
 // ---- plynulý let stejnou rychlostí: každý řádek se objeví a pak pořád stejnou rychlostí odjíždí nahoru do dálky ----
 let flowKey='', flow=null;
+// dráha letu: rychlost v(a)=v·(0.6 + 0.9·e^(−a/0.5)) → plynulá speedrampa, nikdy nula
+const disp=(v,a)=>v*(0.6*a + 0.45*(1-Math.exp(-a/0.5)));
 function faceAt(t){ if (!E.face) return null; const ts=E.out2src?E.out2src(t):t; return E.face[Math.round(ts*10)]||E.face[Math.round(ts*10)-1]||E.face[Math.round(ts*10)+1]||null; }
 function layoutFlow(W,H){
   const {lines}=build(), G=E.G;
@@ -126,7 +130,7 @@ function layoutFlow(W,H){
     const f=faceAt(L.s); L.faceTop=null;
     if (f){ const fb=f[3]*H, ft=f[1]*H; if (land-lh(L)<fb+base*0.2){ land=Math.min(H*0.9, fb+lh(L)*0.75+base*0.2); } L.faceTop=fb+base*0.1; }
     let ys=land;
-    if (prev){ const py=prev.ys-v*(L.s-prev.s); ys=Math.max(land, py+(lh(prev)*0.5+lh(L)*0.5)); }
+    if (prev){ const py=prev.ys-disp(v,L.s-prev.s); ys=Math.max(land, py+(lh(prev)*0.5+lh(L)*0.5)); }
     L.ys=Math.min(ys, H*0.95); prev=L;
   }
   flow={v,base,lh}; return flow;
@@ -140,7 +144,7 @@ E.drawMix=(c,t)=>{
   for (const L of lines){
     const age=t-L.s; if (age<0 || age>LIFE) continue;
     // stálý let: poloha, zmenšení (vzdálenost), rozmazání a zeslábnutí rostou plynule s věkem řádku
-    let y=L.ys - v*age;
+    let y=L.ys - disp(v,age);
     const dist=age*0.55, scD=Math.exp(-0.16*dist*1.8);
     const blurD=Math.max(0,age-0.9)*2.2;
     let aD=1-smooth((age-1.3)/(LIFE-1.3));
