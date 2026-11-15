@@ -421,7 +421,8 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
     if (sb>0){ m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx; m.shadowOffsetY=sy; }
     m.fillStyle=f; fillT(m,s,0,0,px,tk);
     }
-    if (S.shadowSize>0 && !(ex>0)){ m.shadowColor=hexA(S.cShadow,Math.min(0.6,S.shadowA/100*1.1)); m.shadowBlur=px*(S.shadowSize>40?S.shadowSize/250:0.035); m.shadowOffsetX=0; m.shadowOffsetY=px*0.02; fillT(m,s,0,0,px,tk); }
+    // jemný „kontaktní“ stín těsně pod písmem – rozmazání roste plynule s velikostí stínu (žádný skok, žádný ostrý obrys)
+    if (S.shadowSize>0 && !(ex>0)){ const k=Math.min(1,S.shadowSize/100); m.shadowColor=hexA(S.cShadow,Math.min(0.45,S.shadowA/100*0.7)*(0.6+0.4*k)); m.shadowBlur=px*(0.05+0.15*k); m.shadowOffsetX=0; m.shadowOffsetY=px*(0.015+0.02*k); fillT(m,s,0,0,px,tk); }
   }
   sp={cv:cvs,x:-cx,y:-cy};
   SPR.set(key,sp); if (SPR.size>64){ SPR.delete(SPR.keys().next().value); }
