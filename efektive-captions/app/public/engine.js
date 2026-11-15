@@ -545,10 +545,20 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       g.addColorStop(0,'rgba(255,248,225,0)'); g.addColorStop(0.3,'rgba(255,248,225,.35)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.7,'rgba(255,248,225,.35)'); g.addColorStop(1,'rgba(255,248,225,0)');
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over';
+      // 2b) zdroj pro záři KOLEM slova: písmena „ztlustlá“ obrysem + širší proužek → záře přesahuje mimo písmo
+      const hc=haloCtx(Wc,Hc);
+      setFont(hc, L.fam, L.wt, L.it, L.px, tk); hc.textAlign='center'; hc.textBaseline='middle'; hc.fillStyle='#fff'; hc.strokeStyle='#fff';
+      hc.lineJoin='round'; hc.lineWidth=L.px*0.42; fillT(hc, s, Wc/2, cy, L.px, tk);
+      try{ hc.strokeText(s, Wc/2, cy); }catch(e){}
+      hc.globalCompositeOperation='source-in';
+      const hb=bw*1.6, hx=-hb-sk + ph*(Wc+2*hb+2*sk), hg=hc.createLinearGradient(hx-hb/2,0,hx+hb/2,0);
+      hg.addColorStop(0,'rgba(255,250,235,0)'); hg.addColorStop(0.5,'rgba(255,255,255,1)'); hg.addColorStop(1,'rgba(255,250,235,0)');
+      hc.setTransform(1,0,-sk/Hc,1,sk/2,0); hc.fillStyle=hg; hc.fillRect(-sk,0,Wc+sk*2,Hc);
+      hc.setTransform(1,0,0,1,0,0); hc.globalCompositeOperation='source-over';
       // 3) záře kolem: hladké rozmazání po krocích (zmenšit/zvětšit vždy jen 2×) → žádné rovné hrany ani bloky
       const lv=Math.max(2,Math.min(6,Math.round(Math.log2(L.px*0.3))));
       // rozmazání po krocích, vodorovně víc než svisle (lx > ly) → záře se rozlije do stran bez tvaru písmen
-      const blurAt=(lx,ly,tag)=>{ let src=shine, w=Wc, h=Hc; const dn=[]; const n=Math.max(lx,ly);
+      const blurAt=(lx,ly,tag)=>{ let src=halo, w=Wc, h=Hc; const dn=[]; const n=Math.max(lx,ly);
         for (let i=1;i<=n;i++){ const nw=i<=lx?Math.max(1,Math.ceil(w/2)):w, nh=i<=ly?Math.max(1,Math.ceil(h/2)):h; const o=shineBlur(tag+'d'+i,nw,nh); o.c.drawImage(src,0,0,w,h,0,0,nw,nh); dn.push(o); src=o.cv; w=nw; h=nh; }
         for (let i=n-1;i>=1;i--){ const t=dn[i-1]; const o=shineBlur(tag+'u'+i,t.w,t.h); o.c.drawImage(src,0,0,w,h,0,0,t.w,t.h); src=o.cv; w=t.w; h=t.h; }
         return {cv:src,w,h}; };
@@ -556,9 +566,9 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       const wide=blurAt(lv+1,lv,'w'), near=blurAt(Math.max(1,lv-1),Math.max(1,lv-1),'n');   // do stran i do výšky, víc do stran
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
       const A=a*((S.opacity??100)/100)*env;
-      c.globalAlpha=A*0.55; c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře do stran
-      c.globalAlpha=A*0.35; c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);   // bližší záře
-      c.globalAlpha=A*0.7;  c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
+      c.globalAlpha=Math.min(1,A*0.75); c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře kolem slova
+      c.globalAlpha=A*0.45; c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
+      c.globalAlpha=A*0.55; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
   }
@@ -569,6 +579,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 let vframe=null, vfc=null, vfOk=false, vfFor=null;
 let gblur=null, gbc=null, gblur2=null, gbc2=null;
 const SB={}; function shineBlur(i,w,h){ let o=SB[i]; if(!o){ const cv2=document.createElement('canvas'); o=SB[i]={cv:cv2,c:cv2.getContext('2d')}; } if (o.cv.width!==w||o.cv.height!==h){ o.cv.width=w; o.cv.height=h; } else o.c.clearRect(0,0,w,h); o.w=w; o.h=h; o.c.imageSmoothingEnabled=true; o.c.imageSmoothingQuality='high'; return o; }
+let halo=null, haloC=null; function haloCtx(w,h){ if(!halo){ halo=document.createElement('canvas'); haloC=halo.getContext('2d'); } if (halo.width!==w||halo.height!==h){ halo.width=w; halo.height=h; } else { haloC.setTransform(1,0,0,1,0,0); haloC.clearRect(0,0,w,h); } haloC.setTransform(1,0,0,1,0,0); haloC.globalCompositeOperation='source-over'; return haloC; }
 let shine=null, shineC=null; function shineCtx(){ if(!shine){ shine=document.createElement('canvas'); shine.width=64; shine.height=64; shineC=shine.getContext('2d'); } return shineC; }
 let layer=null, lctx=null, layer2=null, l2ctx=null, gmask=null, gmctx=null, pm=null, pmc=null, t3=null, t3c=null;
 E.lastLines=null; E.lastBox=null;
