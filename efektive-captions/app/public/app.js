@@ -1049,6 +1049,9 @@ async function checkUpdate(){
 document.addEventListener('visibilitychange',()=>{ if (document.visibilityState==='visible') checkUpdate(); });
 setInterval(checkUpdate, 5*60*1000);
 
+// nový výchozí Styl 1 (verze 2) – starý uložený „výchozí vzhled“ by ho přebil, proto ho jednou zahodit
+try{ if (localStorage.getItem('efk_default_v')!=='2'){ localStorage.removeItem('efk_default'); localStorage.setItem('efk_default_v','2'); } }catch(e){}
+
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();
 window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords,snapshot,restore,get curPage(){return curPage;}};
