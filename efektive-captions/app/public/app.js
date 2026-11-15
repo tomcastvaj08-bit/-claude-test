@@ -175,6 +175,7 @@ function readSetup(){
   if (E.G.maxLines>3 && ml==='mid') E.G.mainLine='mid';
 }
 async function afterWords(){
+  window.__wordsAt=Date.now();
   if ($('sDict').checked){ const n=E.applyCorrections(parseDict(dict)); if (n) toast(`Opraveno ${n}× podle slovníku`); }
   E.buildPages();
   const doFace=$('sFace').checked, doBehind=$('sBehind').checked;
@@ -292,7 +293,9 @@ function setVal(key,val,noHist){
   if (scope==='all' || E.GLOBAL_ONLY.has(key) || !p){
     E.G[key]=val; for (const k in E.meta){ const o=E.meta[k].own; if (o && key in o) delete o[key]; }
   } else { const m=pageMeta(p); m.own=m.own||{}; m.own[key]=val; if (key==='posX'||key==='posY') m.own._manualPos=true; }
-  if (REBUILD.has(key) || (E.G.split==='fill' && REFLOW.has(key) && (scope==='all' || E.GLOBAL_ONLY.has(key)))) E.buildPages();
+  // rozdělení slov do řádků se mění jen u nastavení dělení (šířka řádku, počet slov…);
+  // velikost, mezery, zúžení a písmo už řádky NEpřehazují – titulek se jen plynule zvětší / zmenší a vejde se
+  if (REBUILD.has(key)) E.buildPages();
   if (!noHist) changed(); else { scheduleSave(); }
 }
 function setMany(obj){ for (const [k,v] of Object.entries(obj)) setVal(k,v,true); changed(); }
@@ -934,7 +937,7 @@ renderHomeTpl(); renderProjects(); renderLangs();
 window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords,snapshot,restore,get curPage(){return curPage;}};
 
 // Base měří šířku slov – když se písmo dočte později, titulky se přepočítají
-if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', ()=>{ if (E.G.split==='fill' && E.words.length){ E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); try{ renderTimeline(); }catch(e){} } });
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', ()=>{ if (E.G.split==='fill' && E.words.length && Date.now()-(window.__wordsAt||0)<10000){ E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); try{ renderTimeline(); }catch(e){} } });
 
 // maskot na úvodní obrazovce (ukáže se, jen když je soubor maskot.png u appky)
 (()=>{ const m=document.getElementById('mascot'); if (!m) return; m.onload=()=>{ m.hidden=false; }; m.onerror=()=>{ m.remove(); }; m.src='maskot.png'; })();
