@@ -226,7 +226,7 @@ $('dictSave').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); $(
 $('dictApply').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); const n=E.applyCorrections(parseDict(dict)); E.buildPages(); changed(); $('sheetDict').classList.remove('on'); toast(n?`Opraveno ${n}×`:'Nic k opravě'); };
 
 // ================= EDITOR =================
-function openEditor(){ show('editor'); sizeCanvas(); renderTimeline(); thumbs(); renderPanel(); updateMute(); syncTop(); }
+function openEditor(){ freeVideo($('setupPrev')); show('editor'); sizeCanvas(); renderTimeline(); thumbs(); renderPanel(); updateMute(); syncTop(); }
 $('closeBtn').onclick=async()=>{ vid.pause(); await saveProject(); renderProjects(); show('home'); };
 
 // --- historie (zpět / znovu) ---
@@ -562,8 +562,8 @@ binders.style=()=>{
 };
 async function suggestColors(){
   const box=$('suggBox'); box.innerHTML='<div class="muted">Analyzuju barvy ve videu…</div>';
-  const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
-  const r=await AI.suggestColors(v);
+  const v=await auxVideo();
+  const r=await AI.suggestColors(v); freeVideo(v);
   box.innerHTML=r.list.map((c,i)=>`<div data-i="${i}"><span style="background:linear-gradient(${c.gA},${c.gB});-webkit-background-clip:text;background-clip:text;color:transparent">${esc(c.name)}</span></div>`).join('');
   box.onclick=e=>{ const d=e.target.closest('[data-i]'); if(!d) return; const c=r.list[+d.dataset.i]; setMany({grad:true,gA:c.gA,gB:c.gB}); renderPanel(); toast('Barva použitá'); };
 }
@@ -675,24 +675,24 @@ function pAI(){
 binders.ai=()=>{
   $('faceDodge').onchange=e=>{ E.G.faceDodgeX=e.target.checked; if (analysed.face){ E.applyFacePositions(); } changed(); };
   $('aiFace').onclick=async()=>{
-    const b=$('aiFace'); b.disabled=true; const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
+    const b=$('aiFace'); b.disabled=true; const v=await auxVideo();
     try{ await AI.analyzeFaces(v,p=>{ b.textContent='Hledám obličej… '+Math.round(p*100)+' %'; }); for (const k in E.meta) if (E.meta[k].own) delete E.meta[k].own._manualPos; const n=E.applyFacePositions(); analysed.face=true; changed(); toast(`Hotovo – ${n} titulků pod obličejem`); }
     catch(e){ toast('Nepovedlo se: '+e.message); }
-    renderPanel();
+    freeVideo(v); renderPanel();
   };
   // při zapnutí „text za postavou“ nejdřív oddělit postavu
   document.querySelectorAll('#panel .sw').forEach(el=>{ if (el.id!=='faceDodge') el.onchange=async()=>{
-    if (el.checked && !AI.masks.length){ el.disabled=true; toast('Odstraňuji pozadí…'); const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
-      try{ await AI.analyzePerson(v,p=>{ toast('Odstraňuji pozadí… '+Math.round(p*100)+' %'); }); analysed.person=true; }catch(e){ toast('Nepovedlo se: '+e.message); el.checked=false; el.disabled=false; return; } el.disabled=false; }
+    if (el.checked && !AI.masks.length){ el.disabled=true; toast('Odstraňuji pozadí…'); const v=await auxVideo();
+      try{ await AI.analyzePerson(v,p=>{ toast('Odstraňuji pozadí… '+Math.round(p*100)+' %'); }); analysed.person=true; }catch(e){ toast('Nepovedlo se: '+e.message); el.checked=false; el.disabled=false; freeVideo(v); return; } freeVideo(v); el.disabled=false; }
     else AI.useMasks();
     setVal('behind',el.checked?'on':'off'); }; });
   $('aiColor').onclick=suggestColors;
   $('aiTilt').onclick=async()=>{
-    const b=$('aiTilt'); b.disabled=true; const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; });
+    const b=$('aiTilt'); b.disabled=true; const v=await auxVideo();
     const list = scope==='all' ? E.pages.map((p,k)=>k) : [curPage];
     for (const k of list){ const p=E.pages[k], S=E.styleOf(p); b.textContent=`Měřím linie… ${k+1}/${E.pages.length}`;
       const r=await AI.suggestTilt(v,(p.s+p.e)/2,S.posY); const m=pageMeta(p); m.own=m.own||{}; m.own.tilt=r.tilt*r.sign*(S.tilt<0?-1:1)||S.tilt; m.own.tiltAlt=false; m.own.rot=r.rot; }
-    changed(); renderPanel(); toast('Náklon sladěný se scénou');
+    freeVideo(v); changed(); renderPanel(); toast('Náklon sladěný se scénou');
   };
   $('zHere').onclick=()=>addZone(vid.currentTime,Math.min(vid.duration,vid.currentTime+2));
   $('zEnd').onclick=()=>addZone(vid.currentTime,vid.duration);
@@ -718,11 +718,22 @@ function renderTimeline(){
   followTimeline(vid.currentTime,true);
 }
 let thumbsFor=null;
+// pomocná videa (náhledy, AI): iPhone zvládne jen pár přehrávačů naráz → po použití je vždy uvolnit
+function auxVideo(){ return new Promise(res=>{ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.setAttribute('playsinline',''); v.preload='auto';
+  let ok=false; const done=()=>{ if(!ok){ ok=true; res(v); } }; v.onloadedmetadata=done; v.onloadeddata=done; v.onerror=done; setTimeout(done,8000); v.src=videoURL; v.load(); }); }
+function freeVideo(v){ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch(e){} }
 async function thumbs(){
   if (thumbsFor===videoURL) return; thumbsFor=videoURL; const tr=$('trV'); tr.innerHTML='';
-  const v=document.createElement('video'); v.src=videoURL; v.muted=true; await new Promise(r=>{ v.onloadeddata=r; v.onerror=r; });
-  const n=Math.max(1,Math.ceil(v.duration)), w=Math.round(30*v.videoWidth/v.videoHeight);
-  for (let i=0;i<n;i++){ if (thumbsFor!==videoURL) return; await AI.seek(v,i+0.01); const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img); }
+  const v=await auxVideo();
+  try{
+    const n=Math.max(1,Math.ceil(v.duration||0));
+    for (let i=0;i<n;i++){
+      if (thumbsFor!==videoURL) return;
+      // během přehrávání náhledy nedělat – brzdily by hlavní video
+      while (!vid.paused && thumbsFor===videoURL) await new Promise(r=>setTimeout(r,400));
+      await AI.seek(v,i+0.01); const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img);
+    }
+  } finally { freeVideo(v); }
 }
 let tlSyncT=0;
 function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; tlSyncT=performance.now(); sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
@@ -972,6 +983,20 @@ $('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? K
 
 // přibalené písmo titulků (stejné na iPhonu i v počítači) – načíst hned
 if (document.fonts && document.fonts.load) for (const w of [400,500,600,700,800,900]) document.fonts.load(`${w} 60px "Inter Tight"`,'AaŽžŠšČčŘřĚěŮůÝýÁáÍíÉéÚúŇňŤťĎď').catch(()=>{});
+
+// ---------- automatická aktualizace: telefon drží starou verzi stránky v paměti ----------
+const BUILD='dev';
+async function checkUpdate(){
+  if (BUILD==='dev' || NATIVE.isNative) return;
+  try{
+    const v=(await (await fetch('version.txt?'+Date.now(),{cache:'no-store'})).text()).trim();
+    if (!v || v===BUILD) return;
+    if ($('home').classList.contains('on')) { location.reload(); return; }   // na úvodu rovnou načíst
+    if (!$('updBar')){ const d=document.createElement('button'); d.id='updBar'; d.className='updbar'; d.innerHTML=I('refresh')+' Je tu nová verze aplikace – klepni pro načtení (projekt zůstane uložený)'; d.onclick=async()=>{ try{ if (project) await saveProject(); }catch(e){} location.reload(); }; document.body.appendChild(d); }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if (document.visibilityState==='visible') checkUpdate(); });
+setInterval(checkUpdate, 5*60*1000);
 
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();
