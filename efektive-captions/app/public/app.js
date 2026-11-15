@@ -92,14 +92,20 @@ $('projects').onclick=async e=>{
 function snapshot(){
   return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute});
 }
+// pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
+function dedupeWords(){
+  const seen=new Map(), keep=[]; const nOwn=m=>m&&m.own?Object.keys(m.own).filter(x=>!['posX','posY','_manualPos'].includes(x)).length:-1;
+  for (const w of E.words){ const k=w.t+'|'+(+w.s).toFixed(3)+'|'+(+w.e).toFixed(3); const o=seen.get(k);
+    if (o){ if (E.meta[w.id] && nOwn(E.meta[w.id])>=nOwn(E.meta[o.id])) E.meta[o.id]=E.meta[w.id]; if (w.em) o.em=true; delete E.meta[w.id]; continue; }
+    seen.set(k,w); keep.push(w); }
+  if (keep.length!==E.words.length){ console.warn('Odstraněna zdvojená slova:',E.words.length-keep.length); E.words=keep; if (E.pages.length) E.buildPages(); return true; }
+  return false;
+}
 function restore(json){
   const s=JSON.parse(json);
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
   E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
-  // zdvojená slova (stejný text i čas – vznikla dřív omylem) → nechat jen jedno, úpravy přenést
-  { const seen=new Map(), keep=[]; for (const w of E.words){ const k=w.t+'|'+w.s.toFixed(3)+'|'+w.e.toFixed(3); const o=seen.get(k);
-      if (o){ const nOwn=m=>m&&m.own?Object.keys(m.own).filter(x=>!['posX','posY','_manualPos'].includes(x)).length:-1; if (E.meta[w.id] && nOwn(E.meta[w.id])>=nOwn(E.meta[o.id])) E.meta[o.id]=E.meta[w.id]; if (w.em) o.em=true; delete E.meta[w.id]; continue; } seen.set(k,w); keep.push(w); }
-    if (keep.length!==E.words.length){ console.warn('Odstraněna zdvojená slova:',E.words.length-keep.length); E.words=keep; } }
+  dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
@@ -113,6 +119,7 @@ async function saveProject(){
 }
 async function saveProject0(){
   if (!project || !videoFile) return;
+  dedupeWords();
   try{
     const th=document.createElement('canvas'); const sc=240/Math.max(cv.width,cv.height); th.width=Math.round(cv.width*sc); th.height=Math.round(cv.height*sc); th.getContext('2d').drawImage(cv,0,0,th.width,th.height);
     const assets=Object.entries(ovAssets).map(([id,a])=>({id,blob:a.blob,type:a.type}));
@@ -157,6 +164,7 @@ function loadVideo(file){
 function sizeCanvas(){ const sc=Math.min(1,1280/Math.max(fullW,fullH)); cv.width=Math.round(fullW*sc/2)*2; cv.height=Math.round(fullH*sc/2)*2; }
 $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
+  genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
   E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
@@ -173,7 +181,7 @@ $('fileIn').onchange=async e=>{
   $('sPunct').checked=!!E.G.punct; setStep('sLines',E.G.maxLines||3); setStep('sChars',E.G.maxChars||0); setStep('sWpp',E.G.wpp||4); $('sMain').value=String(E.G.mainLine||'mid');
   renderLangs(); $('setupStatus').textContent=''; $('setupStatus').classList.remove('err'); show('setup');
 };
-$('setupBack').onclick=()=>{ show('home'); };
+$('setupBack').onclick=()=>{ genRun++; $('genBtn').disabled=false; show('home'); };
 
 // ================= AI PŘEPIS =================
 function wavFrom(samples,rate){
@@ -214,7 +222,10 @@ async function afterWords(){
   vid.currentTime=Math.max(0.01,(E.words[0]?E.words[0].s:0)+0.3);
   saveProject();
 }
+let genRun=0;
 $('genBtn').onclick=async()=>{
+  if ($('genBtn').disabled) return;
+  const run=++genRun, proj=project; $('genBtn').disabled=true;
   readSetup(); show('busy');
   try{
     busy('Analyzuji video…','Vytahuju zvuk z videa',0.02);
@@ -229,12 +240,15 @@ $('genBtn').onclick=async()=>{
       if (!r.ok||j.error) throw new Error(j.error||('Chyba '+r.status));
       const off=i*SEG; j.words.forEach(w=>{ const raw=String(w.word).trim(); if (raw) all.push(E.mkWord(raw,w.start+off,w.end+off)); });
     }
+    // uživatel mezitím odešel / otevřel jiný projekt → výsledek zahodit, nic nepřepisovat
+    if (run!==genRun || project!==proj || !$('busy').classList.contains('on')) return;
     E.words=all.filter(w=>w.t); if (!E.words.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
     await afterWords();
-  }catch(err){ console.error(err); show('setup');
+  }catch(err){ console.error(err); if (run!==genRun || project!==proj) return; show('setup');
     const noServer=/Failed to fetch|NetworkError|Load failed|Chyba 404|Chyba 405|Server neodpověděl|chybí klíč/i.test(err.message);
     const st=$('setupStatus'); st.textContent = noServer ? 'AI přepis tady nejede (appka neběží na serveru s klíčem). Vlož text ručně níž a dej Použít.' : 'Přepis se nepovedl: '+err.message;
     st.classList.add('err'); try{ st.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} }
+  finally{ if (run===genRun) $('genBtn').disabled=false; }
 };
 $('manualBtn').onclick=async()=>{
   const list=$('manualText').value.trim().split(/\s+/).filter(Boolean); if(!list.length) return;
