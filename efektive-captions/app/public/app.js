@@ -587,10 +587,14 @@ function pMix(){
   ${on?`<button class="btn" id="mixShuffle">${I('refresh','grad')} Zamíchat znovu (jiné rozložení a písma)</button>
   ${slider('Velikost písma','mixSize',50,180,1,'%')}
   ${slider('Výška na videu','mixY',20,80,1,'%')}
+  ${slider('Rychlost letu','mixSpeed',40,200,1,'%')}
   <div class="clabel">Barva zvýrazněných slov</div><div class="colors">${color('Nahoře','mixA')}${color('Dole','mixB')}</div>`:''}`;
 }
 binders.mix=()=>{
-  $('mixOn').onclick=()=>{ E.G.mix3d=!E.G.mix3d; E.mixInvalidate&&E.mixInvalidate(); changed(); renderPanel(); toast(E.G.mix3d?'3D mix zapnutý':'3D mix vypnutý – zpátky běžné titulky'); };
+  $('mixOn').onclick=async()=>{ E.G.mix3d=!E.G.mix3d; E.mixInvalidate&&E.mixInvalidate(); changed(); renderPanel(); toast(E.G.mix3d?'3D mix zapnutý':'3D mix vypnutý – zpátky běžné titulky');
+    // AI najde obličej, ať titulky nejedou přes něj
+    if (E.G.mix3d && !analysed.face){ try{ toast('AI hledá obličej, ať titulky nejedou přes něj…'); const v=await auxVideo(); await AI.analyzeFaces(v,()=>{}); freeVideo(v); analysed.face=true; E.mixInvalidate&&E.mixInvalidate(); changed(); toast('Hotovo – titulky se vyhnou obličeji'); }catch(e){ console.warn(e); } }
+  };
   if ($('mixShuffle')) $('mixShuffle').onclick=()=>{ E.G.mixSeed=Math.floor(Math.random()*9999)+2; E.mixInvalidate&&E.mixInvalidate(); changed(); };
 };
 
