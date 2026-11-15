@@ -115,7 +115,7 @@ E.FONTS = [
 
 // ================= ŠABLONY =================
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
-const common = {opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
+const common = {rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
@@ -334,12 +334,14 @@ function layoutRaw(p,S,scaleMul){
   const side=i=>{ const pos=lines[i].slot!=null?lines[i].slot-1:(midI>=0?Math.sign(i-midI):(i===0?-1:1)); return pos<0?-1:pos>0?(S.kinDir==='same'?-1:1):0; };
   const shift=Math.min(W,H)*0.22*kin;
   lines.forEach((L,i)=>{
-    L.y=cy+ys[i];
+    const ri=Math.min(L.slot??i,2)+1;   // 1., 2., 3. řádek – každý jde posunout zvlášť
+    L.y=cy+ys[i]+base*(S['rowDy'+ri]||0)/100;
     const kx=side(i)*shift;
     if (S.layout==='diagonal') L.x0=cx-L.total/2+[-0.02,0.025,0.09][Math.min(L.slot??i,2)]*W+kx;
     else if (S.layout==='left') L.x0=cx-W*0.3+kx;
     else if (S.layout==='right') L.x0=cx+W*0.3-L.total+kx;
     else L.x0=cx-L.total/2+kx;
+    L.x0+=W*(S['rowDx'+ri]||0)/100;
     L.x0=clamp(L.x0,W*0.02,Math.max(W*0.02,W-L.total-W*0.02));
     L.rot=0;
   });

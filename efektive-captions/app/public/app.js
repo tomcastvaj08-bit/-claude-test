@@ -541,6 +541,12 @@ function pStyle(){
     ${S.trackEm!=null?slider('Mezery mezi písmeny – hlavní řádek','trackEm',-24,12,0.5):''}
     ${slider('Zúžení písma','cond',60,100,1,'%')}
     ${slider('Řádkování','gap',30,140,1,'%')}
+    <div class="clabel">Řádky zvlášť</div>
+    <div class="note">Každý řádek posuneš samostatně – ostatní zůstanou na místě.</div>
+    <div class="rowsep"><b>1. řádek (horní)</b>${slider('Nahoru / dolů','rowDy1',-100,100,1,'')}${slider('Doleva / doprava','rowDx1',-30,30,0.5,'')}</div>
+    <div class="rowsep"><b>2. řádek (hlavní)</b>${slider('Nahoru / dolů','rowDy2',-100,100,1,'')}${slider('Doleva / doprava','rowDx2',-30,30,0.5,'')}</div>
+    <div class="rowsep"><b>3. řádek (spodní)</b>${slider('Nahoru / dolů','rowDy3',-100,100,1,'')}${slider('Doleva / doprava','rowDx3',-30,30,0.5,'')}</div>
+    <button class="btn small" id="rowReset">${I('reset')} Vrátit řádky na původní místo</button>
     ${slider('Kinetické rozložení (horní a spodní řádek do stran)','kinetic',0,100)}
     ${chips('Spodní řádek jede','kinDir',[['opposite','Doprava'],['same','Doleva']])}
     ${chips('Rozložení','layout',[['diagonal','Šikmo'],['cascade','Kaskáda'],['center','Na střed'],['left','Vlevo'],['right','Vpravo']])}
@@ -558,6 +564,7 @@ function pStyle(){
   return h;
 }
 binders.style=()=>{
+  if ($('rowReset')) $('rowReset').onclick=()=>{ setMany({rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0}); renderPanel(); };
   $('saveTpl').onclick=()=>{
     const name=prompt('Název vlastní šablony:','Moje šablona '+(Object.keys(customTemplates()).length+1)); if(!name) return;
     const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k];
