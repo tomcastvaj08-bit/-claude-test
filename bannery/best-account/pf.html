@@ -101,13 +101,13 @@ function render(o){
   t.innerHTML=`
    <div class="yr" style="font-size:${o.yrSize*u}px;margin-left:${-14*u}px"><b>PF</b>2027</div>
    <h1 style="font-size:${158*u}px;line-height:${164*u}px;margin-top:${70*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
-   <p style="font-size:${86*u}px;line-height:${104*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${104*u}px;line-height:${116*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
+   <p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.2*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${126*u}px;line-height:${138*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
   Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
-  Object.assign(tb.style,{width:o.tabW*u+'px',height:190*u+'px',fontSize:84*u+'px',borderTopLeftRadius:64*u+'px'});
-  const st=document.createElement('style'); st.textContent=`#tab::before{top:${-20*u}px;left:${-20*u}px;border-width:${6*u}px;border-top-left-radius:${86*u}px}`; document.head.appendChild(st);
+  Object.assign(tb.style,{width:o.tabW*u+'px',height:240*u+'px',fontSize:112*u+'px',borderTopLeftRadius:78*u+'px'});
+  const st=document.createElement('style'); st.textContent=`#tab::before{top:${-20*u}px;left:${-20*u}px;border-width:${7*u}px;border-top-left-radius:${104*u}px}`; document.head.appendChild(st);
   // silvestr: ohňostroj + jiskry
   const cv=document.getElementById('fw'); cv.width=W; cv.height=H; const x=cv.getContext('2d');
   let seed=21; const r=()=>((seed=(seed*16807)%2147483647)/2147483647);
