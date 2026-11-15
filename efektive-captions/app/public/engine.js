@@ -782,6 +782,30 @@ function drawPersonOver(c, mask){
   c.drawImage(pcv,0,0);
 }
 
+
+// ================= STŘIH VIDEA (úseky) =================
+// E.clips = úseky zdrojového videa v pořadí [{s,e,tr}] (zdrojový čas). null = celé video.
+// Titulky, zóny i overlaye žijí ve VÝSLEDNÉM čase (po střihu). tr = přechod na začátku úseku ('flash2' | 'none').
+E.clips=null; E.srcDur=0;
+E.clipList=()=> (E.clips&&E.clips.length)? E.clips : [{s:0,e:E.srcDur||0,tr:'none'}];
+E.outDur=()=>E.clipList().reduce((a,c)=>a+(c.e-c.s),0);
+E.out2src=t=>{ const L=E.clipList(); let o=0; for (const c of L){ const d=c.e-c.s; if (t<o+d || c===L[L.length-1]) return Math.min(c.e, c.s+Math.max(0,t-o)); o+=d; } return 0; };
+E.src2out=ts=>{ const L=E.clipList(); let o=0; for (const c of L){ if (ts<c.s) return o; if (ts<c.e) return o+(ts-c.s); o+=c.e-c.s; } return o; };
+E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=c.e-c.s; } return r; };
+// přechody: 2× negativní záblesk kolem střihu
+E.TRANSITIONS=[['none','Žádný'],['flash2','2× negativní záblesk']];
+E.drawTransition=(c,W,H,t)=>{
+  const L=E.clipList(); if (L.length<2) return;
+  const st=E.clipStarts();
+  for (let k=1;k<L.length;k++){
+    const tr=L[k].tr||'none', T=st[k], d=t-T; if (tr==='none' || d<-0.2 || d>0.2) continue;
+    if (tr==='flash2'){
+      const on=(d>=-0.14&&d<-0.07)||(d>=0.0&&d<0.07);
+      if (on){ c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.shadowColor='transparent'; c.globalCompositeOperation='difference'; c.fillStyle='#fff'; c.fillRect(0,0,W,H); c.restore(); }
+    }
+  }
+};
+
 // ================= HLAVNÍ RENDER =================
 E.render = (t, opts={}) => {
   if (!vid || !vid.videoWidth) return;
@@ -797,6 +821,7 @@ E.render = (t, opts={}) => {
     ctx.fillStyle='#000'; ctx.fillRect(0,0,cv.width,cv.height);
     if (vfOk) ctx.drawImage(vframe,0,0);
   }
+  if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
   // overlaye pod titulky
   for (const o of E.overlays) if (!o.above) E.drawOverlay(ctx,o,t);
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni

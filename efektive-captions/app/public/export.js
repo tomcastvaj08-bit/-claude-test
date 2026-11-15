@@ -33,7 +33,10 @@ X.buildAudio = async (file, duration, mute) => {
   if (!mute){ try{ decoded=await decodeVideoAudio(file); }catch(e){ console.warn('Video nemá zvuk',e); } }
   const ch=decoded?Math.min(2,decoded.numberOfChannels):2;
   const off=new OfflineAudioContext(ch,Math.ceil(duration*RATE),RATE);
-  if (decoded){ const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(0); }
+  if (decoded){
+    if (E.clips && E.clips.length){ let o=0; for (const c of E.clips){ const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(o, c.s, c.e-c.s); o+=c.e-c.s; } }
+    else { const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(0); }
+  }
   const vol=E.G.sfxVol/100;
   for (const ev of E.sfxEvents()) if (ev.t<duration) E.sfxInto(off, off.destination, Math.max(0,ev.t), ev.type, vol);
   return await off.startRendering();
@@ -72,7 +75,9 @@ X.exportVideo = async (opts) => {
   const v=document.createElement('video'); v.src=opts.src; v.muted=true; v.playsInline=true; v.preload='auto';
   // iPhone u nespuštěného videa nevyvolá loadeddata → stačí metadata (snímky se pak čtou přetáčením / dekodérem)
   await new Promise((r,j)=>{ let ok=false; const done=()=>{ if(!ok){ ok=true; r(); } }; v.onloadedmetadata=done; v.onloadeddata=done; v.onerror=()=>j(new Error('Video nejde načíst')); v.load(); setTimeout(()=>{ if(!ok) j(new Error('Video se nenačetlo')); },40000); });
-  const dur=v.duration, N=Math.floor(dur*fps);
+  if (!E.srcDur) E.srcDur=v.duration;
+  const cut=!!(E.clips&&E.clips.length), dur=cut?E.outDur():v.duration, N=Math.floor(dur*fps);
+  const o2s=t=>cut?E.out2src(t):t;
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
   const prev=E._attached; E.attach(cv,v);
   const transparent = opts.mode==='captions';
@@ -115,10 +120,13 @@ X.exportVideo = async (opts) => {
     if (raw){
       const meta={decoderConfig:{codec:raw.codec,sampleRate:raw.rate,numberOfChannels:raw.ch,description:raw.dsi}};
       let first=true;
+      let lastOut=-1;
       for (const smp of raw.samples){
-        const ts=smp.ts-raw.skip;
+        const ts0=smp.ts-raw.skip;
+        let ts=ts0;
+        if (cut){ const inClip=E.clips.some(c=>ts0+smp.dur/2>=c.s && ts0+smp.dur/2<c.e); if (!inClip) continue; ts=E.src2out(Math.max(ts0,0)); if (ts<=lastOut) ts=lastOut+smp.dur; }
         if (ts < -smp.dur/2 || ts >= dur) continue;
-        muxer.addAudioChunkRaw(smp.data,'key',Math.max(0,Math.round(ts*1e6)),Math.round(smp.dur*1e6),first?meta:undefined); first=false;
+        muxer.addAudioChunkRaw(smp.data,'key',Math.max(0,Math.round(ts*1e6)),Math.round(smp.dur*1e6),first?meta:undefined); first=false; lastOut=ts;
       }
       raw.samples=null;
     }
@@ -148,10 +156,10 @@ X.exportVideo = async (opts) => {
       if (err) throw err;
       const t=i/fps;
       if (src){
-        const fr=await src.frameAt(t);
+        const fr=await src.frameAt(o2s(t));
         E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H)} : {});
       } else {
-        await seek(v,t); await frameReady(v);
+        await seek(v,o2s(t)); await frameReady(v);
         if (ctxBehind){ try{ const m=await AI.segment(v,Math.round(w/3),Math.round(h/3)); E.personMask=()=>m; }catch(e){} }
         E.render(t);
       }
@@ -184,6 +192,7 @@ X.exportVideo = async (opts) => {
 
 // ---------- záloha: nahrávání v reálném čase ----------
 X.recordRealtime = async (opts) => {
+  if (E.clips && E.clips.length>1) throw new Error('Tento prohlížeč neumí export se střihem. Zkus Safari nebo Chrome v novější verzi.');
   const {w,h,onP}=opts; const fps=opts.fps||30;
   const v=document.createElement('video'); v.src=opts.src; v.playsInline=true; v.preload='auto'; v.muted=false;
   await new Promise(r=>{ v.onloadedmetadata=r; v.onloadeddata=r; v.load(); });

@@ -402,3 +402,12 @@ button.pro.on{background:var(--green)}
 .rowsep>b{font-size:13px;color:var(--acc)}
 .mixhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.mixhead .ic{width:34px;height:34px;flex:none}.mixhead div{display:flex;flex-direction:column;gap:4px}.mixhead small{color:var(--muted);font-size:13px;line-height:1.4}
 #bnav button{min-width:0}
+/* stopa videa po střihu */
+.tr-v{display:block}
+.vb{position:absolute;top:0;height:30px;overflow:hidden;background:#cfd6e2;border:1px solid #b9c3d3;cursor:pointer;touch-action:none}
+.vb img{position:absolute;top:0;height:30px;object-fit:cover;opacity:.9;pointer-events:none}
+.vb.cur{outline:2px solid var(--acc);z-index:3}
+.vb .hl,.vb .hr{z-index:2;background:var(--acc);width:12px}
+.vtr{position:absolute;top:5px;width:20px;height:20px;margin-left:-10px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;z-index:4;cursor:pointer;box-shadow:1px 1px 0 rgba(10,13,20,.2)}
+.vtr .ic{width:12px;height:12px}
+.vtr.on{background:var(--grad);border-color:transparent}.vtr.on .ic{stroke:#fff}

@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute});
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips});
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -104,6 +104,7 @@ function dedupeWords(){
 function restore(json){
   const s=JSON.parse(json);
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
+  E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.map(c=>({...c})):null;
   E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
@@ -154,7 +155,7 @@ function loadVideo(file){
     videoFile=file; if (videoURL) URL.revokeObjectURL(videoURL); videoURL=URL.createObjectURL(file);
     let done=false; const ok=()=>{ if(done) return; done=true; clearTimeout(to); res(); }, bad=m=>{ if(done) return; done=true; clearTimeout(to); rej(new Error(m)); };
     // iPhone video nenačte, dokud se nespustí → stačí znát rozměry (loadedmetadata), obraz se dočte potom
-    vid.onloadedmetadata=()=>{ fullW=vid.videoWidth; fullH=vid.videoHeight; sizeCanvas(); if (fullW&&fullH){ try{ vid.currentTime=0.01; }catch(e){} ok(); } };
+    vid.onloadedmetadata=()=>{ fullW=vid.videoWidth; fullH=vid.videoHeight; E.srcDur=vid.duration||0; sizeCanvas(); if (fullW&&fullH){ try{ vid.currentTime=0.01; }catch(e){} ok(); } };
     vid.onloadeddata=()=>{ if (!fullW){ fullW=vid.videoWidth; fullH=vid.videoHeight; sizeCanvas(); } ok(); };
     vid.onerror=()=>bad('Tohle video se nedá otevřít. Zkus jiné video, nebo ho ulož jako MP4 (ve Fotkách: Sdílet → Uložit video).');
     const to=setTimeout(()=>bad('Video se nenačetlo do 40 sekund. Zkus to znovu, případně kratší video.'),40000);
@@ -176,7 +177,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base') Object.assign(E.G, dflt);
@@ -229,7 +230,7 @@ async function afterWords(){
   }
   hist=[snapshot()]; hi=0; curPage=0;
   openEditor();
-  vid.currentTime=Math.max(0.01,(E.words[0]?E.words[0].s:0)+0.3);
+  PV.currentTime=Math.max(0.01,(E.words[0]?E.words[0].s:0)+0.3);
   saveProject();
 }
 let genRun=0;
@@ -262,7 +263,7 @@ $('genBtn').onclick=async()=>{
 };
 $('manualBtn').onclick=async()=>{
   const list=$('manualText').value.trim().split(/\s+/).filter(Boolean); if(!list.length) return;
-  readSetup(); show('busy'); E.words=E.spread(list,0.2,vid.duration-0.2); await afterWords();
+  readSetup(); show('busy'); E.words=E.spread(list,0.2,PV.duration-0.2); await afterWords();
 };
 // slovník
 $('dictOpen').onclick=()=>openSheet('sheetDict');
@@ -297,7 +298,7 @@ const setWait=on=>$('stage').classList.toggle('waiting',on);
 vid.addEventListener('waiting',()=>{ if (!vid.paused) setWait(true); });
 ['playing','pause','seeked','canplay'].forEach(ev=>vid.addEventListener(ev,()=>setWait(false)));
 $('playBtn').onclick=togglePlay;
-vid.onplay=()=>{ $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=vid.currentTime; };
+vid.onplay=()=>{ $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=PV.currentTime; };
 vid.onpause=()=>{ $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); };
 $('eyeBtn').onclick=()=>{ E.flags.hidden=!E.flags.hidden; syncTop(); };
 // velký náhled: přes celou obrazovku aplikace (ne systémový fullscreen – z toho se na iPhonu nedalo dostat zpět)
@@ -327,7 +328,9 @@ function videoNow(now){ // nejlepší odhad skutečného času videa
 }
 if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
 vid.addEventListener('playing',()=>{ clkReset(); clk.run=true; });
-['pause','seeked','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.run=false; clkReset(); }));
+['pause','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.run=false; clkReset(); }));
+vid.addEventListener('seeked',()=>{ clkReset(); clk.run=!vid.paused; });
+vid.addEventListener('durationchange',()=>{ if (vid.duration && isFinite(vid.duration)) E.srcDur=vid.duration; });
 function smoothTime(){
   if (!clk.run || vid.paused || vid.seeking) return vid.currentTime;
   const now=performance.now(), rate=vid.playbackRate||1, ct=vid.currentTime;
@@ -342,11 +345,23 @@ function smoothTime(){
   clk.last=t;
   return Math.min(t, vid.duration||t);
 }
+// čas na timeline = výsledný čas (po střihu); video samo běží ve zdrojovém čase
+const PV={ get currentTime(){ return E.src2out(vid.currentTime); }, set currentTime(t){ vid.currentTime=E.out2src(t); }, get duration(){ return vid.duration?E.outDur():NaN; } };
+// přehrávání přes střihy: na konci úseku skočit na začátek dalšího (nebo zastavit na konci)
+function clipGuard(){
+  if (!E.clips || !E.clips.length || vid.seeking) return;
+  const ts=vid.currentTime, L=E.clips;
+  const k=L.findIndex(c=>ts>=c.s-0.01 && ts<c.e-0.03);
+  if (k>=0) return;
+  const next=L.find(c=>c.s>ts-0.01);
+  if (next){ vid.currentTime=next.s+0.001; } else if (!vid.paused){ vid.pause(); vid.currentTime=L[L.length-1].e-0.03; }
+}
 let lastFrame=0;
 function loop(now){
   if (now && now-lastFrame<14){ requestAnimationFrame(loop); return; }
   lastFrame=now||performance.now();
-  const t=smoothTime();
+  if (!vid.paused) clipGuard();
+  const t=E.src2out(smoothTime());
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
@@ -358,7 +373,7 @@ function loop(now){
     if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleOf(p),guides); }
     else E.lastBox=null;
     if (selOv && vid.paused) drawOvSel();
-    $('tm').textContent=fmt(t)+' / '+fmt(vid.duration);
+    $('tm').textContent=fmt(t)+' / '+fmt(PV.duration);
   }
   requestAnimationFrame(loop);
 }
@@ -423,13 +438,13 @@ function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); 
   // počítač: kolečko myši nad lištou
   pn.addEventListener('wheel',e=>{ if (e.deltaY>30 && edState!=='exp' && pn.scrollHeight>pn.clientHeight) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30 && pn.scrollTop<=0) setEd(edState==='exp'?'normal':'col'); },{passive:true});
 })();
-$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (edState==='col') setEd('normal'); panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
+$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (selClip>=0){ selClip=-1; renderVideoTrack(); } if (edState==='col') setEd('normal'); panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
 function subHTML(name,opts,extra=''){ return `<div class="sub" data-sub="${name}">${opts.map(([v,l])=>`<div data-v="${v}" class="${sub[name]===v?'on':''}">${l}</div>`).join('')}${extra}</div>`; }
 function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s=>{ s.onclick=e=>{ const d=e.target.closest('[data-v]'); if (d){ sub[s.dataset.sub]=d.dataset.v; renderPanel(); } }; }); }
 function renderPanel(){
   const P=$('panel'); C.length=0;
   let h='';
-  if (!E.pages.length && panel!=='overlay'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  if (!E.pages.length && panel!=='overlay' && panel!=='clip'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
   switch(panel){
     case 'captions': h=pCaptions(); break;
     case 'templates': h=pTemplates(); break;
@@ -439,11 +454,30 @@ function renderPanel(){
     case 'overlay': h=pOverlay(); break;
     case 'ai': h=pAI(); break;
     case 'mix': h=pMix(); break;
+    case 'clip': h=pClip(); break;
   }
   P.innerHTML=h; bindControls(); bindScope(); bindSub();
   const fn=binders[panel]; fn&&fn();
 }
 const binders={};
+// ---------- STŘIH: panel vybraného úseku videa ----------
+function openClipPanel(){ panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
+function pClip(){
+  const L=E.clipList(), k=clamp(selClip,0,L.length-1), c=L[k], st=E.clipStarts();
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-scissors"/></svg><div><b>Úsek videa ${k+1} / ${L.length}</b><small>${fmt(st[k])} – ${fmt(st[k]+(c.e-c.s))} · délka ${(c.e-c.s).toFixed(1)} s. Konce úseku zkrátíš tažením za okraje na stopě videa.</small></div></div>
+  <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button></div>
+  <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
+  ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
+  ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
+  <div class="note">Další přechody a zvuky k nim brzy přibudou.</div>`;
+}
+binders.clip=()=>{
+  $('clCut').onclick=()=>cutAt(PV.currentTime);
+  $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
+  const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
+  const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const v=E.clips[Math.max(1,selClip)].tr||'flash2'; E.clips.forEach((c,i)=>{ if (i) c.tr=v; }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
+};
+
 // ---------- 3D MIX (kostka) – samostatný mód ----------
 function pMix(){
   const S=E.G, on=!!S.mix3d;
@@ -490,7 +524,7 @@ binders.captions=()=>{
     const pg=e.target.closest('.pg'); if (pg) selectPage(+pg.dataset.k);
   };
 };
-function selectPage(k,seek=true){ curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); vid.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions' && panel!=='templates') renderPanel(); }
+function selectPage(k,seek=true){ curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); PV.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions' && panel!=='templates') renderPanel(); }
 function markCur(){
   document.querySelectorAll('#pglist .pg').forEach(el=>el.classList.toggle('cur',+el.dataset.k===curPage));
   document.querySelectorAll('#trC .cb').forEach(el=>el.classList.toggle('cur',+el.dataset.k===curPage));
@@ -511,7 +545,7 @@ function setPageText(k,text){
 let inlineK=-1;
 function openInline(k){
   const p=E.pages[k]; if(!p) return; vid.pause(); inlineK=k; inlineOpen=true;
-  vid.currentTime=Math.min(p.e-0.02,p.s+0.45);
+  PV.currentTime=Math.min(p.e-0.02,p.s+0.45);
   const ta=$('inlineEdit'); ta.value=pageText(p); ta.classList.remove('hidden'); $('inlineBar').classList.remove('hidden'); ta.focus(); ta.select();
 }
 function closeInline(save){
@@ -723,7 +757,7 @@ binders.overlay=()=>{
   $('ovImg').onclick=()=>$('ovIn').click();
   $('ovWigAll').onchange=e=>{ E.overlays.forEach(o=>o.wiggle=e.target.checked); changed(); renderPanel(); };
   const o=E.overlays.find(x=>x.id===selOv); if (!o) return;
-  $('ovAnim').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; o.anim=c.dataset.v; changed(); renderPanel(); vid.currentTime=o.s; };
+  $('ovAnim').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; o.anim=c.dataset.v; changed(); renderPanel(); PV.currentTime=o.s; };
   $('ovWig').onchange=e=>{ o.wiggle=e.target.checked; changed(); };
   $('ovAbove').onchange=e=>{ o.above=e.target.checked; changed(); };
   $('ovW').oninput=e=>{ o.w=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.w+'%'; }; $('ovW').onchange=()=>changed();
@@ -738,11 +772,11 @@ async function loadAsset(id,blob){
 }
 $('ovIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const id='a'+Date.now(); const el=await loadAsset(id,f); addOverlay({asset:id,src:el}); };
 function addOverlay(o){
-  const t=vid.currentTime; const ov={id:Date.now()%1e9, s:t, e:Math.min(vid.duration,t+2), x:50, y:35, w:o.emoji?22:40, rot:0, anim:'pop', wiggle:false, above:true, ...o};
+  const t=PV.currentTime; const ov={id:Date.now()%1e9, s:t, e:Math.min(PV.duration,t+2), x:50, y:35, w:o.emoji?22:40, rot:0, anim:'pop', wiggle:false, above:true, ...o};
   E.overlays.push(ov); selOv=ov.id; changed(); renderPanel(); toast('Overlay přidaný – posuň ho prstem');
 }
 function drawOvSel(){
-  const o=E.overlays.find(x=>x.id===selOv); if (!o) return; const t=vid.currentTime; if (t<o.s||t>o.e) return;
+  const o=E.overlays.find(x=>x.id===selOv); if (!o) return; const t=PV.currentTime; if (t<o.s||t>o.e) return;
   const b=E.overlayBox(o), c=cv.getContext('2d'); c.save(); c.setTransform(1,0,0,1,0,0); c.strokeStyle='#a78bfa'; c.lineWidth=Math.max(2,cv.width*0.003); c.setLineDash([8,6]);
   c.strokeRect(b.cx-b.w/2,b.cy-b.h/2,b.w,b.h); c.restore();
 }
@@ -791,19 +825,19 @@ binders.ai=()=>{
       const r=await AI.suggestTilt(v,(p.s+p.e)/2,S.posY); const m=pageMeta(p); m.own=m.own||{}; m.own.tilt=r.tilt*r.sign*(S.tilt<0?-1:1)||S.tilt; m.own.tiltAlt=false; m.own.rot=r.rot; }
     freeVideo(v); changed(); renderPanel(); toast('Náklon sladěný se scénou');
   };
-  $('zHere').onclick=()=>addZone(vid.currentTime,Math.min(vid.duration,vid.currentTime+2));
-  $('zEnd').onclick=()=>addZone(vid.currentTime,vid.duration);
+  $('zHere').onclick=()=>addZone(PV.currentTime,Math.min(PV.duration,PV.currentTime+2));
+  $('zEnd').onclick=()=>addZone(PV.currentTime,PV.duration);
 };
 function addZone(s,e){ E.zones.push({s,e,label:'Bez titulků'}); changed(true); toast('Úsek bez titulků přidaný'); }
-$('zoneAdd').onclick=()=>addZone(vid.currentTime,Math.min(vid.duration,vid.currentTime+2));
+$('zoneAdd').onclick=()=>addZone(PV.currentTime,Math.min(PV.duration,PV.currentTime+2));
 
 // ================= ČASOVÁ OSA =================
 let pps=70, tlSync=false, tlTouches=0;
 document.addEventListener('touchstart',e=>{ tlTouches=e.touches.length; },{passive:true,capture:true}); document.addEventListener('touchend',e=>{ tlTouches=e.touches.length; },{passive:true,capture:true});
 const tlPad=()=>$('tlScroll').clientWidth/2;
 function renderTimeline(){
-  if (!vid.duration) return;
-  const pad=tlPad(), W=vid.duration*pps;
+  if (!PV.duration) return;
+  const pad=tlPad(), W=PV.duration*pps;
   $('tlIn').style.width=(W+pad*2)+'px';
   const X=t=>pad+t*pps;
   const cbHtml=L=>E.pages.map((p,k)=>{ if ((p.layer|0)!==L) return ''; const m=E.meta[E.keyOf(p)]; const txt=[]; for(let i=p.a;i<=p.b;i++) txt.push(E.words[i].t);
@@ -811,17 +845,18 @@ function renderTimeline(){
   $('trC').innerHTML=cbHtml(0); $('trC2').innerHTML=cbHtml(1);
   $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>${I('ban')} ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">${I('x')}</span><span class="hr"></span></div>`).join('');
   $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
-  $('trV').style.paddingLeft=pad+'px';
+  renderVideoTrack();
   if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
-  followTimeline(vid.currentTime,true);
+  followTimeline(PV.currentTime,true);
 }
 let thumbsFor=null;
 // pomocná videa (náhledy, AI): iPhone zvládne jen pár přehrávačů naráz → po použití je vždy uvolnit
 function auxVideo(){ return new Promise(res=>{ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.setAttribute('playsinline',''); v.preload='auto';
   let ok=false; const done=()=>{ if(!ok){ ok=true; res(v); } }; v.onloadedmetadata=done; v.onloadeddata=done; v.onerror=done; setTimeout(done,8000); v.src=videoURL; v.load(); }); }
 function freeVideo(v){ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch(e){} }
+let thumbImg=[];
 async function thumbs(){
-  if (thumbsFor===videoURL) return; thumbsFor=videoURL; const tr=$('trV'); tr.innerHTML='';
+  if (thumbsFor===videoURL) return; thumbsFor=videoURL; thumbImg=[]; renderVideoTrack();
   const url=videoURL; let i=0, n=null;
   while (thumbsFor===url){
     // přehrává se → pomocné video vůbec nedržet (iPhone pak hlavní video nestíhá dekódovat)
@@ -831,18 +866,69 @@ async function thumbs(){
     try{
       if (n==null) n=Math.max(1,Math.ceil(v.duration||0));
       for (; i<n; i++){
-        if (thumbsFor!==url || !vid.paused) break;               // uživatel pustil video → uvolnit a počkat
+        if (thumbsFor!==url || !vid.paused) break;
         await AI.seek(v,i+0.01); if (!vid.paused) break;
-        const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img);
+        thumbImg[i]=AI.grab(v,90).toDataURL('image/jpeg',0.6); if (i%3===2) renderVideoTrack();
       }
-    } finally { freeVideo(v); }
+    } finally { freeVideo(v); renderVideoTrack(); }
     if (n!=null && i>=n) return;
   }
 }
+// stopa videa: úseky (po střihu) s náhledy + značky přechodů mezi nimi
+let selClip=-1;
+function renderVideoTrack(){
+  const tr=$('trV'); if (!tr) return; const pad=tlPad(), L=E.clipList(), st=E.clipStarts();
+  tr.style.paddingLeft='0';
+  tr.innerHTML=L.map((c,k)=>{ const x=pad+st[k]*pps, w=Math.max(4,(c.e-c.s)*pps-2); let im='';
+    for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
+    return `<div class="vb ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
+    + L.map((c,k)=>k? `<div class="vtr ${c.tr&&c.tr!=='none'?'on':''}" data-tr="${k}" style="left:${pad+st[k]*pps}px" title="Přechod">${I(c.tr&&c.tr!=='none'?'sparkles':'plus')}</div>`:'').join('');
+}
+// --- úpravy výsledného času (titulky, zóny, overlaye) při střihu ---
+function removeOut(a,b){
+  const len=b-a; if (len<=0) return;
+  const keep=[]; for (const w of E.words){ const mid=(w.s+w.e)/2; if (mid>=a&&mid<b){ delete E.meta[w.id]; continue; }
+    if (mid>=b){ w.s=Math.max(a,w.s-len); w.e=Math.max(w.s+0.05,w.e-len); } else if (w.e>a){ w.e=Math.max(w.s+0.05,a); } keep.push(w); }
+  E.words=keep;
+  const sh=v=> v>=b? v-len : v>a? a : v;
+  for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null) m.so=sh(m.so); if (m.eo!=null) m.eo=sh(m.eo); }
+  E.zones=E.zones.map(z=>({...z,s:sh(z.s),e:sh(z.e)})).filter(z=>z.e-z.s>0.05);
+  E.overlays=E.overlays.filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); return o.e-o.s>0.05; });
+}
+function insertOut(at,len){
+  if (len<=0) return;
+  for (const w of E.words) if (w.s>=at){ w.s+=len; w.e+=len; }
+  for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null&&m.so>=at) m.so+=len; if (m.eo!=null&&m.eo>=at) m.eo+=len; }
+  for (const z of E.zones) if (z.s>=at){ z.s+=len; z.e+=len; }
+  for (const o of E.overlays) if (o.s>=at){ o.s+=len; o.e+=len; }
+}
+function ensureClips(){ if (!E.clips||!E.clips.length) E.clips=[{s:0,e:E.srcDur||vid.duration||0,tr:'none'}]; }
+function cutAt(T){
+  ensureClips(); const st=E.clipStarts(); const k=E.clips.findIndex((c,i)=>T>st[i]+0.08 && T<st[i]+(c.e-c.s)-0.08);
+  if (k<0) return toast('Tady stříhat nejde (moc blízko střihu nebo konce)');
+  const c=E.clips[k], ts=c.s+(T-st[k]);
+  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none'},{s:ts,e:c.e,tr:'flash2'});
+  selClip=k+1; changed(true); renderVideoTrack(); toast('Video rozstřižené – přechod: 2× negativní záblesk');
+}
+function deleteClip(k){
+  ensureClips(); if (E.clips.length<2) return toast('Poslední úsek videa smazat nejde');
+  const st=E.clipStarts(), c=E.clips[k]; removeOut(st[k], st[k]+(c.e-c.s));
+  E.clips.splice(k,1); if (E.clips[0]) E.clips[0].tr='none';
+  selClip=-1; vid.pause(); PV.currentTime=Math.min(st[k], E.outDur()-0.05);
+  changed(true); renderVideoTrack(); renderPanel(); toast('Úsek smazaný – titulky se posunuly');
+}
+function trimClip(k,side,dt){
+  ensureClips(); const c=E.clips[k], st=E.clipStarts(), prev=E.clips[k-1], next=E.clips[k+1];
+  if (side==='l'){ const ns=clamp(c.s+dt, prev?prev.e:0, c.e-0.2), d=ns-c.s; if (Math.abs(d)<0.01) return;
+    if (d>0) removeOut(st[k], st[k]+d); else insertOut(st[k], -d); c.s=ns; }
+  else { const ne=clamp(c.e+dt, c.s+0.2, next?next.s:(E.srcDur||vid.duration)), d=ne-c.e; if (Math.abs(d)<0.01) return;
+    const endO=st[k]+(c.e-c.s); if (d<0) removeOut(endO+d, endO); else insertOut(endO, d); c.e=ne; }
+  changed(true); renderVideoTrack();
+}
 let tlSyncT=0;
 function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; tlSyncT=performance.now(); sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
-$('tlScroll').addEventListener('scroll',()=>{ if (tlSync||tlDrag) return; if (!vid.paused) return; if (performance.now()-tlSyncT<350) return; vid.currentTime=clamp($('tlScroll').scrollLeft/pps,0,vid.duration-0.01); const k=E.pageAt(vid.currentTime); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
-function setZoom(v){ pps=clamp(Math.round(v),12,400); $('tlZoom').value=pps; $('trV').querySelectorAll('img').forEach(i=>i.style.width=pps+'px'); renderTimeline(); }
+$('tlScroll').addEventListener('scroll',()=>{ if (tlSync||tlDrag) return; if (!vid.paused) return; if (performance.now()-tlSyncT<350) return; PV.currentTime=clamp($('tlScroll').scrollLeft/pps,0,PV.duration-0.01); const k=E.pageAt(PV.currentTime); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
+function setZoom(v){ pps=clamp(Math.round(v),12,400); $('tlZoom').value=pps; renderTimeline(); }
 $('tlZoom').oninput=e=>setZoom(+e.target.value);
 // přiblížení / oddálení timeline dvěma prsty (roztažení = přiblížit, stažení = oddálit); pozice v čase zůstane
 (function(){
@@ -859,7 +945,8 @@ let tlDrag=null;
 $('tlIn').addEventListener('pointerdown',e=>{
   if (e.pointerType==='touch' && tlTouches>1) return;
   const zx=e.target.closest('[data-zx]'); if (zx){ E.zones.splice(+zx.dataset.zx,1); changed(true); return; }
-  const blk=e.target.closest('.cb,.zb,.ob'); if (!blk) return;
+  const trm=e.target.closest('.vtr'); if (trm){ vid.pause(); selClip=+trm.dataset.tr; openClipPanel(); return; }
+  const blk=e.target.closest('.cb,.zb,.ob,.vb'); if (!blk) return;
   e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
   const mode=e.target.classList.contains('hl')?'l':e.target.classList.contains('hr')?'r':'m';
   tlDrag={blk,mode,x0:e.clientX,y0:e.clientY,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width),layer0:blk.parentElement&&blk.parentElement.id==='trC2'?1:0,layer:null};
@@ -874,6 +961,7 @@ $('tlIn').addEventListener('pointermove',e=>{
     b.style.transform = tlDrag.layer!=null ? `translateY(${tlDrag.layer?28:-28}px)` : '';
     b.classList.toggle('lyr', tlDrag.layer!=null);
   }
+  if (b.classList.contains('vb') && tlDrag.mode==='m') return;   // úsek videa se nepřesouvá, jen zkracuje za okraje
   if (tlDrag.mode==='m') b.style.left=(tlDrag.left0+d)+'px';
   else if (tlDrag.mode==='l'){ b.style.left=(tlDrag.left0+d)+'px'; b.style.width=Math.max(6,tlDrag.w0-d)+'px'; }
   else b.style.width=Math.max(6,tlDrag.w0+d)+'px';
@@ -891,29 +979,34 @@ $('tlIn').addEventListener('pointerup',e=>{
     for (let q=k+1;q<E.pages.length;q++) if ((E.pages[q].layer|0)===L){ next=E.pages[q]; break; }
     if (mode==='m'){ E.words[p.a].br=true; if (p.b+1<E.words.length) E.words[p.b+1].br=true; }
     if (mode==='m'){
-      const lo=(prev?prev.s+0.05:0)-p.s, hi=(next?next.e-0.05:vid.duration)-p.e; const d=clamp(dt,lo,hi);
+      const lo=(prev?prev.s+0.05:0)-p.s, hi=(next?next.e-0.05:PV.duration)-p.e; const d=clamp(dt,lo,hi);
       for (let i=p.a;i<=p.b;i++){ E.words[i].s+=d; E.words[i].e+=d; }
       if (m.so!=null) m.so+=d; if (m.eo!=null) m.eo+=d; else m.eo=p.e+d;
       if (next && p.e+d>next.s){ const nm=pageMeta(next); nm.so=p.e+d; }
     } else if (mode==='l'){ m.so=clamp(p.s+dt, prev?prev.s+0.05:0, p.e-0.1); if (prev && m.so<prev.e){ pageMeta(prev).eo=m.so; } }
-    else { m.eo=clamp(p.e+dt, p.s+0.1, next?next.e-0.05:vid.duration); if (next && m.eo>next.s){ pageMeta(next).so=m.eo; } }
+    else { m.eo=clamp(p.e+dt, p.s+0.1, next?next.e-0.05:PV.duration); if (next && m.eo>next.s){ pageMeta(next).so=m.eo; } }
     curPage=k; changed(true); if (panel==='captions') renderPanel();
+  } else if (blk.dataset.v!==undefined){
+    const k=+blk.dataset.v;
+    if (!moved || mode==='m'){ selClip=k; openClipPanel(); return; }
+    trimClip(k,mode,dt); renderPanel();
   } else if (blk.dataset.z!==undefined){
     const z=E.zones[+blk.dataset.z]; if (!moved) return;
-    if (mode==='m'){ z.s=clamp(z.s+dt,0,vid.duration); z.e=clamp(z.e+dt,0,vid.duration); } else if (mode==='l') z.s=clamp(z.s+dt,0,z.e-0.1); else z.e=clamp(z.e+dt,z.s+0.1,vid.duration);
+    if (mode==='m'){ z.s=clamp(z.s+dt,0,PV.duration); z.e=clamp(z.e+dt,0,PV.duration); } else if (mode==='l') z.s=clamp(z.s+dt,0,z.e-0.1); else z.e=clamp(z.e+dt,z.s+0.1,PV.duration);
     changed(true);
   } else if (blk.dataset.o!==undefined){
     const o=E.overlays.find(x=>x.id===+blk.dataset.o); if (!o) return;
     selOv=o.id;
-    if (moved){ if (mode==='m'){ o.s=clamp(o.s+dt,0,vid.duration); o.e=clamp(o.e+dt,0,vid.duration); } else if (mode==='l') o.s=clamp(o.s+dt,0,o.e-0.1); else o.e=clamp(o.e+dt,o.s+0.1,vid.duration); }
-    else vid.currentTime=o.s+0.3;
+    if (moved){ if (mode==='m'){ o.s=clamp(o.s+dt,0,PV.duration); o.e=clamp(o.e+dt,0,PV.duration); } else if (mode==='l') o.s=clamp(o.s+dt,0,o.e-0.1); else o.e=clamp(o.e+dt,o.s+0.1,PV.duration); }
+    else PV.currentTime=o.s+0.3;
     if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.p==='overlay')); }
     changed(); renderPanel();
   }
 });
 // rozdělit titulek v místě přehrávací hlavy
+$('cutBtn').onclick=()=>{ vid.pause(); cutAt(PV.currentTime); openClipPanel(); };
 $('splitBtn').onclick=()=>{
-  const t=vid.currentTime, k=E.pageAt(t); if (k<0) return toast('Postav přehrávací hlavu na titulek');
+  const t=PV.currentTime, k=E.pageAt(t); if (k<0) return toast('Postav přehrávací hlavu na titulek');
   const p=E.pages[k]; let i=p.a; while (i<p.b && E.words[i+1].s<=t) i++;
   if (i>=p.b) i=p.b-1; if (i<p.a) return toast('Titulek má jen jedno slovo');
   // jako v CapCutu: slova před hlavou zůstanou v 1. části, slova za ní jdou do 2. části; střih je přesně v místě hlavy
@@ -941,7 +1034,7 @@ cv.addEventListener('pointerdown',e=>{
   const [x,y]=cvPt(e), hr=Math.min(cv.width,cv.height)*0.05;
   if (ptrs.size===2 && gest && gest.type==='move'){ const [a,b]=[...ptrs.values()]; gest={type:'pinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),size0:cur().size}; return; }
   // overlay?
-  const t=vid.currentTime;
+  const t=PV.currentTime;
   for (const o of [...E.overlays].reverse()){ if (t<o.s||t>o.e) continue; const b=E.overlayBox(o); if (Math.abs(x-b.cx)<b.w/2 && Math.abs(y-b.cy)<b.h/2){ selOv=o.id; gest={type:'ov',o,x0:x,y0:y,ox:o.x,oy:o.y,moved:false}; vid.pause(); if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='overlay')); } renderPanel(); renderTimeline(); return; } }
   const B=E.lastBox;
   if (B){
