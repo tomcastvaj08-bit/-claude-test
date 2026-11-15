@@ -546,7 +546,7 @@ function pMotion(){
   return `${scopeHTML()}
   ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
   ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom',I('arrow-up')+' Zdola'],['top',I('arrow-down')+' Shora'],['left',I('arrow-right')+' Zleva'],['right',I('arrow-left')+' Zprava']])}
-  ${S.enter!=='none'?chips('Dojezd','ease',[['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,''):''}
+  ${S.enter!=='none'?chips('Dojezd','ease',[['silk','Hedvábně'],['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,'')+slider('Vzdálenost příletu','enterDist',3,60,1,'%'):''}
   ${toggle('Slovo po slově (podle řeči)','wordByWord')}
   ${toggle('Plynulý odchod','fadeOut')}
   ${S.fadeOut?`<div class="clabel">Odchod</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:''}
