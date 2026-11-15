@@ -509,7 +509,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // a kolem písmen vznikne jemná záře. Záře se dělá rozmazáním zmenšením (žádný stín) na plátně s velkou rezervou → nic se neořízne.
   const shineOk = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0);
   if (S.fxShine && shineOk && L.em && !S.negativ){
-    const dur = 1.5 - S.shineSpeed/100*0.8, st = 0.2, q = (since-st)/dur;
+    const dur = 1.5 - S.shineSpeed/100*0.8, st = 0.0, q = (since-st)/dur;   // lesk vyjede hned s příletem slova
     if (q>0 && q<1){
       const ph = q*q*(3-2*q), env=Math.sin(Math.PI*q);
       const m = shineCtx();
