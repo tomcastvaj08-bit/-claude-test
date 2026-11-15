@@ -115,7 +115,7 @@ E.FONTS = [
 
 // ================= ŠABLONY =================
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
-const common = {opacity:100,enterDist:35,kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
+const common = {opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
@@ -373,8 +373,11 @@ E.mainColor=mainColor;
 
 function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   const exitDur = S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
-  const age=t-w.s, exit=clamp((p.e-t)/exitDur); const exitE = S.fadeOut ? (exit*exit*(3-2*exit)) : exit;
-  const since=S.wordByWord?age:(t-p.s);
+  // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
+  const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
+  const st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
+  const age=t-st0, exit=clamp((p.e-t)/exitDur); const exitE = S.fadeOut ? (exit*exit*(3-2*exit)) : exit;
+  const since=age;
   if (since<0 && S.anim!=='block' && S.anim!=='base') return;
   let a=clamp(since/0.07)*exit, sc=1, sy=1, dx=0, dy=0, blur=0, er=0;
   const kk=clamp(since/0.25);
@@ -392,7 +395,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     // celý titulek přijede jako jeden kus: pomalé dobrzdění (expo), z mírného zmenšení, slova se jen lehce postupně rozsvítí
     const tp=t-p.s, q=clamp(tp/0.55), e=1-Math.pow(2,-10*q);
     sc=0.82+0.18*e; dy+= (1-e)*L.px*0.35;
-    const qa=clamp((t-w.s+0.08)/0.28); a=(qa*qa*(3-2*qa))*exit;
+    const qa=clamp((t-st0+0.08)/0.28); a=(qa*qa*(3-2*qa))*exit;
     if (S.fadeOut) sc*=(0.94+0.06*exitE);
     if (a<=0) return;
   }

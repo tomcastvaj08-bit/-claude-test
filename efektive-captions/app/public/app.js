@@ -543,11 +543,17 @@ async function suggestColors(){
 // ---------- POHYB A EFEKTY ----------
 function pMotion(){
   const S=cur();
+  const by=S.enterBy||(S.wordByWord?'word':'page');
   return `${scopeHTML()}
+  <div class="clabel">Jak titulky přijíždějí</div>
+  <div class="bychoice" id="enterBy">
+    <div data-v="word" class="${by==='word'?'on':''}"><b>Příjezd po jednom slově</b><small>Každé slovo přijede, až ho řekneš.</small></div>
+    <div data-v="line" class="${by==='line'?'on':''}"><b>Příjezd celého řádku</b><small>Celý řádek přijede najednou – nic nedojíždí pozdě.</small></div>
+    <div data-v="page" class="${by==='page'?'on':''}"><b>Celý titulek najednou</b><small>Všechny řádky přijedou společně.</small></div>
+  </div>
   ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
   ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom',I('arrow-up')+' Zdola'],['top',I('arrow-down')+' Shora'],['left',I('arrow-right')+' Zleva'],['right',I('arrow-left')+' Zprava']])}
   ${S.enter!=='none'?chips('Dojezd','ease',[['silk','Hedvábně'],['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,'')+slider('Vzdálenost příletu','enterDist',3,60,1,'%'):''}
-  ${toggle('Slovo po slově (podle řeči)','wordByWord')}
   ${toggle('Plynulý odchod','fadeOut')}
   ${S.fadeOut?`<div class="clabel">Odchod</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:''}
   <div class="clabel">Efekty</div>
@@ -568,7 +574,7 @@ function pSfx(){
   <div class="clabel">Zvuk</div><div class="sfxlist chips" id="sfxList">${SFX.map(([v,l])=>`<div class="chip ${S.sfx===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="note">Klepnutí zvuk přehraje a nastaví. „Jen tento titulek“ = každý titulek může mít jiný zvuk.</div>`;
 }
-binders.motion=(function(prev){ return ()=>{ prev&&prev(); const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1}); else setMany({exitScale:null,exitDur:0.3}); renderPanel(); }; }; })(binders.motion);
+binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1}); else setMany({exitScale:null,exitDur:0.3}); renderPanel(); }; }; })(binders.motion);
 binders.sfx=()=>{ $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; playSfx(c.dataset.v); setVal('sfx',c.dataset.v); $('sfxList').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); }; };
 
 // ---------- OVERLAY ----------
