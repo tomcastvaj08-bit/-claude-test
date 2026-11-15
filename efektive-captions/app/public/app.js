@@ -1,5 +1,6 @@
 /* EFEKTIVE Captions – aplikace (obrazovky, editor, časová osa, panely) */
 "use strict";
+const I=(n,c='')=>`<svg class="ic${c?' '+c:''}"><use href="#i-${n}"/></svg>`;
 const $=id=>document.getElementById(id);
 const clamp=E.clamp;
 const vid=$('vid'), cv=$('cv');
@@ -80,7 +81,7 @@ async function dbDo(mode,fn){ const db=await DB; return new Promise((res,rej)=>{
 async function renderProjects(){
   let list=[]; try{ list=await dbDo('readonly',st=>st.getAll()); }catch(e){}
   list.sort((a,b)=>b.updated-a.updated);
-  $('projects').innerHTML = list.length ? list.map(p=>`<div class="proj" data-id="${p.id}"><img src="${p.thumb||'icon.png'}" alt=""><div class="pn">${esc(p.name)}<small>${new Date(p.updated).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div><button class="del" data-del="${p.id}">✕</button></div>`).join('') : '<div class="muted">Zatím žádné projekty.</div>';
+  $('projects').innerHTML = list.length ? list.map(p=>`<div class="proj" data-id="${p.id}"><img src="${p.thumb||'icon.png'}" alt=""><div class="pn">${esc(p.name)}<small>${new Date(p.updated).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div><button class="del" data-del="${p.id}">${I('x')}</button></div>`).join('') : '<div class="muted">Zatím žádné projekty.</div>';
 }
 $('projects').onclick=async e=>{
   const d=e.target.closest('[data-del]');
@@ -237,21 +238,21 @@ $('undoBtn').onclick=undo; $('redoBtn').onclick=redo;
 document.addEventListener('keydown',e=>{ if (!$('editor').classList.contains('on')||/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if ((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); }
   else if (e.key===' '){ e.preventDefault(); togglePlay(); } });
-function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.length-1; $('eyeBtn').classList.toggle('on',E.flags.hidden); $('eyeBtn').textContent=E.flags.hidden?'🙈':'👁'; }
+function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.length-1; $('eyeBtn').classList.toggle('on',E.flags.hidden); $('eyeBtn').innerHTML=I(E.flags.hidden?'eye-off':'eye'); }
 
 // --- přehrávání ---
 function togglePlay(){ if (vid.paused){ ensureAC(); vid.play(); } else vid.pause(); }
 $('playBtn').onclick=togglePlay;
-vid.onplay=()=>{ $('playBtn').textContent='❚❚'; $('fsPlay').textContent='❚❚'; lastT=vid.currentTime; };
-vid.onpause=()=>{ $('playBtn').textContent='▶'; $('fsPlay').textContent='▶'; };
+vid.onplay=()=>{ $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=vid.currentTime; };
+vid.onpause=()=>{ $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); };
 $('eyeBtn').onclick=()=>{ E.flags.hidden=!E.flags.hidden; syncTop(); };
 // velký náhled: přes celou obrazovku aplikace (ne systémový fullscreen – z toho se na iPhonu nedalo dostat zpět)
-function setFs(on){ $('stage').classList.toggle('fs',on); document.body.classList.toggle('fsmode',on); $('fsBtn').textContent=on?'🗗':'⛶'; }
+function setFs(on){ $('stage').classList.toggle('fs',on); document.body.classList.toggle('fsmode',on); $('fsBtn').innerHTML=I(on?'minimize':'maximize'); }
 $('fsBtn').onclick=()=>setFs(!$('stage').classList.contains('fs'));
 $('fsExit').onclick=e=>{ e.stopPropagation(); setFs(false); };
 $('fsPlay').onclick=e=>{ e.stopPropagation(); togglePlay(); };
 document.addEventListener('keydown',e=>{ if (e.key==='Escape' && $('stage').classList.contains('fs')) setFs(false); });
-function updateMute(){ vid.muted=E.flags.mute; $('muteBtn').classList.toggle('on',E.flags.mute); $('muteBtn').textContent=E.flags.mute?'🔇 Zvuk videa vypnutý':'🔊 Zvuk videa'; }
+function updateMute(){ vid.muted=E.flags.mute; $('muteBtn').classList.toggle('on',E.flags.mute); $('muteBtn').innerHTML=E.flags.mute?I('volume-x')+' Zvuk videa vypnutý':I('volume')+' Zvuk videa'; }
 $('muteBtn').onclick=()=>{ E.flags.mute=!E.flags.mute; updateMute(); changed(); };
 
 // --- živé zvuky ---
@@ -340,8 +341,8 @@ const binders={};
 // ---------- TITULKY ----------
 function pCaptions(){
   const pg=E.pages.map((p,k)=>{ const ws=[]; for(let i=p.a;i<=p.b;i++){ const w=E.words[i]; ws.push(`<span class="w ${w.em?'em':''}" data-i="${i}">${esc(w.t)}</span>`); }
-    const m=E.meta[E.keyOf(p)]; return `<div class="pg ${k===curPage?'cur':''}" data-k="${k}"><div class="t">${fmt(p.s)}</div><div class="ws">${ws.join('')}</div><button class="ed" data-ed="${k}">✎</button></div>`; }).join('');
-  return `<div class="btnrow"><button class="btn" id="editTxt">✎ Upravit text</button><button class="btn" id="batchBtn">☰ Hromadná úprava</button></div>
+    const m=E.meta[E.keyOf(p)]; return `<div class="pg ${k===curPage?'cur':''}" data-k="${k}"><div class="t">${fmt(p.s)}</div><div class="ws">${ws.join('')}</div><button class="ed" data-ed="${k}">${I('pencil')}</button></div>`; }).join('');
+  return `<div class="btnrow"><button class="btn" id="editTxt">${I('pencil')} Upravit text</button><button class="btn" id="batchBtn">${I('list')} Hromadná úprava</button></div>
   <div class="note">Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo). Tužka u titulku = upravit text.</div>
   ${chips('Hlavní řádek','mainLine',[['mid','Auto (střed)'],['1','1.'],['2','2.'],['3','3.'],['4','4.'],['word','Nejdelší slovo'],['none','Žádný']])}
   ${toggle('Plnit řádky podle šířky (3 / 2 / 2 slova)','split','fill','words')}
@@ -351,8 +352,8 @@ function pCaptions(){
   ${slider('Slov na titulek (auto)','wpp',1,8)}
   ${toggle('Interpunkce','punct')}
   ${toggle('Velké písmeno v hlavním řádku (slova od 3 písmen)','capMain3')}
-  <div class="btnrow"><button class="btn" id="dictBtn">📖 Slovník oprav</button><button class="btn" id="resetOne">↺ Zrušit vlastní styl</button></div>
-  <div class="btnrow"><button class="btn" id="layerBtn">${E.pages[curPage]&&E.pages[curPage].layer?'⇧ Vybraný titulek do hlavní vrstvy':'⇩ Vybraný titulek do vrstvy pod'}</button></div>
+  <div class="btnrow"><button class="btn" id="dictBtn">${I('book')} Slovník oprav</button><button class="btn" id="resetOne">${I('reset')} Zrušit vlastní styl</button></div>
+  <div class="btnrow"><button class="btn" id="layerBtn">${E.pages[curPage]&&E.pages[curPage].layer?I('arrow-up')+' Vybraný titulek do hlavní vrstvy':I('arrow-down')+' Vybraný titulek do vrstvy pod'}</button></div>
   <div class="note">Na timeline můžeš titulek i chytit a stáhnout dolů do 2. vrstvy (nebo zpátky nahoru).</div>
   <div class="pglist" id="pglist">${pg}</div>`;
 }
@@ -415,10 +416,10 @@ function pTemplates(){
   if (cat==='custom') list=Object.entries(customTemplates());
   else list=Object.entries(E.TEMPLATES).filter(([k,t])=>cat==='all'||t.cat==='trending');
   const S=cur();
-  return `${scopeHTML()}${subHTML('templates',[['trending','Styly'],['custom','♥ Vlastní']])}
-  <div class="tplgrid" id="tplgrid">${list.map(([k,t])=>tplCard(k,t,S.style===k?' on':'').replace('</div>',(cat==='custom'?`<span class="x" data-del="${k}">✕</span>`:'')+'</div>')).join('')||'<div class="muted">Zatím nemáš vlastní šablony. V záložce Styl ulož srdíčkem ♥.</div>'}</div>
-  <div class="btnrow"><button class="btn" id="setDefault">★ Tento vzhled jako výchozí</button>${lsGet('efk_default',null)?'<button class="btn" id="clrDefault">↺ Zpět na Styl 1</button>':''}</div>
-  ${lsGet('efk_default',null)?'<div class="btnrow"><button class="btn small" id="copyDefault">📋 Zkopírovat nastavení vzhledu</button></div>':''}
+  return `${scopeHTML()}${subHTML('templates',[['trending','Styly'],['custom',I('heart')+' Vlastní']])}
+  <div class="tplgrid" id="tplgrid">${list.map(([k,t])=>tplCard(k,t,S.style===k?' on':'').replace('</div>',(cat==='custom'?`<span class="x" data-del="${k}">${I('x')}</span>`:'')+'</div>')).join('')||'<div class="muted">Zatím nemáš vlastní šablony. V záložce Styl ulož srdíčkem.</div>'}</div>
+  <div class="btnrow"><button class="btn" id="setDefault">${I('star','grad')} Tento vzhled jako výchozí</button>${lsGet('efk_default',null)?'<button class="btn" id="clrDefault">'+I('reset')+' Zpět na Styl 1</button>':''}</div>
+  ${lsGet('efk_default',null)?'<div class="btnrow"><button class="btn small" id="copyDefault">'+I('copy')+' Zkopírovat nastavení vzhledu</button></div>':''}
   <div class="note">Výchozí vzhled se použije u každého nového videa.</div>
   <div class="clabel">Rychlé efekty</div>
   <div class="chips" id="quickFx">
@@ -431,7 +432,7 @@ function pTemplates(){
 }
 function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k]; return set; }
 binders.templates=()=>{
-  $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('★ Hotovo – nová videa budou vypadat takhle'); };
+  $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('Hotovo – nová videa budou vypadat takhle'); };
   if ($('clrDefault')) $('clrDefault').onclick=()=>{ lsSet('efk_default',null); renderPanel(); toast('Nová videa budou zase ve Stylu 1'); };
   if ($('copyDefault')) $('copyDefault').onclick=async()=>{ const t='EFEKTIVE-STYL '+JSON.stringify(lsGet('efk_default',{})); try{ await navigator.clipboard.writeText(t); toast('Nastavení zkopírované'); }catch(e){ prompt('Zkopíruj si nastavení:',t); } };
   $('tplgrid').onclick=e=>{
@@ -448,20 +449,20 @@ binders.templates=()=>{
 const SHADOWS=[['none',null],['#000000','#000'],['#2f7bff','#2f7bff'],['#ffc531','#ffc531'],['#4df0ff','#4df0ff'],['#21d07a','#21d07a'],['#ff3ad7','#ff3ad7']];
 function pStyle(){
   const S=cur(), st=sub.style;
-  let h=`${scopeHTML()}${subHTML('style',[['color','Barva'],['font','Font'],['text','Text'],['shadow','Stín'],['transform','3D a tvar']],'<div class="sp"></div><div class="hrt" id="saveTpl" title="Uložit jako vlastní šablonu">♥</div>')}`;
+  let h=`${scopeHTML()}${subHTML('style',[['color','Barva'],['font','Font'],['text','Text'],['shadow','Stín'],['transform','3D a tvar']],'<div class="sp"></div><div class="hrt" id="saveTpl" title="Uložit jako vlastní šablonu">'+I('heart','grad')+'</div>')}`;
   if (st==='color'){
     h+=`<div class="colors">${color('Text','cText')}${color('Zvýraznění 1','c1')}${color('2.','c2')}${color('3.','c3')}${color('4.','c4')}</div>
     <div class="note">Zvýraznění 1–4 se střídá po titulcích (1. titulek = 1. barva…), když je přechod vypnutý.</div>
     ${toggle('Vedlejší řádky s jemným přelivem do šeda','textGrad')}
     ${S.textGrad?`<div class="colors">${color('Vedlejší nahoře','cText')}${color('Vedlejší dole','cText2')}</div>`:''}
     ${toggle('Dvoubarevný přechod na hlavním řádku','grad')}
-    ${S.grad?`<div class="colors">${color('Barva A','gA')}${color('Barva B','gB')}</div>${chips('Směr přechodu','gradDir',[['v','↕ Svisle'],['h','↔ Vodorovně'],['d','↘ Šikmo']])}`:''}
+    ${S.grad?`<div class="colors">${color('Barva A','gA')}${color('Barva B','gB')}</div>${chips('Směr přechodu','gradDir',[['v',I('arrows-v')+' Svisle'],['h',I('arrows-h')+' Vodorovně'],['d',I('arrow-diag')+' Šikmo']])}`:''}
     ${toggle('Každý N-tý titulek jinou barvou','altOn')}
     ${S.altOn?`<div class="colors">${color('Barva A','altA')}${color('Barva B','altB')}</div>${slider('Každý … titulek','altEvery',2,6)}`:''}
     ${toggle('Negativ (inverzní písmo)','negativ')}
     ${slider('Záře okolo hlavního slova','glow',0,100)}
     ${chips('Záře svítí','glowMode',[['always','Pořád'],['entrance','Jen při nástupu (problikne)']])}
-    <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">✧ Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
+    <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">${I('wand','grad')} Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
   } else if (st==='font'){
     const fam=fontTarget==='em'?S.fontEm:S.fontMain, w=fontTarget==='em'?S.wEm:S.wMain, it=fontTarget==='em'?S.emItalic:S.mainItalic;
     h+=`<div class="seg" id="fontT"><div data-v="em" class="${fontTarget==='em'?'on':''}">Hlavní řádek</div><div data-v="main" class="${fontTarget==='main'?'on':''}">Vedlejší řádky</div></div>
@@ -508,7 +509,7 @@ binders.style=()=>{
     const name=prompt('Název vlastní šablony:','Moje šablona '+(Object.keys(customTemplates()).length+1)); if(!name) return;
     const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k];
     const c=customTemplates(); const key='c'+Date.now(); c[key]={name,cat:'custom',set,pv:`<span style="font-family:${esc(S.fontMain)};font-weight:${S.wMain}">Tvůj</span><br><b style="font-family:${esc(S.fontEm)};font-weight:${S.wEm};${S.grad?`background:linear-gradient(${S.gA},${S.gB});-webkit-background-clip:text;color:transparent`:`color:${S.c1}`}">Styl</b>`};
-    lsSet('efk_custom',c); renderHomeTpl(); toast('♥ Uloženo do Vlastních šablon');
+    lsSet('efk_custom',c); renderHomeTpl(); toast('Uloženo do Vlastních šablon');
   };
   const ft=$('fontT'); if (ft) ft.onclick=e=>{ const d=e.target.closest('[data-v]'); if(d){ fontTarget=d.dataset.v; renderPanel(); } };
   const tt=$('textT'); if (tt) tt.onclick=e=>{ const d=e.target.closest('[data-v]'); if(d){ textTarget=d.dataset.v; renderPanel(); } };
@@ -533,7 +534,7 @@ function pMotion(){
   const S=cur();
   return `${scopeHTML()}
   ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
-  ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom','↑ Zdola'],['top','↓ Shora'],['left','→ Zleva'],['right','← Zprava']])}
+  ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom',I('arrow-up')+' Zdola'],['top',I('arrow-down')+' Shora'],['left',I('arrow-right')+' Zleva'],['right',I('arrow-left')+' Zprava']])}
   ${S.enter!=='none'?chips('Dojezd','ease',[['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,''):''}
   ${toggle('Slovo po slově (podle řeči)','wordByWord')}
   ${toggle('Plynulý odchod','fadeOut')}
@@ -561,10 +562,10 @@ binders.sfx=()=>{ $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); i
 
 // ---------- OVERLAY ----------
 const STICKERS=['💸','💰','⚡','🔥','✅','❌','⭐','👉','👇','➡️','🚀','💯','❤️','😂','🤯','👀','📈','🎯'];
-const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide →'],['slideL','Slide ←'],['slideU','Slide ↑'],['slideD','Slide ↓']];
+const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide doprava'],['slideL','Slide doleva'],['slideU','Slide nahoru'],['slideD','Slide dolů']];
 function pOverlay(){
   const o=E.overlays.find(x=>x.id===selOv);
-  let h=`<div class="btnrow"><button class="btn" id="ovImg">🖼 Přidat obrázek / video</button></div>
+  let h=`<div class="btnrow"><button class="btn" id="ovImg">${I('image')} Přidat obrázek / video</button></div>
   <div class="clabel">Nálepky</div><div class="stickers" id="stk">${STICKERS.map(s=>`<div>${s}</div>`).join('')}</div>
   <div class="row"><span>Wiggle na všechny overlaye</span><input type="checkbox" class="sw" id="ovWigAll" ${E.overlays.length&&E.overlays.every(x=>x.wiggle)?'checked':''}></div>`;
   if (o){
@@ -573,7 +574,7 @@ function pOverlay(){
     <div class="row"><span>Před titulky (jinak za nimi)</span><input type="checkbox" class="sw" id="ovAbove" ${o.above?'checked':''}></div>
     <label class="ctl"><div class="lb"><span>Velikost</span><span>${o.w}%</span></div><input type="range" id="ovW" min="5" max="100" value="${o.w}"></label>
     <label class="ctl"><div class="lb"><span>Rotace</span><span>${o.rot||0}°</span></div><input type="range" id="ovR" min="-180" max="180" value="${o.rot||0}"></label>
-    <div class="btnrow"><button class="btn" id="ovDel">🗑 Smazat overlay</button></div>
+    <div class="btnrow"><button class="btn" id="ovDel">${I('trash')} Smazat overlay</button></div>
     <div class="note">Na videu ho chytni a posuň. Na časové ose posuneš začátek a konec.</div>`;
   } else h+=`<div class="note">Vyber overlay klepnutím na fialový blok v časové ose nebo na videu.</div>`;
   return h;
@@ -611,22 +612,22 @@ function drawOvSel(){
 function pAI(){
   const S=cur();
   return `${scopeHTML()}
-  <div class="clabel">📍 Pozice pod obličej</div>
+  <div class="clabel">${I('pin','grad')} Pozice pod obličej</div>
   <div class="note">Najde obličej v každém titulku a dá titulek těsně pod bradu – nikdy přes tvář.</div>
   <div class="row"><span>Uhnout do strany, když je obličej mimo střed</span><input type="checkbox" class="sw" id="faceDodge" ${E.G.faceDodgeX?'checked':''}></div>
-  <button class="btn" id="aiFace">${analysed.face?'↻ Znovu umístit pod obličej':'Umístit titulky pod obličej'}</button>
-  <div class="clabel">🧍 Text za postavou</div>
+  <button class="btn" id="aiFace">${analysed.face?I('refresh')+' Znovu umístit pod obličej':'Umístit titulky pod obličej'}</button>
+  <div class="clabel">${I('user','grad')} Text za postavou</div>
   <div class="note">Titulek bude za člověkem (postava zakryje písmo), jako v SA Captions.</div>
   ${toggle('Text za postavou','behind','on','off')}
-  <div class="clabel">🎨 Barva z videa</div>
+  <div class="clabel">${I('palette','grad')} Barva z videa</div>
   <button class="btn" id="aiColor">Navrhnout barvy podle videa</button><div class="sugg" id="suggBox" style="margin-top:8px"></div>
-  <div class="clabel">📐 Náklon podle scény</div>
+  <div class="clabel">${I('ruler','grad')} Náklon podle scény</div>
   <div class="note">Najde linie v záběru (regál, stůl, okno) a nakloní titulek ve 3D stejně jako prostor.</div>
   <button class="btn" id="aiTilt">${scope==='all'?'Sladit náklon všech titulků se scénou':'Sladit náklon tohoto titulku'}</button>
-  <div class="clabel">⛔ Úseky bez titulků</div>
+  <div class="clabel">${I('ban','grad')} Úseky bez titulků</div>
   <div class="note">Kde je grafika nebo logo na konci, titulky se nezobrazí a slova se tam vynechají.</div>
   <div class="btnrow"><button class="btn" id="zHere">＋ 2 s od přehrávací hlavy</button><button class="btn" id="zEnd">＋ Odsud do konce (logo)</button></div>
-  <div class="clabel">📏 Ochrana proti uříznutí</div>
+  <div class="clabel">${I('shield','grad')} Ochrana proti uříznutí</div>
   <div class="note">Je zapnutá vždy: dlouhý titulek se sám zmenší, aby byl celý vidět i při 3D náklonu.</div>`;
 }
 binders.ai=()=>{
@@ -668,8 +669,8 @@ function renderTimeline(){
   const cbHtml=L=>E.pages.map((p,k)=>{ if ((p.layer|0)!==L) return ''; const m=E.meta[E.keyOf(p)]; const txt=[]; for(let i=p.a;i<=p.b;i++) txt.push(E.words[i].t);
     return `<div class="cb ${k===curPage?'cur':''} ${m&&m.own&&Object.keys(m.own).some(x=>x!=='posY'&&x!=='posX'&&x!=='_manualPos')?'own':''}" data-k="${k}" style="left:${X(p.s)}px;width:${Math.max(6,(p.e-p.s)*pps-2)}px"><span class="hl"></span>${esc(txt.join(' '))}<span class="hr"></span></div>`; }).join('');
   $('trC').innerHTML=cbHtml(0); $('trC2').innerHTML=cbHtml(1);
-  $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>⛔ ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">✕</span><span class="hr"></span></div>`).join('');
-  $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${o.emoji?o.emoji:'🖼'} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
+  $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>${I('ban')} ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">${I('x')}</span><span class="hr"></span></div>`).join('');
+  $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${o.emoji?o.emoji:I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
   $('trV').style.paddingLeft=pad+'px';
   if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
   followTimeline(vid.currentTime,true);
@@ -829,7 +830,7 @@ async function runExport(){
     // na iPhonu nabídnout sdílení (uložit do Fotek)
     a.onclick=async ev=>{
       // mobilní aplikace: rovnou do galerie
-      if (NATIVE.isNative){ ev.preventDefault(); try{ $('exStatus').textContent='Ukládám do galerie…'; const r=await NATIVE.saveVideo(res.blob,a.download,p=>{ $('exStatus').textContent=`Ukládám do galerie… ${Math.round(p*100)} %`; }); $('exStatus').textContent = r==='saved' ? '✓ Video je uložené v galerii' : r==='shared' ? 'Hotovo' : 'Uložení se nepovedlo'; if (r==='saved') toast('Video je ve Fotkách / Galerii'); }catch(e){ $('exStatus').textContent='Uložení se nepovedlo: '+(e.message||e); } return; }
+      if (NATIVE.isNative){ ev.preventDefault(); try{ $('exStatus').textContent='Ukládám do galerie…'; const r=await NATIVE.saveVideo(res.blob,a.download,p=>{ $('exStatus').textContent=`Ukládám do galerie… ${Math.round(p*100)} %`; }); $('exStatus').textContent = r==='saved' ? 'Video je uložené v galerii' : r==='shared' ? 'Hotovo' : 'Uložení se nepovedlo'; if (r==='saved') toast('Video je ve Fotkách / Galerii'); }catch(e){ $('exStatus').textContent='Uložení se nepovedlo: '+(e.message||e); } return; }
       // uvnitř Claude (artifact): uložení přes potvrzení „Stáhnout“
       if (window.claude && window.claude.use){ ev.preventDefault(); try{ const d=await window.claude.use('downloads'); if (d){ await d.save({filename:a.download, data:res.blob}); return; } }catch(e){ if (e&&e.code==='declined') return; console.warn(e); } }
       // na iPhonu nabídnout sdílení (uložit do Fotek)
@@ -848,7 +849,7 @@ const PRO={
   active(){ const p=PRO.get(); return !!(p && p.token && p.pro && (!p.until || Date.now() < p.until + 3*86400e3)); },
   apply(){
     const on=PRO.active(); E.flags.pro=on;
-    const b=$('proBtn'); b.textContent=on?'PRO ✓':'Získat PRO'; b.classList.toggle('on',on);
+    const b=$('proBtn'); b.innerHTML=on?'PRO '+I('check'):'Získat PRO'; b.classList.toggle('on',on);
     $('wmNote').hidden=on;
     const p=PRO.get();
     $('proBuy').hidden=on; $('proHave').hidden=!on;

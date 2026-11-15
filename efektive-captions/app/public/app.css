@@ -329,3 +329,31 @@ button.pro.on{background:var(--green);color:#fff}
 .tr-c2 .cb{background:#0e7a52;border-color:#13b97a}
 .cb.lyr{opacity:.85;outline:2px dashed #fff;z-index:5}
 .web-only[hidden],.app-only[hidden]{display:none!important}
+
+/* ===== ikony (SVG místo emoji) ===== */
+.ic{width:1.15em;height:1.15em;display:inline-block;vertical-align:-.22em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}
+.ic.grad{stroke:url(#efg)}
+.ico .ic{width:22px;height:22px;vertical-align:middle}
+.ico.play .ic{width:20px;height:20px}
+.btn .ic{margin-right:4px}
+.chipbtn{display:inline-flex;align-items:center;gap:6px}
+.chipbtn .ic{width:16px;height:16px}
+.zoom .ic{width:16px;height:16px}
+.bnav button .ic{width:22px;height:22px;margin-bottom:1px}
+.bnav button.on{color:var(--text)}
+.bnav button.on .ic{stroke:url(#efg)}
+.clabel .ic{width:16px;height:16px;margin-right:4px}
+.chip .ic{width:14px;height:14px}
+.plus .ic{width:18px;height:18px;vertical-align:-.25em}
+.pg .ed .ic,.x .ic,.zx .ic{width:14px;height:14px}
+.hrt .ic{width:22px;height:22px}
+/* ===== modrozelený přechod EFEKTIVE ===== */
+.btn.primary{background:var(--grad);border-color:transparent;color:#fff}
+.ico.play{background:var(--grad);color:#fff}
+button.pro{background:var(--grad);color:#fff}
+button.pro.on{background:var(--green)}
+.cb.cur{background:var(--grad);border-color:transparent}
+.seg div.on .ic{stroke:#fff}
+.pro-tag{background:var(--grad)}
+.chipbtn:active,.btn:active{filter:brightness(.95)}
+.btn .plus{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px}
