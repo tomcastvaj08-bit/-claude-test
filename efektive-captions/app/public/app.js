@@ -19,7 +19,7 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){}
 
 // ================= STAV APLIKACE =================
 let videoFile=null, videoURL=null, project=null, fullW=1080, fullH=1920;
-let curPage=0, scope='all', panel='captions', sub={style:'color',templates:'trending',motion:'anim'}, fontTarget='em', textTarget='em';
+let curPage=0, scope='all', panel='captions', sub={style:'color',templates:'trending',motion:'in'}, fontTarget='em', textTarget='em';
 let selOv=null; const ovAssets={}; // id → {blob, el}
 let analysed={face:false, person:false};
 const DEFAULT_DICT=`Lidáte → Hledáte
@@ -636,25 +636,31 @@ async function suggestColors(){
 function pMotion(){
   const S=cur();
   const by=S.enterBy||(S.wordByWord?'word':'page');
-  return `${scopeHTML()}
-  <div class="clabel">Jak titulky přijíždějí</div>
-  <div class="bychoice" id="enterBy">
-    <div data-v="word" class="${by==='word'?'on':''}"><b>Příjezd po jednom slově</b><small>Každé slovo přijede, až ho řekneš.</small></div>
-    <div data-v="line" class="${by==='line'?'on':''}"><b>Příjezd celého řádku</b><small>Celý řádek přijede najednou – nic nedojíždí pozdě.</small></div>
-    <div data-v="page" class="${by==='page'?'on':''}"><b>Celý titulek najednou</b><small>Všechny řádky přijedou společně.</small></div>
-  </div>
-  ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}
-  ${chips('Slova přilétají z','enter',[['none','Bez letu'],['bottom',I('arrow-up')+' Zdola'],['top',I('arrow-down')+' Shora'],['left',I('arrow-right')+' Zleva'],['right',I('arrow-left')+' Zprava']])}
-  ${S.enter!=='none'?chips('Dojezd','ease',[['silk','Hedvábně'],['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příletu','enterDur',10,120,1,'')+slider('Vzdálenost příletu','enterDist',3,60,1,'%'):''}
-  ${toggle('Plynulý odchod','fadeOut')}
-  ${S.fadeOut?`<div class="clabel">Odchod</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:''}
-  <div class="clabel">Efekty</div>
-  ${toggle('Shine – lesk přejede přes hlavní slovo','fxShine')}
-  ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100):''}
-  ${toggle('Flicker – problikne při nástupu','fxFlicker')}
-  ${toggle('Shake – zatřese při nástupu','fxShake')}
-  ${toggle('Wiggle – jemné vlnění','fxWiggle')}
-  ${S.fxWiggle||S.fxShake?slider('Síla wiggle / shake','wiggle',0,100):''}`;
+  const st=['in','out','fx'].includes(sub.motion)?sub.motion:'in'; sub.motion=st;
+  let h=`${scopeHTML()}${subHTML('motion',[['in','Příjezd'],['out','Odchod'],['fx','Efekty (shine, flicker…)']])}`;
+  if (st==='in'){
+    h+=`<div class="clabel">Co přijíždí</div>
+    <div class="chips" id="enterBy">
+      <div class="chip ${by==='word'?'on':''}" data-v="word">Po jednom slově</div>
+      <div class="chip ${by==='line'?'on':''}" data-v="line">Celý řádek</div>
+      <div class="chip ${by==='page'?'on':''}" data-v="page">Celý titulek</div>
+    </div>
+    <div class="note">${by==='word'?'Každé slovo přijede, až ho řekneš.':by==='line'?'Celý řádek přijede najednou – nic nedojíždí pozdě.':'Všechny řádky přijedou společně.'}</div>
+    ${chips('Odkud přijíždí','enter',[['none','Bez letu'],['bottom',I('arrow-up')+' Zdola'],['top',I('arrow-down')+' Shora'],['left',I('arrow-right')+' Zleva'],['right',I('arrow-left')+' Zprava']])}
+    ${S.enter!=='none'?chips('Dojezd','ease',[['silk','Hedvábně'],['smooth','Plynule'],['swing','Houpnutí'],['shake','Zatřesení'],['bounce','Odraz'],['elastic','Pružina']])+slider('Délka příjezdu','enterDur',10,120,1,'')+slider('Vzdálenost příjezdu','enterDist',3,60,1,'%'):''}
+    ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}`;
+  } else if (st==='out'){
+    h+=`${toggle('Plynulý odchod','fadeOut')}
+    ${S.fadeOut?`<div class="clabel">Jak titulek zmizí</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:'<div class="note">Titulek zmizí okamžitě.</div>'}`;
+  } else {
+    h+=`${toggle('Shine – světlo přejede přes hlavní slovo','fxShine')}
+    ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100):''}
+    ${toggle('Flicker – problikne při nástupu','fxFlicker')}
+    ${toggle('Shake – zatřese při nástupu','fxShake')}
+    ${toggle('Wiggle – jemné vlnění','fxWiggle')}
+    ${S.fxWiggle||S.fxShake?slider('Síla wiggle / shake','wiggle',0,100):''}`;
+  }
+  return h;
 }
 
 // ---------- SFX ----------
