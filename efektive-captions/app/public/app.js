@@ -270,8 +270,21 @@ function playSfx(type){ ensureAC(); E.sfxInto(AC,AC.destination,AC.currentTime,t
 
 // --- smyčka ---
 let dragging=null, guides=false, inlineOpen=false;
+// Plynulý čas pro náhled: iPhone posouvá currentTime po skocích (podle snímků videa, někdy nepravidelně)
+// → animace titulků by poskakovala. Mezi skoky čas dopočítáme z hodin zařízení (60/120 Hz).
+const clk={t:0,now:0,ct:-1};
+function smoothTime(){
+  const ct=vid.currentTime, now=performance.now();
+  if (vid.paused || vid.seeking || vid.readyState<3){ clk.t=ct; clk.now=now; clk.ct=ct; return ct; }
+  let t=clk.t+(now-clk.now)/1000*(vid.playbackRate||1);
+  if (Math.abs(t-ct)>0.15){ t=ct; }                       // přeskok / zaseknutí → srovnat
+  else if (ct!==clk.ct){ t+= (ct-t)*0.08; }               // jemně dorovnávat k videu
+  clk.t=t; clk.now=now; clk.ct=ct;
+  return Math.max(0,Math.min(t, vid.duration||t));
+}
+['seeked','play','playing','pause'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.t=vid.currentTime; clk.now=performance.now(); clk.ct=clk.t; }));
 function loop(){
-  const t=vid.currentTime;
+  const t=smoothTime();
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
@@ -327,7 +340,22 @@ function bindControls(){
 }
 
 // ================= PANELY =================
-$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
+let edState='normal';
+function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); ed.classList.toggle('ed-exp',st==='exp'); ed.classList.toggle('ed-col',st==='col'); }
+(function(){
+  const pn=$('panel'), gr=$('grab'); let y0=null, top0=0, done=false;
+  const start=(e,fromGrab)=>{ y0=e.touches[0].clientY; top0=fromGrab?0:pn.scrollTop; done=false; };
+  const move=e=>{ if (y0==null||done) return; const dy=e.touches[0].clientY-y0;
+    if (dy<-28){ if (edState==='col') setEd('normal'); else if (edState==='normal') setEd('exp'); done=true; }            // prst nahoru
+    else if (dy>28 && top0<=0 && pn.scrollTop<=0){ if (edState==='exp') setEd('normal'); else if (edState==='normal') setEd('col'); done=true; } }; // prst dolů na začátku obsahu
+  pn.addEventListener('touchstart',e=>start(e,false),{passive:true}); pn.addEventListener('touchmove',move,{passive:true});
+  gr.addEventListener('touchstart',e=>start(e,true),{passive:true}); gr.addEventListener('touchmove',move,{passive:true});
+  gr.addEventListener('click',()=>setEd(edState==='col'?'normal':edState==='normal'?'exp':'normal'));
+  pn.addEventListener('touchend',()=>{ y0=null; }); gr.addEventListener('touchend',()=>{ y0=null; });
+  // počítač: kolečko myši nad lištou
+  pn.addEventListener('wheel',e=>{ if (e.deltaY>30 && edState!=='exp' && pn.scrollHeight>pn.clientHeight) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30 && pn.scrollTop<=0) setEd(edState==='exp'?'normal':'col'); },{passive:true});
+})();
+$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (edState==='col') setEd('normal'); panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
 function subHTML(name,opts,extra=''){ return `<div class="sub" data-sub="${name}">${opts.map(([v,l])=>`<div data-v="${v}" class="${sub[name]===v?'on':''}">${l}</div>`).join('')}${extra}</div>`; }
 function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s=>{ s.onclick=e=>{ const d=e.target.closest('[data-v]'); if (d){ sub[s.dataset.sub]=d.dataset.v; renderPanel(); } }; }); }
 function renderPanel(){

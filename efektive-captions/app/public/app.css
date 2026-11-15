@@ -384,3 +384,15 @@ button.pro.on{background:var(--green)}
 .bychoice small{color:var(--muted);font-size:12px}
 .bychoice div.on{border:2px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box,var(--grad) border-box}
 .bychoice div.on b{color:var(--acc)}
+
+/* vysouvací lišta v editoru (telefon) */
+.grab{display:none}
+@media (max-width:899px){
+  .grab{display:flex;flex:none;justify-content:center;align-items:center;height:16px;background:var(--card);border-top:1px solid var(--line);cursor:pointer;touch-action:none}
+  .grab i{width:44px;height:4px;background:#c4ccd8}
+  .stage{transition:height .3s cubic-bezier(.2,.8,.2,1)}
+  #editor.ed-exp .stage{height:27vh;height:27dvh}
+  #editor.ed-col .stage{height:auto;flex:1 1 auto}
+  #editor.ed-col .panel{flex:0 0 0;min-height:0;padding-top:0;padding-bottom:0;overflow:hidden;border-top:0}
+  #editor.ed-col .grab i{background:var(--acc)}
+}
