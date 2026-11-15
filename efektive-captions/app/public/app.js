@@ -589,7 +589,8 @@ function pStyle(){
     ${slider('Velikost (rozmazání)','shadowSize',0,100)}
     ${slider('Průhlednost','shadowA',0,100,1,'%')}
     ${slider('Vzdálenost stínu','shadowDist',0,40)}
-    ${slider('3D hloubka písma (extrude)','extrude',0,100)}`;
+    ${slider('3D hloubka písma (extrude)','extrude',0,100)}
+    ${chips('Styl 3D hloubky','extrudeStyle',[['light','Světlá'],['dark','Tmavá']])}`;
   } else if (st==='transform'){
     h+=`${slider('Mezery mezi písmeny','track',-20,12,0.5)}
     ${S.trackEm!=null?slider('Mezery mezi písmeny – hlavní řádek','trackEm',-24,12,0.5):''}
