@@ -18,7 +18,9 @@ html,body{overflow:hidden;background:var(--navy)}
 #logo img{position:absolute}
 #txt .eyebrow{display:flex;align-items:center;font-weight:700;color:var(--blue);text-transform:uppercase}
 #txt .eyebrow i{display:block;background:var(--blue)}
-#txt .yr{font-weight:800;line-height:.82;letter-spacing:-0.035em;color:#fff}
+#txt .yr{font-weight:800;line-height:.86;letter-spacing:-0.03em;color:#fff;white-space:nowrap}
+#txt .yr b{color:var(--blue);font-weight:800;margin-right:.18em}
+#fw{inset:0;pointer-events:none}
 #txt h1{font-weight:800;color:#fff;white-space:nowrap}
 #txt h1 em{font-style:normal;color:var(--blue)}
 #txt .rule{position:relative}
@@ -38,6 +40,7 @@ html,body{overflow:hidden;background:var(--navy)}
   <div id="marks"></div>
   <svg id="hex2" style="inset:0"></svg>
   <svg id="hex"></svg>
+  <canvas id="fw"></canvas>
   <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img src="assets/logo_word_white.png" id="word" alt=""></div>
   <div id="txt"></div>
   <div id="tab">www.BestAccount.cz</div>
@@ -89,23 +92,48 @@ function render(o){
   h2.style.opacity=.85;
   { const ex=W-o.lionW*u+o.lionShift*u+o.lionW*u*0.64, ly2=o.lionTop*u, lh2=o.lionW*u*1080/604, ey=ly2+lh2*0.45; h2.style.webkitMaskImage=`radial-gradient(${o.lionW*u*0.36}px ${lh2*0.46}px at ${ex}px ${ey}px, transparent 0%, transparent 50%, rgba(0,0,0,.4) 78%, #000 105%)`; }
   // logo
-  const k=1.55*u, L=document.getElementById('logo');
-  Object.assign(L.style,{left:(M-15*k)+'px',top:150*u+'px',width:388*k+'px',height:116*k+'px'});
+  const k=1.85*u, L=document.getElementById('logo');
+  Object.assign(L.style,{left:(M-15*k)+'px',top:120*u+'px',width:388*k+'px',height:116*k+'px'});
   Object.assign(document.getElementById('icon').style,{left:10*k+'px',top:8*k+'px',width:101*k+'px',height:100*k+'px'});
   Object.assign(document.getElementById('word').style,{left:0,top:0,width:388*k+'px',height:116*k+'px'});
   // text – výrazná hierarchie
   const t=document.getElementById('txt');
   t.innerHTML=`
-   <div class="eyebrow" style="font-size:${78*u}px;letter-spacing:${0.42*78*u}px;gap:${28*u}px"><span>PF</span><i style="width:${150*u}px;height:${5*u}px;border-radius:${3*u}px"></i></div>
-   <div class="yr" style="font-size:${560*u}px;margin:${14*u}px 0 0 ${-24*u}px">2027</div>
-   <h1 style="font-size:${128*u}px;line-height:${132*u}px;margin-top:${64*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
-   <p style="font-size:${60*u}px;line-height:${80*u}px;margin-top:${64*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${78*u}px;line-height:${90*u}px;margin-top:${44*u}px">${fmt(o.sign)}</p>`;
+   <div class="yr" style="font-size:${o.yrSize*u}px;margin-left:${-14*u}px"><b>PF</b>2027</div>
+   <h1 style="font-size:${158*u}px;line-height:${164*u}px;margin-top:${70*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
+   <p style="font-size:${86*u}px;line-height:${104*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${104*u}px;line-height:${116*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
   Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
-  Object.assign(tb.style,{width:o.tabW*u+'px',height:150*u+'px',fontSize:62*u+'px',borderTopLeftRadius:52*u+'px'});
-  const st=document.createElement('style'); st.textContent=`#tab::before{top:${-20*u}px;left:${-20*u}px;border-width:${5*u}px;border-top-left-radius:${70*u}px}`; document.head.appendChild(st);
+  Object.assign(tb.style,{width:o.tabW*u+'px',height:190*u+'px',fontSize:84*u+'px',borderTopLeftRadius:64*u+'px'});
+  const st=document.createElement('style'); st.textContent=`#tab::before{top:${-20*u}px;left:${-20*u}px;border-width:${6*u}px;border-top-left-radius:${86*u}px}`; document.head.appendChild(st);
+  // silvestr: ohňostroj + jiskry
+  const cv=document.getElementById('fw'); cv.width=W; cv.height=H; const x=cv.getContext('2d');
+  let seed=21; const r=()=>((seed=(seed*16807)%2147483647)/2147483647);
+  x.globalCompositeOperation='lighter';
+  for(const b of (o.bursts||[])){
+    const bx=b[0]*u, by=b[1]*u, R=b[2]*u, cols=b[3];
+    if(!R) continue;
+    const g=x.createRadialGradient(bx,by,0,bx,by,R*0.9); g.addColorStop(0,'rgba(120,190,255,.22)'); g.addColorStop(1,'rgba(120,190,255,0)');
+    x.fillStyle=g; x.beginPath(); x.arc(bx,by,R*0.9,0,7); x.fill();
+    const N=b[4]||64;
+    for(let i=0;i<N;i++){
+      const a=i/N*Math.PI*2+r()*0.08, L=R*(0.72+r()*0.28), c=cols[i%cols.length], r0=R*0.08;
+      const lg=x.createLinearGradient(bx+Math.cos(a)*r0,by+Math.sin(a)*r0,bx+Math.cos(a)*L,by+Math.sin(a)*L);
+      lg.addColorStop(0,`rgba(${c},0)`); lg.addColorStop(.75,`rgba(${c},.55)`); lg.addColorStop(1,`rgba(${c},.95)`);
+      x.strokeStyle=lg; x.lineWidth=(2.2+r()*1.6)*u; x.lineCap='round';
+      x.beginPath(); x.moveTo(bx+Math.cos(a)*r0,by+Math.sin(a)*r0); x.lineTo(bx+Math.cos(a)*L,by+Math.sin(a)*L); x.stroke();
+      x.shadowColor=`rgba(${c},1)`; x.shadowBlur=14*u; x.fillStyle=`rgba(${c},1)`;
+      x.beginPath(); x.arc(bx+Math.cos(a)*L,by+Math.sin(a)*L,(3.2+r()*2.4)*u,0,7); x.fill();
+      for(let k2=1;k2<=3;k2++){ const d=L+k2*R*0.06, dy=k2*k2*R*0.012; x.globalAlpha=0.6/k2;
+        x.beginPath(); x.arc(bx+Math.cos(a)*d,by+Math.sin(a)*d+dy,2.2*u,0,7); x.fill(); }
+      x.globalAlpha=1; x.shadowBlur=0;
+    }
+  }
+  for(const sp of (o.sparkles||[])){ const sx=sp[0]*u, sy=sp[1]*u, sz=sp[2]*u;
+    x.shadowColor='rgba(170,215,255,1)'; x.shadowBlur=18*u; x.fillStyle='rgba(235,245,255,.95)';
+    x.beginPath(); x.moveTo(sx,sy-sz); x.quadraticCurveTo(sx,sy,sx+sz,sy); x.quadraticCurveTo(sx,sy,sx,sy+sz); x.quadraticCurveTo(sx,sy,sx-sz,sy); x.quadraticCurveTo(sx,sy,sx,sy-sz); x.fill(); x.shadowBlur=0; }
 }
 window.render=render;
 </script>

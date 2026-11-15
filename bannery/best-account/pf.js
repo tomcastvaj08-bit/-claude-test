@@ -3,12 +3,17 @@ const { chromium } = require('playwright');
 const path = require('path');
 const TEXT = {
   headline: 'Děkujeme za důvěru\nv roce *2026.*',
-  body: 'Do nového roku jdeme\ns plným nasazením.',
+  body: 'Do nového roku jdeme s plným nasazením.',
   sign: 'Tým Best Account',
 };
+const WH="255,255,255", BL="95,185,255", GO="255,206,110";
 const SIZES = [
-  { w: 3400, h: 1800, top: 380, lionW: 1250, lionTop: -60, lionShift: 0, markX: 2250, markSize: 1500, markDy: 60, markRot: -14, tabW: 860 },
-  { w: 3000, h: 1350, top: 375, lionW: 1350, lionTop: -150, lionShift: 0, markX: 2380, markSize: 1550, markDy: 60, markRot: -14, tabW: 860 },
+  { w: 3400, h: 1800, top: 400, yrSize: 470, lionW: 1250, lionTop: -60, lionShift: 0, markX: 2250, markSize: 1500, markDy: 60, markRot: -14, tabW: 1080,
+    bursts: [[2150, 330, 300, [WH, BL, GO], 72], [2750, 170, 190, [BL, WH], 56], [3230, 330, 150, [GO, WH], 48]],
+    sparkles: [[1980, 760, 26], [2420, 520, 18], [1860, 230, 16], [2560, 360, 14], [3080, 120, 20], [3330, 520, 14], [2050, 1150, 14]] },
+  { w: 3000, h: 1350, top: 400, yrSize: 470, lionW: 1350, lionTop: -150, lionShift: 0, markX: 2380, markSize: 1550, markDy: 60, markRot: -14, tabW: 1080,
+    bursts: [[2350, 330, 300, [WH, BL, GO], 72], [3000, 190, 200, [BL, WH], 56], [3700, 300, 160, [GO, WH], 48]],
+    sparkles: [[2150, 800, 26], [2700, 560, 18], [2050, 220, 16], [2850, 380, 14], [3450, 120, 20], [3880, 560, 14], [2300, 1250, 14]] },
 ];
 const VARIANTS = [{ name: 'AB', markMode: 'fill', hexPhoto: true }];
 (async () => {
