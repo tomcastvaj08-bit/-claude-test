@@ -387,8 +387,8 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   const mt=m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0,px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0,px*0.45);
   const half=Math.max(measureT(m,s,px,tk)/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+px*0.08;
   const sb=S.shadowSize>0?px*S.shadowSize/100*1.15:0, sx=px*S.shadowDist/100*0.12, sy=px*S.shadowDist/100*0.9;
-  const ex=(S.extrude>0)?px*0.16*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
-  const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy))+ex*1.05, gb*1.6, ex*1.2)+px*0.12);
+  const ex=(S.extrude>0)?px*0.12*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
+  const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy))+ex*0.6, gb*1.6, ex*1.2)+px*0.12);
   const W=Math.ceil(half*2+pad*2), H=Math.ceil(asc+desc+pad*2), cx=W/2, cy=pad+asc;
   cvs.width=W; cvs.height=H;
   setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center'; m.translate(cx,cy);
@@ -408,22 +408,14 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
       setFont(tc,L.fam,L.wt,L.it,px,tk); tc.textBaseline='middle'; tc.textAlign='center'; tc.translate(cx,cy);
       let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[3]); tf.addColorStop(1,p[4]); } }
       tc.fillStyle=tf;
-      // jako v Photoshopu: kopie písma posunuté po 1 px šikmo vpravo dolů → plná hloubka bez mezer
-      const dx=0.75, dy=1, n=Math.min(48,Math.max(4,Math.round(ex)));
-      for (let i=n;i>=1;i--){ const q=i/n; fillT(tc,s,ex*q*dx,ex*q*dy,px,tk); }
-      // hloubka jednolitě tmavší (stejná barva ve stínu) – čelo písmen zůstane čisté a čitelné
-      tc.save(); tc.setTransform(1,0,0,1,0,0); tc.globalCompositeOperation='source-atop'; tc.fillStyle='rgba(0,0,0,0.42)'; tc.fillRect(0,0,W,H); tc.restore();
+      const n=Math.min(28,Math.max(3,Math.round(ex/1.1)));
+      for (let i=n;i>=1;i--){ const q=i/n; fillT(tc,s,ex*q*0.55,ex*q,px,tk); }
+      // hloubka o kousek tmavší (stejná barva, jen ve stínu) – čelo písmen tak zůstane čitelné
+      tc.save(); tc.setTransform(1,0,0,1,0,0); tc.globalCompositeOperation='source-atop'; tc.fillStyle='rgba(0,0,0,0.15)'; tc.fillRect(0,0,W,H); tc.restore();
       fillT(tc,s,0,0,px,tk);   // čelo písmen v čisté barvě
-      m.setTransform(1,0,0,1,0,0);
-      // stín je až pod POSLEDNÍ (nejzadnější) vrstvou: vrhá ho jen zadní kopie, hloubka ho pak přikryje
-      if (sb>0){
-        const bk=document.createElement('canvas'); bk.width=W; bk.height=H; const bc=bk.getContext('2d');
-        setFont(bc,L.fam,L.wt,L.it,px,tk); bc.textBaseline='middle'; bc.textAlign='center'; bc.fillStyle='#000'; fillT(bc,s,cx+ex*dx,cy+ex*dy,px,tk);
-        // zadní kopie se stínem; hloubka ji přesně překryje, takže zbude jen stín pod ní
-        m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx; m.shadowOffsetY=sy;
-        m.drawImage(bk,0,0); m.shadowColor='transparent';
-      }
-      m.drawImage(t,0,0); m.translate(cx,cy);
+      // stín vrhá až zadní část hloubky (ne přední písmo)
+      if (sb>0){ m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx+ex*0.3; m.shadowOffsetY=sy+ex*0.5; }
+      m.setTransform(1,0,0,1,0,0); m.drawImage(t,0,0); m.translate(cx,cy);
       m.shadowColor='transparent';
     } else {
     if (sb>0){ m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx; m.shadowOffsetY=sy; }
@@ -489,7 +481,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 
   if (c!==ctx && E._band){
     const rr=Math.abs(Math.sin(wr+L.rot+er+S.rot*Math.PI/180)), k2=Math.max(sc,sc*sy);
-    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.2*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*1.8:0);
+    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.15*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*1.8:0);
     const yy=L.y+dy+wy; if (yy-ext<E._band[0]) E._band[0]=yy-ext; if (yy+ext>E._band[1]) E._band[1]=yy+ext;
   }
   c.save();
