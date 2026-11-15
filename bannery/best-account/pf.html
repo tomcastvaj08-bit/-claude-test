@@ -26,8 +26,10 @@ html,body{overflow:hidden;background:var(--navy)}
 #txt .rule{position:relative}
 #txt .rule i,#txt .rule b{position:absolute;background:var(--blue)}
 #txt .rule b{border-radius:50%}
-#txt p{font-weight:500;color:#E9F0FB;white-space:nowrap}
-#txt p.sig{font-weight:700;color:var(--blue)}
+#txt,#txt2{z-index:3}
+#vig{inset:0;z-index:2;pointer-events:none}
+#txt2 p{font-weight:500;color:#F1F6FF;white-space:nowrap;text-shadow:0 0 30px rgba(4,12,36,.55)}
+#txt2 p.sig{font-weight:700;color:var(--blue)}
 /* web v modrém políčku (stejně jako číslo na banneru) */
 #tab{bottom:0;right:0;isolation:isolate;z-index:3;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-weight:600;white-space:nowrap}
 #tab::before{content:"";position:absolute;z-index:-1;bottom:0;right:-4px;border-style:solid;border-color:rgba(0,136,218,.55);border-bottom:0;border-right:0}
@@ -42,7 +44,9 @@ html,body{overflow:hidden;background:var(--navy)}
   <svg id="hex"></svg>
   <canvas id="fw"></canvas>
   <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img src="assets/logo_word_white.png" id="word" alt=""></div>
+  <div id="vig"></div>
   <div id="txt"></div>
+  <div id="txt2"></div>
   <div id="tab">www.BestAccount.cz</div>
 </div>
 <script>
@@ -107,9 +111,17 @@ function render(o){
   t.innerHTML=`
    <div class="yr" style="font-size:${o.yrSize*u}px;margin-left:${-14*u}px"><b>PF</b>2027</div>
    <h1 style="font-size:${150*u}px;line-height:${156*u}px;margin-top:${64*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
-   <p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.12*u}px;margin-top:${50*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${146*u}px;line-height:${156*u}px;margin-top:${34*u}px">${fmt(o.sign)}</p>`;
+`;
   Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
+  const t2=document.getElementById('txt2');
+  t2.innerHTML=`<p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.12*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${146*u}px;line-height:${156*u}px;margin-top:${26*u}px">${fmt(o.sign)}</p>`;
+  Object.assign(t2.style,{left:M+'px',bottom:o.lowBottom*u+'px'});
+  // vinětace: tmavý přechod odspodu + ztmavení kolem tlačítka s webem (text jde čitelně i přes lva)
+  document.getElementById('vig').style.background=[
+    `radial-gradient(${1500*u}px ${620*u}px at ${W-420*u}px ${H+60*u}px, rgba(5,14,40,.92) 0%, rgba(5,14,40,.6) 45%, rgba(5,14,40,0) 100%)`,
+    `linear-gradient(0deg, rgba(5,14,40,.95) 0%, rgba(5,14,40,.78) ${H*0.16}px, rgba(5,14,40,.35) ${H*0.30}px, rgba(5,14,40,0) ${H*0.44}px)`
+  ].join(',');
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
   Object.assign(tb.style,{width:o.tabW*u+'px',height:240*u+'px',fontSize:112*u+'px',borderTopLeftRadius:78*u+'px'});
