@@ -449,7 +449,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 
   if (c!==ctx && E._band){
     const rr=Math.abs(Math.sin(wr+L.rot+er+S.rot*Math.PI/180)), k2=Math.max(sc,sc*sy);
-    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*0.45:0);
+    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*0.8:0);
     const yy=L.y+dy+wy; if (yy-ext<E._band[0]) E._band[0]=yy-ext; if (yy+ext>E._band[1]) E._band[1]=yy+ext;
   }
   c.save();
@@ -489,38 +489,39 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
   c.fillStyle=fill; fillT(c,s,0,0,L.px,tk);
   }
-  // SHINE: úzký měkký šikmý proužek světla plynule přejede zleva doprava – jen UVNITŘ písmen hlavního slova
+  // SHINE: přes hlavní slovo plynule přejede měkké světlo – písmo se v tom místě rozzáří (přičtením světla, ne bílou barvou)
+  // a kolem písmen vznikne jemná záře. Záře se dělá rozmazáním zmenšením (žádný stín) na plátně s velkou rezervou → nic se neořízne.
   const shineOk = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0);
   if (S.fxShine && shineOk && L.em && !S.negativ){
-    const dur = 1.4 - S.shineSpeed/100*0.8, st = 0.2, q = (since-st)/dur;
+    const dur = 1.5 - S.shineSpeed/100*0.8, st = 0.2, q = (since-st)/dur;
     if (q>0 && q<1){
-      const ph = q*q*(3-2*q);                                    // plynulý rozjezd i dojezd
-      const m = shineCtx(), pad=L.px*0.25;
+      const ph = q*q*(3-2*q), env=Math.sin(Math.PI*q);
+      const m = shineCtx();
       setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textBaseline='middle';
-      // rozměry písmen od středové linky (i s háčky a čárkami nahoře) – nic se neořízne
       const mt = m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0, L.px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0, L.px*0.45);
       const tw = measureT(m,s,L.px,tk), half=Math.max(tw/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+L.px*0.1;
-      const Wc=Math.ceil(half*2+pad*2), Hc=Math.ceil(asc+desc+pad*2);
-      if (shine.width<Wc) shine.width=Wc; if (shine.height<Hc) shine.height=Hc;
-      m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1; m.clearRect(0,0,shine.width,shine.height);
+      const pad=Math.ceil(L.px*0.75), Wc=Math.ceil(half*2+pad*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
+      if (shine.width!==Wc||shine.height!==Hc){ shine.width=Wc; shine.height=Hc; } else { m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,Wc,Hc); }
+      m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1;
       // 1) tvar písmen
       setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textAlign='center'; m.textBaseline='middle'; m.fillStyle='#fff';
-      const cy=pad+asc;
       fillT(m, s, Wc/2, cy, L.px, tk);
-      // 2) proužek jen do písmen (source-in), šikmo ~20°
+      // 2) měkké šikmé světlo jen do písmen
       m.globalCompositeOperation='source-in';
-      const bw=Math.max(L.px*0.55, tw*0.22), sk=Hc*0.36, x=-bw-sk + ph*(Wc+2*bw+2*sk);
+      const bw=Math.max(L.px*1.1, tw*0.38), sk=Hc*0.32, x=-bw-sk + ph*(Wc+2*bw+2*sk);
       const g=m.createLinearGradient(x-bw/2,0,x+bw/2,0);
-      g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(0.35,'rgba(255,255,255,.55)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.65,'rgba(255,255,255,.55)'); g.addColorStop(1,'rgba(255,255,255,0)');
+      g.addColorStop(0,'rgba(255,248,225,0)'); g.addColorStop(0.3,'rgba(255,248,225,.35)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.7,'rgba(255,248,225,.35)'); g.addColorStop(1,'rgba(255,248,225,0)');
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over';
-      // 3) přes slovo (v jeho souřadnicích, se stejným natočením / zmenšením)
-      const env=Math.sin(Math.PI*Math.min(1,q*1.1));
-      c.save(); c.globalCompositeOperation='source-over';
-      // jemná záře kolem proužku (měkký stín v barvě světla – nic se neořízne, kreslí se do celého plátna)
-      c.shadowColor='rgba(255,255,255,0.85)'; c.shadowBlur=L.px*0.32; c.shadowOffsetX=0; c.shadowOffsetY=0;
-      c.globalAlpha=a*0.55*env; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);
-      c.shadowColor='transparent'; c.globalAlpha=a*0.9*env; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);
+      // 3) záře kolem: rozmazání zmenšením (dvě úrovně, ať je záře hladká)
+      const k1=Math.max(2,Math.round(L.px*0.05)), k2=Math.max(4,Math.round(L.px*0.12));
+      const b1=shineBlur(1,Math.ceil(Wc/k1),Math.ceil(Hc/k1)), b2=shineBlur(2,Math.ceil(Wc/k2),Math.ceil(Hc/k2));
+      b1.c.drawImage(shine,0,0,Wc,Hc,0,0,b1.w,b1.h); b2.c.drawImage(b1.cv,0,0,b1.w,b1.h,0,0,b2.w,b2.h);
+      c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
+      const A=a*((S.opacity??100)/100)*env;
+      c.globalAlpha=A*0.55; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);   // široká jemná záře
+      c.globalAlpha=A*0.45; c.drawImage(b1.cv,0,0,b1.w,b1.h,-Wc/2,-cy,Wc,Hc);   // bližší záře
+      c.globalAlpha=A*0.75; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
   }
@@ -530,6 +531,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 // ---------- 3D perspektiva (cedule otočená v prostoru) ----------
 let vframe=null, vfc=null, vfOk=false, vfFor=null;
 let gblur=null, gbc=null, gblur2=null, gbc2=null;
+const SB={}; function shineBlur(i,w,h){ let o=SB[i]; if(!o){ const cv2=document.createElement('canvas'); o=SB[i]={cv:cv2,c:cv2.getContext('2d')}; } if (o.cv.width!==w||o.cv.height!==h){ o.cv.width=w; o.cv.height=h; } else o.c.clearRect(0,0,w,h); o.w=w; o.h=h; o.c.imageSmoothingEnabled=true; o.c.imageSmoothingQuality='high'; return o; }
 let shine=null, shineC=null; function shineCtx(){ if(!shine){ shine=document.createElement('canvas'); shine.width=64; shine.height=64; shineC=shine.getContext('2d'); } return shineC; }
 let layer=null, lctx=null, layer2=null, l2ctx=null, gmask=null, gmctx=null, pm=null, pmc=null, t3=null, t3c=null;
 E.lastLines=null; E.lastBox=null;

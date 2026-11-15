@@ -356,6 +356,9 @@ function bindControls(){
 }
 
 // ================= PANELY =================
+// sáhnu na timeline / video / panel → přehrávání se zastaví (ať se dá v klidu posouvat a upravovat)
+['tl','stage','panel'].forEach(id=>{ const el=$(id); const stop=e=>{ if (e.target && e.target.closest && e.target.closest('.fsbar')) return; if (!vid.paused) vid.pause(); };
+  el.addEventListener('touchstart',stop,{passive:true}); el.addEventListener('pointerdown',stop,{passive:true}); el.addEventListener('wheel',stop,{passive:true}); });
 let edState='normal';
 function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); ed.classList.toggle('ed-exp',st==='exp'); ed.classList.toggle('ed-col',st==='col'); }
 (function(){
