@@ -80,7 +80,8 @@ E.G = {
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
   exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28
-};
+};E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
+
 // klíče, které jsou vždy společné pro celé video
 E.GLOBAL_ONLY = new Set(['wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
 
@@ -117,6 +118,7 @@ E.FONTS = [
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
 const common = {rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
+E.COMMON = common;
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
   base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-3,trackEm:-3.5,cond:100,gap:60,rowDy3:8,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:34,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:30,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
@@ -229,16 +231,16 @@ E.buildPages = () => {
     p.e = nxt ? Math.min(end,nxt.s) : W[p.b].e+0.5;
     // konec titulku utnout před začátkem další zóny bez titulků (grafika / logo)
     const z=E.zones.filter(z=>z.s>=W[p.b].e-0.05).sort((a,b)=>a.s-b.s)[0]; if (z) p.e=Math.min(p.e, z.s);
-    if (m && m.eo!=null) p.e=m.eo;
+    if (m && m.eo!=null) p.e = nxt ? Math.min(m.eo, nxt.s) : m.eo;
     p.kin=[0,1,2,3].map(j=>({dx:hash(k*4+j)*2-1, dy:hash(k*4+j+100)*2-1, rot:hash(k*4+j+200)*2-1}));
   });
   E.pages=pages;
 };
 E.layerOf = p => { const m=E.meta[E.words[p.a]?.id]; return (m && m.layer)|0; };
 // hlavní titulek v čase t (přednost má hlavní vrstva 0)
-E.pageAt = t => { let any=-1; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e){ if (!p.layer) return k; if (any<0) any=k; } } return any; };
+E.pageAt = t => { const ks=E.pagesAt(t); if (!ks.length) return -1; const m=ks.find(k=>!(E.pages[k].layer|0)); return m!=null?m:ks[0]; };
 // všechny titulky v čase t, seřazené pro kreslení (spodní vrstva první)
-E.pagesAt = t => { const r=[]; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e) r.push(k); } return r.sort((a,b)=>(E.pages[b].layer|0)-(E.pages[a].layer|0)); };
+E.pagesAt = t => { const by={}; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e){ const L=p.layer|0; if (by[L]==null || p.s>=E.pages[by[L]].s) by[L]=k; } } return Object.values(by).sort((a,b)=>(E.pages[b].layer|0)-(E.pages[a].layer|0)); };
 const range=(a,b)=>{ const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; };
 // rozdělení titulku na řádky + který řádek je hlavní
 E.groupsOf = (p,S) => {

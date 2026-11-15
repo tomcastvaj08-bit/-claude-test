@@ -94,7 +94,8 @@ function snapshot(){
 }
 function restore(json){
   const s=JSON.parse(json);
-  E.G=Object.assign({},E.G,s.G); E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
+  E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
