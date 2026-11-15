@@ -96,6 +96,10 @@ function restore(json){
   const s=JSON.parse(json);
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
   E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  // zdvojená slova (stejný text i čas – vznikla dřív omylem) → nechat jen jedno, úpravy přenést
+  { const seen=new Map(), keep=[]; for (const w of E.words){ const k=w.t+'|'+w.s.toFixed(3)+'|'+w.e.toFixed(3); const o=seen.get(k);
+      if (o){ const nOwn=m=>m&&m.own?Object.keys(m.own).filter(x=>!['posX','posY','_manualPos'].includes(x)).length:-1; if (E.meta[w.id] && nOwn(E.meta[w.id])>=nOwn(E.meta[o.id])) E.meta[o.id]=E.meta[w.id]; if (w.em) o.em=true; delete E.meta[w.id]; continue; } seen.set(k,w); keep.push(w); }
+    if (keep.length!==E.words.length){ console.warn('Odstraněna zdvojená slova:',E.words.length-keep.length); E.words=keep; } }
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));

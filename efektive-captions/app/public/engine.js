@@ -240,7 +240,12 @@ E.layerOf = p => { const m=E.meta[E.words[p.a]?.id]; return (m && m.layer)|0; };
 // hlavní titulek v čase t (přednost má hlavní vrstva 0)
 E.pageAt = t => { const ks=E.pagesAt(t); if (!ks.length) return -1; const m=ks.find(k=>!(E.pages[k].layer|0)); return m!=null?m:ks[0]; };
 // všechny titulky v čase t, seřazené pro kreslení (spodní vrstva první)
-E.pagesAt = t => { const by={}; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e){ const L=p.layer|0; if (by[L]==null || p.s>=E.pages[by[L]].s) by[L]=k; } } return Object.values(by).sort((a,b)=>(E.pages[b].layer|0)-(E.pages[a].layer|0)); };
+// v každé vrstvě jen jeden titulek naráz; když se dva kryjí, vyhraje ten upravený (má vlastní styl), jinak ten pozdější
+const edited = p => { const m=E.meta[E.keyOf(p)]; return !!(m && m.own && Object.keys(m.own).some(x=>!['posX','posY','_manualPos'].includes(x))); };
+E.pagesAt = t => { const by={}; for (let k=0;k<E.pages.length;k++){ const p=E.pages[k]; if (t>=p.s && t<p.e){ const L=p.layer|0, c=by[L];
+    if (c==null) { by[L]=k; continue; } const q=E.pages[c], ep=edited(p), eq=edited(q);
+    if (ep!==eq ? ep : p.s>=q.s) by[L]=k; } }
+  return Object.values(by).sort((a,b)=>(E.pages[b].layer|0)-(E.pages[a].layer|0)); };
 const range=(a,b)=>{ const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; };
 // rozdělení titulku na řádky + který řádek je hlavní
 E.groupsOf = (p,S) => {
