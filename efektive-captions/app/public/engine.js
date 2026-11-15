@@ -467,20 +467,34 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // druhý, ostrý „kontaktní“ stín těsně pod písmem → písmo je čisté a plastické i na světlém pozadí
   if (S.shadowSize>0 && !(L.em&&S.negativ)){ c.shadowColor=hexA(S.cShadow,Math.min(0.6,S.shadowA/100*1.1)); c.shadowBlur=L.px*(S.shadowSize>40?S.shadowSize/250:0.035); c.shadowOffsetX=0; c.shadowOffsetY=L.px*0.02; fillT(c,s,0,0,L.px,tk); }
 
-  // SHINE: měkký oblak světla přejede zleva doprava přes hlavní slovo (jen u každého N-tého titulku)
+  // SHINE: úzký měkký šikmý proužek světla plynule přejede zleva doprava – jen UVNITŘ písmen hlavního slova
   const shineOk = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0);
   if (S.fxShine && shineOk && L.em && !S.negativ){
-    const dur = 1.3 - S.shineSpeed/100*0.9, st = 0.15, ph = (since-st)/dur;
-    if (ph>0 && ph<1){
-      const env = Math.sin(ph*Math.PI);
-      const cx = -ww/2 - ww*0.4 + ph*(ww*1.8);
-      const bw = Math.max(ww*0.9, L.px*1.6);
+    const dur = 1.4 - S.shineSpeed/100*0.8, st = 0.2, q = (since-st)/dur;
+    if (q>0 && q<1){
+      const ph = q*q*(3-2*q);                                    // plynulý rozjezd i dojezd
+      const m = shineCtx(), pad=L.px*0.25;
+      setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textBaseline='middle';
+      // rozměry písmen od středové linky (i s háčky a čárkami nahoře) – nic se neořízne
+      const mt = m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0, L.px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0, L.px*0.45);
+      const tw = measureT(m,s,L.px,tk), Wc=Math.ceil(tw+pad*2), Hc=Math.ceil(asc+desc+pad*2);
+      if (shine.width<Wc) shine.width=Wc; if (shine.height<Hc) shine.height=Hc;
+      m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1; m.clearRect(0,0,shine.width,shine.height);
+      // 1) tvar písmen
+      setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textAlign='center'; m.textBaseline='middle'; m.fillStyle='#fff';
+      const cy=pad+asc;
+      fillT(m, s, Wc/2, cy, L.px, tk);
+      // 2) proužek jen do písmen (source-in), šikmo ~20°
+      m.globalCompositeOperation='source-in';
+      const bw=Math.max(L.px*0.55, tw*0.22), sk=Hc*0.36, x=-bw-sk + ph*(Wc+2*bw+2*sk);
+      const g=m.createLinearGradient(x-bw/2,0,x+bw/2,0);
+      g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(0.35,'rgba(255,255,255,.55)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.65,'rgba(255,255,255,.55)'); g.addColorStop(1,'rgba(255,255,255,0)');
+      m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
+      m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over';
+      // 3) přes slovo (v jeho souřadnicích, se stejným natočením / zmenšením)
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='source-over';
-      const g=c.createLinearGradient(cx-bw/2,0,cx+bw/2,0);
-      g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)');
-      c.globalAlpha=a*env*0.7; c.fillStyle=g; c.shadowColor='rgba(255,255,255,0.9)'; c.shadowBlur=L.px*1.1; fillT(c,s,0,0,L.px,tk);
-      c.globalAlpha=a*env*0.9; c.shadowBlur=L.px*0.45; fillT(c,s,0,0,L.px,tk);
-      c.shadowColor='transparent'; c.globalAlpha=a*env; c.fillStyle=g; fillT(c,s,0,0,L.px,tk);
+      c.globalAlpha=a*0.9*Math.sin(Math.PI*Math.min(1,q*1.15));
+      c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);
       c.restore();
     }
   }
@@ -488,6 +502,8 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 }
 
 // ---------- 3D perspektiva (cedule otočená v prostoru) ----------
+let gblur=null, gbc=null, gblur2=null, gbc2=null;
+let shine=null, shineC=null; function shineCtx(){ if(!shine){ shine=document.createElement('canvas'); shine.width=64; shine.height=64; shineC=shine.getContext('2d'); } return shineC; }
 let layer=null, lctx=null, layer2=null, l2ctx=null, gmask=null, gmctx=null, pm=null, pmc=null, t3=null, t3c=null;
 E.lastLines=null; E.lastBox=null;
 function glowMaskCtx(){ if(!gmask||gmask.width!==cv.width||gmask.height!==cv.height){ gmask=document.createElement('canvas'); gmask.width=cv.width; gmask.height=cv.height; gmctx=gmask.getContext('2d'); } return gmctx; }
@@ -608,9 +624,18 @@ function project3D(src, bx, by, S, target){
   if (E._glowUsed){
     pmc.setTransform(1,0,0,1,0,0); pmc.clearRect(0,0,cv.width,cv.height); projectLayer(gmask,pmc,bx,by,S);
     // rozostřená záře přes stín (funguje i v Safari bez ctx.filter): obrázek mimo plátno, jeho stín na místě
-    const m=target.getTransform(), OFF=cv.width*3, blur=Math.round(cv.width*0.012*(0.4+S.glow/100));
-    target.save(); target.globalAlpha=0.35+S.glow/100*0.45; target.shadowColor=hexA(E._glowColor||'#ffffff',1); target.shadowBlur=blur*2; target.shadowOffsetX=OFF;
-    target.drawImage(pm,-OFF/(m.a||1),0); target.drawImage(pm,-OFF/(m.a||1),0); target.restore();
+    // rozmazání zmenšením a zvětšením (bez triku se stínem – Safari ho na iPhonu kreslil posunutě jako ostrou kopii)
+    const blur=Math.max(3,cv.width*0.012*(0.4+S.glow/100)*2), k=Math.max(3,Math.round(blur/2));
+    if (!gblur){ gblur=document.createElement('canvas'); gbc=gblur.getContext('2d'); gblur2=document.createElement('canvas'); gbc2=gblur2.getContext('2d'); }
+    const w1=Math.max(1,Math.ceil(cv.width/k)), h1=Math.max(1,Math.ceil(cv.height/k)), w2=w1*2, h2=h1*2;
+    if (gblur.width!==w1||gblur.height!==h1){ gblur.width=w1; gblur.height=h1; } else gbc.clearRect(0,0,w1,h1);
+    if (gblur2.width!==w2||gblur2.height!==h2){ gblur2.width=w2; gblur2.height=h2; } else gbc2.clearRect(0,0,w2,h2);
+    gbc.imageSmoothingEnabled=true; gbc.imageSmoothingQuality='high'; gbc.drawImage(pm,0,0,w1,h1);
+    gbc2.imageSmoothingEnabled=true; gbc2.imageSmoothingQuality='high'; gbc2.drawImage(gblur,0,0,w2,h2);
+    target.save(); target.imageSmoothingEnabled=true; target.imageSmoothingQuality='high';
+    target.globalAlpha=Math.min(1,0.45+S.glow/100*0.5); target.drawImage(gblur2,0,0,cv.width,cv.height);
+    target.globalAlpha*=0.6; target.drawImage(gblur,0,0,cv.width,cv.height);
+    target.restore();
   }
   projectLayer(src,target,bx,by,S);
   target.restore();
