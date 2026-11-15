@@ -783,7 +783,8 @@ function addZone(s,e){ E.zones.push({s,e,label:'Bez titulků'}); changed(true); 
 $('zoneAdd').onclick=()=>addZone(vid.currentTime,Math.min(vid.duration,vid.currentTime+2));
 
 // ================= ČASOVÁ OSA =================
-let pps=70, tlSync=false;
+let pps=70, tlSync=false, tlTouches=0;
+document.addEventListener('touchstart',e=>{ tlTouches=e.touches.length; },{passive:true,capture:true}); document.addEventListener('touchend',e=>{ tlTouches=e.touches.length; },{passive:true,capture:true});
 const tlPad=()=>$('tlScroll').clientWidth/2;
 function renderTimeline(){
   if (!vid.duration) return;
@@ -826,10 +827,22 @@ async function thumbs(){
 let tlSyncT=0;
 function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; tlSyncT=performance.now(); sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
 $('tlScroll').addEventListener('scroll',()=>{ if (tlSync||tlDrag) return; if (!vid.paused) return; if (performance.now()-tlSyncT<350) return; vid.currentTime=clamp($('tlScroll').scrollLeft/pps,0,vid.duration-0.01); const k=E.pageAt(vid.currentTime); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
-$('tlZoom').oninput=e=>{ pps=+e.target.value; $('trV').querySelectorAll('img').forEach(i=>i.style.width=pps+'px'); renderTimeline(); };
+function setZoom(v){ pps=clamp(Math.round(v),12,400); $('tlZoom').value=pps; $('trV').querySelectorAll('img').forEach(i=>i.style.width=pps+'px'); renderTimeline(); }
+$('tlZoom').oninput=e=>setZoom(+e.target.value);
+// přiblížení / oddálení timeline dvěma prsty (roztažení = přiblížit, stažení = oddálit); pozice v čase zůstane
+(function(){
+  const el=$('tl'); let pin=null;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+  el.addEventListener('touchstart',e=>{ if (e.touches.length===2){ pin={d:dist(e.touches),p:pps}; if (tlDrag){ tlDrag=null; renderTimeline(); } } },{passive:true});
+  el.addEventListener('touchmove',e=>{ if (!pin || e.touches.length!==2) return; e.preventDefault(); const f=dist(e.touches)/pin.d; if (Math.abs(f-1)>0.02) setZoom(pin.p*f); },{passive:false});
+  el.addEventListener('touchend',e=>{ if (e.touches.length<2) pin=null; },{passive:true});
+  // počítač: Ctrl + kolečko / pinch na touchpadu
+  el.addEventListener('wheel',e=>{ if (!e.ctrlKey) return; e.preventDefault(); setZoom(pps*Math.exp(-e.deltaY*0.01)); },{passive:false});
+})();
 // tažení bloků (posun, zkrácení, prodloužení)
 let tlDrag=null;
 $('tlIn').addEventListener('pointerdown',e=>{
+  if (e.pointerType==='touch' && tlTouches>1) return;
   const zx=e.target.closest('[data-zx]'); if (zx){ E.zones.splice(+zx.dataset.zx,1); changed(true); return; }
   const blk=e.target.closest('.cb,.zb,.ob'); if (!blk) return;
   e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
