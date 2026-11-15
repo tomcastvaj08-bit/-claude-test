@@ -270,20 +270,34 @@ function playSfx(type){ ensureAC(); E.sfxInto(AC,AC.destination,AC.currentTime,t
 
 // --- smyčka ---
 let dragging=null, guides=false, inlineOpen=false;
-// Plynulý čas pro náhled: iPhone posouvá currentTime po skocích (podle snímků videa, někdy nepravidelně)
-// → animace titulků by poskakovala. Mezi skoky čas dopočítáme z hodin zařízení (60/120 Hz).
-const clk={t:0,now:0,ct:-1};
-function smoothTime(){
-  const ct=vid.currentTime, now=performance.now();
-  if (vid.paused || vid.seeking || vid.readyState<3){ clk.t=ct; clk.now=now; clk.ct=ct; return ct; }
-  let t=clk.t+(now-clk.now)/1000*(vid.playbackRate||1);
-  if (Math.abs(t-ct)>0.15){ t=ct; }                       // přeskok / zaseknutí → srovnat
-  else if (ct!==clk.ct){ t+= (ct-t)*0.08; }               // jemně dorovnávat k videu
-  clk.t=t; clk.now=now; clk.ct=ct;
-  return Math.max(0,Math.min(t, vid.duration||t));
+// Plynulý čas pro náhled: iPhone posouvá currentTime po skocích (podle snímků videa, nepravidelně).
+// Čas proto běží rovnoměrně podle hodin zařízení, NIKDY necouvá a k videu se dorovnává pomalu a neznatelně
+// (přesný čas snímku bere z requestVideoFrameCallback, kde to jde).
+const clk={run:false,base:0,at:0,last:0,ref:null};
+function clkReset(){ clk.base=vid.currentTime; clk.at=performance.now(); clk.last=clk.base; clk.ref=null; }
+function videoNow(now){ // nejlepší odhad skutečného času videa
+  if (clk.ref) return clk.ref.media+(now-clk.ref.at)/1000*(vid.playbackRate||1);
+  return vid.currentTime;
 }
-['seeked','play','playing','pause'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.t=vid.currentTime; clk.now=performance.now(); clk.ct=clk.t; }));
-function loop(){
+if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
+vid.addEventListener('playing',()=>{ clkReset(); clk.run=true; });
+['pause','seeked','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.run=false; clkReset(); }));
+function smoothTime(){
+  if (!clk.run || vid.paused || vid.seeking) return vid.currentTime;
+  const now=performance.now(), rate=vid.playbackRate||1;
+  let t=clk.base+(now-clk.at)/1000*rate;
+  const err=videoNow(now)-t;
+  if (Math.abs(err)>0.4){ clkReset(); return clk.last; }      // opravdový skok (dočítání) → srovnat
+  clk.base+=err*0.03;                                          // pomalé neznatelné dorovnání
+  t=clk.base+(now-clk.at)/1000*rate;
+  if (t<clk.last) t=clk.last;                                  // nikdy necouvat = žádné cukání
+  clk.last=t;
+  return Math.min(t, vid.duration||t);
+}
+let lastFrame=0;
+function loop(now){
+  if (now && now-lastFrame<14){ requestAnimationFrame(loop); return; }
+  lastFrame=now||performance.now();
   const t=smoothTime();
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused){
