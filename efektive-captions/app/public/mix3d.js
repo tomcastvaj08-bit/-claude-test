@@ -9,7 +9,7 @@ const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const hash=n=>{ const x=Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); };
 const eOut=q=>1-Math.pow(1-clamp(q),3), eExpo=q=>q>=1?1:1-Math.pow(2,-9*clamp(q));
 const FONTS={
-  sans:{fam:'"Inter Tight", Arial, sans-serif', wt:900, it:false},
+  sans:{fam:'"Inter Tight", Arial, sans-serif', wt:800, it:false},
   serif:{fam:'"Libre Baskerville", Georgia, serif', wt:700, it:true},
 };
 const STOP=new Set(('a i k o s u v z ve ze na do od po pro při za je jsou to ten ta že se si mě mi tě ti jak co by aby ale nebo když tak už jen and the a an of to in it is it\'s you i').split(' '));
@@ -33,7 +33,7 @@ function build(){
   const scenes=[]; let sc=null;
   lines.forEach((L,k)=>{
     const f=W[L.ids[0]], prevL=lines[k-1], pw=prevL?W[prevL.ids[prevL.ids.length-1]]:null;
-    const brk=!sc || sc.lines.length>=4 || (pw && (f.s-pw.e>0.7 || /[.!?…]$/.test(pw.raw||'')));
+    const brk=!sc || sc.lines.length>=5 || (pw && (f.s-pw.e>0.7 || /[.!?…]$/.test(pw.raw||'')));
     if (brk){ sc={lines:[]}; scenes.push(sc); }
     sc.lines.push(L); L.sc=sc;
   });
@@ -65,23 +65,43 @@ function build(){
 
 function txt(i){ const w=E.words[i]; return E.G.punct?(w.raw||w.t):w.t; }
 
-// obrázek slova (písmo s přechodem bílá → světle šedá / oranžová) – v mezipaměti
+// obrázek slova – v mezipaměti: písmo s přechodem (bílá → světle šedá), atmosférický stín,
+// u zvýraznění 3D hloubka ve stejné barvě, jemný odlesk a lehce zaoblené hrany
 const SPR=new Map();
+const LS={sans:-0.045, serif:-0.02, hi:-0.045};
 function sprite(word,kind,px){
   const G=E.G, key=word+'|'+kind+'|'+Math.round(px)+'|'+(G.mixA||'')+(G.mixB||'');
   let o=SPR.get(key); if (o) return o;
   const st=kind==='hi'?FONTS.sans:FONTS[kind], c=document.createElement('canvas'), x=c.getContext('2d');
-  const font=`${st.it?'italic ':''}${st.wt} ${px}px ${st.fam}`; x.font=font; try{ x.letterSpacing=(kind==='serif'?-0.01:-0.035)*px+'px'; }catch(e){}
-  const pad=Math.ceil(px*0.25), w=Math.ceil(x.measureText(word).width)+pad*2, h=Math.ceil(px*1.45)+pad*2;
-  c.width=w; c.height=h; x.font=font; try{ x.letterSpacing=(kind==='serif'?-0.01:-0.035)*px+'px'; }catch(e){}
-  x.textBaseline='middle'; x.textAlign='left';
-  const g=x.createLinearGradient(0,h/2-px*0.45,0,h/2+px*0.45);
-  if (kind==='hi'){ g.addColorStop(0,G.mixA||'#ffb12a'); g.addColorStop(1,G.mixB||'#ff7a00'); }
-  else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d4d7de'); }
-  x.fillStyle=g; x.fillText(word,pad,h/2);
-  o={c,w,h,pad,tw:w-pad*2}; SPR.set(key,o); if (SPR.size>160) SPR.delete(SPR.keys().next().value);
+  const font=`${st.it?'italic ':''}${st.wt} ${px}px ${st.fam}`, ls=LS[kind]*px+'px';
+  x.font=font; try{ x.letterSpacing=ls; }catch(e){}
+  const tw=Math.ceil(x.measureText(word).width), ex=kind==='hi'?px*0.09:0;
+  const pad=Math.ceil(px*0.55+ex), w=tw+pad*2, h=Math.ceil(px*1.3)+pad*2, cy=h/2-ex*0.3;
+  c.width=w; c.height=h;
+  const set=(cx)=>{ cx.font=font; try{ cx.letterSpacing=ls; }catch(e){} cx.textBaseline='middle'; cx.textAlign='left'; cx.lineJoin='round'; };
+  set(x);
+  const grad=(cx,dark)=>{ const g=cx.createLinearGradient(0,cy-px*0.45,0,cy+px*0.45);
+    if (kind==='hi'){ g.addColorStop(0,dark?shade(G.mixA||'#ffb12a',0.62):(G.mixA||'#ffb12a')); g.addColorStop(1,dark?shade(G.mixB||'#ff7a00',0.55):(G.mixB||'#ff7a00')); }
+    else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#cfd3da'); } return g; };
+  // 1) atmosférický stín (měkký, tmavý, kolem celého slova i hloubky)
+  // tmavé písmo se stínem přesně pod zadní vrstvou – překryje ho hloubka / čelo, zůstane jen měkký stín kolem
+  x.save(); x.shadowColor='rgba(0,0,0,0.5)'; x.shadowBlur=px*0.34; x.shadowOffsetY=px*0.05; x.fillStyle='#000'; x.fillText(word,pad+ex*0.6,cy+ex); x.restore();
+  // 2) 3D hloubka (jen zvýraznění): kopie šikmo vpravo dolů, tmavší stejná barva
+  if (ex>0){ const n=Math.max(4,Math.round(ex)); x.fillStyle=grad(x,true); x.strokeStyle=x.fillStyle; x.lineWidth=px*0.035;
+    for (let i=n;i>=1;i--){ const q=i/n; x.fillText(word,pad+ex*q*0.6,cy+ex*q); x.strokeText(word,pad+ex*q*0.6,cy+ex*q); } }
+  // 3) čelo písmen: přechod + lehce zaoblené hrany (tenký obrys stejnou barvou se zaoblenými rohy)
+  x.fillStyle=grad(x,false); x.strokeStyle=x.fillStyle; x.lineWidth=px*0.035;
+  x.fillText(word,pad,cy); x.strokeText(word,pad,cy);
+  // 4) jemný hladký odlesk v horní části písmen
+  const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d'); set(tc);
+  tc.fillStyle='#fff'; tc.lineWidth=px*0.035; tc.strokeStyle='#fff'; tc.fillText(word,pad,cy); tc.strokeText(word,pad,cy);
+  tc.globalCompositeOperation='source-in';
+  const gl=tc.createLinearGradient(0,cy-px*0.5,0,cy+px*0.1); gl.addColorStop(0,'rgba(255,255,255,'+(kind==='hi'?0.5:0.35)+')'); gl.addColorStop(0.45,'rgba(255,255,255,0.08)'); gl.addColorStop(1,'rgba(255,255,255,0)');
+  tc.fillStyle=gl; tc.fillRect(0,0,w,h); x.drawImage(t,0,0);
+  o={c,w,h,pad,tw,cy}; SPR.set(key,o); if (SPR.size>160) SPR.delete(SPR.keys().next().value);
   return o;
 }
+function shade(hex,f){ const n=parseInt(String(hex).slice(1),16); const r=Math.round((n>>16&255)*f), g=Math.round((n>>8&255)*f), b=Math.round((n&255)*f); return `rgb(${r},${g},${b})`; }
 // rozmazání bez filtru (funguje i v Safari): zmenšit a zase zvětšit
 let bc=null, bx=null;
 function drawBlur(c,o,dx,dy,dw,dh,blur){
@@ -95,29 +115,35 @@ function drawBlur(c,o,dx,dy,dw,dh,blur){
 
 E.drawMix=(c,t)=>{
   const {scenes}=build(); if (!scenes.length) return;
-  const sc=scenes.find(s=>t>=s.s && t<s.e); if (!sc) return;
+  // scéna dobíhá ještě chvíli po svém konci (plynule odletí dozadu), zatímco další už přilétá
+  const OUT=0.6, list=scenes.filter(s=>t>=s.s && t<s.e+OUT);
+  for (const sc of list) drawScene(c,sc,t,OUT);
+};
+function drawScene(c,sc,t,OUT){
   const W=c.canvas.width, H=c.canvas.height, m=Math.min(W,H), G=E.G;
   const base=m*0.145*(G.mixSize||100)/100, cx=W*(G.posX??50)/100, focusY=H*((G.mixY??46)/100);
   const vis=sc.lines.filter(L=>t>=L.s); if (!vis.length) return;
   const lh=L=>base*L.size*(L.kind==='serif'?0.95:0.86);
   const n=vis.length, op=(G.opacity??100)/100;
   // konec scény: všechno odletí dozadu (zmenší se, rozmaže a zmizí)
-  const outQ=clamp((t-(sc.e-0.32))/0.32), outE=outQ*outQ;
+  // odchod scény začne až po doletu posledního řádku (a trvá max 0,6 s)
+  const lastL=sc.lines[sc.lines.length-1], oS=Math.max(sc.e-0.15, lastL.s+0.5);
+  const outQ=clamp((t-oS)/OUT), outE=outQ*outQ*(3-2*outQ);
   // „kamera“: každý nový řádek posune starší nahoru a do dálky + stálý pomalý drift dozadu
-  const settle=q=>eExpo((t-vis[q].s)/0.5);
-  const drift=(t-sc.s)*0.06;
+  const settle=q=>{ const z=clamp((t-vis[q].s)/0.9); return 1-Math.pow(1-z,4); };
+  const drift=(t-sc.s)*0.045;
   c.save();
   for (let idx=0; idx<n; idx++){
     const L=vis[idx];
     let d=drift*0.6, y=focusY;
-    for (let q=idx+1;q<n;q++){ const k=settle(q); y-=(lh(vis[q])*0.5+lh(vis[q-1])*0.5)*0.88*k; d+=k; }
+    for (let q=idx+1;q<n;q++){ const k=settle(q); y-=(lh(vis[q])*0.5+lh(vis[q-1])*0.5)*0.78*k; d+=k*0.85; }
     d+=outE*2.2;
-    const scD=Math.pow(0.84,d), aD=clamp(1.25-0.42*d)*(1-outE*0.9), blurD=Math.max(0,d-0.6)*2.2+outE*5;
+    const scD=Math.pow(0.86,d), aD=clamp(1.3-0.32*d)*(1-outE), blurD=Math.max(0,d-0.5)*1.8+outE*6;
     if (aD<=0.01) continue;
     const yy=focusY+(y-focusY)*Math.pow(0.95,d)-drift*base*0.35;
     const px=base*L.size, words=L.ids.map(txt);
     const sp=words.map(w=>sprite(w,L.kind,px));
-    const gap=px*0.24; let tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
+    const gap=px*0.17; let tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
     let fit=1; if (tw*scD>W*0.9) fit=W*0.9/(tw*scD);
     const lineS=scD*fit, half=tw*lineS/2;
     const lx=clamp(cx+L.side*W*0.26, W*0.05+half, Math.max(W*0.05+half, W*0.95-half));
@@ -127,17 +153,12 @@ E.drawMix=(c,t)=>{
       const ww=o.tw*lineS, wcx=xx+ww/2; xx+=ww+gap*lineS;
       if (age<0) return;
       // příjezd slova: zespodu, velké, rozmazané (u kamery) → zmenší se, zaostří a usadí
-      const q=eExpo(age/0.42), qa=eOut(age/0.18);
-      const sIn=1+(1-q)*1.5, yIn=(1-q)*base*1.6, bIn=(1-q)*9;
+      const z=clamp(age/0.75), q=1-Math.pow(1-z,4), qa=eOut(age/0.3);   // pomalý měkký dojezd
+      const sIn=1+(1-q)*1.4, yIn=(1-q)*base*1.5, bIn=(1-q)*8;
       const S=lineS*sIn, A=aD*qa*op; if (A<=0.01) return;
-      const dw=o.w*S, dh=o.h*S, dx=wcx-dw/2, dy=yy+yIn-dh/2;
-      c.globalAlpha=A;
-      const blur=bIn+blurD;
-      // jemný stín jen u ostrého písma
-      if (blur<1.5){ c.shadowColor='rgba(0,0,0,0.28)'; c.shadowBlur=px*S*0.18; c.shadowOffsetY=px*S*0.03; }
-      else c.shadowColor='transparent';
-      drawBlur(c,o,dx,dy,dw,dh,blur);
-      c.shadowColor='transparent';
+      const dw=o.w*S, dh=o.h*S, dx=wcx-(o.pad+o.tw/2)*S, dy=yy+yIn-o.cy*S;
+      c.globalAlpha=A; c.shadowColor='transparent';
+      drawBlur(c,o,dx,dy,dw,dh,bIn+blurD);
     });
   }
   c.restore();
