@@ -798,9 +798,11 @@ E.drawTransition=(c,W,H,t)=>{
   const L=E.clipList(); if (L.length<2) return;
   const st=E.clipStarts();
   for (let k=1;k<L.length;k++){
-    const tr=L[k].tr||'none', T=st[k], d=t-T; if (tr==='none' || d<-0.2 || d>0.2) continue;
+    const tr=L[k].tr||'none', T=st[k], d=t-T; if (tr==='none' || d<-0.5 || d>0.5) continue;
     if (tr==='flash2'){
-      const on=(d>=-0.14&&d<-0.07)||(d>=0.0&&d<0.07);
+      // délka přechodu D (s): dva krátké negativy – jeden před střihem, druhý hned po něm
+      const D=L[k].trDur||0.12, f=D/4;
+      const on=(d>=-D/2&&d<-D/2+f)||(d>=0&&d<f);
       if (on){ c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.shadowColor='transparent'; c.globalCompositeOperation='difference'; c.fillStyle='#fff'; c.fillRect(0,0,W,H); c.restore(); }
     }
   }

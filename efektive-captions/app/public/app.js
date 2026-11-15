@@ -468,6 +468,7 @@ function pClip(){
   <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button></div>
   <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
+  ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="0.6" step="0.01" value="${c.trDur||0.12}"></label><div class="note">Vlevo = rychlejší záblesk, vpravo = pomalejší.</div>`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
   <div class="note">Další přechody a zvuky k nim brzy přibudou.</div>`;
 }
@@ -475,7 +476,8 @@ binders.clip=()=>{
   $('clCut').onclick=()=>cutAt(PV.currentTime);
   $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
   const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
-  const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const v=E.clips[Math.max(1,selClip)].tr||'flash2'; E.clips.forEach((c,i)=>{ if (i) c.tr=v; }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
+  const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const src=E.clips[Math.max(1,selClip)]; E.clips.forEach((c,i)=>{ if (i){ c.tr=src.tr||'none'; c.trDur=src.trDur||0.12; } }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
+  const rd=$('clTrD'); if (rd){ rd.oninput=()=>{ ensureClips(); E.clips[selClip].trDur=+rd.value; $('clTrDv').textContent=(+rd.value).toFixed(2)+' s'; }; rd.onchange=()=>{ changed(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.5); }; }
 };
 
 // ---------- 3D MIX (kostka) – samostatný mód ----------
@@ -907,8 +909,8 @@ function cutAt(T){
   ensureClips(); const st=E.clipStarts(); const k=E.clips.findIndex((c,i)=>T>st[i]+0.08 && T<st[i]+(c.e-c.s)-0.08);
   if (k<0) return toast('Tady stříhat nejde (moc blízko střihu nebo konce)');
   const c=E.clips[k], ts=c.s+(T-st[k]);
-  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none'},{s:ts,e:c.e,tr:'flash2'});
-  selClip=k+1; changed(true); renderVideoTrack(); toast('Video rozstřižené – přechod: 2× negativní záblesk');
+  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none',trDur:c.trDur},{s:ts,e:c.e,tr:'none',trDur:0.12});
+  selClip=k+1; changed(true); renderVideoTrack(); toast('Video rozstřižené – přechod přidáš klepnutím na značku ve střihu');
 }
 function deleteClip(k){
   ensureClips(); if (E.clips.length<2) return toast('Poslední úsek videa smazat nejde');
