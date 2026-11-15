@@ -532,7 +532,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textBaseline='middle';
       const mt = m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0, L.px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0, L.px*0.45);
       const tw = measureT(m,s,L.px,tk), half=Math.max(tw/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+L.px*0.1;
-      const pad=Math.ceil(L.px*1.4), padX=Math.ceil(L.px*1.0), Wc=Math.ceil(half*2+padX*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
+      const pad=Math.ceil(L.px*1.3), padX=Math.ceil(L.px*1.7), Wc=Math.ceil(half*2+padX*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
       if (shine.width!==Wc||shine.height!==Hc){ shine.width=Wc; shine.height=Hc; } else { m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,Wc,Hc); }
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1;
       // 1) tvar písmen
@@ -540,7 +540,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       fillT(m, s, Wc/2, cy, L.px, tk);
       // 2) měkké šikmé světlo jen do písmen
       m.globalCompositeOperation='source-in';
-      const bw=Math.max(L.px*0.75, tw*0.2), sk=Hc*0.3, x=-bw-sk + ph*(Wc+2*bw+2*sk);
+      const bw=Math.max(L.px*0.9, tw*0.26), sk=Hc*0.3, x=-bw-sk + ph*(Wc+2*bw+2*sk);
       const g=m.createLinearGradient(x-bw/2,0,x+bw/2,0);
       g.addColorStop(0,'rgba(255,248,225,0)'); g.addColorStop(0.3,'rgba(255,248,225,.35)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.7,'rgba(255,248,225,.35)'); g.addColorStop(1,'rgba(255,248,225,0)');
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
@@ -553,7 +553,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
         for (let i=n-1;i>=1;i--){ const t=dn[i-1]; const o=shineBlur(tag+'u'+i,t.w,t.h); o.c.drawImage(src,0,0,w,h,0,0,t.w,t.h); src=o.cv; w=t.w; h=t.h; }
         return {cv:src,w,h}; };
       // záře hlavně do výšky (svisle víc než vodorovně) → svítí jen kolem proužku, ne celé slovo
-      const wide=blurAt(Math.max(1,lv-1),lv+1,'w'), near=blurAt(Math.max(1,lv-2),Math.max(1,lv-1),'n');
+      const wide=blurAt(lv+1,lv,'w'), near=blurAt(Math.max(1,lv-1),Math.max(1,lv-1),'n');   // do stran i do výšky, víc do stran
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
       const A=a*((S.opacity??100)/100)*env;
       c.globalAlpha=A*0.55; c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře do stran
