@@ -24,9 +24,7 @@ html,body{overflow:hidden;background:#08163A}
   <div id="glow"></div>
   <img id="mark" src="assets/logo_icon_hd.png" alt="">
   <svg id="hex"></svg>
-  <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img id="word" src="assets/logo_word_white.png" alt=""></div>
-  <div id="line"></div>
-  <div id="info"><div class="web">www.BestAccount.cz</div><div class="tel">+420 721 075 783</div></div>
+  <div id="logo"><img id="icon" src="assets/logo_icon_hd.png" alt=""><img id="word" src="assets/logo_word_white_hd.png" alt=""></div>
 </div>
 <script>
 function hexes(W,H,u,cx,cy,rad,id){
@@ -46,18 +44,15 @@ function render(o){
   const W=o.w,H=o.h,u=H/1800;
   for(const el of [document.documentElement,document.body]) el.style.cssText=`width:${W}px;height:${H}px`;
   const c=document.getElementById('c'); c.style.width=W+'px'; c.style.height=H+'px';
-  document.getElementById('glow').style.background=`radial-gradient(${1500*u}px ${1000*u}px at ${W/2}px ${H*0.42}px, rgba(0,136,218,.22), rgba(0,136,218,0) 70%)`;
+  document.getElementById('glow').style.background=`radial-gradient(${1500*u}px ${1000*u}px at ${W/2}px ${H*0.5}px, rgba(0,136,218,.22), rgba(0,136,218,0) 70%)`;
   const hx=document.getElementById('hex'); hx.setAttribute('viewBox',`0 0 ${W} ${H}`); hx.setAttribute('width',W); hx.setAttribute('height',H);
   hx.innerHTML=hexes(W,H,u,-60*u,H+60*u,1300*u,1)+hexes(W,H,u,W+60*u,-60*u,1200*u,2);
   const ms=2300*u; Object.assign(document.getElementById('mark').style,{left:(W-ms*0.62)+'px',top:(H*0.38)+'px',width:ms+'px',height:ms+'px',transform:'rotate(-14deg)'});
   // logo uprostřed (proporce 388×116, ikona 10/8/101/100)
   const k=4.2*u, lw=388*k, lh=116*k, L=document.getElementById('logo');
-  Object.assign(L.style,{left:(W-lw)/2+'px',top:(H*0.40-lh/2)+'px',width:lw+'px',height:lh+'px'});
+  Object.assign(L.style,{left:(W-lw)/2+'px',top:(H*0.5-lh/2)+'px',width:lw+'px',height:lh+'px'});
   Object.assign(document.getElementById('icon').style,{left:10*k+'px',top:8*k+'px',width:101*k+'px',height:100*k+'px'});
   Object.assign(document.getElementById('word').style,{left:0,top:0,width:lw+'px',height:lh+'px'});
-  Object.assign(document.getElementById('line').style,{top:(H*0.40+lh/2+110*u)+'px',width:220*u+'px',height:7*u+'px',borderRadius:4*u+'px'});
-  Object.assign(document.getElementById('info').style,{top:(H*0.40+lh/2+190*u)+'px',fontSize:118*u+'px'});
-  document.querySelector('#info .tel').style.fontSize=96*u+'px';
 }
 window.render=render;
 </script>
