@@ -28,6 +28,8 @@ html,body{overflow:hidden;background:var(--navy)}
 #txt .rule b{border-radius:50%}
 #txt,#txt2{z-index:3}
 #vig{inset:0;z-index:2;pointer-events:none}
+#txt p{font-weight:500;color:#F1F6FF;white-space:nowrap;text-shadow:0 0 24px rgba(0,0,0,.75),0 0 60px rgba(0,0,0,.5)}
+#txt p.sig{font-weight:700;color:var(--blue)}
 #txt2 p{font-weight:500;color:#F1F6FF;white-space:nowrap;text-shadow:0 0 30px rgba(4,12,36,.55)}
 #txt2 p.sig{font-weight:700;color:var(--blue)}
 /* web v modrém políčku (stejně jako číslo na banneru) */
@@ -110,18 +112,14 @@ function render(o){
   const t=document.getElementById('txt');
   t.innerHTML=`
    <div class="yr" style="font-size:${o.yrSize*u}px;margin-left:${-14*u}px"><b>PF</b>2027</div>
-   <h1 style="font-size:${150*u}px;line-height:${156*u}px;margin-top:${64*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
-`;
+   <h1 style="font-size:${158*u}px;line-height:${164*u}px;margin-top:${70*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
+   <p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.2*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${150*u}px;line-height:${160*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
   Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
-  const t2=document.getElementById('txt2');
-  t2.innerHTML=`<p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.12*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${146*u}px;line-height:${156*u}px;margin-top:${26*u}px">${fmt(o.sign)}</p>`;
-  Object.assign(t2.style,{left:M+'px',bottom:o.lowBottom*u+'px'});
+  document.getElementById('txt2').innerHTML='';
   // vinětace: tmavý přechod odspodu + ztmavení kolem tlačítka s webem (text jde čitelně i přes lva)
-  document.getElementById('vig').style.background=[
-    `radial-gradient(${1500*u}px ${620*u}px at ${W-420*u}px ${H+60*u}px, rgba(5,14,40,.92) 0%, rgba(5,14,40,.6) 45%, rgba(5,14,40,0) 100%)`,
-    `linear-gradient(0deg, rgba(5,14,40,.95) 0%, rgba(5,14,40,.78) ${H*0.16}px, rgba(5,14,40,.35) ${H*0.30}px, rgba(5,14,40,0) ${H*0.44}px)`
-  ].join(',');
+  document.getElementById('vig').style.background=
+    `radial-gradient(${2100*u}px ${1250*u}px at ${W-450*u}px ${H+80*u}px, rgba(0,0,0,.92) 0%, rgba(0,0,0,.75) 35%, rgba(0,0,0,.4) 62%, rgba(0,0,0,0) 100%)`;
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
   Object.assign(tb.style,{width:o.tabW*u+'px',height:240*u+'px',fontSize:112*u+'px',borderTopLeftRadius:78*u+'px'});
