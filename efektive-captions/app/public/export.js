@@ -176,6 +176,7 @@ X.recordRealtime = async (opts) => {
   const v=document.createElement('video'); v.src=opts.src; v.playsInline=true; v.preload='auto'; v.muted=false;
   await new Promise(r=>{ v.onloadedmetadata=r; v.onloadeddata=r; v.load(); });
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const prev=E._attached; E.attach(cv,v);
+  E.flags.exporting=true;
   const ac=new (window.AudioContext||window.webkitAudioContext)(), dest=ac.createMediaStreamDestination();
   const src=ac.createMediaElementSource(v); const g=ac.createGain(); g.gain.value=opts.mute?0:1; src.connect(g); g.connect(dest);
   const stream=cv.captureStream(fps); dest.stream.getAudioTracks().forEach(tr=>stream.addTrack(tr));
@@ -188,6 +189,7 @@ X.recordRealtime = async (opts) => {
     const tick=()=>{ const t=v.currentTime; E.render(t); while(ei<events.length&&events[ei].t<=t){ E.sfxInto(ac,dest,ac.currentTime,events[ei].type,E.G.sfxVol/100); ei++; } onP(t/v.duration,'Nahrávám…'); if (!v.ended) requestAnimationFrame(tick); else rec.stop(); };
     requestAnimationFrame(tick);
   });
+  E.flags.exporting=false;
   if (prev) E.attach(prev[0],prev[1]);
   ac.close();
   return {blob:new Blob(chunks,{type:mime||'video/webm'}), name:'efektive-titulky.'+(mime.includes('mp4')?'mp4':'webm')};

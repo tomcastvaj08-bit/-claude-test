@@ -880,7 +880,8 @@ const PRO={
   },
 };
 $('proBtn').onclick=()=>PRO.open();
-$('wmRemove').onclick=()=>{ $('sheetExport').classList.remove('on'); PRO.open(); };
+// vodoznak jde vypnout jen s PRO – ve free verzi přepínač zůstane zapnutý a nabídne PRO
+$('wmToggle').onchange=e=>{ if (!PRO.active()){ e.target.checked=true; $('sheetExport').classList.remove('on'); PRO.open(); PRO.msg('Vodoznak jde vypnout s předplatným PRO.'); } };
 $('proGo').onclick=async()=>{
   const b=$('proGo'); b.disabled=true;
   // v mobilní aplikaci se platí přes App Store / Google Play (vyžadují to pravidla obchodů)

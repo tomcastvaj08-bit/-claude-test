@@ -39,18 +39,12 @@ E.flags={hidden:false, transparent:false, exporting:false, mute:false, pro:false
 // vodoznak pro verzi bez předplatného
 const WM=new Image(); WM.src='logo-wm.png';
 E.drawWatermark=(c,W,H)=>{
-  if (E.flags.pro) return;
-  const m=Math.min(W,H), lw=m*0.42, lh=WM.naturalWidth?lw*WM.naturalHeight/WM.naturalWidth:lw*0.736;
-  const fs=Math.round(m*0.115), gap=m*0.035, tot=lh+gap+fs, y0=H*0.44-tot/2;
+  // jen naše logo, jen ve výsledném videu (v editoru se neukazuje), s PRO vůbec
+  if (E.flags.pro || !E.flags.exporting || !(WM.complete && WM.naturalWidth)) return;
+  const m=Math.min(W,H), lw=m*0.4, lh=lw*WM.naturalHeight/WM.naturalWidth;
   c.save(); c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation='source-over'; c.filter='none';
-  c.globalAlpha=0.5; c.shadowColor='rgba(0,0,0,.45)'; c.shadowBlur=m*0.02; c.shadowOffsetY=m*0.004;
-  if (WM.complete && WM.naturalWidth) c.drawImage(WM,(W-lw)/2,y0,lw,lh);
-  c.globalAlpha=0.62; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='top';
-  c.font=`800 ${fs}px "Schibsted Grotesk","Inter Tight",Arial,sans-serif`;
-  try{ c.letterSpacing=Math.round(fs*0.04)+'px'; }catch(e){}
-  c.fillText('EFEKTIVE',W/2,y0+lh+gap);
-  c.globalAlpha=0.55; c.font=`600 ${Math.round(fs*0.3)}px "Schibsted Grotesk",Arial,sans-serif`; try{ c.letterSpacing='0px'; }catch(e){}
-  c.fillText('Vytvořeno v EFEKTIVE Captions',W/2,y0+lh+gap+fs*1.12);
+  c.globalAlpha=0.55; c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=m*0.02; c.shadowOffsetY=m*0.004;
+  c.drawImage(WM,(W-lw)/2,H*0.42-lh/2,lw,lh);
   c.restore();
 };
 let wid=1; E.newId=()=>wid++;
