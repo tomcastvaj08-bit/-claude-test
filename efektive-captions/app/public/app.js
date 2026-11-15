@@ -438,11 +438,26 @@ function renderPanel(){
     case 'sfx': h=pSfx(); break;
     case 'overlay': h=pOverlay(); break;
     case 'ai': h=pAI(); break;
+    case 'mix': h=pMix(); break;
   }
   P.innerHTML=h; bindControls(); bindScope(); bindSub();
   const fn=binders[panel]; fn&&fn();
 }
 const binders={};
+// ---------- 3D MIX (kostka) – samostatný mód ----------
+function pMix(){
+  const S=E.G, on=!!S.mix3d;
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-dice"/></svg><div><b>3D mix titulky</b><small>Slova přilétají z hloubky, skládají se pod sebe a mixují písma. Úplně samostatný styl – ostatní nastavení zůstane, jak je.</small></div></div>
+  <button class="btn ${on?'':'primary'} big" id="mixOn">${on?'Vypnout 3D mix':'Zapnout 3D mix'}</button>
+  ${on?`<button class="btn" id="mixShuffle">${I('refresh','grad')} Zamíchat znovu (jiné rozložení a písma)</button>
+  ${slider('Velikost písma','mixSize',50,180,1,'%')}
+  ${slider('Výška na videu','mixY',20,80,1,'%')}
+  <div class="clabel">Barva zvýrazněných slov</div><div class="colors">${color('Nahoře','mixA')}${color('Dole','mixB')}</div>`:''}`;
+}
+binders.mix=()=>{
+  $('mixOn').onclick=()=>{ E.G.mix3d=!E.G.mix3d; E.mixInvalidate&&E.mixInvalidate(); changed(); renderPanel(); toast(E.G.mix3d?'3D mix zapnutý':'3D mix vypnutý – zpátky běžné titulky'); };
+  if ($('mixShuffle')) $('mixShuffle').onclick=()=>{ E.G.mixSeed=Math.floor(Math.random()*9999)+2; E.mixInvalidate&&E.mixInvalidate(); changed(); };
+};
 
 // ---------- TITULKY ----------
 function pCaptions(){

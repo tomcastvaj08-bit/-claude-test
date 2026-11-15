@@ -400,3 +400,5 @@ button.pro.on{background:var(--green)}
 .updbar .ic{stroke:#fff;margin-right:6px}
 .rowsep{border:1px solid var(--line);padding:8px 10px 2px;margin:6px 0;background:var(--card);box-shadow:inset 0 1px 0 #fff,2px 2px 0 rgba(10,13,20,.06)}
 .rowsep>b{font-size:13px;color:var(--acc)}
+.mixhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}.mixhead .ic{width:34px;height:34px;flex:none}.mixhead div{display:flex;flex-direction:column;gap:4px}.mixhead small{color:var(--muted);font-size:13px;line-height:1.4}
+#bnav button{min-width:0}
