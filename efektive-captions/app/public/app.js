@@ -996,13 +996,13 @@ const PRO={
 };
 $('proBtn').onclick=()=>PRO.open();
 // vodoznak jde vypnout jen s PRO – ve free verzi přepínač zůstane zapnutý a nabídne PRO
-$('wmToggle').onchange=e=>{ if (!PRO.active()){ e.target.checked=true; $('sheetExport').classList.remove('on'); PRO.open(); PRO.msg('Logo na konci videa jde vypnout s předplatným PRO.'); } };
+$('wmToggle').onchange=e=>{ if (!PRO.active()){ e.target.checked=true; $('sheetExport').classList.remove('on'); PRO.open(); PRO.msg('Vodoznak jde vypnout s předplatným PRO.'); } };
 $('proGo').onclick=async()=>{
   const b=$('proGo'); b.disabled=true;
   // v mobilní aplikaci se platí přes App Store / Google Play (vyžadují to pravidla obchodů)
   if (NATIVE.isNative){
     PRO.msg('Otevírám platbu…');
-    try{ const r=await NATIVE.storeBuy(); if (r && r.pro){ PRO.set({token:'store',store:true,...r,checked:Date.now()}); PRO.msg(''); toast('Díky! PRO je aktivní – videa jsou bez loga na konci'); } else PRO.msg(''); }
+    try{ const r=await NATIVE.storeBuy(); if (r && r.pro){ PRO.set({token:'store',store:true,...r,checked:Date.now()}); PRO.msg(''); toast('Díky! PRO je aktivní – videa jsou bez vodoznaku'); } else PRO.msg(''); }
     catch(e){ PRO.msg(e.message||String(e),true); }
     b.disabled=false; return;
   }
@@ -1018,7 +1018,7 @@ $('proRestore').onclick=async()=>{
 $('proCodeOk').onclick=async()=>{
   const t=$('proCodeIn').value.replace(/\s+/g,''); if (!t) return PRO.msg('Vlož PRO kód.',true);
   PRO.msg('Ověřuji…');
-  try{ const j=await PRO.check(t); if (j.pro){ PRO.msg(''); toast('PRO je aktivní – videa jsou bez loga na konci'); } else PRO.msg('Předplatné k tomuto kódu už neplatí ('+j.status+').',true); }
+  try{ const j=await PRO.check(t); if (j.pro){ PRO.msg(''); toast('PRO je aktivní – videa jsou bez vodoznaku'); } else PRO.msg('Předplatné k tomuto kódu už neplatí ('+j.status+').',true); }
   catch(e){ PRO.msg(e.message,true); }
 };
 $('proCopy').onclick=async()=>{ const t=$('proCodeOut').value; try{ await navigator.clipboard.writeText(t); toast('Kód zkopírovaný'); }catch(e){ $('proCodeOut').select(); document.execCommand('copy'); toast('Kód zkopírovaný'); } };

@@ -40,7 +40,7 @@ E.flags={hidden:false, transparent:false, exporting:false, mute:false, pro:false
 const WM=new Image(); WM.src='logo-wm.png';
 // závěrečný obrázek s logem EFEKTIVE na konci exportu (verze zdarma; s PRO se nepřidává)
 E.OUTRO_SEC=1.6;
-E.wantOutro=()=>!E.flags.pro && E.flags.outro!==false;
+E.wantOutro=()=>false;   // závěr s logem už není – místo něj vodoznak přes celé video
 E.drawOutro=(c,W,H,t)=>{
   const m=Math.min(W,H), ease=x=>1-Math.pow(1-Math.max(0,Math.min(1,x)),3);
   c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.globalCompositeOperation='source-over'; c.shadowColor='transparent'; c.filter='none';
@@ -59,7 +59,15 @@ E.drawOutro=(c,W,H,t)=>{
   c.fillText('TITULKY · EFEKTIVE CAPTIONS',W/2,cy+m*0.02+fs*1.15);
   c.restore();
 };
-E.drawWatermark=()=>{};
+E.drawWatermark=(c,W,H)=>{
+  // logo EFEKTIVE uprostřed přes celé video – jen ve výsledném videu (v editoru ne), s PRO vůbec
+  if (E.flags.pro || !E.flags.exporting || !(WM.complete && WM.naturalWidth)) return;
+  const m=Math.min(W,H), lw=m*0.55, lh=lw*WM.naturalHeight/WM.naturalWidth;
+  c.save(); c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation='source-over'; c.filter='none';
+  c.globalAlpha=0.5; c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=m*0.02; c.shadowOffsetY=m*0.004;
+  c.drawImage(WM,(W-lw)/2,(H-lh)/2,lw,lh);
+  c.restore();
+};
 let wid=1; E.newId=()=>wid++;
 E.setWid=v=>{wid=Math.max(wid,v);};
 
@@ -121,7 +129,7 @@ const common = {rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:10
 E.COMMON = common;
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
-  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-3,trackEm:-3.5,cond:100,gap:60,rowDy3:8,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:34,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:30,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
+  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-3,trackEm:-3.5,cond:100,gap:60,rowDy1:8,rowDy3:-2,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:34,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:30,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
     pv:'<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="background:linear-gradient(#ff9a00,#e8f200);-webkit-background-clip:text;color:transparent;font-weight:800;letter-spacing:-.07em">Sledovat</b>' },
   bestaccount:{ name:'Styl 2', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:900,emItalic:false,mainLine:'mid',size:88,posX:50,posY:66,track:-4,gap:66,emScale:160,wordGap:160,tilt:18,tiltX:4,persp:60,tiltAlt:true,kinetic:45,layout:'cascade',layerOrder:'natural',cText:'#ffffff',grad:true,gA:'#ff9300',gB:'#fff200',gradDir:'v',altOn:true,altEvery:4,altA:'#8fe0ff',altB:'#0a62e6',glow:30,glowMode:'always',shadowSize:25,shadowA:45,shadowDist:10,cShadow:'#000000',fxShine:true,shineEvery:'3',shineSpeed:50,fxFlicker:false,fxWiggle:false,wiggle:0,anim:'block',fadeOut:true,capMain3:true},
     pv:'<span style="font-weight:700">Vyrostla</span><br><b style="background:linear-gradient(#ff9300,#fff200);-webkit-background-clip:text;color:transparent;font-weight:900">Vám Firma</b>' },
@@ -768,7 +776,7 @@ E.render = (t, opts={}) => {
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni
   const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);
-  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); return; }
+  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   let mainLines=null, mainS=null, behind=false;
   for (const kk of ks){
     const r=drawPage(kk,t);
@@ -779,6 +787,7 @@ E.render = (t, opts={}) => {
   // text za postavou: přes titulky se znovu nakreslí jen postava z videa
   if (behind && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }
   for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t);
+  E.drawWatermark(ctx,cv.width,cv.height);
   if (opts.box && mainLines) E.drawBox(mainLines,mainS);
 };
 function drawPage(k,t){
