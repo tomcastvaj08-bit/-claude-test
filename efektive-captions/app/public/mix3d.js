@@ -82,7 +82,7 @@ function sprite(word,kind,px){
   set(x);
   const grad=(cx,dark)=>{ const g=cx.createLinearGradient(0,cy-px*0.45,0,cy+px*0.45);
     if (kind==='hi'){ g.addColorStop(0,dark?shade(G.mixA||'#ffb12a',0.62):(G.mixA||'#ffb12a')); g.addColorStop(1,dark?shade(G.mixB||'#ff7a00',0.55):(G.mixB||'#ff7a00')); }
-    else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#cfd3da'); } return g; };
+    else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#a3a8b2'); } return g; };
   // 1) atmosférický stín (měkký, tmavý, kolem celého slova i hloubky)
   // tmavé písmo se stínem přesně pod zadní vrstvou – překryje ho hloubka / čelo, zůstane jen měkký stín kolem
   x.save(); x.shadowColor='rgba(0,0,0,0.5)'; x.shadowBlur=px*0.34; x.shadowOffsetY=px*0.05; x.fillStyle='#000'; x.fillText(word,pad+ex*0.6,cy+ex); x.restore();

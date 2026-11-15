@@ -290,16 +290,17 @@ function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.
 
 // --- přehrávání ---
 function togglePlay(){
+  if (swap){ endSwap(false); return; }
   if (vid.paused){ ensureAC(); const pr=vid.play(); if (pr && pr.catch) pr.catch(e=>{ console.warn('play',e); $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); }); }
   else vid.pause();
 }
 // iPhone: když se video při přehrávání dočítá, ukázat to (jinak to vypadá, že se zaseklo)
 const setWait=on=>$('stage').classList.toggle('waiting',on);
-vid.addEventListener('waiting',()=>{ if (!vid.paused) setWait(true); });
+vid.addEventListener('waiting',()=>{ if (!vid.paused && !swapQuiet) setWait(true); });
 ['playing','pause','seeked','canplay'].forEach(ev=>vid.addEventListener(ev,()=>setWait(false)));
 $('playBtn').onclick=togglePlay;
-vid.onplay=()=>{ $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=PV.currentTime; };
-vid.onpause=()=>{ $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); };
+vid.onplay=()=>{ if (swapQuiet) return; $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=PV.currentTime; };
+vid.onpause=()=>{ if (swapQuiet) return; $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); };
 $('eyeBtn').onclick=()=>{ E.flags.hidden=!E.flags.hidden; syncTop(); };
 // velký náhled: přes celou obrazovku aplikace (ne systémový fullscreen – z toho se na iPhonu nedalo dostat zpět)
 function setFs(on){ $('stage').classList.toggle('fs',on); requestAnimationFrame(()=>sizeCanvas()); document.body.classList.toggle('fsmode',on); $('fsBtn').innerHTML=I(on?'minimize':'maximize'); }
@@ -327,9 +328,9 @@ function videoNow(now){ // nejlepší odhad skutečného času videa
   return vid.currentTime;
 }
 if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
-vid.addEventListener('playing',()=>{ clkReset(); clk.run=true; });
-['pause','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.run=false; clkReset(); }));
-vid.addEventListener('seeked',()=>{ clkReset(); clk.run=!vid.paused; });
+vid.addEventListener('playing',()=>{ if (swapQuiet) return; clkReset(); clk.run=true; });
+['pause','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ if (swapQuiet) return; clk.run=false; clkReset(); }));
+vid.addEventListener('seeked',()=>{ if (swapQuiet) return; clkReset(); clk.run=!vid.paused; });
 vid.addEventListener('durationchange',()=>{ if (vid.duration && isFinite(vid.duration)) E.srcDur=vid.duration; });
 function smoothTime(){
   if (!clk.run || vid.paused || vid.seeking) return vid.currentTime;
@@ -347,23 +348,56 @@ function smoothTime(){
 }
 // čas na timeline = výsledný čas (po střihu); video samo běží ve zdrojovém čase
 const PV={ get currentTime(){ return E.src2out(vid.currentTime); }, set currentTime(t){ vid.currentTime=E.out2src(t); }, get duration(){ return vid.duration?E.outDur():NaN; } };
-// přehrávání přes střihy: na konci úseku skočit na začátek dalšího (nebo zastavit na konci)
+// přehrávání přes střihy bez zastavení: druhý (neviditelný) přehrávač má další úsek připravený dopředu.
+// Ve střihu se obraz i zvuk přepnou na něj, hlavní přehrávač se mezitím v klidu přetočí a pak se zase převezme.
+let swapQuiet=false, swap=null;
+const vidB=document.createElement('video'); vidB.muted=true; vidB.playsInline=true; vidB.setAttribute('playsinline',''); vidB.preload='auto'; vidB.className='srcvid'; document.body.appendChild(vidB);
+function prepB(next){
+  if (!videoURL) return;
+  if (vidB.dataset.src!==videoURL){ vidB.dataset.src=videoURL; vidB.src=videoURL; vidB.load(); vidB.prepFor=null; }
+  if (vidB.prepFor!==next.s){ vidB.prepFor=next.s; try{ vidB.pause(); vidB.currentTime=next.s+0.001; }catch(e){} }
+}
+function endSwap(keepPlaying){
+  if (!swap) return; const t=vidB.currentTime;
+  vidB.pause(); vidB.muted=true; E.attach(cv,vid); swap=null;
+  if (!keepPlaying){ vid.currentTime=t; swapQuiet=false; vid.muted=E.flags.mute; vid.pause(); $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); clkReset(); }
+}
 function clipGuard(){
-  if (!E.clips || !E.clips.length || vid.seeking) return;
-  const ts=vid.currentTime, L=E.clips;
-  const k=L.findIndex(c=>ts>=c.s-0.01 && ts<c.e-0.03);
-  if (k>=0) return;
-  const next=L.find(c=>c.s>ts-0.01);
-  if (next){ vid.currentTime=next.s+0.001; } else if (!vid.paused){ vid.pause(); vid.currentTime=L[L.length-1].e-0.03; }
+  if (!E.clips || !E.clips.length) return;
+  const L=E.clips;
+  if (swap){
+    // hlavní přehrávač se dorovná a převezme obraz i zvuk
+    const bt=vidB.currentTime;
+    if (!vid.paused && vid.currentTime>=bt-0.03){ vid.muted=E.flags.mute; endSwap(true); swapQuiet=false; clkReset(); clk.run=true; return; }   // hlavní dohnal → převzít
+    if (bt>=swap.tgt-0.12 && vid.paused && !vid.seeking && vid.readyState>=3) vid.play().catch(()=>{});   // rozjet s předstihem (iPhone se chvíli rozbíhá)
+    if (bt>swap.tgt+0.5 && vid.paused){ swap.tgt=Math.min(bt+0.6, swap.end); vid.currentTime=swap.tgt; }   // nestihl to → zkusit kus dál
+    return;
+  }
+  if (vid.seeking) return;
+  const ts=vid.currentTime, k=L.findIndex(c=>ts>=c.s-0.01 && ts<c.e-0.03), next=L[k>=0?k+1:L.findIndex(c=>c.s>ts-0.01)];
+  if (k>=0){
+    if (next && L[k].e-ts<1.5) prepB(next);
+    return;
+  }
+  if (next){
+    const ready=vidB.prepFor===next.s && vidB.readyState>=2 && Math.abs(vidB.currentTime-next.s)<0.08 && !vidB.seeking;
+    if (ready){
+      // přepnutí bez zastavení
+      vidB.muted=E.flags.mute; vidB.play().catch(()=>{});
+      swapQuiet=true; vid.muted=true; vid.pause();
+      const tgt=Math.min(next.s+0.7, next.e-0.05);
+      swap={tgt,end:next.e-0.05}; vid.currentTime=tgt; E.attach(cv,vidB);
+    } else vid.currentTime=next.s+0.001;
+  } else if (!vid.paused){ vid.pause(); vid.currentTime=L[L.length-1].e-0.03; }
 }
 let lastFrame=0;
 function loop(now){
   if (now && now-lastFrame<14){ requestAnimationFrame(loop); return; }
   lastFrame=now||performance.now();
-  if (!vid.paused) clipGuard();
-  const t=E.src2out(smoothTime());
+  if (!vid.paused || swap) clipGuard();
+  const t=E.src2out(swap? vidB.currentTime : smoothTime());
   if (videoURL && $('editor').classList.contains('on')){
-    if (!vid.paused){
+    if (!vid.paused || swap){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
       if (t>lastT && t-lastT<0.5) for (const ev of E.sfxEvents()) if (ev.t>lastT && ev.t<=t) playSfx(ev.type);
       followTimeline(t);
@@ -420,7 +454,7 @@ function bindControls(){
 
 // ================= PANELY =================
 // sáhnu na timeline / video / panel → přehrávání se zastaví (ať se dá v klidu posouvat a upravovat)
-['tl','stage','panel'].forEach(id=>{ const el=$(id); const stop=e=>{ if (e.target && e.target.closest && e.target.closest('.fsbar')) return; if (!vid.paused) vid.pause(); };
+['tl','stage','panel'].forEach(id=>{ const el=$(id); const stop=e=>{ if (e.target && e.target.closest && e.target.closest('.fsbar')) return; if (swap) endSwap(false); else if (!vid.paused) vid.pause(); };
   el.addEventListener('touchstart',stop,{passive:true}); el.addEventListener('pointerdown',stop,{passive:true}); el.addEventListener('wheel',stop,{passive:true}); });
 let edState='normal';
 window.addEventListener('resize',()=>{ if ($('editor').classList.contains('on')) sizeCanvas(); });
