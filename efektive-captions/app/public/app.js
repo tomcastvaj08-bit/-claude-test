@@ -161,7 +161,17 @@ function loadVideo(file){
     vid.preload='auto'; vid.src=videoURL; vid.muted=E.flags.mute; vid.load();
   });
 }
-function sizeCanvas(){ const sc=Math.min(1,1280/Math.max(fullW,fullH)); cv.width=Math.round(fullW*sc/2)*2; cv.height=Math.round(fullH*sc/2)*2; }
+// rozlišení náhledu podle skutečné velikosti na displeji (i Retina / velký náhled) → ostré titulky; max 1920 a ne víc než video
+function sizeCanvas(){
+  if (!fullW||!fullH) return;
+  const st=$('stage'), dpr=Math.min(3,window.devicePixelRatio||1);
+  const box=st&&st.clientWidth? Math.min(st.clientWidth/fullW, st.clientHeight/fullH) : 0;
+  const need=Math.max(fullW,fullH)*box*dpr;                  // kolik pixelů je potřeba na displeji
+  const longSide=Math.min(Math.max(fullW,fullH), 1920, Math.max(1280, need||0));
+  const sc=longSide/Math.max(fullW,fullH);
+  const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2;
+  if (cv.width!==w || cv.height!==h){ cv.width=w; cv.height=h; }
+}
 $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
@@ -291,7 +301,7 @@ vid.onplay=()=>{ $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pau
 vid.onpause=()=>{ $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); };
 $('eyeBtn').onclick=()=>{ E.flags.hidden=!E.flags.hidden; syncTop(); };
 // velký náhled: přes celou obrazovku aplikace (ne systémový fullscreen – z toho se na iPhonu nedalo dostat zpět)
-function setFs(on){ $('stage').classList.toggle('fs',on); document.body.classList.toggle('fsmode',on); $('fsBtn').innerHTML=I(on?'minimize':'maximize'); }
+function setFs(on){ $('stage').classList.toggle('fs',on); requestAnimationFrame(()=>sizeCanvas()); document.body.classList.toggle('fsmode',on); $('fsBtn').innerHTML=I(on?'minimize':'maximize'); }
 $('fsBtn').onclick=()=>setFs(!$('stage').classList.contains('fs'));
 $('fsExit').onclick=e=>{ e.stopPropagation(); setFs(false); };
 $('fsPlay').onclick=e=>{ e.stopPropagation(); togglePlay(); };
@@ -398,7 +408,8 @@ function bindControls(){
 ['tl','stage','panel'].forEach(id=>{ const el=$(id); const stop=e=>{ if (e.target && e.target.closest && e.target.closest('.fsbar')) return; if (!vid.paused) vid.pause(); };
   el.addEventListener('touchstart',stop,{passive:true}); el.addEventListener('pointerdown',stop,{passive:true}); el.addEventListener('wheel',stop,{passive:true}); });
 let edState='normal';
-function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); ed.classList.toggle('ed-exp',st==='exp'); ed.classList.toggle('ed-col',st==='col'); }
+window.addEventListener('resize',()=>{ if ($('editor').classList.contains('on')) sizeCanvas(); });
+function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); ed.classList.toggle('ed-exp',st==='exp'); ed.classList.toggle('ed-col',st==='col'); setTimeout(sizeCanvas,350); }
 (function(){
   const pn=$('panel'), gr=$('grab'); let y0=null, top0=0, done=false;
   const start=(e,fromGrab)=>{ y0=e.touches[0].clientY; top0=fromGrab?0:pn.scrollTop; done=false; };
