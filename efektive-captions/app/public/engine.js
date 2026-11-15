@@ -365,14 +365,14 @@ E.mainColor=mainColor;
 // ---------- „vypálené“ slovo: písmo + stín (+ hloubka) v jednom obrázku, s mezipamětí ----------
 const SPR=new Map();
 function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
-  const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,L.em?S.extrude:0,kind==='glow'?S.glow+'|'+glowCol:''].join('~');
+  const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,S.extrude||0,kind==='glow'?S.glow+'|'+glowCol:''].join('~');
   let sp=SPR.get(key); if (sp){ SPR.delete(key); SPR.set(key,sp); return sp; }
   const px=L.px, cvs=document.createElement('canvas'), m=cvs.getContext('2d');
   setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center';
   const mt=m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0,px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0,px*0.45);
   const half=Math.max(measureT(m,s,px,tk)/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+px*0.08;
   const sb=S.shadowSize>0?px*S.shadowSize/100*1.15:0, sx=px*S.shadowDist/100*0.12, sy=px*S.shadowDist/100*0.9;
-  const ex=(L.em&&S.extrude>0)?px*0.09*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
+  const ex=(S.extrude>0)?px*0.12*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
   const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy)), gb*1.6, ex*1.2)+px*0.12);
   const W=Math.ceil(half*2+pad*2), H=Math.ceil(asc+desc+pad*2), cx=W/2, cy=pad+asc;
   cvs.width=W; cvs.height=H;
@@ -387,9 +387,24 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
       if (p[0]==='t'){ f=m.createLinearGradient(0,-px*0.36,0,px*0.36); f.addColorStop(0,p[1]); f.addColorStop(1,p[2]); }
       else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; f=dir==='h'?m.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?m.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):m.createLinearGradient(0,-px*gsp,0,px*gsp); f.addColorStop(0,p[3]); f.addColorStop(1,p[4]); }
     }
-    if (ex>0){ const n=Math.max(2,Math.round(ex/1.5)); m.fillStyle='rgba(0,0,0,0.55)'; for (let i=n;i>=1;i--){ const q=i/n; fillT(m,s,ex*q*0.6,ex*q,px,tk); } }
+    if (ex>0){
+      // 3D hloubka: písmo „nakopírované za sebe“ ve stejných barvách (kopie se kreslí jen jednou – obrázek je v mezipaměti)
+      const t=document.createElement('canvas'); t.width=W; t.height=H; const tc=t.getContext('2d');
+      setFont(tc,L.fam,L.wt,L.it,px,tk); tc.textBaseline='middle'; tc.textAlign='center'; tc.translate(cx,cy);
+      let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[3]); tf.addColorStop(1,p[4]); } }
+      tc.fillStyle=tf;
+      const n=Math.min(28,Math.max(3,Math.round(ex/1.1)));
+      for (let i=n;i>=0;i--){ const q=i/n; fillT(tc,s,ex*q*0.55,ex*q,px,tk); }
+      if (sb>0){ m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx; m.shadowOffsetY=sy; }
+      m.setTransform(1,0,0,1,0,0); m.drawImage(t,0,0); m.translate(cx,cy);
+      m.shadowColor='transparent';
+      // přední plocha: tenký tmavý okraj odliší čelo písmen od hloubky stejné barvy
+      m.shadowColor=hexA(S.cShadow,0.45); m.shadowBlur=px*0.05; m.shadowOffsetX=0; m.shadowOffsetY=0;
+      m.fillStyle=f; fillT(m,s,0,0,px,tk); m.shadowColor='transparent';
+    } else {
     if (sb>0){ m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx; m.shadowOffsetY=sy; }
     m.fillStyle=f; fillT(m,s,0,0,px,tk);
+    }
     if (S.shadowSize>0){ m.shadowColor=hexA(S.cShadow,Math.min(0.6,S.shadowA/100*1.1)); m.shadowBlur=px*(S.shadowSize>40?S.shadowSize/250:0.035); m.shadowOffsetX=0; m.shadowOffsetY=px*0.02; fillT(m,s,0,0,px,tk); }
   }
   sp={cv:cvs,x:-cx,y:-cy};
@@ -449,7 +464,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 
   if (c!==ctx && E._band){
     const rr=Math.abs(Math.sin(wr+L.rot+er+S.rot*Math.PI/180)), k2=Math.max(sc,sc*sy);
-    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*1.2:0);
+    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.15*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*1.4:0);
     const yy=L.y+dy+wy; if (yy-ext<E._band[0]) E._band[0]=yy-ext; if (yy+ext>E._band[1]) E._band[1]=yy+ext;
   }
   c.save();
@@ -519,9 +534,12 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       b1.c.drawImage(shine,0,0,Wc,Hc,0,0,b1.w,b1.h); b2.c.drawImage(b1.cv,0,0,b1.w,b1.h,0,0,b2.w,b2.h);
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
       const A=a*((S.opacity??100)/100)*env;
-      c.globalAlpha=A*0.7; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);   // široká jemná záře kolem slova
-      c.globalAlpha=A*0.4; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);   // (2× = výraznější, pořád měkká)
-      c.globalAlpha=A*0.5; c.drawImage(b1.cv,0,0,b1.w,b1.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
+      // záře roztažená do stran (stejně silná, jen širší): dvakrát vodorovně natažená + jednou normálně
+      const sx1=Wc*0.35, sx2=Wc*0.75;
+      c.globalAlpha=A*0.45; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2-sx2,-cy-Hc*0.08,Wc+sx2*2,Hc*1.16);
+      c.globalAlpha=A*0.4;  c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2-sx1,-cy,Wc+sx1*2,Hc);
+      c.globalAlpha=A*0.35; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);
+      c.globalAlpha=A*0.45; c.drawImage(b1.cv,0,0,b1.w,b1.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
       c.globalAlpha=A*0.75; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
