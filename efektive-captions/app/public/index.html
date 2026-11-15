@@ -103,6 +103,7 @@
     <canvas id="cv"></canvas>
     <textarea id="inlineEdit" class="inline-edit hidden" rows="3"></textarea>
     <div class="fsbar" id="fsBar"><button class="ico play" id="fsPlay"><svg class="ic"><use href="#i-play"/></svg></button><button class="btn small" id="fsExit"><svg class="ic"><use href="#i-minimize"/></svg> Zavřít velký náhled</button></div>
+    <div class="waitbar" aria-hidden="true"><i></i>Načítám video…</div>
     <div id="inlineBar" class="inline-bar hidden"><button class="btn small" id="inlineCancel">Zrušit</button><button class="btn small primary" id="inlineOk">Hotovo</button></div>
   </div>
   <div class="ctrl">
@@ -212,7 +213,7 @@
 </div></div>
 
 <div class="toast" id="toast"></div>
-<video id="vid" playsinline preload="auto" class="hidden"></video>
+<video id="vid" playsinline webkit-playsinline preload="auto" class="srcvid"></video>
 <input type="file" id="ovIn" accept="image/*,video/*" hidden>
 
 <script src="native.js"></script>

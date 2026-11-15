@@ -242,7 +242,14 @@ document.addEventListener('keydown',e=>{ if (!$('editor').classList.contains('on
 function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.length-1; $('eyeBtn').classList.toggle('on',E.flags.hidden); $('eyeBtn').innerHTML=I(E.flags.hidden?'eye-off':'eye'); }
 
 // --- přehrávání ---
-function togglePlay(){ if (vid.paused){ ensureAC(); vid.play(); } else vid.pause(); }
+function togglePlay(){
+  if (vid.paused){ ensureAC(); const pr=vid.play(); if (pr && pr.catch) pr.catch(e=>{ console.warn('play',e); $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); }); }
+  else vid.pause();
+}
+// iPhone: když se video při přehrávání dočítá, ukázat to (jinak to vypadá, že se zaseklo)
+const setWait=on=>$('stage').classList.toggle('waiting',on);
+vid.addEventListener('waiting',()=>{ if (!vid.paused) setWait(true); });
+['playing','pause','seeked','canplay'].forEach(ev=>vid.addEventListener(ev,()=>setWait(false)));
 $('playBtn').onclick=togglePlay;
 vid.onplay=()=>{ $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=vid.currentTime; };
 vid.onpause=()=>{ $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); };
@@ -477,7 +484,8 @@ function pStyle(){
     ${em?slider('Velikost hlavního řádku (%)','emScale',60,260,1,'%'):slider('Velikost písma','size',30,200)}
     ${toggle('Kurzíva',em?'emItalic':'mainItalic')}
     ${slider('Tloušťka písma',em?'wEm':'wMain',100,900,100)}
-    ${slider('Mezera mezi slovy (%)','wordGap',40,260,5,'%')}`;
+    ${slider('Mezera mezi slovy (%)','wordGap',40,260,5,'%')}
+    ${slider('Průhlednost textu','opacity',10,100,1,'%')}`;
   } else if (st==='shadow'){
     const cs=S.shadowSize===0?'none':S.cShadow;
     h+=`<div class="clabel">Barva stínu</div><div class="swatches" id="shSw">${SHADOWS.map(([v,c])=>`<div class="swatch ${v==='none'?'none':''} ${cs===v?'on':''}" data-v="${v}" style="${c?'background:'+c:''}"></div>`).join('')}<div class="swatch rainbow ${!SHADOWS.some(s=>s[0]===cs)?'on':''}"><input type="color" id="shCustom" value="${S.cShadow}"></div></div>
@@ -682,8 +690,9 @@ async function thumbs(){
   const n=Math.max(1,Math.ceil(v.duration)), w=Math.round(30*v.videoWidth/v.videoHeight);
   for (let i=0;i<n;i++){ if (thumbsFor!==videoURL) return; await AI.seek(v,i+0.01); const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img); }
 }
-function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
-$('tlScroll').addEventListener('scroll',()=>{ if (tlSync||tlDrag) return; if (!vid.paused) return; vid.currentTime=clamp($('tlScroll').scrollLeft/pps,0,vid.duration-0.01); const k=E.pageAt(vid.currentTime); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
+let tlSyncT=0;
+function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; tlSyncT=performance.now(); sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
+$('tlScroll').addEventListener('scroll',()=>{ if (tlSync||tlDrag) return; if (!vid.paused) return; if (performance.now()-tlSyncT<350) return; vid.currentTime=clamp($('tlScroll').scrollLeft/pps,0,vid.duration-0.01); const k=E.pageAt(vid.currentTime); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
 $('tlZoom').oninput=e=>{ pps=+e.target.value; $('trV').querySelectorAll('img').forEach(i=>i.style.width=pps+'px'); renderTimeline(); };
 // tažení bloků (posun, zkrácení, prodloužení)
 let tlDrag=null;

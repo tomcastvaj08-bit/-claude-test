@@ -362,3 +362,19 @@ button.pro.on{background:var(--green)}
 .chipbtn .ic,.btnrow .btn:not(.primary) .ic,.panel .btn.small:not(.primary) .ic{stroke:url(#efg)}
 .chipbtn.on{background:linear-gradient(100deg,#ffe9e9,#fff1f1);border-color:#f3b4b4;color:var(--red)}
 .chipbtn.on .ic{stroke:var(--red)}
+
+/* zdrojové video: neviditelné, ale „na obrazovce“ – iPhone skryté video (display:none) přehrává trhaně / vůbec */
+.srcvid{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
+.waitbar{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(10,13,20,.8);color:#fff;font-size:13px;font-weight:700;padding:7px 12px;align-items:center;gap:8px;z-index:4}
+.waitbar i{width:12px;height:12px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:sp 1s linear infinite}
+.stage.waiting .waitbar{display:flex}
+
+/* ===== jemné 3D: hranaté rámečky s hloubkou (světlo shora, stín vpravo dole) ===== */
+.btn,.chipbtn,.card,.seg,.chip,.tpl,.proj,.steps li,.sel,.inp,.step button,.scope,.wmnote,.pro-ok,.exmore,.langlist,.ico.play{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 0 rgba(10,13,20,.06),3px 3px 0 rgba(10,13,20,.10),0 8px 18px -10px rgba(10,13,20,.25)}
+.btn.primary{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.18),4px 4px 0 var(--text),0 10px 22px -10px rgba(31,77,255,.55)}
+.ico.play{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.2),2px 2px 0 var(--text)}
+.chip.on,.seg div.on{box-shadow:inset 0 -2px 0 rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn:active,.chipbtn:active,.chip:active,.tpl:active,.ico.play:active{transform:translate(2px,2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),1px 1px 0 rgba(10,13,20,.12)}
+.btn.primary:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.3),2px 2px 0 var(--text)}
+.cb{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.18),2px 2px 0 rgba(10,13,20,.18)}
