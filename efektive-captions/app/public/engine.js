@@ -494,15 +494,19 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 }
 
 // ---------- 3D perspektiva (cedule otočená v prostoru) ----------
+let vframe=null, vfc=null, vfOk=false, vfFor=null;
 let gblur=null, gbc=null, gblur2=null, gbc2=null;
 let shine=null, shineC=null; function shineCtx(){ if(!shine){ shine=document.createElement('canvas'); shine.width=64; shine.height=64; shineC=shine.getContext('2d'); } return shineC; }
 let layer=null, lctx=null, layer2=null, l2ctx=null, gmask=null, gmctx=null, pm=null, pmc=null, t3=null, t3c=null;
 E.lastLines=null; E.lastBox=null;
-function glowMaskCtx(){ if(!gmask||gmask.width!==cv.width||gmask.height!==cv.height){ gmask=document.createElement('canvas'); gmask.width=cv.width; gmask.height=cv.height; gmctx=gmask.getContext('2d'); } return gmctx; }
+// 3D vrstva má po stranách rezervu (PAD) – řádky posunuté kinetikou za okraj videa se tak neuříznou dřív, než se nakloní
+const padX=()=>E._gl()?Math.round(cv.width*0.6):0;
+function glowMaskCtx(){ const W2=cv.width+2*padX(); if(!gmask||gmask.width!==W2||gmask.height!==cv.height){ gmask=document.createElement('canvas'); gmask.width=W2; gmask.height=cv.height; gmctx=gmask.getContext('2d'); } return gmctx; }
 function aux(){ if(!pm||pm.width!==cv.width||pm.height!==cv.height){ pm=document.createElement('canvas'); pm.width=cv.width; pm.height=cv.height; pmc=pm.getContext('2d'); t3=document.createElement('canvas'); t3.width=cv.width; t3.height=cv.height; t3c=t3.getContext('2d'); } }
 function layerCtx(){
-  if (!layer || layer.width!==cv.width || layer.height!==cv.height){
-    layer=document.createElement('canvas'); layer.width=cv.width; layer.height=cv.height; lctx=layer.getContext('2d');
+  const W2=cv.width+2*padX();
+  if (!layer || layer.width!==W2 || layer.height!==cv.height){
+    layer=document.createElement('canvas'); layer.width=W2; layer.height=cv.height; lctx=layer.getContext('2d');
     layer2=document.createElement('canvas'); layer2.width=cv.width; layer2.height=cv.height; l2ctx=layer2.getContext('2d');
   }
   return lctx;
@@ -570,12 +574,16 @@ function glProject(src, dst, bx, by, S){
   const g=E._gl(), gl=g.gl, Wd=cv.width, Hd=cv.height;
   const y0=Math.max(0,Math.floor(band?band[0]:0)), y1=Math.min(Hd,Math.ceil(band?band[1]:Hd)), hb=Math.max(1,y1-y0);
   if (!bandCv){ bandCv=document.createElement('canvas'); bandC=bandCv.getContext('2d'); }
-  if (bandCv.width!==Wd || bandCv.height!==hb){ bandCv.width=Wd; bandCv.height=hb; } else bandC.clearRect(0,0,Wd,hb);
-  bandC.drawImage(src,0,y0,Wd,hb,0,0,Wd,hb);
-  const q=[[0,y0],[Wd,y0],[Wd,y1],[0,y1]].map(([x,y])=>proj3(x,y,bx,by,S));
+  const Ws=src.width, P=(Ws-Wd)/2;
+  if (bandCv.width!==Ws || bandCv.height!==hb){ bandCv.width=Ws; bandCv.height=hb; } else bandC.clearRect(0,0,Ws,hb);
+  bandC.drawImage(src,0,y0,Ws,hb,0,0,Ws,hb);
+  const q=[[-P,y0],[Wd+P,y0],[Wd+P,y1],[-P,y1]].map(([x,y])=>proj3(x,y,bx,by,S));
   const xs=q.map(a=>a[0]), ys=q.map(a=>a[1]);
-  const rx=Math.max(-Wd,Math.floor(Math.min(...xs))), ry=Math.max(-Hd,Math.floor(Math.min(...ys)));
-  const rw=Math.max(1,Math.min(2*Wd,Math.ceil(Math.max(...xs)))-rx), rh=Math.max(1,Math.min(2*Hd,Math.ceil(Math.max(...ys)))-ry);
+  // jen viditelná část (plátno videa) – co je za okrajem, stejně vidět není
+  const mx=Wd*0.5, my=Hd*0.25;   // rezerva pro vycentrování v project3D
+  const rx=Math.max(-mx,Math.floor(Math.min(...xs))), ry=Math.max(-my,Math.floor(Math.min(...ys)));
+  const rx2=Math.min(Wd+mx,Math.ceil(Math.max(...xs))), ry2=Math.min(Hd+my,Math.ceil(Math.max(...ys)));
+  const rw=Math.max(1,rx2-rx), rh=Math.max(1,ry2-ry);
   if (g.c.width<rw || g.c.height<rh){ g.c.width=Math.max(g.c.width,rw); g.c.height=Math.max(g.c.height,rh); }
   gl.viewport(0,0,rw,rh); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,bandCv);
@@ -681,7 +689,16 @@ E.render = (t, opts={}) => {
   if (!vid || !vid.videoWidth) return;
   const F=E.flags;
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.shadowColor='transparent'; ctx.filter='none';
-  if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height); else if (opts.frameDraw) opts.frameDraw(ctx,cv.width,cv.height); else ctx.drawImage(vid,0,0,cv.width,cv.height);
+  if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height);
+  else if (opts.frameDraw) opts.frameDraw(ctx,cv.width,cv.height);
+  else {
+    // čistý podklad + poslední dobrý snímek videa: když iPhone snímek zrovna nedá, nezůstane na plátně starý obraz se starými titulky
+    if (!vframe||vframe.width!==cv.width||vframe.height!==cv.height){ vframe=document.createElement('canvas'); vframe.width=cv.width; vframe.height=cv.height; vfc=vframe.getContext('2d'); vfOk=false; }
+    if (vfFor!==vid){ vfFor=vid; vfOk=false; }
+    if (vid.readyState>=2){ try{ vfc.drawImage(vid,0,0,cv.width,cv.height); vfOk=true; }catch(e){} }
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,cv.width,cv.height);
+    if (vfOk) ctx.drawImage(vframe,0,0);
+  }
   // overlaye pod titulky
   for (const o of E.overlays) if (!o.above) E.drawOverlay(ctx,o,t);
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni
@@ -708,7 +725,7 @@ function drawPage(k,t){
   const direct = (noTilt || S.negativ);
   const c = direct ? ctx : layerCtx();
   E._glowUsed=false; E._band=direct?null:[Infinity,-Infinity];
-  if (!direct){ c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,cv.width,cv.height); const m=glowMaskCtx(); m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,cv.width,cv.height); }
+  if (!direct){ const P=padX(); c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,c.canvas.width,c.canvas.height); const m=glowMaskCtx(); m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,m.canvas.width,m.canvas.height); c.setTransform(1,0,0,1,P,0); }
   // odchod celého bloku: rychlé zmenšení kolem středu titulku (Base: na 60 % za 0,1 s)
   let bs=1;
   if (S.exitScale!=null && S.fadeOut){ const ex=clamp((p.e-t)/(S.exitDur||0.1)), exs=ex*ex*(3-2*ex); bs=S.exitScale+(1-S.exitScale)*exs; }
