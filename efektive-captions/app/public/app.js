@@ -344,12 +344,14 @@ function slider(lb,key,min,max,step=1,unit=''){ const id='c'+C.length; C.push(['
 function toggle(lb,key,onv=true,offv=false){ const id='c'+C.length; C.push(['tog',id,key,onv,offv]); return `<div class="row"><span>${lb}</span><input type="checkbox" class="sw" id="${id}" ${cur()[key]===onv?'checked':''}></div>`; }
 function chips(lb,key,opts){ const id='c'+C.length; C.push(['chips',id,key]); const v=String(cur()[key]); return `${lb?`<div class="clabel">${lb}</div>`:''}<div class="chips" id="${id}">${opts.map(([val,l])=>`<div class="chip ${String(val)===v?'on':''}" data-v="${val}">${l}</div>`).join('')}</div>`; }
 function color(lb,key){ const id='c'+C.length; C.push(['color',id,key]); return `<label><input type="color" id="${id}" value="${cur()[key]}">${lb}</label>`; }
+// ruční výběr barev hlavního řádku → vypnout střídání barvy (jinak by každý N-tý titulek zůstal modrý)
+function stopAlt(){ if (!E.G.altOn) return; E.G.altOn=false; for (const k in E.meta){ const o=E.meta[k].own; if (o) delete o.altOn; } toast('Střídání barvy vypnuté – platí tvoje barvy'); }
 function bindControls(){
   for (const [type,id,key,a,b] of C){
     const el=$(id); if (!el) continue;
     if (type==='range'){ el.oninput=()=>{ $(id+'v').textContent=el.value+el.dataset.unit; setVal(key,+el.value,true); }; el.onchange=()=>changed(); }
     else if (type==='tog') el.onchange=()=>setVal(key,el.checked?a:b);
-    else if (type==='color'){ el.oninput=()=>setVal(key,el.value,true); el.onchange=()=>changed(); }
+    else if (type==='color'){ el.oninput=()=>{ if (key==='gA'||key==='gB') stopAlt(); setVal(key,el.value,true); }; el.onchange=()=>changed(); }
     else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout') renderPanel(); };
   }
   C.length=0;

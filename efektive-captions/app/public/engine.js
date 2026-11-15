@@ -67,7 +67,7 @@ E.setWid=v=>{wid=Math.max(wid,v);};
 E.G = {
   size:88, wpp:4, maxLines:3, maxChars:0, posX:50, posY:66,
   cText:'#ffffff', cShadow:'#000000', c1:'#e4202c', c2:'#e4202c', c3:'#e4202c', c4:'#e4202c',
-  grad:true, gA:'#ff9300', gB:'#fff200', gradDir:'v', altEvery:4, altA:'#8fe0ff', altB:'#0a62e6', altOn:true,
+  grad:true, gA:'#ff9300', gB:'#fff200', gradDir:'v', altEvery:4, altA:'#8fe0ff', altB:'#0a62e6', altOn:false,
   negativ:false, shadowSize:25, shadowA:45, shadowDist:10, extrude:0, glow:30, glowMode:'always',
   fontMain:SF, wMain:700, mainItalic:false, fontEm:SF, wEm:900, emItalic:false,
   track:-4, gap:66, emScale:160, wordGap:160,
