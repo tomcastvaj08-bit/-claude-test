@@ -564,12 +564,10 @@ binders.motion=(function(prev){ return ()=>{ prev&&prev(); const x=$('exitSt'); 
 binders.sfx=()=>{ $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; playSfx(c.dataset.v); setVal('sfx',c.dataset.v); $('sfxList').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); }; };
 
 // ---------- OVERLAY ----------
-const STICKERS=['💸','💰','⚡','🔥','✅','❌','⭐','👉','👇','➡️','🚀','💯','❤️','😂','🤯','👀','📈','🎯'];
 const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide doprava'],['slideL','Slide doleva'],['slideU','Slide nahoru'],['slideD','Slide dolů']];
 function pOverlay(){
   const o=E.overlays.find(x=>x.id===selOv);
   let h=`<div class="btnrow"><button class="btn" id="ovImg">${I('image')} Přidat obrázek / video</button></div>
-  <div class="clabel">Nálepky</div><div class="stickers" id="stk">${STICKERS.map(s=>`<div>${s}</div>`).join('')}</div>
   <div class="row"><span>Wiggle na všechny overlaye</span><input type="checkbox" class="sw" id="ovWigAll" ${E.overlays.length&&E.overlays.every(x=>x.wiggle)?'checked':''}></div>`;
   if (o){
     h+=`<div class="clabel">Vybraný overlay – animace</div><div class="chips" id="ovAnim">${OVANIM.map(([v,l])=>`<div class="chip ${o.anim===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
@@ -584,7 +582,6 @@ function pOverlay(){
 }
 binders.overlay=()=>{
   $('ovImg').onclick=()=>$('ovIn').click();
-  $('stk').onclick=e=>{ const d=e.target.closest('div'); if(!d||d.id==='stk') return; addOverlay({emoji:d.textContent}); };
   $('ovWigAll').onchange=e=>{ E.overlays.forEach(o=>o.wiggle=e.target.checked); changed(); renderPanel(); };
   const o=E.overlays.find(x=>x.id===selOv); if (!o) return;
   $('ovAnim').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; o.anim=c.dataset.v; changed(); renderPanel(); vid.currentTime=o.s; };
@@ -673,7 +670,7 @@ function renderTimeline(){
     return `<div class="cb ${k===curPage?'cur':''} ${m&&m.own&&Object.keys(m.own).some(x=>x!=='posY'&&x!=='posX'&&x!=='_manualPos')?'own':''}" data-k="${k}" style="left:${X(p.s)}px;width:${Math.max(6,(p.e-p.s)*pps-2)}px"><span class="hl"></span>${esc(txt.join(' '))}<span class="hr"></span></div>`; }).join('');
   $('trC').innerHTML=cbHtml(0); $('trC2').innerHTML=cbHtml(1);
   $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>${I('ban')} ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">${I('x')}</span><span class="hr"></span></div>`).join('');
-  $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${o.emoji?o.emoji:I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
+  $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
   $('trV').style.paddingLeft=pad+'px';
   if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
   followTimeline(vid.currentTime,true);

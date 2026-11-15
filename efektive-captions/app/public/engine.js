@@ -604,6 +604,7 @@ function project3D(src, bx, by, S, target){
 // ---------- OVERLAY (nálepky / obrázky přes video) ----------
 // o = {id, src:Image|Video|null, emoji?, s, e, x, y (střed v %), w (% šířky), rot, anim, wiggle, above}
 E.drawOverlay = (c, o, t) => {
+  if (o.emoji) return;   // emoji nálepky už aplikace nemá (ani ze starých projektů)
   if (t<o.s || t>o.e) return;
   const W=cv.width, H=cv.height, since=t-o.s, left=o.e-t;
   const q=clamp(since/0.5), eo=1-Math.pow(2,-10*q), fadeOut=clamp(left/0.25);
