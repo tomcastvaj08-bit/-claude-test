@@ -361,6 +361,41 @@ function mainColor(S,k){
 }
 E.mainColor=mainColor;
 
+
+// ---------- „vypálené“ slovo: písmo + stín (+ hloubka) v jednom obrázku, s mezipamětí ----------
+const SPR=new Map();
+function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
+  const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,L.em?S.extrude:0,kind==='glow'?S.glow+'|'+glowCol:''].join('~');
+  let sp=SPR.get(key); if (sp){ SPR.delete(key); SPR.set(key,sp); return sp; }
+  const px=L.px, cvs=document.createElement('canvas'), m=cvs.getContext('2d');
+  setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center';
+  const mt=m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0,px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0,px*0.45);
+  const half=Math.max(measureT(m,s,px,tk)/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+px*0.08;
+  const sb=S.shadowSize>0?px*S.shadowSize/100*1.15:0, sx=px*S.shadowDist/100*0.12, sy=px*S.shadowDist/100*0.9;
+  const ex=(L.em&&S.extrude>0)?px*0.09*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
+  const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy)), gb*1.6, ex*1.2)+px*0.12);
+  const W=Math.ceil(half*2+pad*2), H=Math.ceil(asc+desc+pad*2), cx=W/2, cy=pad+asc;
+  cvs.width=W; cvs.height=H;
+  setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center'; m.translate(cx,cy);
+  if (kind==='glow'){
+    m.shadowColor=hexA(glowCol,0.9); m.shadowBlur=gb; m.fillStyle=glowCol; fillT(m,s,0,0,px,tk);
+  } else {
+    // stejná výplň jako dřív (přechod v souřadnicích slova)
+    let f=fill;
+    if (typeof fill!=='string'){
+      const p=fd.split('|');
+      if (p[0]==='t'){ f=m.createLinearGradient(0,-px*0.36,0,px*0.36); f.addColorStop(0,p[1]); f.addColorStop(1,p[2]); }
+      else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; f=dir==='h'?m.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?m.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):m.createLinearGradient(0,-px*gsp,0,px*gsp); f.addColorStop(0,p[3]); f.addColorStop(1,p[4]); }
+    }
+    if (ex>0){ const n=Math.max(2,Math.round(ex/1.5)); m.fillStyle='rgba(0,0,0,0.55)'; for (let i=n;i>=1;i--){ const q=i/n; fillT(m,s,ex*q*0.6,ex*q,px,tk); } }
+    if (sb>0){ m.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); m.shadowBlur=sb; m.shadowOffsetX=sx; m.shadowOffsetY=sy; }
+    m.fillStyle=f; fillT(m,s,0,0,px,tk);
+    if (S.shadowSize>0){ m.shadowColor=hexA(S.cShadow,Math.min(0.6,S.shadowA/100*1.1)); m.shadowBlur=px*(S.shadowSize>40?S.shadowSize/250:0.035); m.shadowOffsetX=0; m.shadowOffsetY=px*0.02; fillT(m,s,0,0,px,tk); }
+  }
+  sp={cv:cvs,x:-cx,y:-cy};
+  SPR.set(key,sp); if (SPR.size>64){ SPR.delete(SPR.keys().next().value); }
+  return sp;
+}
 function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   const exitDur = S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
@@ -432,29 +467,28 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   const gs=S.gradSpan||0.5, ww=wWidth/(L.cond||1);
   if (!L.em && S.textGrad && S.cText2 && S.cText2!==S.cText){ const g=c.createLinearGradient(0,-L.px*0.36,0,L.px*0.36); g.addColorStop(0,S.cText); g.addColorStop(1,S.cText2); fill=g; }
   if (L.em && S.grad){ const dir=S.gradDir, g=dir==='h'?c.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?c.createLinearGradient(-ww/2,-L.px*gs,ww/2,L.px*gs):c.createLinearGradient(0,-L.px*gs,0,L.px*gs); g.addColorStop(0,mA); g.addColorStop(1,mB); fill=g; }
+  let gMul=1; if (S.glowMode==='entrance') gMul = clamp(1-(since-0.15)/0.6);
+  const burn = !(L.em&&S.negativ) && blur<=0.5;
+  if (burn){
+    // Text i se stínem jako jeden „vypálený“ obrázek: stín se natáčí, zmenšuje a mizí přesně s písmem
+    const fd = L.em ? (S.grad ? `g|${S.gradDir}|${gs}|${mA}|${mB}|${S.gradDir==='v'?0:Math.round(ww)}` : `c|${mA}`) : (S.textGrad && S.cText2 && S.cText2!==S.cText ? `t|${S.cText}|${S.cText2}` : `c|${S.cText}`);
+    if (L.em && S.glow>0 && gMul>0){
+      E._glowColor=mA;
+      if (c===ctx){
+        const g=wordSprite('glow',s,L,tk,fd,fill,S,mA);
+        c.save(); c.shadowColor='transparent'; c.globalAlpha*=gMul*(0.35+S.glow/100*0.5); c.drawImage(g.cv,g.x,g.y); c.restore();
+      } else {
+        const m=glowMaskCtx(); m.save(); m.setTransform(c.getTransform()); m.globalAlpha=a*gMul; m.font=c.font; if('letterSpacing' in m) m.letterSpacing=c.letterSpacing; m.textBaseline='middle'; m.textAlign='center'; m.fillStyle=mA; fillT(m,s,0,0,L.px,tk); m.restore();
+        E._glowUsed=true;
+      }
+    }
+    const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
+    c.shadowColor='transparent'; c.drawImage(sp.cv,sp.x,sp.y);
+  } else {
   if (L.em && S.negativ){ c.globalCompositeOperation='difference'; fill='#ffffff'; }
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
-  if (L.em && S.extrude>0 && !S.negativ){
-    const d=L.px*0.09*S.extrude/100, n=Math.max(2,Math.round(d/1.5));
-    c.save(); c.shadowColor='transparent'; c.fillStyle='rgba(0,0,0,0.55)';
-    for (let i=n;i>=1;i--){ const q=i/n; fillT(c,s, d*q*0.6, d*q, L.px, tk); }
-    c.restore();
-  }
-  // záře okolo hlavního písma – stálá, nebo jen při nástupu (rozsvítí se a do 0,7 s zhasne)
-  let gMul=1; if (S.glowMode==='entrance') gMul = clamp(1-(since-0.15)/0.6);
-  if (L.em && S.glow>0 && gMul>0 && !S.negativ){
-    const gc = mA; E._glowColor=mA;
-    if (c===ctx){
-      c.save(); c.shadowOffsetX=0; c.shadowOffsetY=0; c.shadowColor=hexA(gc,0.9); c.shadowBlur=L.px*(0.3+S.glow/100*0.9); c.globalAlpha=a*gMul*(0.35+S.glow/100*0.5); c.fillStyle=gc; fillT(c,s,0,0,L.px,tk); c.restore();
-    } else {
-      const m=glowMaskCtx(); m.save(); m.setTransform(c.getTransform()); m.globalAlpha=a*gMul; m.font=c.font; if('letterSpacing' in m) m.letterSpacing=c.letterSpacing; m.textBaseline='middle'; m.textAlign='center'; m.fillStyle=gc; fillT(m,s,0,0,L.px,tk); m.restore();
-      E._glowUsed=true;
-    }
-  }
   c.fillStyle=fill; fillT(c,s,0,0,L.px,tk);
-  // druhý, ostrý „kontaktní“ stín těsně pod písmem → písmo je čisté a plastické i na světlém pozadí
-  if (S.shadowSize>0 && !(L.em&&S.negativ)){ c.shadowColor=hexA(S.cShadow,Math.min(0.6,S.shadowA/100*1.1)); c.shadowBlur=L.px*(S.shadowSize>40?S.shadowSize/250:0.035); c.shadowOffsetX=0; c.shadowOffsetY=L.px*0.02; fillT(c,s,0,0,L.px,tk); }
-
+  }
   // SHINE: úzký měkký šikmý proužek světla plynule přejede zleva doprava – jen UVNITŘ písmen hlavního slova
   const shineOk = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0);
   if (S.fxShine && shineOk && L.em && !S.negativ){
