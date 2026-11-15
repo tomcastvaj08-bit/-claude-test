@@ -20,7 +20,7 @@ html,body{overflow:hidden;background:var(--navy)}
 #txt .eyebrow i{display:block;background:var(--blue)}
 #txt .yr{font-weight:800;line-height:.86;letter-spacing:-0.03em;color:#fff;white-space:nowrap}
 #txt .yr b{color:var(--blue);font-weight:800;margin-right:.18em}
-#fw{inset:0;pointer-events:none}
+#fw{inset:0;pointer-events:none;z-index:2}
 #txt h1{font-weight:800;color:#fff;white-space:nowrap}
 #txt h1 em{font-style:normal;color:var(--blue)}
 #txt .rule{position:relative}
@@ -65,15 +65,21 @@ function render(o){
   const W=o.w,H=o.h,u=H/1800,M=200*u;
   for(const el of [document.documentElement,document.body]) el.style.cssText=`width:${W}px;height:${H}px`;
   const c=document.getElementById('c'); c.style.width=W+'px'; c.style.height=H+'px';
-  // lev vpravo – fotka plynule prolnutá do navy (vlevo a dole)
-  const lw=o.lionW*u, lh=lw*1080/604, lx=W-lw+o.lionShift*u, ly=o.lionTop*u;
-  const lion=document.getElementById('lion');
+  // lev vpravo
+  let lw,lh,lx,ly; const lion=document.getElementById('lion');
+  if(o.cut){ lh=o.cut.h*u; lw=lh*1188/1324; lx=o.cut.x*u; ly=H-lh+(o.cut.dy||0)*u;
+    lion.src=o.cut.src;
+    Object.assign(lion.style,{left:lx+'px',top:ly+'px',width:lw+'px',height:lh+'px',objectFit:'contain',zIndex:2,webkitMaskImage:'none',
+      filter:`drop-shadow(0 0 ${60*u}px rgba(0,136,218,.35))`});
+  } else {
+  lw=o.lionW*u; lh=lw*1080/604; lx=W-lw+o.lionShift*u; ly=o.lionTop*u;
   Object.assign(lion.style,{left:lx+'px',top:ly+'px',width:lw+'px',height:lh+'px',
     webkitMaskImage:`linear-gradient(90deg,transparent 0,rgba(0,0,0,.18) ${lw*0.1}px,rgba(0,0,0,.6) ${lw*0.22}px,#000 ${lw*0.36}px), linear-gradient(0deg,transparent 0,#000 ${lh*0.22}px)`,
-    webkitMaskComposite:'source-in'});
+    webkitMaskComposite:'source-in'}); }
   document.getElementById('glow').style.background=[
+    o.cut?`radial-gradient(${lw*0.75}px ${lh*0.6}px at ${lx+lw*0.55}px ${ly+lh*0.42}px, rgba(0,136,218,.38), rgba(0,136,218,.12) 55%, rgba(0,136,218,0) 80%)`:'',
     `radial-gradient(${1300*u}px ${900*u}px at ${W*0.47}px ${H*0.45}px, rgba(0,136,218,.16), rgba(0,136,218,0) 70%)`
-  ].join(',');
+  ].filter(Boolean).join(',');
   // průhledné logo v pozadí
   const ms=o.markSize*u;
   const mk=document.getElementById('marks'), mcx=o.markX*u, mcy=H/2+o.markDy*u;
@@ -83,14 +89,14 @@ function render(o){
   else mk.innerHTML='';
   if(o.hexPhoto){ const hs=document.createElementNS('http://www.w3.org/2000/svg','svg'); }
   const ex=lx+lw*0.64, ey=ly+lh*0.52, rx=lw*0.48, ry=lh*0.56;
-  mk.style.webkitMaskImage=`radial-gradient(${rx}px ${ry}px at ${ex}px ${ey}px, transparent 0%, transparent 40%, rgba(0,0,0,.4) 75%, #000 105%)`;
+  mk.style.webkitMaskImage= o.cut ? 'none' : `radial-gradient(${rx}px ${ry}px at ${ex}px ${ey}px, transparent 0%, transparent 40%, rgba(0,0,0,.4) 75%, #000 105%)`;
   // úl vlevo za textem
   const hx=document.getElementById('hex'); hx.setAttribute('viewBox',`0 0 ${W} ${H}`); hx.setAttribute('width',W); hx.setAttribute('height',H);
   hx.innerHTML=hexes(W,H,u,-60*u,H*0.66,1400*u);
   const h2=document.getElementById('hex2'); h2.setAttribute('viewBox',`0 0 ${W} ${H}`); h2.setAttribute('width',W); h2.setAttribute('height',H);
   h2.innerHTML = o.hexPhoto ? hexes(W,H,u,W+80*u,H*0.35,1150*u).replace(/id="m"/g,'id="m2"').replace(/url\(#m\)/g,'url(#m2)').replace(/id="k"/g,'id="k2"').replace(/url\(#k\)/g,'url(#k2)') : '';
   h2.style.opacity=.85;
-  { const ex=W-o.lionW*u+o.lionShift*u+o.lionW*u*0.64, ly2=o.lionTop*u, lh2=o.lionW*u*1080/604, ey=ly2+lh2*0.45; h2.style.webkitMaskImage=`radial-gradient(${o.lionW*u*0.36}px ${lh2*0.46}px at ${ex}px ${ey}px, transparent 0%, transparent 50%, rgba(0,0,0,.4) 78%, #000 105%)`; }
+  if(o.cut) h2.style.webkitMaskImage='none'; else { const ex=W-o.lionW*u+o.lionShift*u+o.lionW*u*0.64, ly2=o.lionTop*u, lh2=o.lionW*u*1080/604, ey=ly2+lh2*0.45; h2.style.webkitMaskImage=`radial-gradient(${o.lionW*u*0.36}px ${lh2*0.46}px at ${ex}px ${ey}px, transparent 0%, transparent 50%, rgba(0,0,0,.4) 78%, #000 105%)`; }
   // logo
   const k=1.85*u, L=document.getElementById('logo');
   Object.assign(L.style,{left:(M-15*k)+'px',top:120*u+'px',width:388*k+'px',height:116*k+'px'});
@@ -100,9 +106,9 @@ function render(o){
   const t=document.getElementById('txt');
   t.innerHTML=`
    <div class="yr" style="font-size:${o.yrSize*u}px;margin-left:${-14*u}px"><b>PF</b>2027</div>
-   <h1 style="font-size:${158*u}px;line-height:${164*u}px;margin-top:${70*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
-   <p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.2*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${126*u}px;line-height:${138*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
+   <h1 style="font-size:${150*u}px;line-height:${156*u}px;margin-top:${64*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
+   <p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.12*u}px;margin-top:${50*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${146*u}px;line-height:${156*u}px;margin-top:${34*u}px">${fmt(o.sign)}</p>`;
   Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
