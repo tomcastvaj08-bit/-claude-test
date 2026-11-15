@@ -414,7 +414,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 
   if (c!==ctx && E._band){
     const rr=Math.abs(Math.sin(wr+L.rot+er+S.rot*Math.PI/180)), k2=Math.max(sc,sc*sy);
-    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100;
+    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*0.45:0);
     const yy=L.y+dy+wy; if (yy-ext<E._band[0]) E._band[0]=yy-ext; if (yy+ext>E._band[1]) E._band[1]=yy+ext;
   }
   c.save();
@@ -465,7 +465,8 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textBaseline='middle';
       // rozměry písmen od středové linky (i s háčky a čárkami nahoře) – nic se neořízne
       const mt = m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0, L.px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0, L.px*0.45);
-      const tw = measureT(m,s,L.px,tk), Wc=Math.ceil(tw+pad*2), Hc=Math.ceil(asc+desc+pad*2);
+      const tw = measureT(m,s,L.px,tk), half=Math.max(tw/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+L.px*0.1;
+      const Wc=Math.ceil(half*2+pad*2), Hc=Math.ceil(asc+desc+pad*2);
       if (shine.width<Wc) shine.width=Wc; if (shine.height<Hc) shine.height=Hc;
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1; m.clearRect(0,0,shine.width,shine.height);
       // 1) tvar písmen
@@ -480,9 +481,12 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over';
       // 3) přes slovo (v jeho souřadnicích, se stejným natočením / zmenšením)
-      c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='source-over';
-      c.globalAlpha=a*0.9*Math.sin(Math.PI*Math.min(1,q*1.15));
-      c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);
+      const env=Math.sin(Math.PI*Math.min(1,q*1.1));
+      c.save(); c.globalCompositeOperation='source-over';
+      // jemná záře kolem proužku (měkký stín v barvě světla – nic se neořízne, kreslí se do celého plátna)
+      c.shadowColor='rgba(255,255,255,0.85)'; c.shadowBlur=L.px*0.32; c.shadowOffsetX=0; c.shadowOffsetY=0;
+      c.globalAlpha=a*0.55*env; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);
+      c.shadowColor='transparent'; c.globalAlpha=a*0.9*env; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);
       c.restore();
     }
   }

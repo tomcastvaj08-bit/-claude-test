@@ -284,10 +284,12 @@ vid.addEventListener('playing',()=>{ clkReset(); clk.run=true; });
 ['pause','seeked','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ clk.run=false; clkReset(); }));
 function smoothTime(){
   if (!clk.run || vid.paused || vid.seeking) return vid.currentTime;
-  const now=performance.now(), rate=vid.playbackRate||1;
+  const now=performance.now(), rate=vid.playbackRate||1, ct=vid.currentTime;
+  if (ct!==clk.lastCt){ clk.lastCt=ct; clk.ctAt=now; }
+  if (now-(clk.ctAt||now)>350){ clk.base=Math.max(ct,clk.last); clk.at=now; clk.ref=null; return clk.last; }   // video stojí (dočítá se) → titulky taky stojí
   let t=clk.base+(now-clk.at)/1000*rate;
   const err=videoNow(now)-t;
-  if (Math.abs(err)>0.4){ clkReset(); return clk.last; }      // opravdový skok (dočítání) → srovnat
+  if (err>0.4 || err<-1){ clkReset(); clk.last=Math.max(clk.last,clk.base); return clk.last; }   // skok → srovnat bez couvání
   clk.base+=err*0.03;                                          // pomalé neznatelné dorovnání
   t=clk.base+(now-clk.at)/1000*rate;
   if (t<clk.last) t=clk.last;                                  // nikdy necouvat = žádné cukání
@@ -745,16 +747,22 @@ function auxVideo(){ return new Promise(res=>{ const v=document.createElement('v
 function freeVideo(v){ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch(e){} }
 async function thumbs(){
   if (thumbsFor===videoURL) return; thumbsFor=videoURL; const tr=$('trV'); tr.innerHTML='';
-  const v=await auxVideo();
-  try{
-    const n=Math.max(1,Math.ceil(v.duration||0));
-    for (let i=0;i<n;i++){
-      if (thumbsFor!==videoURL) return;
-      // během přehrávání náhledy nedělat – brzdily by hlavní video
-      while (!vid.paused && thumbsFor===videoURL) await new Promise(r=>setTimeout(r,400));
-      await AI.seek(v,i+0.01); const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img);
-    }
-  } finally { freeVideo(v); }
+  const url=videoURL; let i=0, n=null;
+  while (thumbsFor===url){
+    // přehrává se → pomocné video vůbec nedržet (iPhone pak hlavní video nestíhá dekódovat)
+    while (!vid.paused && thumbsFor===url) await new Promise(r=>setTimeout(r,500));
+    if (thumbsFor!==url) return;
+    const v=await auxVideo();
+    try{
+      if (n==null) n=Math.max(1,Math.ceil(v.duration||0));
+      for (; i<n; i++){
+        if (thumbsFor!==url || !vid.paused) break;               // uživatel pustil video → uvolnit a počkat
+        await AI.seek(v,i+0.01); if (!vid.paused) break;
+        const c=AI.grab(v,90); const img=new Image(); img.src=c.toDataURL('image/jpeg',0.6); img.style.width=(pps)+'px'; tr.appendChild(img);
+      }
+    } finally { freeVideo(v); }
+    if (n!=null && i>=n) return;
+  }
 }
 let tlSyncT=0;
 function followTimeline(t,force){ const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; tlSyncT=performance.now(); sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
