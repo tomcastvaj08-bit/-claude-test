@@ -357,3 +357,8 @@ button.pro.on{background:var(--green)}
 .pro-tag{background:var(--grad)}
 .chipbtn:active,.btn:active{filter:brightness(.95)}
 .btn .plus{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px}
+/* nástrojová tlačítka (timeline + panely): světle modrý podklad, ikony v přechodu EFEKTIVE */
+.chipbtn,.btnrow .btn:not(.primary),.panel .btn.small:not(.primary){background:linear-gradient(100deg,#eef3ff 0%,#eaf6f1 100%);border:1px solid #c9d7ff;color:var(--text)}
+.chipbtn .ic,.btnrow .btn:not(.primary) .ic,.panel .btn.small:not(.primary) .ic{stroke:url(#efg)}
+.chipbtn.on{background:linear-gradient(100deg,#ffe9e9,#fff1f1);border-color:#f3b4b4;color:var(--red)}
+.chipbtn.on .ic{stroke:var(--red)}
