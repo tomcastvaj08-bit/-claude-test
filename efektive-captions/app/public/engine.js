@@ -515,7 +515,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textBaseline='middle';
       const mt = m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0, L.px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0, L.px*0.45);
       const tw = measureT(m,s,L.px,tk), half=Math.max(tw/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+L.px*0.1;
-      const pad=Math.ceil(L.px*1.1), Wc=Math.ceil(half*2+pad*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
+      const pad=Math.ceil(L.px*0.9), padX=Math.ceil(L.px*1.8), Wc=Math.ceil(half*2+padX*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
       if (shine.width!==Wc||shine.height!==Hc){ shine.width=Wc; shine.height=Hc; } else { m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,Wc,Hc); }
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1;
       // 1) tvar písmen
@@ -528,19 +528,19 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       g.addColorStop(0,'rgba(255,248,225,0)'); g.addColorStop(0.3,'rgba(255,248,225,.35)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.7,'rgba(255,248,225,.35)'); g.addColorStop(1,'rgba(255,248,225,0)');
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over';
-      // 3) záře kolem: rozmazání zmenšením (dvě úrovně, ať je záře hladká)
-      const k1=Math.max(3,Math.round(L.px*0.08)), k2=Math.max(6,Math.round(L.px*0.2));
-      const b1=shineBlur(1,Math.ceil(Wc/k1),Math.ceil(Hc/k1)), b2=shineBlur(2,Math.ceil(Wc/k2),Math.ceil(Hc/k2));
-      b1.c.drawImage(shine,0,0,Wc,Hc,0,0,b1.w,b1.h); b2.c.drawImage(b1.cv,0,0,b1.w,b1.h,0,0,b2.w,b2.h);
+      // 3) záře kolem: hladké rozmazání po krocích (zmenšit/zvětšit vždy jen 2×) → žádné rovné hrany ani bloky
+      const lv=Math.max(2,Math.min(6,Math.round(Math.log2(L.px*0.3))));
+      // rozmazání po krocích, vodorovně víc než svisle (lx > ly) → záře se rozlije do stran bez tvaru písmen
+      const blurAt=(lx,ly,tag)=>{ let src=shine, w=Wc, h=Hc; const dn=[]; const n=Math.max(lx,ly);
+        for (let i=1;i<=n;i++){ const nw=i<=lx?Math.max(1,Math.ceil(w/2)):w, nh=i<=ly?Math.max(1,Math.ceil(h/2)):h; const o=shineBlur(tag+'d'+i,nw,nh); o.c.drawImage(src,0,0,w,h,0,0,nw,nh); dn.push(o); src=o.cv; w=nw; h=nh; }
+        for (let i=n-1;i>=1;i--){ const t=dn[i-1]; const o=shineBlur(tag+'u'+i,t.w,t.h); o.c.drawImage(src,0,0,w,h,0,0,t.w,t.h); src=o.cv; w=t.w; h=t.h; }
+        return {cv:src,w,h}; };
+      const wide=blurAt(lv+1,Math.max(1,lv-1),'w'), near=blurAt(Math.max(1,lv-1),Math.max(1,lv-2),'n');
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
       const A=a*((S.opacity??100)/100)*env;
-      // záře roztažená do stran (stejně silná, jen širší): dvakrát vodorovně natažená + jednou normálně
-      const sx1=Wc*0.35, sx2=Wc*0.75;
-      c.globalAlpha=A*0.45; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2-sx2,-cy-Hc*0.08,Wc+sx2*2,Hc*1.16);
-      c.globalAlpha=A*0.4;  c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2-sx1,-cy,Wc+sx1*2,Hc);
-      c.globalAlpha=A*0.35; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);
-      c.globalAlpha=A*0.45; c.drawImage(b1.cv,0,0,b1.w,b1.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
-      c.globalAlpha=A*0.75; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
+      c.globalAlpha=A*0.55; c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře do stran
+      c.globalAlpha=A*0.35; c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);   // bližší záře
+      c.globalAlpha=A*0.7;  c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
   }
