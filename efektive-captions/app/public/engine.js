@@ -119,7 +119,7 @@ const common = {rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:10
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
-  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-2,trackEm:-4,cond:100,gap:60,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:34,shadowA:70,shadowDist:10,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:30,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
+  base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-3.5,trackEm:-2,cond:100,gap:60,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:34,shadowA:42,shadowDist:6,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:30,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
     pv:'<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="background:linear-gradient(#ff9a00,#e8f200);-webkit-background-clip:text;color:transparent;font-weight:800;letter-spacing:-.07em">Sledovat</b>' },
   bestaccount:{ name:'Styl 2', cat:'trending', set:{...common, fontMain:SF,wMain:700,fontEm:SF,wEm:900,emItalic:false,mainLine:'mid',size:88,posX:50,posY:66,track:-4,gap:66,emScale:160,wordGap:160,tilt:18,tiltX:4,persp:60,tiltAlt:true,kinetic:45,layout:'cascade',layerOrder:'natural',cText:'#ffffff',grad:true,gA:'#ff9300',gB:'#fff200',gradDir:'v',altOn:true,altEvery:4,altA:'#8fe0ff',altB:'#0a62e6',glow:30,glowMode:'always',shadowSize:25,shadowA:45,shadowDist:10,cShadow:'#000000',fxShine:true,shineEvery:'3',shineSpeed:50,fxFlicker:false,fxWiggle:false,wiggle:0,anim:'block',fadeOut:true,capMain3:true},
     pv:'<span style="font-weight:700">Vyrostla</span><br><b style="background:linear-gradient(#ff9300,#fff200);-webkit-background-clip:text;color:transparent;font-weight:900">Vám Firma</b>' },
@@ -449,7 +449,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 
   if (c!==ctx && E._band){
     const rr=Math.abs(Math.sin(wr+L.rot+er+S.rot*Math.PI/180)), k2=Math.max(sc,sc*sy);
-    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*0.8:0);
+    const ext=L.px*k2*0.8 + rr*wWidth*k2/2 + L.px*((S.shadowSize||0)/100*1.3+(S.shadowDist||0)/100) + L.px*0.1*(S.extrude||0)/100 + (S.fxShine&&L.em?L.px*1.2:0);
     const yy=L.y+dy+wy; if (yy-ext<E._band[0]) E._band[0]=yy-ext; if (yy+ext>E._band[1]) E._band[1]=yy+ext;
   }
   c.save();
@@ -500,7 +500,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       setFont(m, L.fam, L.wt, L.it, L.px, tk); m.textBaseline='middle';
       const mt = m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0, L.px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0, L.px*0.45);
       const tw = measureT(m,s,L.px,tk), half=Math.max(tw/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+L.px*0.1;
-      const pad=Math.ceil(L.px*0.75), Wc=Math.ceil(half*2+pad*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
+      const pad=Math.ceil(L.px*1.1), Wc=Math.ceil(half*2+pad*2), Hc=Math.ceil(asc+desc+pad*2), cy=pad+asc;
       if (shine.width!==Wc||shine.height!==Hc){ shine.width=Wc; shine.height=Hc; } else { m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,Wc,Hc); }
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over'; m.globalAlpha=1;
       // 1) tvar písmen
@@ -514,13 +514,14 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
       m.setTransform(1,0,0,1,0,0); m.globalCompositeOperation='source-over';
       // 3) záře kolem: rozmazání zmenšením (dvě úrovně, ať je záře hladká)
-      const k1=Math.max(2,Math.round(L.px*0.05)), k2=Math.max(4,Math.round(L.px*0.12));
+      const k1=Math.max(3,Math.round(L.px*0.08)), k2=Math.max(6,Math.round(L.px*0.2));
       const b1=shineBlur(1,Math.ceil(Wc/k1),Math.ceil(Hc/k1)), b2=shineBlur(2,Math.ceil(Wc/k2),Math.ceil(Hc/k2));
       b1.c.drawImage(shine,0,0,Wc,Hc,0,0,b1.w,b1.h); b2.c.drawImage(b1.cv,0,0,b1.w,b1.h,0,0,b2.w,b2.h);
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
       const A=a*((S.opacity??100)/100)*env;
-      c.globalAlpha=A*0.55; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);   // široká jemná záře
-      c.globalAlpha=A*0.45; c.drawImage(b1.cv,0,0,b1.w,b1.h,-Wc/2,-cy,Wc,Hc);   // bližší záře
+      c.globalAlpha=A*0.7; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);   // široká jemná záře kolem slova
+      c.globalAlpha=A*0.4; c.drawImage(b2.cv,0,0,b2.w,b2.h,-Wc/2,-cy,Wc,Hc);   // (2× = výraznější, pořád měkká)
+      c.globalAlpha=A*0.5; c.drawImage(b1.cv,0,0,b1.w,b1.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
       c.globalAlpha=A*0.75; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
