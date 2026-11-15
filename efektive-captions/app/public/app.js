@@ -76,8 +76,9 @@ function renderHomeTpl(){
 $('homeTpl').onclick=e=>{ const c=e.target.closest('.tpl'); if(!c) return; homeTpl=c.dataset.k; renderHomeTpl(); toast('Šablona „'+(E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]).name+'“ – teď nahraj video'); };
 
 // --- projekty v IndexedDB ---
-const DB=new Promise((res,rej)=>{ const r=indexedDB.open('efektive-captions',1); r.onupgradeneeded=()=>r.result.createObjectStore('projects',{keyPath:'id'}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
-async function dbDo(mode,fn){ const db=await DB; return new Promise((res,rej)=>{ const tx=db.transaction('projects',mode), st=tx.objectStore('projects'); const r=fn(st); tx.oncomplete=()=>res(r&&r.result); tx.onerror=()=>rej(tx.error); }); }
+// Projekty: úpravy v 'projects' (malé, ukládají se často), video zvlášť v 'files' (uloží se jen jednou)
+const DB=new Promise((res,rej)=>{ const r=indexedDB.open('efektive-captions',2); r.onupgradeneeded=()=>{ const db=r.result; if (!db.objectStoreNames.contains('projects')) db.createObjectStore('projects',{keyPath:'id'}); if (!db.objectStoreNames.contains('files')) db.createObjectStore('files',{keyPath:'id'}); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+async function dbDo(mode,fn,store='projects'){ const db=await DB; return new Promise((res,rej)=>{ const tx=db.transaction(store,mode), st=tx.objectStore(store); const r=fn(st); tx.oncomplete=()=>res(r&&r.result); tx.onerror=()=>rej(tx.error); }); }
 async function renderProjects(){
   let list=[]; try{ list=await dbDo('readonly',st=>st.getAll()); }catch(e){}
   list.sort((a,b)=>b.updated-a.updated);
@@ -85,8 +86,8 @@ async function renderProjects(){
 }
 $('projects').onclick=async e=>{
   const d=e.target.closest('[data-del]');
-  if (d){ e.stopPropagation(); if (confirm('Smazat projekt?')){ await dbDo('readwrite',st=>st.delete(d.dataset.del)); renderProjects(); } return; }
-  const p=e.target.closest('.proj'); if (p) openProject(p.dataset.id);
+  if (d){ e.stopPropagation(); if (confirm('Smazat projekt?')){ await dbDo('readwrite',st=>st.delete(d.dataset.del)); try{ await dbDo('readwrite',st=>st.delete(d.dataset.del),'files'); }catch(e){} renderProjects(); } return; }
+  const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
   return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute});
@@ -100,24 +101,39 @@ function restore(json){
 }
 let saveT=null;
 function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(saveProject,1500); }
+let saving=null;
 async function saveProject(){
+  if (saving) { await saving; }
+  saving=saveProject0(); try{ await saving; } finally { saving=null; }
+}
+async function saveProject0(){
   if (!project || !videoFile) return;
   try{
     const th=document.createElement('canvas'); const sc=240/Math.max(cv.width,cv.height); th.width=Math.round(cv.width*sc); th.height=Math.round(cv.height*sc); th.getContext('2d').drawImage(cv,0,0,th.width,th.height);
     const assets=Object.entries(ovAssets).map(([id,a])=>({id,blob:a.blob,type:a.type}));
-    const rec={id:project.id,name:project.name,created:project.created,updated:Date.now(),thumb:th.toDataURL('image/jpeg',0.7),file:videoFile,fileName:videoFile.name,state:snapshot(),assets,analysed};
+    // video jen jednou (je velké); pak se ukládají jen úpravy
+    if (!project.fileSaved){ await dbDo('readwrite',st=>st.put({id:project.id,file:videoFile,fileName:videoFile.name}),'files'); project.fileSaved=true; }
+    const rec={id:project.id,name:project.name,created:project.created,updated:Date.now(),thumb:th.toDataURL('image/jpeg',0.7),fileName:videoFile.name,state:snapshot(),assets,analysed};
     await dbDo('readwrite',st=>st.put(rec));
   }catch(e){ console.warn('Uložení projektu selhalo',e); }
 }
+let opening=false;
 async function openProject(id){
-  const rec=await dbDo('readonly',st=>st.get(id)); if (!rec) return;
-  project={id:rec.id,name:rec.name,created:rec.created};
+  opening=true; show('busy'); busy('Otevírám projekt…','Chvilku strpení',0.2);
+  try{
+  const rec=await dbDo('readonly',st=>st.get(id)); if (!rec){ show('home'); return; }
+  let fileRec=null; try{ fileRec=await dbDo('readonly',st=>st.get(id),'files'); }catch(e){}
+  const raw=(fileRec&&fileRec.file)||rec.file; if (!raw){ show('home'); homeMsg('Video k projektu se nenašlo.'); return; }
+  project={id:rec.id,name:rec.name,created:rec.created,fileSaved:!!fileRec};   // starý projekt (video v záznamu) se při uložení převede
   for (const a of rec.assets||[]) await loadAsset(a.id,a.blob);
-  await loadVideo(rec.file instanceof File?rec.file:new File([rec.file],rec.fileName||'video.mp4',{type:rec.file.type}));
+  busy('Otevírám projekt…','Načítám video',0.5);
+  await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
   restore(rec.state); analysed=rec.analysed||analysed;
   hist=[snapshot()]; hi=0;
   if (analysed.face) toast('Poloha obličeje: při otevření znovu přepočítej v panelu AI, pokud chceš.');
   openEditor();
+  }catch(e){ console.error(e); show('home'); homeMsg('Projekt se nepodařilo otevřít: '+e.message); }
+  finally{ opening=false; }
 }
 
 // ================= NAČTENÍ VIDEA =================
@@ -227,7 +243,7 @@ $('dictApply').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); c
 
 // ================= EDITOR =================
 function openEditor(){ freeVideo($('setupPrev')); show('editor'); sizeCanvas(); renderTimeline(); thumbs(); renderPanel(); updateMute(); syncTop(); }
-$('closeBtn').onclick=async()=>{ vid.pause(); await saveProject(); renderProjects(); show('home'); };
+$('closeBtn').onclick=async()=>{ vid.pause(); clearTimeout(saveT); show('home'); await saveProject(); renderProjects(); };
 
 // --- historie (zpět / znovu) ---
 let hist=[], hi=-1, histT=null;
