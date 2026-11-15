@@ -38,15 +38,28 @@ E.face=null;     // stopa obličeje [{t, box:[x0,y0,x1,y1]}|null] po 0.1 s
 E.flags={hidden:false, transparent:false, exporting:false, mute:false, pro:false};
 // vodoznak pro verzi bez předplatného
 const WM=new Image(); WM.src='logo-wm.png';
-E.drawWatermark=(c,W,H)=>{
-  // jen naše logo, jen ve výsledném videu (v editoru se neukazuje), s PRO vůbec
-  if (E.flags.pro || !E.flags.exporting || !(WM.complete && WM.naturalWidth)) return;
-  const m=Math.min(W,H), lw=m*0.4, lh=lw*WM.naturalHeight/WM.naturalWidth;
-  c.save(); c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation='source-over'; c.filter='none';
-  c.globalAlpha=0.55; c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=m*0.02; c.shadowOffsetY=m*0.004;
-  c.drawImage(WM,(W-lw)/2,H*0.42-lh/2,lw,lh);
+// závěrečný obrázek s logem EFEKTIVE na konci exportu (verze zdarma; s PRO se nepřidává)
+E.OUTRO_SEC=1.6;
+E.wantOutro=()=>!E.flags.pro && E.flags.outro!==false;
+E.drawOutro=(c,W,H,t)=>{
+  const m=Math.min(W,H), ease=x=>1-Math.pow(1-Math.max(0,Math.min(1,x)),3);
+  c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.globalCompositeOperation='source-over'; c.shadowColor='transparent'; c.filter='none';
+  c.fillStyle='#0a0d14'; c.fillRect(0,0,W,H);
+  // značkové kuličky (modrá + zelená) v pozadí
+  const orb=(x,y,r,col)=>{ const g=c.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,col); g.addColorStop(1,'rgba(10,13,20,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); };
+  orb(W*0.18,H*0.28,m*0.75,'rgba(31,77,255,.42)'); orb(W*0.85,H*0.78,m*0.7,'rgba(19,185,122,.35)');
+  const a1=ease(t/0.45), a2=ease((t-0.18)/0.45);
+  const lw=m*0.34*(0.86+0.14*a1), lh=WM.naturalWidth?lw*WM.naturalHeight/WM.naturalWidth:lw*0.736;
+  const fs=Math.round(m*0.105), cy=H*0.46;
+  c.globalAlpha=a1; if (WM.complete && WM.naturalWidth) c.drawImage(WM,(W-lw)/2,cy-lh-m*0.03,lw,lh);
+  c.globalAlpha=a2; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='top';
+  c.font=`800 ${fs}px "Inter Tight","Schibsted Grotesk",Arial,sans-serif`; try{ c.letterSpacing=Math.round(fs*0.02)+'px'; }catch(e){}
+  c.fillText('EFEKTIVE',W/2,cy+m*0.02);
+  c.globalAlpha=a2*0.7; c.font=`600 ${Math.round(fs*0.32)}px "Inter Tight",Arial,sans-serif`; try{ c.letterSpacing=Math.round(fs*0.06)+'px'; }catch(e){}
+  c.fillText('TITULKY · EFEKTIVE CAPTIONS',W/2,cy+m*0.02+fs*1.15);
   c.restore();
 };
+E.drawWatermark=()=>{};
 let wid=1; E.newId=()=>wid++;
 E.setWid=v=>{wid=Math.max(wid,v);};
 
@@ -647,7 +660,6 @@ E.render = (t, opts={}) => {
   if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height); else if (opts.frameDraw) opts.frameDraw(ctx,cv.width,cv.height); else ctx.drawImage(vid,0,0,cv.width,cv.height);
   // overlaye pod titulky
   for (const o of E.overlays) if (!o.above) E.drawOverlay(ctx,o,t);
-  E.drawWatermark(ctx,cv.width,cv.height);
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni
   const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);

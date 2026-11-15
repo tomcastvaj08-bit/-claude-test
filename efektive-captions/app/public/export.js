@@ -90,6 +90,7 @@ X.exportVideo = async (opts) => {
         zip.add(`titulky_${String(i).padStart(5,'0')}.png`, new Uint8Array(await b.arrayBuffer()));
         if (i%5===0) onP(i/N, `Snímek ${i+1} / ${N}`);
       }
+      if (E.wantOutro()){ const M=Math.round(E.OUTRO_SEC*fps), c2=cv.getContext('2d'); for (let j=0;j<M;j++){ E.drawOutro(c2,w,h,j/fps); const b=await new Promise(r=>cv.toBlob(r,'image/png')); zip.add(`titulky_${String(N+j).padStart(5,'0')}.png`, new Uint8Array(await b.arrayBuffer())); } }
       zip.add('JAK_POUZIT.txt', new TextEncoder().encode(`EFEKTIVE Captions – jen titulky (průhledné pozadí)\n\nSnímků: ${N}\nSnímková frekvence: ${fps} fps\nRozlišení: ${w}×${h}\n\nCapCut / Premiere / DaVinci / Final Cut: importuj jako sekvenci obrázků (image sequence) s ${fps} fps a polož ji na stopu nad video. Začíná v čase 0:00.\n`));
       return {blob:zip.blob(), name:'efektive-titulky-pruhledne.zip'};
     }
@@ -160,6 +161,17 @@ X.exportVideo = async (opts) => {
       if (i%3===0){ const el=(performance.now()-t0)/1000, left=el/(i+1)*(N-i-1); onP(i/N, `Snímek ${i+1} / ${N}`+(i>10?` · zbývá ${left<60?Math.ceil(left)+' s':Math.ceil(left/60)+' min'}`:'')); }
     }
     } finally { if (src) src.close(); }
+    // závěr s logem EFEKTIVE (zdarma)
+    if (E.wantOutro()){
+      const M=Math.round(E.OUTRO_SEC*fps), c2=cv.getContext('2d');
+      for (let j=0;j<M;j++){
+        if (opts.cancel&&opts.cancel.v) throw new Error('Zrušeno');
+        E.drawOutro(c2,w,h,j/fps);
+        const f=new VideoFrame(cv,{timestamp:Math.round((N+j)/fps*1e6),duration:Math.round(1e6/fps)});
+        venc.encode(f,{keyFrame:j===0}); f.close();
+        while (venc.encodeQueueSize>8) await new Promise(r=>setTimeout(r,5));
+      }
+    }
     await venc.flush(); venc.close();
     muxer.finalize();
     return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote};
@@ -186,7 +198,7 @@ X.recordRealtime = async (opts) => {
   const events=E.sfxEvents().sort((a,b)=>a.t-b.t); let ei=0;
   await new Promise(res=>{
     rec.onstop=res; rec.start(500); v.currentTime=0; v.play();
-    const tick=()=>{ const t=v.currentTime; E.render(t); while(ei<events.length&&events[ei].t<=t){ E.sfxInto(ac,dest,ac.currentTime,events[ei].type,E.G.sfxVol/100); ei++; } onP(t/v.duration,'Nahrávám…'); if (!v.ended) requestAnimationFrame(tick); else rec.stop(); };
+    const tick=()=>{ const t=v.currentTime; E.render(t); while(ei<events.length&&events[ei].t<=t){ E.sfxInto(ac,dest,ac.currentTime,events[ei].type,E.G.sfxVol/100); ei++; } onP(t/v.duration,'Nahrávám…'); if (!v.ended) requestAnimationFrame(tick); else if (E.wantOutro()){ const t0=performance.now(), c2=cv.getContext('2d'); const ot=()=>{ const tt=(performance.now()-t0)/1000; E.drawOutro(c2,w,h,tt); if (tt<E.OUTRO_SEC) requestAnimationFrame(ot); else rec.stop(); }; ot(); } else rec.stop(); };
     requestAnimationFrame(tick);
   });
   E.flags.exporting=false;
