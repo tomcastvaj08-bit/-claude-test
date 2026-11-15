@@ -316,7 +316,6 @@ function layoutRaw(p,S,scaleMul){
     setFont(ctx,fam,wt,it,px,0);
     let sp=measureT(ctx,' ',px,0)*(S.wordGap/100)*cond, ws=ids.map(i=>measureT(ctx,E.txt(E.words[i],S,isEm),px,track)*cond);
     let total=ws.reduce((a,b)=>a+b,0)+sp*(ids.length-1);
-    if (total>maxW){ const f=maxW/total; px*=f; ws=ws.map(x=>x*f); sp*=f; total=maxW; }
     return {ids,fam,wt,it,px,em:isEm,ws,sp,total,track,cond};
   };
   for (const g of groups){ const L=mk(g.ids,g.em); L.slot=g.slot; lines.push(L); }
@@ -342,7 +341,6 @@ function layoutRaw(p,S,scaleMul){
     else if (S.layout==='right') L.x0=cx+W*0.3-L.total+kx;
     else L.x0=cx-L.total/2+kx;
     L.x0+=W*(S['rowDx'+ri]||0)/100;
-    L.x0=clamp(L.x0,W*0.02,Math.max(W*0.02,W-L.total-W*0.02));
     L.rot=0;
   });
   lines.forEach((L,i)=>L._i=i);
@@ -350,18 +348,8 @@ function layoutRaw(p,S,scaleMul){
 }
 // automatické zmenšení dlouhého titulku: blok max 78 % šířky a ≥ ~8 % od okrajů → nikdy se neuřízne
 E.layoutPage = (p,S) => {
-  const W=cv.width;
-  // s kinetickým rozložením smí blok sahat víc ke krajům (řádky jsou rozjeté do stran)
-  const kin=(S.kinetic||0)/100, maxBW=W*Math.min(0.94,0.78+0.16*kin), mg=W*(0.083-0.05*kin);
-  // plynulé zmenšení přesně na míru (dřív po skocích 8 % → při posouvání posuvníků titulek poskakoval)
-  let m=1, lines=layoutRaw(p,S,1);
-  for (let it=0; it<5; it++){
-    const x0=Math.min(...lines.map(L=>L.x0)), x1=Math.max(...lines.map(L=>L.x0+L.total)), bw=x1-x0;
-    if (bw <= maxBW+0.5 && x0 >= mg-1 && x1 <= W-mg+1) break;
-    const f = bw > maxBW ? maxBW/bw : 0.97;
-    m *= Math.max(0.5, Math.min(0.995, f));
-    lines=layoutRaw(p,S,m);
-  }
+  // bez limitů: velikost ani pozice se automaticky nemění – co uživatel nastaví, to platí (i mimo okraj videa)
+  const lines=layoutRaw(p,S,1);
   if (S.layerOrder==='natural') return lines;
   if (S.layerOrder==='bottomfirst') return lines.slice().reverse();
   return lines.slice().sort((a,b)=>(a.em?1:0)-(b.em?1:0));
@@ -618,7 +606,6 @@ function project3D(src, bx, by, S, target){
     const want=(x0+x1)/2, got=(px0+px1)/2; target.translate(want-got,0);
     const pw=Math.abs(px1-px0), maxW=cv.width*0.9;
     E.lastBoxX={l:Math.min(px0,px1)+(want-got), r:Math.max(px0,px1)+(want-got), w:pw};
-    if (pw>maxW){ const sc=maxW/pw; target.translate(want,by); target.scale(sc,sc); target.translate(-want,-by); }
   }
   // záře: promítnout masku hlavních slov, rozostřit a podložit
   if (E._glowUsed){

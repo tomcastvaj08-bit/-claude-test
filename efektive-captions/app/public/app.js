@@ -1013,7 +1013,7 @@ async function checkUpdate(){
     const v=(await (await fetch('version.txt?'+Date.now(),{cache:'no-store'})).text()).trim();
     if (!v || v===BUILD) return;
     if ($('home').classList.contains('on')) { location.reload(); return; }   // na úvodu rovnou načíst
-    if (!$('updBar')){ const d=document.createElement('button'); d.id='updBar'; d.className='updbar'; d.innerHTML=I('refresh')+' Je tu nová verze aplikace – klepni pro načtení (projekt zůstane uložený)'; d.onclick=async()=>{ try{ if (project) await saveProject(); }catch(e){} location.reload(); }; document.body.appendChild(d); }
+    if (!$('updBar')){ const d=document.createElement('button'); d.id='updBar'; d.className='updbar'; d.innerHTML=I('refresh')+' Je tu nová verze aplikace – klepni pro načtení (projekt zůstane uložený)'; d.onclick=async()=>{ d.textContent='Načítám novou verzi…'; try{ if (project) await Promise.race([saveProject(), new Promise(r=>setTimeout(r,1200))]); }catch(e){} location.reload(); }; document.body.appendChild(d); }
   }catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{ if (document.visibilityState==='visible') checkUpdate(); });
