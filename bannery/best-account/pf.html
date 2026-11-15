@@ -34,6 +34,11 @@ html,body{overflow:hidden;background:var(--navy)}
 #txt2 p.sig{font-weight:700;color:var(--blue)}
 /* web v modrém políčku (stejně jako číslo na banneru) */
 #tab{bottom:0;right:0;isolation:isolate;z-index:3;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-weight:600;white-space:nowrap}
+/* světlá tematika */
+#c.light{background:#fff;color:var(--ink,#0B0B0B)}
+.light #txt .yr,.light #txt h1{color:#0B0B0B}
+.light #txt p,.light #txt2 p{color:#151515;text-shadow:0 0 22px rgba(255,255,255,.95),0 0 50px rgba(255,255,255,.8)}
+.light #txt p.sig,.light #txt2 p.sig{color:var(--blue)}
 #tab::before{content:"";position:absolute;z-index:-1;bottom:0;right:-4px;border-style:solid;border-color:rgba(0,136,218,.55);border-bottom:0;border-right:0}
 </style>
 </head>
@@ -54,7 +59,7 @@ html,body{overflow:hidden;background:var(--navy)}
 <script>
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const fmt=s=>esc(s).replace(/\*([\s\S]+?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
-function hexes(W,H,u,cx,cy,rad){
+function hexes(W,H,u,cx,cy,rad,light){
   const R=118*u, w=Math.sqrt(3)*R, v=1.5*R;
   let s=`<defs><radialGradient id="m" cx="${cx}" cy="${cy}" r="${rad}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#fff" stop-opacity=".65"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="k"><rect width="${W}" height="${H}" fill="url(#m)"/></mask></defs>`;
   let seed=7; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647); let g='';
@@ -62,15 +67,17 @@ function hexes(W,H,u,cx,cy,rad){
     const x=col*w+(row%2?w/2:0), y=row*v;
     if(Math.hypot(x-cx,y-cy)>rad+R) continue;
     const pts=[];for(let a=0;a<6;a++){const t=Math.PI/180*(60*a-90);pts.push((x+(R-4*u)*Math.cos(t)).toFixed(1)+','+(y+(R-4*u)*Math.sin(t)).toFixed(1));}
-    const o=(0.12+rnd()*0.33).toFixed(2);
-    g+=`<polygon points="${pts}" fill="#0E2A6E" fill-opacity="${o}" stroke="#1E9BE8" stroke-opacity=".95" stroke-width="${3*u}"/>`;
+    if(light){ const o=(0.35+rnd()*0.55); g+=`<polygon points="${pts}" fill="#3AA2E6" fill-opacity="${(o*0.5).toFixed(2)}" stroke="#fff" stroke-opacity=".95" stroke-width="${5*u}"/>`; }
+    else { const o=(0.12+rnd()*0.33).toFixed(2); g+=`<polygon points="${pts}" fill="#0E2A6E" fill-opacity="${o}" stroke="#1E9BE8" stroke-opacity=".95" stroke-width="${3*u}"/>`; }
   }
-  return s+`<g mask="url(#k)" style="filter:drop-shadow(0 0 ${8*u}px rgba(0,136,218,.5))">${g}</g>`;
+  return s+`<g mask="url(#k)"${light?'':` style="filter:drop-shadow(0 0 ${8*u}px rgba(0,136,218,.5))"`}>${g}</g>`;
 }
 function render(o){
   const W=o.w,H=o.h,u=H/1800,M=200*u;
   for(const el of [document.documentElement,document.body]) el.style.cssText=`width:${W}px;height:${H}px`;
   const c=document.getElementById('c'); c.style.width=W+'px'; c.style.height=H+'px';
+  const LT=o.theme==='light'; c.className=LT?'light':''; document.body.style.background=LT?'#fff':'';
+  document.getElementById('word').src=LT?'assets/logo_word_black.png':'assets/logo_word_white.png';
   // lev vpravo
   let lw,lh,lx,ly; const lion=document.getElementById('lion');
   if(o.cut){ lh=o.cut.h*u; lw=lh*1188/1324; lx=o.cut.x*u; ly=H-lh+(o.cut.dy||0)*u;
@@ -83,8 +90,8 @@ function render(o){
     webkitMaskImage:`linear-gradient(90deg,transparent 0,rgba(0,0,0,.18) ${lw*0.1}px,rgba(0,0,0,.6) ${lw*0.22}px,#000 ${lw*0.36}px), linear-gradient(0deg,transparent 0,#000 ${lh*0.22}px)`,
     webkitMaskComposite:'source-in'}); }
   document.getElementById('glow').style.background=[
-    o.cut?`radial-gradient(${lw*0.75}px ${lh*0.6}px at ${lx+lw*0.55}px ${ly+lh*0.42}px, rgba(0,136,218,.38), rgba(0,136,218,.12) 55%, rgba(0,136,218,0) 80%)`:'',
-    `radial-gradient(${1300*u}px ${900*u}px at ${W*0.47}px ${H*0.45}px, rgba(0,136,218,.16), rgba(0,136,218,0) 70%)`
+    o.cut?`radial-gradient(${lw*0.75}px ${lh*0.6}px at ${lx+lw*0.55}px ${ly+lh*0.42}px, rgba(0,136,218,${LT?.22:.38}), rgba(0,136,218,${LT?.07:.12}) 55%, rgba(0,136,218,0) 80%)`:'',
+    `radial-gradient(${1300*u}px ${900*u}px at ${W*0.47}px ${H*0.45}px, rgba(0,136,218,${LT?.07:.16}), rgba(0,136,218,0) 70%)`
   ].filter(Boolean).join(',');
   // průhledné logo v pozadí
   const ms=o.markSize*u;
@@ -98,9 +105,9 @@ function render(o){
   mk.style.webkitMaskImage= o.cut ? 'none' : `radial-gradient(${rx}px ${ry}px at ${ex}px ${ey}px, transparent 0%, transparent 40%, rgba(0,0,0,.4) 75%, #000 105%)`;
   // úl vlevo za textem
   const hx=document.getElementById('hex'); hx.setAttribute('viewBox',`0 0 ${W} ${H}`); hx.setAttribute('width',W); hx.setAttribute('height',H);
-  hx.innerHTML=hexes(W,H,u,-60*u,H*0.66,1400*u);
+  hx.innerHTML=hexes(W,H,u,-60*u,H*0.66,1400*u,LT);
   const h2=document.getElementById('hex2'); h2.setAttribute('viewBox',`0 0 ${W} ${H}`); h2.setAttribute('width',W); h2.setAttribute('height',H);
-  h2.innerHTML = o.hexPhoto ? hexes(W,H,u,W+80*u,H*0.35,1150*u).replace(/id="m"/g,'id="m2"').replace(/url\(#m\)/g,'url(#m2)').replace(/id="k"/g,'id="k2"').replace(/url\(#k\)/g,'url(#k2)') : '';
+  h2.innerHTML = o.hexPhoto ? hexes(W,H,u,W+80*u,H*0.35,1150*u,LT).replace(/id="m"/g,'id="m2"').replace(/url\(#m\)/g,'url(#m2)').replace(/id="k"/g,'id="k2"').replace(/url\(#k\)/g,'url(#k2)') : '';
   h2.style.opacity=.85;
   if(o.cut) h2.style.webkitMaskImage='none'; else { const ex=W-o.lionW*u+o.lionShift*u+o.lionW*u*0.64, ly2=o.lionTop*u, lh2=o.lionW*u*1080/604, ey=ly2+lh2*0.45; h2.style.webkitMaskImage=`radial-gradient(${o.lionW*u*0.36}px ${lh2*0.46}px at ${ex}px ${ey}px, transparent 0%, transparent 50%, rgba(0,0,0,.4) 78%, #000 105%)`; }
   // logo
@@ -113,13 +120,21 @@ function render(o){
   t.innerHTML=`
    <div class="yr" style="font-size:${o.yrSize*u}px;margin-left:${-14*u}px"><b>PF</b>2027</div>
    <h1 style="font-size:${158*u}px;line-height:${164*u}px;margin-top:${70*u}px;letter-spacing:-0.01em">${fmt(o.headline)}</h1>
-   <p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.2*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
-   <p class="sig" style="font-size:${150*u}px;line-height:${160*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`;
-  Object.assign(t.style,{left:M+'px',top:o.top*u+'px'});
-  document.getElementById('txt2').innerHTML='';
+   ${o.layout==='low'?'':`<p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.2*u}px;margin-top:${56*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${150*u}px;line-height:${160*u}px;margin-top:${40*u}px">${fmt(o.sign)}</p>`}`;
+  const LOW=o.layout==='low';
+  if(LOW){ t.querySelector('h1').style.cssText+=`;font-size:${150*u}px;line-height:${156*u}px;margin-top:${64*u}px`; }
+  Object.assign(t.style,{left:M+'px',top:(LOW?o.topLow:o.top)*u+'px'});
+  const t2=document.getElementById('txt2');
+  t2.innerHTML = LOW ? `<p style="font-size:${o.bodySize*u}px;line-height:${o.bodySize*1.12*u}px">${fmt(o.body)}</p>
+   <p class="sig" style="font-size:${146*u}px;line-height:${156*u}px;margin-top:${26*u}px">${fmt(o.sign)}</p>` : '';
+  Object.assign(t2.style,{left:M+'px',bottom:o.lowBottom*u+'px'});
   // vinětace: tmavý přechod odspodu + ztmavení kolem tlačítka s webem (text jde čitelně i přes lva)
-  document.getElementById('vig').style.background=
-    `radial-gradient(${2100*u}px ${1250*u}px at ${W-450*u}px ${H+80*u}px, rgba(0,0,0,.92) 0%, rgba(0,0,0,.75) 35%, rgba(0,0,0,.4) 62%, rgba(0,0,0,0) 100%)`;
+  const VC = LT ? '255,255,255' : (LOW ? '5,14,40' : '0,0,0');
+  document.getElementById('vig').style.background = LOW ? [
+    `radial-gradient(${1500*u}px ${620*u}px at ${W-420*u}px ${H+60*u}px, rgba(${VC},.92) 0%, rgba(${VC},.6) 45%, rgba(${VC},0) 100%)`,
+    `linear-gradient(0deg, rgba(${VC},.95) 0%, rgba(${VC},.78) ${H*0.16}px, rgba(${VC},.35) ${H*0.30}px, rgba(${VC},0) ${H*0.44}px)`
+  ].join(',') : `radial-gradient(${2100*u}px ${1250*u}px at ${W-450*u}px ${H+80*u}px, rgba(${VC},.92) 0%, rgba(${VC},.75) 35%, rgba(${VC},.4) 62%, rgba(${VC},0) 100%)`;
   // web v modrém políčku vpravo dole
   const tb=document.getElementById('tab');
   Object.assign(tb.style,{width:o.tabW*u+'px',height:240*u+'px',fontSize:112*u+'px',borderTopLeftRadius:78*u+'px'});
@@ -127,15 +142,15 @@ function render(o){
   // silvestr: ohňostroj + jiskry
   const cv=document.getElementById('fw'); cv.width=W; cv.height=H; const x=cv.getContext('2d');
   let seed=21; const r=()=>((seed=(seed*16807)%2147483647)/2147483647);
-  x.globalCompositeOperation='lighter';
+  x.globalCompositeOperation=LT?'source-over':'lighter';
   for(const b of (o.bursts||[])){
     const bx=b[0]*u, by=b[1]*u, R=b[2]*u, cols=b[3];
     if(!R) continue;
-    const g=x.createRadialGradient(bx,by,0,bx,by,R*0.9); g.addColorStop(0,'rgba(120,190,255,.22)'); g.addColorStop(1,'rgba(120,190,255,0)');
+    const g=x.createRadialGradient(bx,by,0,bx,by,R*0.9); g.addColorStop(0,LT?'rgba(0,136,218,.10)':'rgba(120,190,255,.22)'); g.addColorStop(1,'rgba(120,190,255,0)');
     x.fillStyle=g; x.beginPath(); x.arc(bx,by,R*0.9,0,7); x.fill();
     const N=b[4]||64;
     for(let i=0;i<N;i++){
-      const a=i/N*Math.PI*2+r()*0.08, L=R*(0.72+r()*0.28), c=cols[i%cols.length], r0=R*0.08;
+      const a=i/N*Math.PI*2+r()*0.08, L=R*(0.72+r()*0.28), c0=cols[i%cols.length], c=LT?({'255,255,255':'0,120,210','95,185,255':'70,165,235'}[c0]||'222,160,40'):c0, r0=R*0.08;
       const lg=x.createLinearGradient(bx+Math.cos(a)*r0,by+Math.sin(a)*r0,bx+Math.cos(a)*L,by+Math.sin(a)*L);
       lg.addColorStop(0,`rgba(${c},0)`); lg.addColorStop(.75,`rgba(${c},.55)`); lg.addColorStop(1,`rgba(${c},.95)`);
       x.strokeStyle=lg; x.lineWidth=(2.2+r()*1.6)*u; x.lineCap='round';
@@ -148,7 +163,7 @@ function render(o){
     }
   }
   for(const sp of (o.sparkles||[])){ const sx=sp[0]*u, sy=sp[1]*u, sz=sp[2]*u;
-    x.shadowColor='rgba(170,215,255,1)'; x.shadowBlur=18*u; x.fillStyle='rgba(235,245,255,.95)';
+    x.shadowColor=LT?'rgba(0,136,218,.6)':'rgba(170,215,255,1)'; x.shadowBlur=18*u; x.fillStyle=LT?'rgba(0,136,218,.9)':'rgba(235,245,255,.95)';
     x.beginPath(); x.moveTo(sx,sy-sz); x.quadraticCurveTo(sx,sy,sx+sz,sy); x.quadraticCurveTo(sx,sy,sx,sy+sz); x.quadraticCurveTo(sx,sy,sx-sz,sy); x.quadraticCurveTo(sx,sy,sx,sy-sz); x.fill(); x.shadowBlur=0; }
 }
 window.render=render;
