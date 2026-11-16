@@ -172,6 +172,8 @@ OBJ.draw = (c, W, H, t) => {
     if (o.line && o.line !== 'off') drawLine(c, o, t, W, H, MM, A);
   }
 };
+// okno shine (blok na timeline); u starších objektů se doplní – jeden průjezd hned po začátku
+OBJ.shineWin = o => { if (o.shS == null || o.shE == null || o.shE <= o.shS) { o.shS = o.s + 0.1; o.shE = Math.min(o.e, o.shS + 1.1); if (o.shE - o.shS < 0.3) o.shE = o.shS + 0.3; } };
 function screenBox(MM, m) { const P = [[0, 0], [m.w, 0], [m.w, m.h], [0, m.h]].map(([x, y]) => { const p = MM.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; }); return P; }
 function objBox(o, MM) {
   // skutečný rozsah objektu (ne celé masky)
@@ -180,9 +182,11 @@ function objBox(o, MM) {
   const xs = P.map(p => p[0]), ys = P.map(p => p[1]); return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
 }
 function drawShine(c, o, t, W, H, MM, mc, A) {
-  const dur = 1.6 - 1.1 * clamp((o.shineSpd ?? 50) / 100), every = Math.max(dur + 0.2, o.shineEvery ?? 2.6);
-  const since = t - o.s - 0.15; if (since < 0) return;
-  const ph = (since % every) / dur; if (ph > 1) return;
+  OBJ.shineWin(o);
+  if (t < o.shS || t > o.shE) return;
+  let ph;
+  if (!o.shRep) ph = (t - o.shS) / Math.max(0.1, o.shE - o.shS);   // jeden průjezd přes celý blok na timeline
+  else { const dur = 1.6 - 1.1 * clamp((o.shineSpd ?? 50) / 100), every = Math.max(dur + 0.2, o.shineEvery ?? 2.6); ph = ((t - o.shS) % every) / dur; if (ph > 1) return; }
   const e = ph < 0.5 ? 2 * ph * ph : 1 - 2 * (1 - ph) * (1 - ph);   // plynulý průjezd
   const bb = objBox(o, MM), bw = bb.x1 - bb.x0, bh = bb.y1 - bb.y0; if (bw < 2 || bh < 2) return;
   if (!oc || oc.width !== W || oc.height !== H) { oc = document.createElement('canvas'); oc.width = W; oc.height = H; ox = oc.getContext('2d'); }

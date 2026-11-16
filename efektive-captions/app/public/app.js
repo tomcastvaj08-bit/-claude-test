@@ -144,7 +144,7 @@ async function openProject(id){
   let fileRec=null; try{ fileRec=await dbDo('readonly',st=>st.get(id),'files'); }catch(e){}
   const raw=(fileRec&&fileRec.file)||rec.file; if (!raw){ show('home'); homeMsg('Video k projektu se nenašlo.'); return; }
   project={id:rec.id,name:rec.name,created:rec.created,fileSaved:!!fileRec};   // starý projekt (video v záznamu) se při uložení převede
-  for (const a of rec.assets||[]) await loadAsset(a.id,a.blob);
+  for (const a of rec.assets||[]) await loadAsset(a.id,a.blob,a.type);
   busy('Otevírám projekt…','Načítám video',0.5);
   await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
   restore(rec.state); analysed={...(rec.analysed||analysed)}; analysed.face=!!E.face;
@@ -1043,17 +1043,28 @@ binders.overlay=()=>{
   $('ovDel').onclick=()=>{ E.overlays=E.overlays.filter(x=>x!==o); selOv=null; changed(); renderPanel(); };
   trkBind(()=>o.trk, id=>{ if (id) o.trk=id; else delete o.trk; }, 'ov');
 };
-async function loadAsset(id,blob){
-  const url=URL.createObjectURL(blob); let el;
-  if (blob.type.startsWith('video')){
-    // iPhone: video musí být v dokumentu (skryté) a „inline“, jinak po otevření projektu nedá obraz ani se nespustí
-    el=document.createElement('video'); el.muted=true; el.loop=false; el.playsInline=true; el.setAttribute('playsinline',''); el.setAttribute('muted',''); el.preload='auto'; el.className='srcvid';
-    document.body.appendChild(el); el.src=url;
-    await new Promise(r=>{ el.onloadeddata=r; el.onloadedmetadata=()=>setTimeout(r,400); el.onerror=r; setTimeout(r,6000); });
+// typeHint = typ uložený u projektu: iPhone po znovuotevření projektu někdy vrátí soubor bez typu
+// (pak by se video zkoušelo načíst jako obrázek → černý čtverec / nic). Když typ chybí, zkusí se video i obrázek.
+async function loadAsset(id,blob,typeHint){
+  let type=blob.type||typeHint||'';
+  if (!blob.type && type) blob=new Blob([blob],{type});
+  const asVideo=async()=>{
+    const url=URL.createObjectURL(blob);
+    // iPhone: video musí být v dokumentu (skryté) a „inline“, jinak nedá obraz ani se nespustí
+    const el=document.createElement('video'); el.muted=true; el.loop=false; el.playsInline=true; el.setAttribute('playsinline',''); el.setAttribute('muted',''); el.preload='auto'; el.className='srcvid';
+    document.body.appendChild(el); el.src=url; el.load();
+    const ok=await new Promise(r=>{ el.onloadeddata=()=>r(true); el.onloadedmetadata=()=>setTimeout(()=>r(true),400); el.onerror=()=>r(false); setTimeout(()=>r(el.readyState>=1),6000); });
+    if (!ok){ el.remove(); return null; }
     el.play().then(()=>el.pause()).catch(()=>{});   // „probudit“ dekodér (když to iPhone dovolí)
-  }
-  else { el=new Image(); el.src=url; await new Promise(r=>{ el.onload=r; el.onerror=r; }); }
-  ovAssets[id]={blob,el,type:blob.type}; return el;
+    return el;
+  };
+  const asImage=async()=>{ const el=new Image(); el.src=URL.createObjectURL(blob); const ok=await new Promise(r=>{ el.onload=()=>r(true); el.onerror=()=>r(false); }); return ok?el:null; };
+  let el=null;
+  if (type.startsWith('image')) el=await asImage()||await asVideo();
+  else el=await asVideo()||await asImage();
+  if (!el) el=new Image();
+  if (!type) type=el.tagName==='VIDEO'?'video/mp4':'image/png';
+  ovAssets[id]={blob,el,type}; return el;
 }
 // překrytí videa novou verzí (náhrada úseku): video přes celý obraz, synchronizované s časem
 $('ovFullIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; vid.pause();
@@ -1148,6 +1159,10 @@ function renderTimeline(){
   $('trC').innerHTML=cbHtml(0); $('trC2').innerHTML=cbHtml(1);
   $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>${I('ban')} ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">${I('x')}</span><span class="hr"></span></div>`).join('');
   $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
+  // zvýrazněné objekty (tyrkysově) a jejich shine (zlatě) – oba jdou posunout a zkrátit / prodloužit
+  $('trX').innerHTML=(E.objs||[]).map((o,i)=>{ if (window.OBJ) OBJ.shineWin(o);
+    return `<div class="xb ${o.id===selObj?'cur':''}" data-x="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('sparkles')} Objekt ${i+1}<span class="hr"></span></div>`
+      + (o.shine?`<div class="sb" data-sh="${o.id}" style="left:${X(o.shS)}px;width:${Math.max(6,(o.shE-o.shS)*pps)}px"><span class="hl"></span>Shine<span class="hr"></span></div>`:''); }).join('');
   renderVideoTrack();
   if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
   followTimeline(PV.currentTime,true);
@@ -1198,6 +1213,7 @@ function removeOut(a,b){
   for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null) m.so=sh(m.so); if (m.eo!=null) m.eo=sh(m.eo); }
   E.zones=E.zones.map(z=>({...z,s:sh(z.s),e:sh(z.e)})).filter(z=>z.e-z.s>0.05);
   E.overlays=E.overlays.filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); return o.e-o.s>0.05; });
+  E.objs=(E.objs||[]).filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); if (o.shS!=null){ o.shS=sh(o.shS); o.shE=sh(o.shE); } return o.e-o.s>0.05; });
   E.kf=E.kf.filter(k=>!(k.t>a+0.01&&k.t<b-0.01)).map(k=>({...k,t:sh(k.t)}));
 }
 function insertOut(at,len){
@@ -1206,6 +1222,7 @@ function insertOut(at,len){
   for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null&&m.so>=at) m.so+=len; if (m.eo!=null&&m.eo>=at) m.eo+=len; }
   for (const z of E.zones) if (z.s>=at){ z.s+=len; z.e+=len; }
   for (const o of E.overlays) if (o.s>=at){ o.s+=len; o.e+=len; }
+  for (const o of (E.objs||[])) if (o.s>=at){ o.s+=len; o.e+=len; if (o.shS!=null){ o.shS+=len; o.shE+=len; } }
   for (const k of E.kf) if (k.t>=at) k.t+=len;
 }
 // výsledný úsek [a,b] se natáhne / zkrátí na délku D1 – titulky a ostatní věci v něm se roztáhnou, za ním posunou
@@ -1216,7 +1233,7 @@ function remapOut(a,b,D1){
   for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null) m.so=mp(m.so); if (m.eo!=null) m.eo=mp(m.eo); }
   for (const z of E.zones){ z.s=mp(z.s); z.e=mp(z.e); }
   for (const o of E.overlays){ o.s=mp(o.s); o.e=mp(o.e); }
-  for (const o of (E.objs||[])){ o.s=mp(o.s); o.e=mp(o.e); }
+  for (const o of (E.objs||[])){ o.s=mp(o.s); o.e=mp(o.e); if (o.shS!=null){ o.shS=mp(o.shS); o.shE=mp(o.shE); } }
   for (const k of E.kf) k.t=mp(k.t);
 }
 function setClipSpeed(k,sp){
@@ -1273,7 +1290,7 @@ $('tlIn').addEventListener('pointerdown',e=>{
   const zx=e.target.closest('[data-zx]'); if (zx){ E.zones.splice(+zx.dataset.zx,1); changed(true); return; }
   const kfm=e.target.closest('.vkf'); if (kfm){ vid.pause(); selKf=+kfm.dataset.kf; PV.currentTime=E.kf[selKf].t; openKfPanel(); return; }
   const trm=e.target.closest('.vtr'); if (trm){ vid.pause(); selClip=+trm.dataset.tr; openClipPanel(); return; }
-  const blk=e.target.closest('.cb,.zb,.ob,.vb'); if (!blk) return;
+  const blk=e.target.closest('.cb,.zb,.ob,.vb,.xb,.sb'); if (!blk) return;
   e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
   const mode=e.target.classList.contains('hl')?'l':e.target.classList.contains('hr')?'r':'m';
   tlDrag={blk,mode,x0:e.clientX,y0:e.clientY,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width),layer0:blk.parentElement&&blk.parentElement.id==='trC2'?1:0,layer:null};
@@ -1321,6 +1338,19 @@ $('tlIn').addEventListener('pointerup',e=>{
     const z=E.zones[+blk.dataset.z]; if (!moved) return;
     if (mode==='m'){ z.s=clamp(z.s+dt,0,PV.duration); z.e=clamp(z.e+dt,0,PV.duration); } else if (mode==='l') z.s=clamp(z.s+dt,0,z.e-0.1); else z.e=clamp(z.e+dt,z.s+0.1,PV.duration);
     changed(true);
+  } else if (blk.dataset.x!==undefined || blk.dataset.sh!==undefined){
+    const o=(E.objs||[]).find(x=>x.id===(blk.dataset.x??blk.dataset.sh)); if (!o) return; selObj=o.id; OBJ.shineWin(o);
+    const D=PV.duration;
+    if (blk.dataset.sh!==undefined){   // shine: posun / zkrácení jen v rámci objektu
+      if (moved){ if (mode==='m'){ const len=o.shE-o.shS, s=clamp(o.shS+dt,o.s,o.e-len); o.shS=s; o.shE=s+len; } else if (mode==='l') o.shS=clamp(o.shS+dt,o.s,o.shE-0.2); else o.shE=clamp(o.shE+dt,o.shS+0.2,o.e); }
+      else PV.currentTime=o.shS+0.02;
+    } else if (moved){
+      if (mode==='m'){ const d2=clamp(dt,-o.s,D-o.e); o.s+=d2; o.e+=d2; o.shS+=d2; o.shE+=d2; }
+      else if (mode==='l'){ o.s=clamp(o.s+dt,0,o.e-0.2); if (o.shS<o.s){ const len=o.shE-o.shS; o.shS=o.s; o.shE=Math.min(o.e,o.s+len); } }
+      else { o.e=clamp(o.e+dt,o.s+0.2,D); if (o.shE>o.e){ o.shE=o.e; if (o.shS>o.shE-0.2) o.shS=Math.max(o.s,o.shE-0.2); } }
+    } else PV.currentTime=o.s+0.05;
+    if (panel!=='obj') openObjPanel(); else renderPanel();
+    changed();
   } else if (blk.dataset.o!==undefined){
     const o=E.overlays.find(x=>x.id===+blk.dataset.o); if (!o) return;
     selOv=o.id;
@@ -1662,7 +1692,7 @@ function objFinish(save){
   if (E2.obj){ E2.obj.mask=OBJ.rle(E2.m); objInvalidate(E2.obj); selObj=E2.obj.id; }
   else {
     const s=E.src2out(E2.t0), o={id:'o'+Date.now().toString(36), t0:E2.t0, s, e:Math.min(PV.duration||s+4, s+4), mask:OBJ.rle(E2.m), _mk:1,
-      shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, line:'off', lineC:'#ffffff', lineW:50, fillA:0, fillC:'#27e1c1', trk:null};
+      shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shS:s+0.1, shE:s+1.2, shRep:false, line:'off', lineC:'#ffffff', lineW:50, fillA:0, fillC:'#27e1c1', trk:null};
     E.objs.push(o); selObj=o.id;
   }
   changed(); renderPanel(); renderTimeline();
@@ -1692,7 +1722,9 @@ function pObj(){
   <div class="btnrow"><button class="btn small" id="objHere">${I('pin')} Začít v místě hlavy</button></div>
   ${oslider('Délka zobrazení','objDur',0.5,30,+(o.e-o.s).toFixed(1),' s')}
   <div class="row"><span>Shine přes objekt</span><input type="checkbox" class="sw" id="objShine" ${o.shine?'checked':''}></div>
-  ${o.shine?`${colorRow('Barva shine','shineC',o)}${oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)}${oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s')}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}`:''}
+  ${o.shine?`<div class="note">Shine má na timeline vlastní zlatý blok – posuň ho na moment, kdy má projet, a za okraje ho zkrať / prodluž (delší blok = pomalejší průjezd).</div>
+  <div class="row"><span>Opakovat shine v bloku</span><input type="checkbox" class="sw" id="objRep" ${o.shRep?'checked':''}></div>
+  ${colorRow('Barva shine','shineC',o)}${o.shRep?oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)+oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s'):''}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}`:''}
   <div class="clabel">Obrys</div><div class="chips" id="objLine">${[['off','Žádný'],['solid','Plná čára'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${(o.line||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   ${o.line&&o.line!=='off'?`${colorRow('Barva čáry','lineC',o)}${oslider('Tloušťka čáry','objLW',10,200,o.lineW??50)}`:''}
   ${oslider('Výplň (barevný nádech)','objFA',0,70,o.fillA||0,' %')}
@@ -1722,6 +1754,7 @@ binders.obj=()=>{
   $('objHere').onclick=()=>{ const d=o.e-o.s; o.s=PV.currentTime; o.e=Math.min(PV.duration,o.s+d); changed(); renderPanel(); renderTimeline(); };
   num('objDur',v=>{ o.e=Math.min(PV.duration,o.s+v); });
   $('objShine').onchange=e=>{ o.shine=e.target.checked; changed(); renderPanel(); };
+  if ($('objRep')) $('objRep').onchange=e=>{ o.shRep=e.target.checked; changed(); renderPanel(); };
   num('objSS',v=>o.shineSpd=v); num('objSE',v=>o.shineEvery=v); num('objSW',v=>o.shineW=v); num('objSI',v=>o.shineI=v); num('objLW',v=>o.lineW=v);
   num('objFA',v=>o.fillA=v); if ($('objFA')) $('objFA').onchange=()=>{ changed(); renderPanel(); };
   num('objTS',v=>{ if (o.trk){ o.trk.smooth=v; o.trk._S=null; } });
@@ -1746,6 +1779,7 @@ async function objTrack(o){
   if (!tr){ trkMsg('Objekt se nepodařilo sledovat'+(TRK.why?' ('+TRK.why+')':'')+'. Zkus výběr s výraznější kresbou.'); return; }
   o.trk={t:tr.t, A:tr.A.map(a=>a.map(v=>Math.round(v*1e5)/1e5)), c:tr.c.map(v=>Math.round(v*100)/100), smooth:8};
   o.s=E.src2out(tr.t[0]); o.e=E.src2out(tr.t[tr.t.length-1]);
+  if (o.shS==null || o.shS<o.s || o.shS>o.e-0.2){ o.shS=Math.max(o.s, o.shS??o.s)+0; o.shE=Math.min(o.e, o.shS+1.1); }
   changed(); renderPanel(); renderTimeline(); PV.currentTime=o.s+0.05;
   trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s. Pusť video a uvidíš.`);
 }

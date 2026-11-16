@@ -107,7 +107,7 @@ button,select,input,textarea{font:inherit;color:inherit}
 .tl{position:relative;flex:none;background:#0b0b0d;border-top:1px solid var(--line);padding-bottom:4px}
 .tl-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}
 .tl-scroll::-webkit-scrollbar{display:none}
-.tl-in{position:relative;height:130px}
+.tl-in{position:relative;height:148px}
 .tr{position:absolute;left:0;right:0;height:26px}
 .tr-v{top:6px;height:30px;display:flex}
 .tr-v img{height:30px;flex:none;object-fit:cover;opacity:.8}
@@ -465,3 +465,11 @@ button.pro.on{background:var(--green)}
 .look canvas{height:96px;width:auto;border:2px solid var(--line);background:#111}
 .look.on canvas{border-color:#2b5cff;box-shadow:0 0 0 2px #2b5cff}
 .look span{font-size:12px;font-weight:700;white-space:nowrap}
+
+/* timeline: zvýrazněné objekty + shine */
+.tr-x{top:130px;height:15px}
+.xb,.sb{position:absolute;top:0;bottom:0;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;padding:0 10px;display:flex;align-items:center;gap:4px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.xb{background:#0f5f55;color:#c8fff4;border:1px solid #27e1c1}
+.xb .ic{width:11px;height:11px}
+.sb{top:2px;bottom:2px;background:linear-gradient(180deg,#ffe08a,#f5b301);color:#3a2a00;border:1px solid #fff2c4;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.xb.cur{outline:2px solid #27e1c1}
