@@ -113,10 +113,25 @@ function maskCanvas(o) {
   if (o._mc && o._mcK === o._mk) return o._mc;
   const m = o._m || (o._m = OBJ.unrle(o.mask));
   const c = o._mc || document.createElement('canvas'); c.width = m.w; c.height = m.h;
-  const x = c.getContext('2d'), id = x.createImageData(m.w, m.h);
-  for (let i = 0; i < m.d.length; i++) { id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = 255; id.data[i * 4 + 3] = m.d[i] ? 255 : 0; }
+  const x = c.getContext('2d'), id = x.createImageData(m.w, m.h), a = feather(m);
+  for (let i = 0; i < m.d.length; i++) { id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = 255; id.data[i * 4 + 3] = a[i]; }
   x.putImageData(id, 0, 0); o._mc = c; o._mcK = o._mk; o._ct = null;
   return c;
+}
+// měkký okraj masky: rozmazání + posun prahu ven → shine plynule přejede i lehce přes hranu objektu (nic se neořízne natvrdo)
+function feather(m) {
+  const { w, h, d } = m; let x0 = w, y0 = h, x1 = 0, y1 = 0;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[j * w + i]) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }
+  const R = Math.max(3, Math.round(Math.hypot(x1 - x0, y1 - y0) * 0.025));
+  let A = new Float32Array(w * h); for (let i = 0; i < A.length; i++) A[i] = d[i];
+  const box = (src, horiz) => { const out = new Float32Array(w * h), n = 2 * R + 1;
+    if (horiz) for (let y = 0; y < h; y++) { let s = 0; const r = y * w; for (let x = -R; x <= R; x++) s += src[r + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x++) { out[r + x] = s / n; s += src[r + Math.min(w - 1, x + R + 1)] - src[r + Math.max(0, x - R)]; } }
+    else for (let x = 0; x < w; x++) { let s = 0; for (let y = -R; y <= R; y++) s += src[Math.min(h - 1, Math.max(0, y)) * w + x]; for (let y = 0; y < h; y++) { out[y * w + x] = s / n; s += src[Math.min(h - 1, y + R + 1) * w + x] - src[Math.max(0, y - R) * w + x]; } }
+    return out; };
+  for (let k = 0; k < 2; k++) A = box(box(A, true), false);   // 2× rámeček ≈ gauss
+  const out = new Uint8ClampedArray(w * h);
+  for (let i = 0; i < A.length; i++) { const t = Math.min(1, Math.max(0, (A[i] - 0.12) / 0.6)); out[i] = Math.round(255 * t * t * (3 - 2 * t)); }
+  return out;
 }
 let oc = null, ox = null, hc = null, hx = null;
 const hexA = (h, a) => { const n = parseInt((h || '#ffffff').slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
@@ -180,15 +195,15 @@ function drawShine(c, o, t, W, H, MM, mc, A) {
   const cx = bb.x0 - band - bh * Math.abs(Math.tan(ang)) / 2 + (span + band * 2) * e, cy = (bb.y0 + bb.y1) / 2;
   const gx0 = cx - band * ca, gy0 = cy - band * sa, gx1 = cx + band * ca, gy1 = cy + band * sa;
   const gr = ox.createLinearGradient(gx0, gy0, gx1, gy1), col = o.shineC || '#ffffff';
-  gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.35, hexA(col, 0.35)); gr.addColorStop(0.5, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.65, hexA(col, 0.35)); gr.addColorStop(1, hexA(col, 0));
+  gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.35, hexA(col, 0.35)); gr.addColorStop(0.5, 'rgba(255,255,255,0.8)'); gr.addColorStop(0.65, hexA(col, 0.35)); gr.addColorStop(1, hexA(col, 0));
   ox.fillStyle = gr; ox.fillRect(0, 0, W, H);
   const I = A * clamp((o.shineI ?? 80) / 100, 0, 1.5);
   // záře kolem (rozmazaná kopie přes zmenšení – funguje i v Safari)
   const q = 8, hw = Math.max(1, Math.round(W / q)), hh = Math.max(1, Math.round(H / q));
   if (!hc || hc.width !== hw || hc.height !== hh) { hc = document.createElement('canvas'); hc.width = hw; hc.height = hh; hx = hc.getContext('2d'); }
   hx.clearRect(0, 0, hw, hh); hx.imageSmoothingEnabled = true; hx.drawImage(oc, 0, 0, hw, hh);
-  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'lighter';
-  c.globalAlpha = I * 0.55; c.imageSmoothingEnabled = true; c.drawImage(hc, 0, 0, W, H);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen';
+  c.globalAlpha = I * 0.6; c.imageSmoothingEnabled = true; c.drawImage(hc, 0, 0, W, H);
   c.globalAlpha = I; c.drawImage(oc, 0, 0);
   c.restore();
 }
