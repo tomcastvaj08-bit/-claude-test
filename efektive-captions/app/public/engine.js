@@ -751,7 +751,8 @@ E.drawOverlay = (c, o, t) => {
   const W=cv.width, H=cv.height, since=t-o.s, left=o.e-t;
   const q=clamp(since/0.5), eo=1-Math.pow(2,-10*q), fadeOut=clamp(left/0.25);
   let a=fadeOut, sx=1, sy=1, dx=0, dy=0, r=(o.rot||0)*Math.PI/180;
-  const wpx=W*o.w/100;
+  let wpx=W*o.w/100;
+  const tro=o.trk?E.trkOffset(o.trk,t):null; if (tro && E.tracks[o.trk].scale) wpx*=tro.k;
   let h = wpx; if (o.src && (o.src.naturalWidth||o.src.videoWidth)) { const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; }
   switch(o.anim){
     case 'standard': a*=eo; sx=sy=0.9+0.1*eo; break;
@@ -768,12 +769,12 @@ E.drawOverlay = (c, o, t) => {
   }
   if (o.wiggle){ r+=Math.sin(t*6+o.id)*0.06; dx+=Math.sin(t*9+o.id)*W*0.004; dy+=Math.cos(t*7+o.id)*W*0.004; }
   if (a<=0.001) return;
-  c.save(); c.globalAlpha=a; c.translate(W*o.x/100+dx, H*o.y/100+dy); c.rotate(r); c.scale(sx,sy);
+  c.save(); c.globalAlpha=a; c.translate(W*(o.x+(tro?tro.dx:0))/100+dx, H*(o.y+(tro?tro.dy:0))/100+dy); c.rotate(r); c.scale(sx,sy);
   if (o.emoji){ c.font=`${wpx}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(o.emoji,0,0); }
   else if (o.src){ try{ c.drawImage(o.src,-wpx/2,-h/2,wpx,h); }catch(e){} }
   c.restore();
 };
-E.overlayBox = (o) => { const W=cv.width,H=cv.height, wpx=W*o.w/100; let h=wpx; if (o.src&&(o.src.naturalWidth||o.src.videoWidth)){ const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; } return {cx:W*o.x/100, cy:H*o.y/100, w:wpx, h}; };
+E.overlayBox = (o) => { const W=cv.width,H=cv.height, tro=o.trk&&E._t!=null?E.trkOffset(o.trk,E._t):null; let wpx=W*o.w/100; if (tro && E.tracks[o.trk].scale) wpx*=tro.k; let h=wpx; if (o.src&&(o.src.naturalWidth||o.src.videoWidth)){ const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; } return {cx:W*(o.x+(tro?tro.dx:0))/100, cy:H*(o.y+(tro?tro.dy:0))/100, w:wpx, h}; };
 
 // ---------- TEXT ZA POSTAVOU ----------
 // E.personMask(t) vrací canvas s maskou postavy (bílá = postava) nebo null; vyplňuje ai.js
@@ -828,6 +829,24 @@ E.kfAt=t=>{
     return {z:a.z+(b.z-a.z)*e, x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e, op:a.op+(b.op-a.op)*e}; } }
   return K[K.length-1];
 };
+// ================= SLEDOVÁNÍ OBJEKTU (tracking) =================
+// E.tracks[id] = {id, t0, t[], x[], y[], s[], c[] (syrová dráha, čas = čas zdrojového videa), smooth 0–100, scale (měnit velikost s objektem)}
+// titulek / overlay s trk:id se posouvá o to, o kolik se objekt na obrazovce posunul od okamžiku t0 (i se zoomem videa)
+E.tracks={};
+const KF0={z:100,x:0,y:0};
+E.trackSm=T=>{ if (!T._sm || T._smK!==T.smooth || T._smN!==T.t.length){ T._sm=window.TRK?TRK.smooth(T,T.smooth):null; T._smK=T.smooth; T._smN=T.t.length; } return T._sm; };
+E.trkOffset=(id,t)=>{
+  const T=E.tracks[id]; if (!T || !window.TRK || !T.t || T.t.length<2) return null;
+  const S=E.trackSm(T); if (!S) return null;
+  const ts=E.out2src?E.out2src(t):t, a=TRK.at(S,ts), b=TRK.at(S,T.t0);
+  const k=E.kfAt(t)||KF0, k0=E.kfAt(E.src2out?E.src2out(T.t0):T.t0)||KF0;
+  const X=(p,k)=>50+k.x+(p.x*100-50)*k.z/100, Y=(p,k)=>50+k.y+(p.y*100-50)*k.z/100;
+  return {dx:X(a,k)-X(b,k0), dy:Y(a,k)-Y(b,k0), k:(a.s/b.s)*(k.z/k0.z), x:X(a,k), y:Y(a,k)};
+};
+// styl titulku v čase t (se sledováním objektu)
+E.styleAt=(p,t)=>{ const S=E.styleOf(p); const m=p&&E.meta[E.keyOf(p)];
+  if (m && m.trk && E.tracks[m.trk]){ const o=E.trkOffset(m.trk,t); if (o){ S.posX+=o.dx; S.posY+=o.dy; if (E.tracks[m.trk].scale) S.size*=o.k; } }
+  return S; };
 function drawVideoXf(t, draw){
   const k=E.kfAt(t);
   if (!k || (k.z===100 && !k.x && !k.y && k.op>=100)){ draw(); return; }
@@ -841,6 +860,7 @@ function drawVideoXf(t, draw){
 // ================= HLAVNÍ RENDER =================
 E.render = (t, opts={}) => {
   if (!vid || !vid.videoWidth) return;
+  E._t=t;
   const F=E.flags;
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.shadowColor='transparent'; ctx.filter='none';
   if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height);
@@ -888,7 +908,7 @@ E.render = (t, opts={}) => {
   if (opts.box && mainLines) E.drawBox(mainLines,mainS);
 };
 function drawPage(k,t){
-  const p=E.pages[k], S=E.styleOf(p);
+  const p=E.pages[k], S=E.styleAt(p,t);
   const lines=E.layoutPage(p,S); E.lastLines=lines;
   const bx=cv.width*S.posX/100, by=cv.height*S.posY/100;
   const noTilt = !S.tilt && !S.tiltX;

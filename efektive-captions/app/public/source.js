@@ -60,8 +60,10 @@ async function openFrameSource(file, dispW, dispH) {
     if (si >= samples.length && !flushed) { flushed = true; dec.flush().then(() => { flushDone = true; if (wake) { wake(); wake = null; } }, e => { err = e; }); }
   };
   let cur = null;
+  // časy všech snímků (s, od začátku videa) – pro sledování objektu snímek po snímku
+  const times = samples.map(x => x.cts / x.timescale - first / 1e6).sort((a, b) => a - b);
   return {
-    rot, codec,
+    rot, codec, times,
     // vrátí snímek, který má být vidět v čase t (s); t musí růst
     async frameAt(t) {
       const us = t * 1e6 + first + 500;

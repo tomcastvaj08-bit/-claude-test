@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -110,6 +110,7 @@ function restore(json){
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.face=Array.isArray(s.face)?s.face:null;
+  E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
 }
@@ -179,7 +180,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.kf=[]; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.kf=[]; E.tracks={}; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
@@ -475,10 +476,12 @@ function loop(now){
     lastT=t;
     E.render(t,{});
     syncVmode();
-    if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleOf(p),guides); }
+    if (trkPick){ drawTrkPick(); E.lastBox=null; }
+    else if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleAt(p,t),guides); }
     else E.lastBox=null;
     if (selOv && vid.paused) drawOvSel();
     drawVGuide();
+    if (!trkPick && vid.paused) drawTrkMark(t);
     $('tm').textContent=fmt(t)+' / '+fmt(PV.duration);
   }
   requestAnimationFrame(loop);
@@ -666,6 +669,7 @@ function pCaptions(){
   <div class="btnrow"><button class="btn" id="dictBtn">${I('book')} Slovník oprav</button><button class="btn" id="resetOne">${I('reset')} Zrušit vlastní styl</button></div>
   <div class="btnrow"><button class="btn" id="layerBtn">${E.pages[curPage]&&E.pages[curPage].layer?I('arrow-up')+' Vybraný titulek do hlavní vrstvy':I('arrow-down')+' Vybraný titulek do vrstvy pod'}</button></div>
   <div class="note">Na timeline můžeš titulek i chytit a stáhnout dolů do 2. vrstvy (nebo zpátky nahoru).</div>
+  ${trkSection(E.pages[curPage]?(E.meta[E.keyOf(E.pages[curPage])]||{}).trk:null,'page')}
   <div class="pglist" id="pglist">${pg}</div>`;
 }
 binders.captions=()=>{
@@ -674,6 +678,7 @@ binders.captions=()=>{
   $('dictBtn').onclick=()=>openSheet('sheetDict');
   $('resetOne').onclick=()=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); delete m.own; changed(); renderPanel(); toast('Titulek má zase společný styl'); } };
   $('layerBtn').onclick=()=>{ const p=E.pages[curPage]; if (p) setLayer(curPage, p.layer?0:1); };
+  trkBind(()=>{ const p=E.pages[curPage]; return p&&(E.meta[E.keyOf(p)]||{}).trk; }, id=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); if (id) m.trk=id; else delete m.trk; } }, 'page');
   $('pglist').onclick=e=>{
     const ed=e.target.closest('[data-ed]'); if (ed){ selectPage(+ed.dataset.ed); openInline(+ed.dataset.ed); return; }
     const w=e.target.closest('.w'); if (w){ const W=E.words[+w.dataset.i]; W.em=!W.em; w.classList.toggle('em',W.em); changed(); }
@@ -918,6 +923,7 @@ function pOverlay(){
     <div class="row"><span>Před titulky (jinak za nimi)</span><input type="checkbox" class="sw" id="ovAbove" ${o.above?'checked':''}></div>
     <label class="ctl"><div class="lb"><span>Velikost</span><span>${o.w}%</span></div><input type="range" id="ovW" min="5" max="100" value="${o.w}"></label>
     <label class="ctl"><div class="lb"><span>Rotace</span><span>${o.rot||0}°</span></div><input type="range" id="ovR" min="-180" max="180" value="${o.rot||0}"></label>
+    ${trkSection(o.trk,'ov')}
     <div class="btnrow"><button class="btn" id="ovDel">${I('trash')} Smazat overlay</button></div>
     <div class="note">Na videu ho chytni a posuň. Na časové ose posuneš začátek a konec.</div>`;
   } else h+=`<div class="note">Vyber overlay klepnutím na fialový blok v časové ose nebo na videu.</div>`;
@@ -933,6 +939,7 @@ binders.overlay=()=>{
   $('ovW').oninput=e=>{ o.w=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.w+'%'; }; $('ovW').onchange=()=>changed();
   $('ovR').oninput=e=>{ o.rot=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.rot+'°'; }; $('ovR').onchange=()=>changed();
   $('ovDel').onclick=()=>{ E.overlays=E.overlays.filter(x=>x!==o); selOv=null; changed(); renderPanel(); };
+  trkBind(()=>o.trk, id=>{ if (id) o.trk=id; else delete o.trk; }, 'ov');
 };
 async function loadAsset(id,blob){
   const url=URL.createObjectURL(blob); let el;
@@ -1244,6 +1251,7 @@ const pinchFrom=v=>{ const [a,b]=[...ptrs.values()]; return {type:'vpinch',d0:Ma
 stg.addEventListener('pointerdown',e=>{
   if (inlineOpen || !stgOK(e)) return;
   try{ stg.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,cvPt(e));
+  if (trkPick){ trkDown(...cvPt(e)); return; }
   const [x,y]=cvPt(e), hr=Math.min(cv.width,cv.height)*0.05;
   if (videoMode()){ vid.pause(); const v=kfVals();
     if (ptrs.size>=2) gest=pinchFrom(v);
@@ -1267,6 +1275,7 @@ stg.addEventListener('pointerdown',e=>{
 });
 stg.addEventListener('pointermove',e=>{
   if (!ptrs.has(e.pointerId)||!gest) return; ptrs.set(e.pointerId,cvPt(e)); const [x,y]=cvPt(e);
+  if (trkPick){ trkMove(x,y); return; }
   if (gest.type==='vpan'){
     if (ptrs.size>=2){ gest=pinchFrom(kfVals()); return; }
     if (Math.hypot(x-gest.x0,y-gest.y0)<4 && !gest.moved) return; gest.moved=true;
@@ -1288,6 +1297,7 @@ stg.addEventListener('pointermove',e=>{
 function endPtr(e){
   if (!ptrs.has(e.pointerId)) return;
   ptrs.delete(e.pointerId);
+  if (trkPick){ if (!ptrs.size){ trkUp(); gest=null; } return; }
   if (ptrs.size===1 && gest && gest.type==='vpinch'){ const [x,y]=[...ptrs.values()][0]; gest={type:'vpan',x0:x,y0:y,v0:kfVals(),moved:true}; return; }
   if (ptrs.size) return;
   if (gest && (gest.type==='vpan'||gest.type==='vpinch')){ if (gest.moved){ changed(); renderPanel(); } else togglePlay(); gest=null; vGuide=null; return; }
@@ -1295,6 +1305,121 @@ function endPtr(e){
   gest=null; guides=false;
 }
 stg.addEventListener('pointerup',endPtr); stg.addEventListener('pointercancel',endPtr);
+
+// ================= SLEDOVÁNÍ OBJEKTU (tracking) =================
+// 1) klepnout na objekt (obličej, hrudník…) → rámeček, 2) „Sledovat“ → appka projde video snímek po snímku,
+// 3) titulek / overlay pak plynule jede za objektem. Výpočet: tracker.js
+let trkPick=null;
+const r5=(a,d)=>a.map(v=>Math.round(v*d)/d);
+function trkSave(T){ return {id:T.id,t0:T.t0,smooth:T.smooth,scale:!!T.scale,t:r5(T.t,1000),x:r5(T.x,1e5),y:r5(T.y,1e5),s:r5(T.s,1e4),c:r5(T.c,100)}; }
+function trkSection(id,kind){
+  const T=id&&E.tracks[id];
+  if (!T) return `<div class="clabel">Sledování objektu</div><button class="btn" id="trkStart">${I('target','grad')} Sledovat objekt (tracking)</button>
+    <div class="note">${kind==='ov'?'Overlay':'Titulek'} pojede plynule za obličejem, hrudníkem nebo čímkoli ve videu. Nejdřív zastav video tam, kde je objekt dobře vidět.</div>`;
+  const a=E.src2out(T.t[0]), b=E.src2out(T.t[T.t.length-1]);
+  return `<div class="clabel">Sledování objektu · ${fmt(a)}–${fmt(b)}</div>
+    <label class="ctl"><div class="lb"><span>Plynulost pohybu</span><span>${T.smooth}</span></div><input type="range" id="trkSm" min="0" max="100" value="${T.smooth}"></label>
+    <div class="row"><span>Měnit velikost s objektem</span><input type="checkbox" class="sw" id="trkSc" ${T.scale?'checked':''}></div>
+    <div class="btnrow">${kind==='page'?`<button class="btn" id="trkAll">${I('copy')} Na všechny titulky</button>`:''}<button class="btn" id="trkStart">${I('target')} Nastavit znovu</button></div>
+    <div class="btnrow"><button class="btn" id="trkOff">${I('x')} Zrušit sledování</button></div>`;
+}
+function trkBind(getId,setId,kind){
+  if (!$('trkStart')) return;
+  $('trkStart').onclick=()=>trkBegin(kind,setId);
+  const T=E.tracks[getId()]; if (!T) return;
+  $('trkSm').oninput=e=>{ T.smooth=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=T.smooth; }; $('trkSm').onchange=()=>changed();
+  $('trkSc').onchange=e=>{ T.scale=e.target.checked; changed(); };
+  if ($('trkAll')) $('trkAll').onclick=()=>{
+    const a=E.src2out(T.t[0]), b=E.src2out(T.t[T.t.length-1]); let n=0;
+    for (const p of E.pages) if (p.e>a && p.s<b){ pageMeta(p).trk=T.id; n++; }
+    changed(); renderPanel(); toast(`Objekt sleduje ${n} titulků`);
+  };
+  $('trkOff').onclick=()=>{ setId(null); trkGC(); changed(); renderPanel(); };
+}
+function trkGC(){ const used=new Set(); for (const k in E.meta) if (E.meta[k] && E.meta[k].trk) used.add(E.meta[k].trk); for (const o of E.overlays) if (o.trk) used.add(o.trk); for (const id in E.tracks) if (!used.has(id)) delete E.tracks[id]; }
+function trkBegin(kind,setId){
+  if (!window.TRK){ toast('Sledování se nenačetlo – obnov stránku'); return; }
+  vid.pause();
+  // objekt musí být v daném okamžiku vidět: video na začátek titulku / overlaye, pokud je mimo
+  const t=PV.currentTime;
+  if (kind==='page'){ const p=E.pages[curPage]; if (!p) return; if (t<p.s||t>p.e) PV.currentTime=Math.min(p.e-0.02,p.s+0.3); }
+  else { const o=E.overlays.find(x=>x.id===selOv); if (!o) return; if (t<o.s||t>o.e) PV.currentTime=Math.min(o.e-0.02,o.s+0.1); }
+  const W=cv.width, H=cv.height, sz=Math.min(W,H)*0.16;
+  trkPick={box:{cx:W/2,cy:H*0.38,w:sz,h:sz}, kind, setId, running:false, cancel:false, prog:0};
+  $('trkBar').classList.remove('hidden'); trkBarUpd();
+}
+function trkBarUpd(){
+  const P=trkPick; if (!P) return;
+  $('trkHint').textContent = P.running ? `Sleduji objekt… ${Math.round(P.prog*100)} %` : 'Klepni na to, co se má sledovat (obličej, hrudník…). Rámeček zvětšíš tažením rohu nebo dvěma prsty.';
+  $('trkGo').classList.toggle('hidden',P.running); $('trkCancel').textContent=P.running?'Zastavit':'Zrušit';
+}
+function trkEnd(){ trkPick=null; gest=null; $('trkBar').classList.add('hidden'); }
+function trkClampBox(B){ const W=cv.width,H=cv.height; B.w=clamp(B.w,Math.min(W,H)*0.04,W*0.9); B.h=clamp(B.h,Math.min(W,H)*0.04,H*0.9); B.cx=clamp(B.cx,B.w/2,W-B.w/2); B.cy=clamp(B.cy,B.h/2,H-B.h/2); }
+function trkDown(x,y){
+  const P=trkPick; if (P.running) return; const B=P.box, hr=Math.min(cv.width,cv.height)*0.05;
+  if (ptrs.size>=2){ const [a,b]=[...ptrs.values()]; gest={type:'tpinch',d0:Math.max(1,Math.hypot(a[0]-b[0],a[1]-b[1])),w0:B.w,h0:B.h}; return; }
+  if (Math.hypot(x-(B.cx+B.w/2),y-(B.cy+B.h/2))<hr*1.5){ gest={type:'tsize'}; return; }
+  gest={type:'tmove',x0:x,y0:y,cx0:B.cx,cy0:B.cy,moved:false};
+}
+function trkMove(x,y){
+  const P=trkPick; if (!P||P.running||!gest) return; const B=P.box;
+  if (gest.type==='tpinch'){ if (ptrs.size<2) return; const [a,b]=[...ptrs.values()]; const f=Math.hypot(a[0]-b[0],a[1]-b[1])/gest.d0; B.w=gest.w0*f; B.h=gest.h0*f; }
+  else if (gest.type==='tsize'){ B.w=Math.abs(x-B.cx)*2; B.h=Math.abs(y-B.cy)*2; }
+  else if (gest.type==='tmove'){ if (!gest.moved && Math.hypot(x-gest.x0,y-gest.y0)<6) return; gest.moved=true; B.cx=gest.cx0+(x-gest.x0); B.cy=gest.cy0+(y-gest.y0); }
+  trkClampBox(B);
+}
+function trkUp(){ const P=trkPick; if (!P||P.running||!gest) return; if (gest.type==='tmove' && !gest.moved){ P.box.cx=gest.x0; P.box.cy=gest.y0; trkClampBox(P.box); } }
+function drawTrkPick(){
+  const P=trkPick, B=P.box, c=cv.getContext('2d'), W=cv.width, H=cv.height, lw=Math.max(2,W*0.004);
+  c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.shadowColor='transparent';
+  const x0=B.cx-B.w/2, y0=B.cy-B.h/2;
+  c.fillStyle='rgba(0,0,0,.38)'; c.beginPath(); c.rect(0,0,W,H); c.rect(x0,y0,B.w,B.h); c.fill('evenodd');
+  c.strokeStyle='#fff'; c.lineWidth=lw; c.strokeRect(x0,y0,B.w,B.h);
+  // rohy
+  const k=Math.min(B.w,B.h)*0.22; c.strokeStyle='#27e1c1'; c.lineWidth=lw*2.2; c.beginPath();
+  for (const [sx,sy] of [[0,0],[1,0],[0,1],[1,1]]){ const X=x0+sx*B.w, Y=y0+sy*B.h, dx=sx?-k:k, dy=sy?-k:k; c.moveTo(X+dx,Y); c.lineTo(X,Y); c.lineTo(X,Y+dy); }
+  c.stroke();
+  // střed (sledovaný bod)
+  const r=Math.min(B.w,B.h)*0.12; c.strokeStyle='#fff'; c.lineWidth=lw; c.beginPath(); c.moveTo(B.cx-r,B.cy); c.lineTo(B.cx+r,B.cy); c.moveTo(B.cx,B.cy-r); c.lineTo(B.cx,B.cy+r); c.stroke();
+  if (!P.running){ const hr=Math.min(W,H)*0.028; c.fillStyle='#fff'; c.beginPath(); c.arc(B.cx+B.w/2,B.cy+B.h/2,hr,0,Math.PI*2); c.fill(); c.strokeStyle='#111'; c.lineWidth=hr*0.18; c.beginPath(); c.moveTo(B.cx+B.w/2-hr*0.45,B.cy+B.h/2+hr*0.45); c.lineTo(B.cx+B.w/2+hr*0.45,B.cy+B.h/2-hr*0.45); c.stroke(); }
+  else { const bw=W*0.6, bh=Math.max(4,H*0.008); c.fillStyle='rgba(255,255,255,.3)'; c.fillRect((W-bw)/2,H*0.06,bw,bh); c.fillStyle='#27e1c1'; c.fillRect((W-bw)/2,H*0.06,bw*P.prog,bh); }
+  c.restore();
+}
+// značka sledovaného bodu u vybraného titulku / overlaye (při pauze)
+function drawTrkMark(t){
+  let id=null;
+  if (panel==='captions'){ const p=E.pages[curPage]; if (p && t>=p.s && t<=p.e) id=(E.meta[E.keyOf(p)]||{}).trk; }
+  else if (panel==='overlay'){ const o=E.overlays.find(x=>x.id===selOv); if (o && t>=o.s && t<=o.e) id=o.trk; }
+  if (!id || !E.tracks[id]) return; const o=E.trkOffset(id,t); if (!o) return;
+  const c=cv.getContext('2d'), W=cv.width, H=cv.height, x=o.x/100*W, y=o.y/100*H, r=Math.min(W,H)*0.025, lw=Math.max(2,W*0.003);
+  c.save(); c.setTransform(1,0,0,1,0,0); c.strokeStyle='#27e1c1'; c.lineWidth=lw; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.moveTo(x-r*1.6,y); c.lineTo(x-r*0.5,y); c.moveTo(x+r*0.5,y); c.lineTo(x+r*1.6,y); c.moveTo(x,y-r*1.6); c.lineTo(x,y-r*0.5); c.moveTo(x,y+r*0.5); c.lineTo(x,y+r*1.6); c.stroke(); c.restore();
+}
+async function trkRun(){
+  const P=trkPick; if (!P || P.running) return;
+  P.running=true; P.prog=0; trkBarUpd();
+  const W=cv.width, H=cv.height, k=E.kfAt(PV.currentTime)||{z:100,x:0,y:0}, z=k.z/100;
+  // rámeček z obrazovky → do souřadnic původního videa (bez zoomu z klíčových bodů)
+  const inv=(X,Y)=>[(X-(W/2+k.x/100*W))/z+W/2, (Y-(H/2+k.y/100*H))/z+H/2];
+  const [cx,cy]=inv(P.box.cx,P.box.cy);
+  const box={cx:cx/W, cy:cy/H, w:P.box.w/z/W, h:P.box.h/z/H};
+  const t0=vid.currentTime;
+  let v=null, tr=null;
+  try{
+    v=await auxVideo();
+    let last=0;
+    tr=await TRK.run({video:v, file:videoFile, t0, box, back:8, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; trkBarUpd(); } }, cancel:()=>P.cancel});
+  }catch(e){ console.warn(e); }
+  if (v) freeVideo(v);
+  trkEnd();
+  if (!tr){ toast('Objekt se nepodařilo sledovat – zkus větší rámeček nebo výraznější místo'); return; }
+  const id='k'+Date.now().toString(36);
+  E.tracks[id]={id, t0, smooth:55, scale:false, t:tr.t, x:tr.x, y:tr.y, s:tr.s, c:tr.c};
+  P.setId(id); trkGC(); changed(); renderPanel();
+  const len=tr.t[tr.t.length-1]-tr.t[0];
+  toast(len<1 ? 'Objekt se rychle ztratil – zkus větší rámeček' : `Hotovo – sleduje objekt ${len.toFixed(1).replace('.',',')} s`);
+}
+$('trkGo').onclick=()=>trkRun();
+$('trkCancel').onclick=()=>{ if (!trkPick) return; if (trkPick.running) trkPick.cancel=true; else trkEnd(); };
 
 // ================= EXPORT =================
 $('exportBtn').onclick=()=>{

@@ -105,6 +105,7 @@
     <textarea id="inlineEdit" class="inline-edit hidden" rows="3"></textarea>
     <div class="fsbar" id="fsBar"><button class="ico play" id="fsPlay"><svg class="ic"><use href="#i-play"/></svg></button><button class="btn small" id="fsExit"><svg class="ic"><use href="#i-minimize"/></svg> Zavřít velký náhled</button></div>
     <div class="waitbar" aria-hidden="true"><i></i>Načítám video…</div>
+    <div id="trkBar" class="trk-bar hidden"><div class="trk-hint" id="trkHint"></div><div class="trk-btns"><button class="btn small" id="trkCancel">Zrušit</button><button class="btn small primary" id="trkGo"><svg class="ic"><use href="#i-target"/></svg> Sledovat</button></div></div>
     <div id="inlineBar" class="inline-bar hidden"><button class="btn small" id="inlineCancel">Zrušit</button><button class="btn small primary" id="inlineOk">Hotovo</button></div>
   </div>
   <div class="ctrl">
@@ -228,6 +229,7 @@
 <script src="vendor/selfie/selfie_segmentation.js"></script>
 <script src="engine.js"></script>
 <script src="mix3d.js"></script>
+<script src="tracker.js"></script>
 <script src="ai.js"></script>
 <script src="export.js"></script>
 <script src="app.js"></script>
