@@ -781,11 +781,54 @@ E.drawOverlay = (c, o, t) => {
     r+=Math.sin(t*6*F+o.id)*0.06*A; dx+=Math.sin(t*9*F+o.id)*W*0.004*A; dy+=Math.cos(t*7*F+o.id)*W*0.004*A;
   }
   if (a<=0.001) return;
-  c.save(); c.globalAlpha=a; c.translate(W*(o.x+(tro?tro.dx:0))/100+dx, H*(o.y+(tro?tro.dy:0))/100+dy); c.rotate(r); c.scale(sx,sy);
+  const cx=W*(o.x+(tro?tro.dx:0))/100+dx, cy=H*(o.y+(tro?tro.dy:0))/100+dy;
+  // karta: zaoblené rohy, rámeček, stín – vykreslí se zvlášť a pak (případně) nakloní do 3D
+  const card = o.src && ((o.rad||0)>0 || (o.stW||0)>0 || (o.shA||0)>0 || o.tiltX || o.tiltY);
+  if (card){
+    const C=ovCard(o,wpx,h), tl=(o.tiltX||o.tiltY) && E._gl();
+    if (tl){
+      // rohy karty → otočení / zvětšení animace → 3D náklon kolem středu overlaye → WebGL čtyřúhelník
+      const S3={tilt:o.tiltY||0, tiltX:o.tiltX||0, persp:o.persp??55}, cs=Math.cos(r), sn=Math.sin(r);
+      const q=[[-C.w/2,-C.h/2],[C.w/2,-C.h/2],[C.w/2,C.h/2],[-C.w/2,C.h/2]].map(([x,y])=>{ x*=sx; y*=sy; return proj3(cx+x*cs-y*sn, cy+x*sn+y*cs, cx, cy, S3); });
+      c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=a; glQuad(C.cv,c,q); c.restore();
+    } else {
+      c.save(); c.globalAlpha=a; c.translate(cx,cy); c.rotate(r); c.scale(sx,sy); c.drawImage(C.cv,-C.w/2,-C.h/2,C.w,C.h); c.restore();
+    }
+    return;
+  }
+  c.save(); c.globalAlpha=a; c.translate(cx,cy); c.rotate(r); c.scale(sx,sy);
   if (o.emoji){ c.font=`${wpx}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(o.emoji,0,0); }
   else if (o.src){ try{ c.drawImage(o.src,-wpx/2,-h/2,wpx,h); }catch(e){} }
   c.restore();
 };
+// overlay jako „karta“: obrázek / video se zaoblenými rohy, rámečkem a stínem (v rezervě kolem, ať se stín neořízne)
+function ovCard(o,w,h){
+  const m=Math.min(w,h), rad=Math.min(m/2, m*(o.rad||0)/100), sw=(o.stW||0)/100*m*0.12, shA=(o.shA||0)/100, shD=(o.shD??30)/100;
+  const blur=shA>0? m*(0.04+0.12*shA) : 0, off=shA>0? m*0.12*shD : 0, pad=Math.ceil(blur*1.6+off+sw+2);
+  const CW=Math.ceil(w+2*pad), CH=Math.ceil(h+2*pad);
+  const cvx=o._card||(o._card=document.createElement('canvas')); if (cvx.width!==CW||cvx.height!==CH){ cvx.width=CW; cvx.height=CH; }
+  const x=cvx.getContext('2d'); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,CW,CH);
+  const path=()=>{ x.beginPath(); if (x.roundRect) x.roundRect(pad,pad,w,h,rad); else { const R=rad; x.moveTo(pad+R,pad); x.arcTo(pad+w,pad,pad+w,pad+h,R); x.arcTo(pad+w,pad+h,pad,pad+h,R); x.arcTo(pad,pad+h,pad,pad,R); x.arcTo(pad,pad,pad+w,pad,R); x.closePath(); } };
+  if (shA>0){ x.save(); x.shadowColor=`rgba(0,0,0,${Math.min(0.95,0.35+0.6*shA)})`; x.shadowBlur=blur; x.shadowOffsetY=off; x.fillStyle='#000'; path(); x.fill(); x.restore(); }
+  x.save(); path(); x.clip(); try{ x.drawImage(o.src,pad,pad,w,h); }catch(e){} x.restore();
+  if (sw>0){ x.save(); x.lineWidth=sw; x.strokeStyle=o.stC||'#ffffff'; path(); x.stroke(); x.restore(); }
+  return {cv:cvx, w:CW, h:CH};
+}
+// obecný perspektivní čtyřúhelník přes WebGL: src (celý obrázek) na 4 body q=[[x,y,w]...] (LH, PH, PD, LD)
+function glQuad(src,dst,q){
+  const g=E._gl(); if (!g) return false; const gl=g.gl;
+  const xs=q.map(p=>p[0]), ys=q.map(p=>p[1]);
+  const rx=Math.floor(Math.min(...xs)), ry=Math.floor(Math.min(...ys)), rw=Math.max(1,Math.ceil(Math.max(...xs))-rx), rh=Math.max(1,Math.ceil(Math.max(...ys))-ry);
+  if (rw>cv.width*3||rh>cv.height*3) return false;
+  if (g.c.width<rw || g.c.height<rh){ g.c.width=Math.max(g.c.width,rw); g.c.height=Math.max(g.c.height,rh); }
+  gl.viewport(0,0,rw,rh); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);
+  const uv=[[0,0],[1,0],[1,1],[0,1]], d=[];
+  for (const i of [0,1,2,0,2,3]){ const [x,y,w]=q[i]; d.push(((x-rx)/rw*2-1)*w,(1-(y-ry)/rh*2)*w,0,w,uv[i][0],uv[i][1]); }
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.STREAM_DRAW); gl.drawArrays(gl.TRIANGLES,0,6);
+  dst.drawImage(g.c,0,g.c.height-rh,rw,rh,rx,ry,rw,rh);
+  return true;
+}
 E.overlayBox = (o) => { const W=cv.width,H=cv.height, tro=o.trk&&E._t!=null?E.trkOffset(o.trk,E._t):null; let wpx=W*o.w/100; if (tro && E.tracks[o.trk].scale) wpx*=tro.k; let h=wpx; if (o.src&&(o.src.naturalWidth||o.src.videoWidth)){ const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; } return {cx:W*(o.x+(tro?tro.dx:0))/100, cy:H*(o.y+(tro?tro.dy:0))/100, w:wpx, h}; };
 
 // ---------- TEXT ZA POSTAVOU ----------

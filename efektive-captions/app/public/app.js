@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -960,6 +960,16 @@ function pOverlay(){
     <div class="row"><span>Před titulky (jinak za nimi)</span><input type="checkbox" class="sw" id="ovAbove" ${o.above?'checked':''}></div>
     <label class="ctl"><div class="lb"><span>Velikost</span><span>${o.w}%</span></div><input type="range" id="ovW" min="5" max="100" value="${o.w}"></label>
     <label class="ctl"><div class="lb"><span>Rotace</span><span>${o.rot||0}°</span></div><input type="range" id="ovR" min="-180" max="180" value="${o.rot||0}"></label>
+    <div class="clabel">Vzhled</div>
+    ${oslider('Zaoblení rohů','ovRad',0,100,o.rad||0,' %')}
+    ${oslider('Rámeček – tloušťka','ovStW',0,100,o.stW||0)}
+    ${(o.stW||0)>0?colorRow('Barva rámečku','stC',o):''}
+    ${oslider('Stín – síla','ovShA',0,100,o.shA||0)}
+    ${(o.shA||0)>0?oslider('Stín – vzdálenost','ovShD',0,100,o.shD??30):''}
+    <div class="clabel">3D náklon</div>
+    ${oslider('Náklon do strany','ovTY',-70,70,o.tiltY||0,'°')}
+    ${oslider('Náklon nahoru / dolů','ovTX',-70,70,o.tiltX||0,'°')}
+    ${(o.tiltX||o.tiltY)?oslider('Perspektiva','ovPs',0,100,o.persp??55):''}
     ${trkSection(o.trk,'ov')}
     <div class="btnrow"><button class="btn" id="ovDel">${I('trash')} Smazat overlay</button></div>
     <div class="note">Na videu ho chytni a posuň. Na časové ose posuneš začátek a konec.</div>`;
@@ -982,6 +992,13 @@ binders.overlay=()=>{
   $('ovAbove').onchange=e=>{ o.above=e.target.checked; changed(); };
   $('ovW').oninput=e=>{ o.w=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.w+'%'; }; $('ovW').onchange=()=>changed();
   $('ovR').oninput=e=>{ o.rot=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.rot+'°'; }; $('ovR').onchange=()=>changed();
+  // vzhled overlaye: rohy, rámeček, stín, 3D náklon (posuvníky, které mění i obsah panelu, ho po puštění překreslí)
+  for (const [id,key,unit,re] of [['ovRad','rad',' %'],['ovStW','stW','',1],['ovShA','shA','',1],['ovShD','shD',''],['ovTY','tiltY','°',1],['ovTX','tiltX','°',1],['ovPs','persp','']]){
+    const el=$(id); if (!el) continue; const was=o[key];
+    el.oninput=e=>{ o[key]=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o[key]+unit; };
+    el.onchange=()=>{ changed(); if (re && (!was)!==(!o[key])) renderPanel(); };
+  }
+  document.querySelectorAll('#panel .objcols').forEach(row=>{ row.onclick=e=>{ const d=e.target.closest('[data-c]'); if(!d) return; o[row.dataset.k]=d.dataset.c; changed(); renderPanel(); }; const inp=row.querySelector('input[type=color]'); if (inp){ inp.oninput=e=>{ o[inp.dataset.k]=e.target.value; inp.parentElement.style.background=e.target.value; }; inp.onchange=()=>{ changed(); renderPanel(); }; } });
   $('ovDel').onclick=()=>{ E.overlays=E.overlays.filter(x=>x!==o); selOv=null; changed(); renderPanel(); };
   trkBind(()=>o.trk, id=>{ if (id) o.trk=id; else delete o.trk; }, 'ov');
 };
