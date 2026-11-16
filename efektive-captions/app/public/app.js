@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:2});
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:2, face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -106,9 +106,10 @@ function restore(json){
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
   E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.map(c=>({...c})):null;
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease: s.kfVer===2?k.ease:(k.ease==='tok2'?'quad':k.ease)})):[];   // starší projekty: dřívější „Tok 2“ = dnešní Kvadratický
-  E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  E.G=Object.assign({},E.G0,E.COMMON,s.G); mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
+  E.face=Array.isArray(s.face)?s.face:null;
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
 }
@@ -142,10 +143,10 @@ async function openProject(id){
   for (const a of rec.assets||[]) await loadAsset(a.id,a.blob);
   busy('Otevírám projekt…','Načítám video',0.5);
   await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
-  restore(rec.state); analysed=rec.analysed||analysed;
+  restore(rec.state); analysed={...(rec.analysed||analysed)}; analysed.face=!!E.face;
   hist=[snapshot()]; hi=0;
-  if (analysed.face) toast('Poloha obličeje: při otevření znovu přepočítej v panelu AI, pokud chceš.');
   openEditor();
+  if (E.G.mix3d && !E.face) mixFaces();   // starší projekt bez uložené polohy obličeje → AI ji najde znovu
   }catch(e){ console.error(e); show('home'); homeMsg('Projekt se nepodařilo otevřít: '+e.message); }
   finally{ opening=false; }
 }
@@ -181,7 +182,7 @@ $('fileIn').onchange=async e=>{
   E.clips=null; E.kf=[]; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
-  const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base') Object.assign(E.G, dflt);
+  const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
   if (E.G.fontMain===E.SF) E.G.wMain=500;   // vedlejší řádky vždy začínají SF Pro Medium
   project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now()};
   // hned dát najevo, že se něco děje
@@ -617,6 +618,16 @@ binders.clip=()=>{
 };
 
 // ---------- 3D MIX (kostka) – samostatný mód ----------
+// starší nastavení (před verzí, kdy byl shine + 3D hloubka v základu zapnutý) → zapnout na zvýrazněných slovech
+function mixDefaults(src){ if (src && !('mixFx' in src)){ E.G.mixShine='hi'; E.G.mixExtrude='hi'; E.G.mixFx=2; } }
+// AI najde obličej, ať titulky 3D mixu nejedou přes něj (běží na pozadí, jednou za projekt)
+let mixFacing=false;
+async function mixFaces(){
+  if (mixFacing || E.face) return; mixFacing=true;
+  try{ toast('AI hledá obličej, ať titulky nejedou přes něj…'); const v=await auxVideo(); await AI.analyzeFaces(v,()=>{}); freeVideo(v); analysed.face=true; E.mixInvalidate&&E.mixInvalidate(); changed(); toast('Hotovo – titulky se vyhnou obličeji'); }
+  catch(e){ console.warn(e); toast('Obličej se nepodařilo najít'); }
+  finally{ mixFacing=false; }
+}
 function pMix(){
   const S=E.G, on=!!S.mix3d;
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-dice"/></svg><div><b>3D mix titulky</b><small>Slova přilétají z hloubky, skládají se pod sebe a mixují písma. Úplně samostatný styl – ostatní nastavení zůstane, jak je.</small></div></div>
@@ -632,7 +643,8 @@ function pMix(){
 binders.mix=()=>{
   $('mixOn').onclick=async()=>{ E.G.mix3d=!E.G.mix3d; E.mixInvalidate&&E.mixInvalidate(); changed(); renderPanel(); toast(E.G.mix3d?'3D mix zapnutý':'3D mix vypnutý – zpátky běžné titulky');
     // AI najde obličej, ať titulky nejedou přes něj
-    if (E.G.mix3d && !analysed.face){ try{ toast('AI hledá obličej, ať titulky nejedou přes něj…'); const v=await auxVideo(); await AI.analyzeFaces(v,()=>{}); freeVideo(v); analysed.face=true; E.mixInvalidate&&E.mixInvalidate(); changed(); toast('Hotovo – titulky se vyhnou obličeji'); }catch(e){ console.warn(e); } }
+    if (E.G.mix3d && E.G.mixFx!==2){ E.G.mixShine='hi'; E.G.mixExtrude='hi'; E.G.mixFx=2; E.mixInvalidate&&E.mixInvalidate(); renderPanel(); }   // v základu shine + 3D hloubka na zvýrazněných slovech
+    if (E.G.mix3d && !E.face) mixFaces();
   };
   if ($('mixShuffle')) $('mixShuffle').onclick=()=>{ E.G.mixSeed=Math.floor(Math.random()*9999)+2; E.mixInvalidate&&E.mixInvalidate(); changed(); };
 };
