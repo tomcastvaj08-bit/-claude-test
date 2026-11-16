@@ -173,7 +173,7 @@ OBJ.draw = (c, W, H, t) => {
   }
 };
 // okno shine (blok na timeline); u starších objektů se doplní – jeden průjezd hned po začátku
-OBJ.shineWin = o => { if (o.shS == null || o.shE == null || o.shE <= o.shS) { o.shS = o.s + 0.1; o.shE = Math.min(o.e, o.shS + 1.1); if (o.shE - o.shS < 0.3) o.shE = o.shS + 0.3; } };
+OBJ.shineWin = o => { o.shS = o.s; o.shE = o.e; };   // shine projede přes celý blok objektu na timeline (jeden blok = jeden průjezd)
 function screenBox(MM, m) { const P = [[0, 0], [m.w, 0], [m.w, m.h], [0, m.h]].map(([x, y]) => { const p = MM.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; }); return P; }
 function objBox(o, MM) {
   // skutečný rozsah objektu (ne celé masky)

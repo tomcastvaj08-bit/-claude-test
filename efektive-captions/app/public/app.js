@@ -1173,8 +1173,7 @@ function renderTimeline(){
   $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
   // zvýrazněné objekty (tyrkysově) a jejich shine (zlatě) – oba jdou posunout a zkrátit / prodloužit
   $('trX').innerHTML=(E.objs||[]).map((o,i)=>{ if (window.OBJ) OBJ.shineWin(o);
-    return `<div class="xb ${o.id===selObj?'cur':''}" data-x="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('sparkles')} Objekt ${i+1}<span class="hr"></span></div>`
-      + (o.shine?`<div class="sb" data-sh="${o.id}" style="left:${X(o.shS)}px;width:${Math.max(6,(o.shE-o.shS)*pps)}px"><span class="hl"></span>Shine<span class="hr"></span></div>`:''); }).join('');
+    return `<div class="xb ${o.shine?'sh':''} ${o.id===selObj?'cur':''}" data-x="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('sparkles')} ${o.shine?'Shine':'Objekt'} ${i+1}<span class="hr"></span></div>`; }).join('');
   renderVideoTrack();
   if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
   followTimeline(PV.currentTime,true);
@@ -1703,7 +1702,7 @@ function objFinish(save){
   OBJ.tidy(E2.m);
   if (E2.obj){ E2.obj.mask=OBJ.rle(E2.m); objInvalidate(E2.obj); selObj=E2.obj.id; }
   else {
-    const s=E.src2out(E2.t0), o={id:'o'+Date.now().toString(36), t0:E2.t0, s, e:Math.min(PV.duration||s+4, s+4), mask:OBJ.rle(E2.m), _mk:1,
+    const s=E.src2out(E2.t0), o={id:'o'+Date.now().toString(36), t0:E2.t0, s, e:Math.min(PV.duration||s+1.5, s+1.5), mask:OBJ.rle(E2.m), _mk:1,
       shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shS:s+0.1, shE:s+1.2, shRep:false, line:'off', lineC:'#ffffff', lineW:50, fillA:0, fillC:'#27e1c1', trk:null};
     E.objs.push(o); selObj=o.id;
   }
@@ -1734,7 +1733,7 @@ function pObj(){
   <div class="btnrow"><button class="btn small" id="objHere">${I('pin')} Začít v místě hlavy</button></div>
   ${oslider('Délka zobrazení','objDur',0.5,30,+(o.e-o.s).toFixed(1),' s')}
   <div class="row"><span>Shine přes objekt</span><input type="checkbox" class="sw" id="objShine" ${o.shine?'checked':''}></div>
-  ${o.shine?`<div class="note">Shine má na timeline vlastní zlatý blok – posuň ho na moment, kdy má projet, a za okraje ho zkrať / prodluž (delší blok = pomalejší průjezd).</div>
+  ${o.shine?`<div class="note">Na timeline je jeden zlatý blok – shine projede přes celý blok. Posuň ho na moment, kdy má projet, a za okraje ho zkrať / prodluž (delší blok = pomalejší průjezd).</div>
   <div class="row"><span>Opakovat shine v bloku</span><input type="checkbox" class="sw" id="objRep" ${o.shRep?'checked':''}></div>
   ${colorRow('Barva shine','shineC',o)}${o.shRep?oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)+oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s'):''}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}${oslider('Záře kolem objektu','objSG',0,150,o.shGlow??80)}`:''}
   <div class="clabel">Obrys</div><div class="chips" id="objLine">${[['off','Žádný'],['solid','Plná čára'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${(o.line||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
@@ -1790,8 +1789,7 @@ async function objTrack(o){
   if (v) freeVideo(v); trkEnd();
   if (!tr){ trkMsg('Objekt se nepodařilo sledovat'+(TRK.why?' ('+TRK.why+')':'')+'. Zkus výběr s výraznější kresbou.'); return; }
   o.trk={t:tr.t, A:tr.A.map(a=>a.map(v=>Math.round(v*1e5)/1e5)), c:tr.c.map(v=>Math.round(v*100)/100), smooth:8};
-  o.s=E.src2out(tr.t[0]); o.e=E.src2out(tr.t[tr.t.length-1]);
-  if (o.shS==null || o.shS<o.s || o.shS>o.e-0.2){ o.shS=Math.max(o.s, o.shS??o.s)+0; o.shE=Math.min(o.e, o.shS+1.1); }
+  { const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]), p=clamp(E.src2out(o.t0),a,b); o.s=p; o.e=Math.min(b, p+1.5); if (o.e-o.s<0.3){ o.s=Math.max(a,o.e-0.3); } o.trS=a; o.trE=b; }
   changed(); renderPanel(); renderTimeline(); PV.currentTime=o.s+0.05;
   trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s. Pusť video a uvidíš.`);
 }
