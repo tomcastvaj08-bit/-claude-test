@@ -108,68 +108,65 @@ function drawBlur(c,o,dx,dy,dw,dh,blur){
   c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high'; c.drawImage(bc,0,0,w,h,dx,dy,dw,dh);
 }
 
-// ---- plynulý let stejnou rychlostí: každý řádek se objeví a pak pořád stejnou rychlostí odjíždí nahoru do dálky ----
+// ---- skutečný let do hloubky: každý řádek se objeví u kamery a pořád jedním směrem letí do dálky
+// (k úběžníku nahoře), zmenšuje se, rozmazává a ztrácí. Žádné zastavení, žádné „posouvání nahoru“ zvlášť.
 let flowKey='', flow=null;
-// dráha letu: rychlost v(a)=v·(0.6 + 0.9·e^(−a/0.5)) → plynulá speedrampa, nikdy nula
-const disp=(v,a)=>v*(0.6*a + 0.45*(1-Math.exp(-a/0.5)));
-function faceAt(t){ if (!E.face) return null; const ts=E.out2src?E.out2src(t):t; return E.face[Math.round(ts*10)]||E.face[Math.round(ts*10)-1]||E.face[Math.round(ts*10)+1]||null; }
+function faceAt(t){ if (!E.face) return null; const ts=E.out2src?E.out2src(t):t; const i=Math.round(ts*10); return E.face[i]||E.face[i-1]||E.face[i+1]||null; }
+const Z0=-0.32;                                   // start kousek před „kamerou“ (větší a rozmazané)
+const zOf=(vz,a)=>Z0 + vz*a*(1+0.7*a);           // hloubka roste plynule a lehce zrychluje → pohyb nikdy nestojí
+const sOf=z=>1/(1+Math.max(-0.6,z));
 function layoutFlow(W,H){
   const {lines}=build(), G=E.G;
   const key=cacheKey+'|'+W+'|'+H+'|'+(G.mixSize||100)+'|'+(G.mixY??60)+'|'+(E.face?E.face.length:0)+'|'+(G.mixSpeed||100);
   if (key===flowKey && flow) return flow; flowKey=key;
-  const base=W*0.165*(G.mixSize||100)/100, lh=L=>base*L.size*0.74;
-  // jedna stálá rychlost pro celé video: průměrná výška řádku / průměrný rozestup řádků
-  let gaps=[]; for (let i=1;i<lines.length;i++){ const g=lines[i].s-lines[i-1].s; if (g>0.05&&g<1.5) gaps.push(g); }
-  const avgGap=gaps.length? gaps.reduce((a,b)=>a+b,0)/gaps.length : 0.45;
+  const base=W*0.165*(G.mixSize||100)/100, lh=L=>base*L.size*0.8;
+  const vpY=H*0.1, land=H*((G.mixY??60)/100);
+  // rychlost do hloubky tak, aby se řádky (při běžném tempu řeči) skoro nepřekrývaly
+  const gaps=[]; for (let i=1;i<lines.length;i++){ const g=lines[i].s-lines[i-1].s; if (g>0.05&&g<2) gaps.push(g); }
+  gaps.sort((a,b)=>a-b); const g=gaps.length? gaps[Math.floor(gaps.length*0.35)] : 0.4;
   const avgLh=lines.length? lines.reduce((a,L)=>a+lh(L),0)/lines.length : base*0.8;
-  const v=clamp(avgLh/avgGap, H*0.07, H*0.32)*(G.mixSpeed||100)/100;
-  let prev=null;
+  const aSet=0.32;                                  // kdy je nový řádek „usazený“ (měřítko ~1)
+  const ok=vz=>{ const sN=sOf(zOf(vz,aSet)), sP=sOf(zOf(vz,aSet+g)); const yN=vpY+(land-vpY)*sN, yP=vpY+(land-vpY)*sP; return (yN-avgLh*sN*0.5) - (yP+avgLh*sP*0.5) >= -avgLh*0.12; };
+  let lo=0.2, hi=6; for (let i=0;i<30;i++){ const m=(lo+hi)/2; if (ok(m)) hi=m; else lo=m; }
+  const vz=hi*(G.mixSpeed||100)/100;
   for (const L of lines){
-    let land=H*((G.mixY??60)/100);
-    // obličej: řádek dosedá pod obličej (AI), a než k obličeji doletí, zmizí
-    const f=faceAt(L.s); L.faceTop=null;
-    if (f){ const fb=f[3]*H, ft=f[1]*H; if (land-lh(L)<fb+base*0.2){ land=Math.min(H*0.9, fb+lh(L)*0.75+base*0.2); } L.faceTop=fb+base*0.1; }
-    let ys=land;
-    if (prev){ const py=prev.ys-disp(v,L.s-prev.s); ys=Math.max(land, py+(lh(prev)*0.5+lh(L)*0.5)); }
-    L.ys=Math.min(ys, H*0.95); prev=L;
+    L.land=land; L.faceB=null;
+    const f=faceAt(L.s+0.3);
+    if (f){ const fb=f[3]*H; L.faceB=fb; if (land-lh(L)*0.6<fb) L.land=Math.min(H*0.9, fb+lh(L)*0.75); }
   }
-  flow={v,base,lh}; return flow;
+  flow={vz,base,vpY,lh}; return flow;
 }
 E.drawMix=(c,t)=>{
   const {lines}=build(); if (!lines.length) return;
   const W=c.canvas.width, H=c.canvas.height, G=E.G, op=(G.opacity??100)/100;
-  const {v,base}=layoutFlow(W,H);
-  const LIFE=3.2;
+  const {vz,base,vpY}=layoutFlow(W,H), cxp=W*0.5;
   c.save();
+  // nejdřív vzdálené (staré), pak blízké (nové) – nové leží přes staré
   for (const L of lines){
-    const age=t-L.s; if (age<0 || age>LIFE) continue;
-    // stálý let: poloha, zmenšení (vzdálenost), rozmazání a zeslábnutí rostou plynule s věkem řádku
-    let y=L.ys - disp(v,age);
-    const dist=age*0.55, scD=Math.exp(-0.16*dist*1.8);
-    const blurD=Math.max(0,age-0.9)*2.2;
-    let aD=1-smooth((age-1.3)/(LIFE-1.3));
-    if (L.faceTop!=null){ aD*=clamp((y-L.faceTop)/(base*0.6)); }   // nevjede do obličeje
-    if (y<H*0.06) aD*=clamp((y-H*0.0)/(H*0.06));
-    if (aD<=0.01) continue;
+    const age=t-L.s; if (age<0 || age>6) continue;
+    const z=zOf(vz,age), S=sOf(z);
+    if (S<0.4) continue;
+    const y=vpY+(L.land-vpY)*S;
+    // průhlednost: rychle naběhne, v dálce plynule mizí; u obličeje zmizí dřív, než do něj vjede
+    let A=smooth(age/0.22) * smooth((S-0.42)/0.33);
+    if (L.faceB!=null) A*=clamp((y-L.faceB)/(base*0.5)+0.3);
+    A*=op; if (A<=0.01) continue;
+    const blur=Math.max(0,(S-1.05))*14 + Math.max(0,(0.9-S))*12;   // u kamery i v dálce rozmazané
     const px=base*L.size, words=L.ids.map(txt), sp=words.map(w=>sprite(w,L.kind,px));
     const gap=px*(L.kind==='serif'?0.22:0.2), tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
-    let fit=1; if (tw*scD>W*0.9) fit=W*0.9/(tw*scD);
-    const S0=scD*fit;
-    let x0=W*L.indent; if (x0+tw*S0>W*0.95) x0=Math.max(W*0.04, W*0.95-tw*S0);
-    const cxp=W*0.5; x0=cxp+(x0-cxp)*Math.exp(-0.1*age);   // perspektiva: v dálce ke středu
-    let xx=x0;
+    let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
+    let x0=W*L.indent; if (x0+tw*fit>W*0.95) x0=Math.max(W*0.04, W*0.95-tw*fit);
+    // perspektiva: řádek se stahuje k úběžníku uprostřed
+    const lc=x0+tw*fit/2, lcx=cxp+(lc-cxp)*S, SS=S*fit;
+    let xx=lcx-tw*SS/2;
     sp.forEach((o,wi)=>{
       const wt=E.words[L.ids[wi]], wa=t-(wt.s-0.08);
-      const ww=o.tw*S0; const wx=xx; xx+=ww+gap*S0;
+      const ww=o.tw*SS, wx=xx; xx+=ww+gap*SS;
       if (wa<0) return;
-      // dynamické objevení: z mírně většího a rozmazaného → ostré (bez zastavení, řádek pořád letí)
-      const q=smooth(wa/0.55), qa=smooth(wa/0.3);
-      const sIn=1+(1-q)*0.45, yIn=(1-q)*base*0.35, bIn=(1-q)*6;
-      const S=S0*sIn, A=aD*qa*op; if (A<=0.01) return;
-      const dw=o.w*S, dh=o.h*S;
-      const dx=wx+ww/2-(o.pad+o.tw/2)*S, dy=y+yIn-o.base*S+o.asc*S*0.35;
-      c.globalAlpha=A;
-      drawBlur(c,o,dx,dy,dw,dh,bIn+blurD);
+      const qa=smooth(wa/0.22), wb=(1-smooth(wa/0.3))*5;           // další slova řádku se rozsvítí, až zazní
+      const dw=o.w*SS, dh=o.h*SS, dx=wx+ww/2-(o.pad+o.tw/2)*SS, dy=y-o.base*SS+o.asc*SS*0.35;
+      c.globalAlpha=A*qa;
+      drawBlur(c,o,dx,dy,dw,dh,blur+wb);
     });
   }
   c.restore();
