@@ -130,7 +130,7 @@ function layoutFlow(W,H){
   const aSet=0.3; let lo=0.1, hi=8; for (let i=0;i<30;i++){ const m=(lo+hi)/2; if (sOf(zOf(m,aSet+g))<=0.67) hi=m; else lo=m; }
   const vz=hi*(G.mixSpeed||100)/100;
   for (const L of lines){
-    L.land=land; L.faceB=null;
+    L.land=land+(hash((E.G.mixSeed||1)*13+lines.indexOf(L)*7)-0.5)*H*0.035; L.faceB=null;
     const f=faceAt(L.s+0.3);
     if (f){ const fb=f[3]*H; L.faceB=fb; if (land-lh(L)*0.6<fb) L.land=Math.min(H*0.9, fb+lh(L)*0.75); }
   }
@@ -150,12 +150,18 @@ E.drawMix=(c,t)=>{
     // průhlednost: rychle naběhne, v dálce plynule mizí; u obličeje zmizí dřív, než do něj vjede
     let A=smooth(age/0.22) * smooth((S-0.34)/0.4) * (0.35+0.65*smooth((S-0.45)/0.5));
     if (L.faceB!=null && age>0.5) A*=clamp((y-L.faceB)/(base*0.5)+0.3);
+    // jakmile na stejnou stranu přiletí další řádek, tenhle rychle zmizí (ať se nepřekrývají)
+    { const li=lines.indexOf(L), M=lines[li+2]; if (M && t>=M.s) A*=1-smooth((t-M.s)/0.28); }
     A*=op; if (A<=0.01) continue;
     const blur=Math.max(0,(S-1.05))*14 + Math.max(0,(0.92-S))*16;   // u kamery i v dálce rozmazané
     const px=base*L.size, words=L.ids.map(txt), sp=words.map(w=>sprite(w,L.kind,px));
     const gap=px*(L.kind==='serif'?0.22:0.2), tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
     let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
-    let x0=W*L.indent; if (x0+tw*fit>W*0.95) x0=Math.max(W*0.04, W*0.95-tw*fit);
+    // střídavě levá / pravá polovina (se zrcadlenou drobnou odchylkou) – nový řádek vedle předchozího, ne přes něj
+    const li=lines.indexOf(L), side=li%2===0?-1:1, jit=(hash((E.G.mixSeed||1)*7+li*3)-0.5)*0.08;
+    const halfW=tw*fit/2; let cxL=W*0.5+side*(halfW+W*(0.015+Math.abs(jit)*0.5));   // celý řádek na své straně od středu
+    cxL=clamp(cxL, W*0.04+halfW, Math.max(W*0.04+halfW, W*0.96-halfW));
+    let x0=cxL-halfW;
     // perspektiva: řádek se stahuje k úběžníku uprostřed
     const lcx=x0+tw*fit/2, SS=S*fit;   // žádný posun do strany – jen let do dálky
     let xx=lcx-tw*SS/2;
