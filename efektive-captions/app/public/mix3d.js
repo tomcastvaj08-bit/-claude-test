@@ -92,9 +92,13 @@ function sprite(word,kind,px,ex){
   else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d6d8dc'); }
   // měkký atmosférický stín (tmavé písmo pod přední vrstvou, z něj zůstane jen stín)
   const bx0=pad+ex*0.6, by0=base+ex;   // zadní vrstva (u 3D hloubky)
-  x.save(); x.fillStyle='#000';
-  x.shadowColor='rgba(0,0,0,0.6)'; x.shadowBlur=px*0.5; x.shadowOffsetY=px*0.09; x.fillText(word,bx0,by0);
-  x.shadowColor='rgba(0,0,0,0.45)'; x.shadowBlur=px*0.18; x.shadowOffsetY=px*0.05; x.fillText(word,bx0,by0); x.restore();
+  // stín zvlášť (jen měkký stín BEZ tvaru písma) – při rozmazání v dálce se ztlumí, aby kolem písma nevznikal tmavý obrys
+  const shc=document.createElement('canvas'); shc.width=w; shc.height=h; const sx=shc.getContext('2d');
+  sx.font=font; try{ sx.letterSpacing=ls; }catch(e){} sx.textBaseline='alphabetic'; sx.textAlign='left';
+  const OFF=w*3; sx.fillStyle='#000';
+  sx.shadowColor='rgba(0,0,0,0.6)'; sx.shadowBlur=px*0.5; sx.shadowOffsetY=px*0.09; sx.shadowOffsetX=OFF; sx.fillText(word,bx0-OFF,by0);
+  if (kind!=='serif'){ sx.shadowColor='rgba(0,0,0,0.38)'; sx.shadowBlur=px*0.2; sx.shadowOffsetY=px*0.05; sx.fillText(word,bx0-OFF,by0); }
+  sx.shadowColor='transparent'; sx.shadowOffsetX=0; sx.globalCompositeOperation='destination-out'; sx.fillText(word,pad,base);
   if (ex>0){
     // 3D hloubka: kopie písma šikmo dozadu ve stejné, tmavší barvě
     const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d');
@@ -106,7 +110,7 @@ function sprite(word,kind,px,ex){
   x.fillStyle=g; x.fillText(word,pad,base);
   // jemný odlesk navrch (jen s hloubkou)
   if (ex>0){ const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d'); tc.font=font; try{ tc.letterSpacing=ls; }catch(e){} tc.textBaseline='alphabetic'; tc.fillStyle='#fff'; tc.fillText(word,pad,base); tc.globalCompositeOperation='source-in'; const gl=tc.createLinearGradient(0,base-asc,0,base); gl.addColorStop(0,'rgba(255,255,255,0.45)'); gl.addColorStop(0.5,'rgba(255,255,255,0.05)'); gl.addColorStop(1,'rgba(255,255,255,0)'); tc.fillStyle=gl; tc.fillRect(0,0,w,h); x.drawImage(t,0,0); }
-  o={c,w,h,pad,tw,base,asc,word,font,ls}; SPR.set(key,o); if (SPR.size>260) SPR.delete(SPR.keys().next().value);
+  o={c,sh:shc,w,h,pad,tw,base,asc,word,font,ls}; SPR.set(key,o); if (SPR.size>260) SPR.delete(SPR.keys().next().value);
   return o;
 }
 // shine: světlo přejede přes slovo (v písmu + jemná záře kolem)
@@ -200,6 +204,9 @@ E.drawMix=(c,t)=>{
       // slovo přilétá od diváka (obří a rozmazané) a jedním plynulým pohybem letí do obrazovky
       const qa=smooth(wa/0.2);
       const dw=o.w*SS, dh=o.h*SS, dx=wx+ww/2-(o.pad+o.tw/2)*SS, dy=y-o.base*SS+o.asc*SS*0.35;
+      // stín: plně jen u ostrého písma, s rozmazáním plynule mizí (žádný tmavý okraj kolem tenkého písma v dálce)
+      const shA=Math.max(0,1-blur/3.5);
+      if (shA>0.02){ c.globalAlpha=A*qa*shA; drawBlur(c,{c:o.src.sh,w:o.src.w,h:o.src.h},dx,dy,dw,dh,blur); }
       c.globalAlpha=A*qa;
       drawBlur(c,o.src,dx,dy,dw,dh,blur);
       if (shOn){ const ph=(wa-0.1)/1.5; if (ph>0&&ph<1) drawShine(c,o.src,dx,dy,dw,dh,ph,A*qa); }

@@ -169,7 +169,7 @@ function sizeCanvas(){
   const st=$('stage'), dpr=Math.min(3,window.devicePixelRatio||1);
   const box=st&&st.clientWidth? Math.min(st.clientWidth/fullW, st.clientHeight/fullH) : 0;
   const need=Math.max(fullW,fullH)*box*dpr;                  // kolik pixelů je potřeba na displeji
-  const longSide=Math.min(Math.max(fullW,fullH), 1920, Math.max(1280, need||0));
+  const longSide=Math.min(1920, Math.max(1280, need||0));   // titulky ostré i u videa v nízkém rozlišení
   const sc=longSide/Math.max(fullW,fullH);
   const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2;
   if (cv.width!==w || cv.height!==h){ cv.width=w; cv.height=h; }
@@ -1262,9 +1262,10 @@ cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',end
 $('exportBtn').onclick=()=>{
   vid.pause();
   const opts=[['orig',`Původní (${fullW}×${fullH})`]]; const short=Math.min(fullW,fullH);
-  for (const s of [2160,1440,1080,720]) if (s<short){ const sc=s/short; opts.push([String(s),`${s}p (${Math.round(fullW*sc/2)*2}×${Math.round(fullH*sc/2)*2})`]); }
+  for (const s of [2160,1440,1080,720]) if (s<short || (s===1080 && short<1080)){ const sc=s/short; opts.push([String(s),`${s}p (${Math.round(fullW*sc/2)*2}×${Math.round(fullH*sc/2)*2})${s>short?' – doporučeno, ostré titulky':''}`]); }
   $('exRes').innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
   const q=$('quality').value; if ([...$('exRes').options].some(o=>o.value===q)) $('exRes').value=q;
+  if (short<1080) $('exRes').value='1080';   // video v nízké kvalitě → výsledek 1080p, ať titulky nejsou rozmazané
   $('exDl').classList.add('hidden'); $('exStatus').textContent=EXP.canPrecise()?'':'Tento prohlížeč neumí přesný export – použije se nahrávání v reálném čase.';
   $('exGo').classList.remove('hidden'); $('exGo').textContent='Exportovat'; $('exBarW').classList.add('hidden'); $('exMore').open=true;
   openSheet('sheetExport');
