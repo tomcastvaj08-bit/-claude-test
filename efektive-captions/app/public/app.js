@@ -301,8 +301,9 @@ function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.
 function togglePlay(){
   if (PB.on){ pbStop(); return; }
   if (swap){ endSwap(false); return; }
-  if (E.clips && E.clips.length>1 && PB.bufFor===videoURL && PB.buf && PB.buf!=='none'){ pbStart(); return; }
-  if (E.clips && E.clips.length>1) pbDecode();
+  const needPB = E.clips && (E.clips.length>1 || E.clips.some(c=>E.clipSp(c)!==1));
+  if (needPB && PB.bufFor===videoURL && PB.buf && PB.buf!=='none'){ pbStart(); return; }
+  if (needPB) pbDecode();
   if (vid.paused){ ensureAC(); const pr=vid.play(); if (pr && pr.catch) pr.catch(e=>{ console.warn('play',e); $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); }); }
   else vid.pause();
 }
@@ -423,7 +424,7 @@ function pbStart(){
   PB.gain=AC.createGain(); PB.gain.gain.value=E.flags.mute?0:1; PB.gain.connect(AC.destination);
   PB.a0=AC.currentTime+0.06; PB.t0=T; PB.nodes=[];
   if (PB.buf && PB.buf!=='none'){
-    L.forEach((c,k)=>{ const o=st[k], d=c.e-c.s; if (o+d<=T) return;
+    L.forEach((c,k)=>{ const o=st[k], d=E.clipDur(c); if (o+d<=T || E.clipSp(c)!==1) return;   // zpomalený / zrychlený úsek je bez zvuku
       const n=AC.createBufferSource(); n.buffer=PB.buf; n.connect(PB.gain);
       const skip=Math.max(0,T-o); n.start(PB.a0+Math.max(0,o-T), c.s+skip, d-skip); PB.nodes.push(n); });
   }
@@ -431,7 +432,7 @@ function pbStart(){
   PB.on=true; swapQuiet=true; vid.muted=true; vidB.muted=true;
   if (vidB.dataset.src!==videoURL){ vidB.dataset.src=videoURL; vidB.src=videoURL; vidB.load(); }
   PB.act=vid; PB.other=vidB; PB.k=-1; PB.prep=null;
-  vid.currentTime=E.out2src(T); vid.play().catch(()=>{});
+  vid.currentTime=E.out2src(T); vid.playbackRate=E.clipSp(L[E.clipAt(T)]); vid.play().catch(()=>{});
   E.attach(cv,vid);
   $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=T;
 }
@@ -439,7 +440,7 @@ function pbStop(){
   if (!PB.on) return;
   const T=Math.min(pbNow(), E.outDur()-0.03);
   PB.nodes.forEach(n=>{ try{ n.stop(); }catch(e){} }); PB.nodes=[]; try{ PB.gain.disconnect(); }catch(e){}
-  PB.on=false; vidB.pause(); vid.pause();
+  PB.on=false; vidB.pause(); vid.pause(); vid.playbackRate=1; vidB.playbackRate=1;
   E.attach(cv,vid); vid.muted=E.flags.mute;
   vid.currentTime=E.out2src(T);
   setTimeout(()=>{ swapQuiet=false; },50);
@@ -449,7 +450,8 @@ function pbTick(){
   const T=pbNow(), L=E.clipList(), st=E.clipStarts();
   if (T>=E.outDur()-0.02){ pbStop(); return E.outDur()-0.03; }
   let k=0; for (let i=0;i<L.length;i++) if (T>=st[i]) k=i;
-  const c=L[k], ts=c.s+(T-st[k]);
+  const c=L[k], sp=E.clipSp(c), ts=c.s+(T-st[k])*sp;
+  if (PB.act.playbackRate!==sp) PB.act.playbackRate=sp;
   if (k!==PB.k){
     // střih: přepnout na druhý přehrávač, pokud má tenhle úsek připravený a rozjetý
     if (PB.k>=0 && PB.prep===k && PB.other.readyState>=2){ const a=PB.act; PB.act=PB.other; PB.other=a; a.pause(); E.attach(cv,PB.act); }
@@ -461,7 +463,7 @@ function pbTick(){
   const nk=k+1;
   if (nk<L.length){
     const left=st[nk]-T, lead=0.3;
-    if (PB.prep!==nk && left<1.5){ PB.prep=nk; PB.prepStart=false; try{ PB.other.pause(); PB.other.currentTime=Math.max(0,L[nk].s-lead); }catch(e){} }
+    if (PB.prep!==nk && left<1.5){ PB.prep=nk; PB.prepStart=false; try{ PB.other.pause(); PB.other.playbackRate=E.clipSp(L[nk]); PB.other.currentTime=Math.max(0,L[nk].s-lead*E.clipSp(L[nk])); }catch(e){} }
     if (PB.prep===nk && !PB.prepStart && left<=lead+0.02 && !PB.other.seeking){ PB.prepStart=true; PB.other.play().catch(()=>{}); }
   }
   return T;
@@ -579,7 +581,7 @@ function renderPanel(){
 }
 const binders={};
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
-function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+(c.e-c.s); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
+function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+E.clipDur(c); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
 function kfHere(){ const t=PV.currentTime; return E.kf.findIndex(k=>Math.abs(k.t-t)<0.05); }
 function kfVals(){ const k=E.kfAt(PV.currentTime); return k?{z:k.z,x:k.x,y:k.y,op:k.op}:{z:100,x:0,y:0,op:100}; }
 function kfEnsure(){ let i=kfHere(); if (i<0){ const v=kfVals(); E.kf.push({t:PV.currentTime,...v,ease:'tok2'}); E.kf.sort((a,b)=>a.t-b.t); i=kfHere(); } selKf=i; return E.kf[i]; }
@@ -610,7 +612,7 @@ binders.kf=()=>{
 function openClipPanel(){ panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
 function pClip(){
   const L=E.clipList(), k=clamp(selClip,0,L.length-1), c=L[k], st=E.clipStarts();
-  return `<div class="mixhead"><svg class="ic grad"><use href="#i-scissors"/></svg><div><b>Úsek videa ${k+1} / ${L.length}</b><small>${fmt(st[k])} – ${fmt(st[k]+(c.e-c.s))} · délka ${(c.e-c.s).toFixed(1)} s. Konce úseku zkrátíš tažením za okraje na stopě videa.</small></div></div>
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-scissors"/></svg><div><b>Úsek videa ${k+1} / ${L.length}</b><small>${fmt(st[k])} – ${fmt(st[k]+E.clipDur(c))} · délka ${E.clipDur(c).toFixed(1)} s${E.clipSp(c)!==1?` (rychlost ${E.clipSp(c)}×)`:''}. Konce úseku zkrátíš tažením za okraje na stopě videa.</small></div></div>
   <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button></div>
   <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
@@ -618,6 +620,11 @@ function pClip(){
   ${E.TRDIR.has(c.tr)?`<div class="clabel">Směr</div><div class="chips" id="clTrDir">${[['r','Doprava'],['l','Doleva']].map(([v,l])=>`<div class="chip ${(c.trDir||'r')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:''}`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
   <div class="note">Vcucnutí, zahoupání a švihnutí mají skutečný motion blur a zkreslení čočky. Zvuky k přechodům brzy přibudou.</div>
+  <div class="clabel">Rychlost (slow motion)</div>
+  <div class="chips" id="clSp">${[0.25,0.5,0.75,1,1.5,2].map(v=>`<div class="chip ${E.clipSp(c)===v?'on':''}" data-v="${v}">${v===1?'Normální':v<1?Math.round(v*100)+' %':v+'×'}</div>`).join('')}</div>
+  ${E.clipSp(c)<1?`<div class="clabel">Plynulost zpomalení</div><div class="chips" id="clBl">${[['none','Opakovat snímky'],['blend','Prolínání snímků'],['flow','Optický tok']].map(([v,l])=>`<div class="chip ${(c.blend||'flow')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="note">Optický tok dopočítá chybějící snímky podle pohybu – nejplynulejší zpomalení. Dopočítává se při exportu (v náhledu je jen přibližný).</div>`:''}
+  ${E.clipSp(c)!==1?'<div class="note">Zpomalený / zrychlený úsek je bez zvuku videa.</div>':''}
   ${stabSection()}
   ${pKf(true)}`;
 }
@@ -643,6 +650,9 @@ function stabBind(){
 }
 binders.clip=()=>{
   binders.kf(); stabBind();
+  const L0=E.clipList(), k0=clamp(selClip,0,L0.length-1);
+  if ($('clSp')) $('clSp').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setClipSpeed(k0,+d.dataset.v); };
+  if ($('clBl')) $('clBl').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[k0].blend=d.dataset.v; changed(); renderPanel(); };
   $('clCut').onclick=()=>cutAt(PV.currentTime);
   $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
   const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; E.clips[selClip].trDur=E.TRDEF[d.dataset.v]||0.12; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
@@ -977,6 +987,8 @@ function pOverlay(){
     <div class="btnrow"><button class="btn" id="ovFullHere">${I('pin')} Začít v místě hlavy</button><button class="btn" id="ovDel">${I('trash')} Smazat</button></div>`;
   } else if (o){
     h+=`<div class="clabel">Vybraný overlay – animace</div><div class="chips" id="ovAnim">${OVANIM.map(([v,l])=>`<div class="chip ${o.anim===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+    ${o.src&&o.src.tagName==='VIDEO'?`<div class="row"><span>Zvuk overlaye</span><input type="checkbox" class="sw" id="ovAud" ${o.audio?'checked':''}></div>
+    <div class="clabel">Rychlost overlaye</div><div class="chips" id="ovSp">${[0.25,0.5,0.75,1,1.5,2].map(v=>`<div class="chip ${(o.speed||1)===v?'on':''}" data-v="${v}">${v===1?'Normální':v<1?Math.round(v*100)+' %':v+'×'}</div>`).join('')}</div>`:''}
     <div class="row"><span>Wiggle</span><input type="checkbox" class="sw" id="ovWig" ${o.wiggle?'checked':''}></div>
     ${o.wiggle?`<label class="ctl"><div class="lb"><span>Síla wiggle</span><span>${o.wigAmt??50}</span></div><input type="range" id="ovWA" min="0" max="200" value="${o.wigAmt??50}"></label>
     <label class="ctl"><div class="lb"><span>Rychlost wiggle</span><span>${o.wigSpd??50}</span></div><input type="range" id="ovWS" min="5" max="200" value="${o.wigSpd??50}"></label>`:''}
@@ -1013,6 +1025,8 @@ binders.overlay=()=>{
   }
   $('ovAnim').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; o.anim=c.dataset.v; changed(); renderPanel(); PV.currentTime=o.s; };
   $('ovWig').onchange=e=>{ o.wiggle=e.target.checked; changed(); renderPanel(); };
+  if ($('ovAud')) $('ovAud').onchange=e=>{ o.audio=e.target.checked; changed(); if (o.audio && (o.speed||1)!==1) toast('Zvuk hraje jen při normální rychlosti overlaye'); };
+  if ($('ovSp')) $('ovSp').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; o.speed=+d.dataset.v; changed(); renderPanel(); };
   for (const [id,key] of [['ovWA','wigAmt'],['ovWS','wigSpd']]){ const el=$(id); if (!el) continue; el.oninput=e=>{ o[key]=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o[key]; }; el.onchange=()=>changed(); }
   $('ovLayer').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; const up=d.dataset.v==='1', zs=E.overlays.filter(x=>x!==o&&!x.full).map(E.ovZ);
     o.z = up ? Math.max(E.capZ, ...zs.filter(z=>z>E.capZ))+1 : Math.min(E.capZ, ...zs.filter(z=>z<E.capZ))-1; o.above=up; changed(); renderPanel(); toast(up?'Overlay je nad titulky':'Titulky jsou nad overlayem'); };
@@ -1051,7 +1065,9 @@ $('ovFullIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; 
 function syncOverlays(t,playing){
   for (const o of E.overlays){ const el=o.src; if (!el || el.tagName!=='VIDEO') continue;
     if (t<o.s || t>o.e){ if (!el.paused) el.pause(); continue; }
-    const want=E.ovTime(o,t);
+    const want=E.ovTime(o,t), sp=o.speed||1;
+    el.muted = !o.audio || sp!==1 || E.flags.mute;   // zvuk overlaye jen když je zapnutý (a bez změny rychlosti)
+    if (el.playbackRate!==sp) el.playbackRate=sp;
     if (playing){ if (el.paused) el.play().catch(()=>{}); if (Math.abs(el.currentTime-want)>0.15) el.currentTime=want; }
     else { if (!el.paused) el.pause(); if (Math.abs(el.currentTime-want)>0.03 && !el.seeking) el.currentTime=want; }
   } }
@@ -1166,7 +1182,7 @@ let selClip=-1, selKf=-1;
 function renderVideoTrack(){
   const tr=$('trV'); if (!tr) return; const pad=tlPad(), L=E.clipList(), st=E.clipStarts();
   tr.style.paddingLeft='0';
-  tr.innerHTML=L.map((c,k)=>{ const x=pad+st[k]*pps, w=Math.max(4,(c.e-c.s)*pps-2); let im='';
+  tr.innerHTML=L.map((c,k)=>{ const x=pad+st[k]*pps, w=Math.max(4,E.clipDur(c)*pps-2); let im='';
     for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
     return `<div class="vb ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
     + (E.kf||[]).map((k,i)=>`<div class="vkf ${i===selKf?'cur':''} ${k.ease==='tok2'?'gold':''}" data-kf="${i}" style="left:${pad+k.t*pps}px"></div>`).join('')
@@ -1192,27 +1208,46 @@ function insertOut(at,len){
   for (const o of E.overlays) if (o.s>=at){ o.s+=len; o.e+=len; }
   for (const k of E.kf) if (k.t>=at) k.t+=len;
 }
+// výsledný úsek [a,b] se natáhne / zkrátí na délku D1 – titulky a ostatní věci v něm se roztáhnou, za ním posunou
+function remapOut(a,b,D1){
+  const D0=b-a; if (D0<=0) return; const f=D1/D0, dl=D1-D0;
+  const mp=v=> v>=b-1e-6? v+dl : v>a? a+(v-a)*f : v;
+  for (const w of E.words){ w.s=mp(w.s); w.e=Math.max(w.s+0.05,mp(w.e)); }
+  for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null) m.so=mp(m.so); if (m.eo!=null) m.eo=mp(m.eo); }
+  for (const z of E.zones){ z.s=mp(z.s); z.e=mp(z.e); }
+  for (const o of E.overlays){ o.s=mp(o.s); o.e=mp(o.e); }
+  for (const o of (E.objs||[])){ o.s=mp(o.s); o.e=mp(o.e); }
+  for (const k of E.kf) k.t=mp(k.t);
+}
+function setClipSpeed(k,sp){
+  ensureClips(); const c=E.clips[k]; if (!c) return; const st=E.clipStarts(), a=st[k], D0=E.clipDur(c);
+  c.speed=sp; const D1=E.clipDur(c); remapOut(a,a+D0,D1);
+  if (E.clipSp(c)!==1) pbDecode();
+  changed(true); renderVideoTrack(); renderTimeline(); renderPanel(); PV.currentTime=a+0.02;
+  toast(sp<1?`Zpomaleno na ${Math.round(sp*100)} % – úsek je teď ${D1.toFixed(1).replace('.',',')} s`:sp>1?`Zrychleno ${sp}×`:'Normální rychlost');
+}
 function ensureClips(){ if (!E.clips||!E.clips.length) E.clips=[{s:0,e:E.srcDur||vid.duration||0,tr:'none'}]; }
 function cutAt(T){
-  ensureClips(); const st=E.clipStarts(); const k=E.clips.findIndex((c,i)=>T>st[i]+0.08 && T<st[i]+(c.e-c.s)-0.08);
+  ensureClips(); const st=E.clipStarts(); const k=E.clips.findIndex((c,i)=>T>st[i]+0.08 && T<st[i]+E.clipDur(c)-0.08);
   if (k<0) return toast('Tady stříhat nejde (moc blízko střihu nebo konce)');
-  const c=E.clips[k], ts=c.s+(T-st[k]);
-  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none',trDur:c.trDur},{s:ts,e:c.e,tr:'none',trDur:0.12});
+  const c=E.clips[k], ts=c.s+(T-st[k])*E.clipSp(c);
+  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none',trDur:c.trDur,speed:c.speed,blend:c.blend},{s:ts,e:c.e,tr:'none',trDur:0.12,speed:c.speed,blend:c.blend});
   selClip=k+1; changed(true); renderVideoTrack(); pbDecode(); toast('Video rozstřižené – přechod přidáš klepnutím na značku ve střihu');
 }
 function deleteClip(k){
   ensureClips(); if (E.clips.length<2) return toast('Poslední úsek videa smazat nejde');
-  const st=E.clipStarts(), c=E.clips[k]; removeOut(st[k], st[k]+(c.e-c.s));
+  const st=E.clipStarts(), c=E.clips[k]; removeOut(st[k], st[k]+E.clipDur(c));
   E.clips.splice(k,1); if (E.clips[0]) E.clips[0].tr='none';
   selClip=-1; vid.pause(); PV.currentTime=Math.min(st[k], E.outDur()-0.05);
   changed(true); renderVideoTrack(); renderPanel(); toast('Úsek smazaný – titulky se posunuly');
 }
 function trimClip(k,side,dt){
   ensureClips(); const c=E.clips[k], st=E.clipStarts(), prev=E.clips[k-1], next=E.clips[k+1];
-  if (side==='l'){ const ns=clamp(c.s+dt, prev?prev.e:0, c.e-0.2), d=ns-c.s; if (Math.abs(d)<0.01) return;
+  const sp=E.clipSp(c);   // zdrojový posun d → na timeline d/sp
+  if (side==='l'){ const ns=clamp(c.s+dt*sp, prev?prev.e:0, c.e-0.2), d=(ns-c.s)/sp; if (Math.abs(d)<0.01) return;
     if (d>0) removeOut(st[k], st[k]+d); else insertOut(st[k], -d); c.s=ns; }
-  else { const ne=clamp(c.e+dt, c.s+0.2, next?next.s:(E.srcDur||vid.duration)), d=ne-c.e; if (Math.abs(d)<0.01) return;
-    const endO=st[k]+(c.e-c.s); if (d<0) removeOut(endO+d, endO); else insertOut(endO, d); c.e=ne; }
+  else { const ne=clamp(c.e+dt*sp, c.s+0.2, next?next.s:(E.srcDur||vid.duration)), d=(ne-c.e)/sp; if (Math.abs(d)<0.01) return;
+    const endO=st[k]+E.clipDur(c); if (d<0) removeOut(endO+d, endO); else insertOut(endO, d); c.e=ne; }
   changed(true); renderVideoTrack();
 }
 let tlSyncT=0;
@@ -1809,7 +1844,7 @@ async function runExport(){
   const t0=performance.now();
   try{
     let res;
-    const o={file:videoFile,src:videoURL,w,h,fps,mode,mute:E.flags.mute,behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
+    const o={file:videoFile,src:videoURL,w,h,fps,mode,mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.audioNote?` · pozor: ${res.audioNote}`:''));

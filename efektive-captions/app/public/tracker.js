@@ -439,6 +439,25 @@ TRK.runAffine = async (o) => {
   if (all.length < 2) return null;
   return { t: all.map(r => r.t), A: all.map(r => r.A), c: all.map(r => r.c), t0 };
 };
+// ================= OPTICKÝ TOK (pro plynulé zpomalení) =================
+// grayA, grayB = šedé snímky (w×h); vrací pohyb A→B na mřížce po „step“ px: {gw, gh, step, fx, fy}
+TRK.denseFlow = (grayA, grayB, w, h, step) => {
+  const P = TRK.pyramid(grayA, w, h), Q = TRK.pyramid(grayB, w, h);
+  const gw = Math.ceil(w / step) + 1, gh = Math.ceil(h / step) + 1, fx = new Float32Array(gw * gh), fy = new Float32Array(gw * gh), ok = new Uint8Array(gw * gh);
+  const f = [0, 0], b = [0, 0];
+  for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+    const x = Math.min(w - 2, i * step), y = Math.min(h - 2, j * step), k = j * gw + i;
+    if (!lk(P, Q, x, y, f)) continue;
+    if (lk(Q, P, f[0], f[1], b) && Math.hypot(b[0] - x, b[1] - y) < 1.5) { fx[k] = f[0] - x; fy[k] = f[1] - y; ok[k] = 1; }
+  }
+  // díry (plochy bez kresby, zakryté části) doplnit z okolí, pak vyhladit mediánem 3×3
+  for (let pass = 0; pass < 6; pass++) for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const k = j * gw + i; if (ok[k]) continue; let sx = 0, sy = 0, n = 0;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= gw || jj >= gh) continue; const q = jj * gw + ii; if (ok[q]) { sx += fx[q]; sy += fy[q]; n++; } }
+    if (n) { fx[k] = sx / n; fy[k] = sy / n; ok[k] = 2; } }
+  const mfx = new Float32Array(fx), mfy = new Float32Array(fy);
+  for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const ax = [], ay = []; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const ii = Math.min(gw - 1, Math.max(0, i + di)), jj = Math.min(gh - 1, Math.max(0, j + dj)); ax.push(fx[jj * gw + ii]); ay.push(fy[jj * gw + ii]); } mfx[j * gw + i] = med(ax); mfy[j * gw + i] = med(ay); }
+  return { gw, gh, step, w, h, fx: mfx, fy: mfy };
+};
 // vyhlazená afinní transformace v čase ts (zdrojový čas)
 TRK.affAt = (tr, ts, sm) => {
   if (!tr._S || tr._Sk !== sm || tr._Sn !== tr.t.length) {

@@ -27,16 +27,19 @@ X.Zip = class {
 };
 
 // ---------- ZVUK: originál (nebo ticho) + zvukové efekty ----------
-X.buildAudio = async (file, duration, mute) => {
+X.buildAudio = async (file, duration, mute, ovAudio) => {
   const RATE=48000;
   let decoded=null;
   if (!mute){ try{ decoded=await decodeVideoAudio(file); }catch(e){ console.warn('Video nemá zvuk',e); } }
   const ch=decoded?Math.min(2,decoded.numberOfChannels):2;
   const off=new OfflineAudioContext(ch,Math.ceil(duration*RATE),RATE);
   if (decoded){
-    if (E.clips && E.clips.length){ let o=0; for (const c of E.clips){ const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(o, c.s, c.e-c.s); o+=c.e-c.s; } }
+    // zpomalené / zrychlené úseky jsou bez zvuku (jen se posune čas)
+    if (E.clips && E.clips.length){ let o=0; for (const c of E.clips){ if (E.clipSp(c)===1){ const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(o, c.s, c.e-c.s); } o+=E.clipDur(c); } }
     else { const s=off.createBufferSource(); s.buffer=decoded; s.connect(off.destination); s.start(0); }
   }
+  // zvuk video overlayů (opakuje se dokola jako obraz overlaye)
+  for (const a of (ovAudio||[])){ try{ const b=await off.decodeAudioData(await a.blob.arrayBuffer()); const s=off.createBufferSource(); s.buffer=b; s.loop=true; s.connect(off.destination); s.start(Math.max(0,a.s)); s.stop(Math.min(duration,a.e)); }catch(e){ console.warn('Zvuk overlaye nejde přidat',e); } }
   const vol=E.G.sfxVol/100;
   for (const ev of E.sfxEvents()) if (ev.t<duration) E.sfxInto(off, off.destination, Math.max(0,ev.t), ev.type, vol);
   return await off.startRendering();
@@ -104,14 +107,14 @@ X.exportVideo = async (opts) => {
     onP(0,'Připravuju zvuk…');
     // Zvuk: bez zvukových efektů (nebo když prohlížeč neumí kódovat zvuk – iPhone) se vloží původní stopa
     // bez překódování → vždy se zvukem, rychle a v původní kvalitě. Se SFX se zvuk smíchá a zakóduje.
-    const sfxOn=E.sfxEvents().some(ev=>ev.t<dur);
+    const sfxOn=E.sfxEvents().some(ev=>ev.t<dur) || (opts.ovAudio&&opts.ovAudio.length>0);
     let raw=null, audio=null, ac=null, audioNote='';
     if (!opts.mute && (!sfxOn || !window.AudioEncoder)){ try{ raw=window.rawAudioTrack?await rawAudioTrack(opts.file):null; }catch(e){ console.warn('Původní zvuk nejde převzít',e); } }
     if (!raw && window.AudioEncoder && !opts.mute){
-      audio=await X.buildAudio(opts.file, dur, opts.mute);
+      audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio);
       ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate);
     }
-    if (raw && sfxOn) audioNote='zvukové efekty tento prohlížeč neumí přimíchat';
+    if (raw && sfxOn) audioNote='zvukové efekty a zvuk overlaye tento prohlížeč neumí přimíchat';
     if (!raw && !ac && !opts.mute) audioNote='zvuk se nepodařilo přidat';
     const target=new Mp4Muxer.ArrayBufferTarget();
     const muxer=new Mp4Muxer.Muxer({ target, fastStart:'in-memory', firstTimestampBehavior:'offset',
@@ -124,7 +127,7 @@ X.exportVideo = async (opts) => {
       for (const smp of raw.samples){
         const ts0=smp.ts-raw.skip;
         let ts=ts0;
-        if (cut){ const inClip=E.clips.some(c=>ts0+smp.dur/2>=c.s && ts0+smp.dur/2<c.e); if (!inClip) continue; ts=E.src2out(Math.max(ts0,0)); if (ts<=lastOut) ts=lastOut+smp.dur; }
+        if (cut){ const inClip=E.clips.some(c=>ts0+smp.dur/2>=c.s && ts0+smp.dur/2<c.e && E.clipSp(c)===1); if (!inClip) continue; ts=E.src2out(Math.max(ts0,0)); if (ts<=lastOut) ts=lastOut+smp.dur; }
         if (ts < -smp.dur/2 || ts >= dur) continue;
         muxer.addAudioChunkRaw(smp.data,'key',Math.max(0,Math.round(ts*1e6)),Math.round(smp.dur*1e6),first?meta:undefined); first=false; lastOut=ts;
       }
@@ -150,6 +153,21 @@ X.exportVideo = async (opts) => {
     let src=null;
     if (!ctxBehind && window.openFrameSource){ try{ src=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); }catch(e){ console.warn('Rychlé čtení snímků nejde, použiji přetáčení',e); } }
     const t0=performance.now();
+    // ZPOMALENÍ: mezisnímky z dvojice sousedních zdrojových snímků – prolnutí nebo optický tok (tok se počítá jednou na dvojici)
+    const IP={cache:new Map(), flows:new Map(), fw:0, fh:0, g1:null, g2:null};
+    const ipFrame=async i=>{ if (IP.cache.has(i)) return IP.cache.get(i); const T=src.times; const fr=await src.frameAt(T[i]+0.0005); const c=document.createElement('canvas'); c.width=w; c.height=h; if (fr) src.draw(c.getContext('2d'),fr,w,h); IP.cache.set(i,c); for (const k of [...IP.cache.keys()]) if (k<i-1) IP.cache.delete(k); return c; };
+    const ipGray=c=>{ const fw=320, fh=Math.round(320*h/w)&~1; IP.fw=fw; IP.fh=fh; const t=document.createElement('canvas'); t.width=fw; t.height=fh; const x=t.getContext('2d',{willReadFrequently:true}); x.drawImage(c,0,0,fw,fh); return TRK.gray(x.getImageData(0,0,fw,fh).data); };
+    const slowFrame=async (t,ts,mode)=>{
+      const T=src.times; let lo=0, hi=T.length-1; while (hi-lo>1){ const m=(lo+hi)>>1; if (T[m]<=ts) lo=m; else hi=m; }
+      const i=Math.min(lo,T.length-2), wgt=Math.max(0,Math.min(1,(ts-T[i])/Math.max(1e-4,T[i+1]-T[i])));
+      const A=await ipFrame(i), B=await ipFrame(i+1);
+      if (wgt<0.03) return c=>c.drawImage(A,0,0,w,h); if (wgt>0.97) return c=>c.drawImage(B,0,0,w,h);
+      if (mode==='flow' && window.TRK && window.FX){
+        let fl=IP.flows.get(i); if (!fl){ fl=TRK.denseFlow(ipGray(A),ipGray(B),IP.fw,IP.fh,8); IP.flows.clear(); IP.flows.set(i,fl); }
+        const out=FX.interp(A,B,fl,wgt); if (out) return c=>c.drawImage(out,0,0,w,h);
+      }
+      return c=>{ c.drawImage(A,0,0,w,h); c.save(); c.globalAlpha=wgt; c.drawImage(B,0,0,w,h); c.restore(); };
+    };
     try{
     for (let i=0;i<N;i++){
       if (opts.cancel&&opts.cancel.v) throw new Error('Zrušeno');
@@ -157,7 +175,11 @@ X.exportVideo = async (opts) => {
       const t=i/fps;
       // překrytí videa novou verzí: přesný snímek v čase t
       for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e) continue; o.src.pause(); const want=Math.min(E.ovTime(o,t),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
-      if (src){
+      const ck=cut?E.clipList()[E.clipAt(t)]:null, slow=ck && E.clipSp(ck)<1 && (ck.blend||'flow')!=='none' && src && src.times && src.times.length>1;
+      if (slow){
+        const ts=o2s(t), draw=await slowFrame(t,ts,ck.blend||'flow');
+        E.render(t,{frameDraw:(c,W,H)=>draw(c), frameT:ts});
+      } else if (src){
         const fr=await src.frameAt(o2s(t));
         E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
       } else {

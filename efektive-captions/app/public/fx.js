@@ -192,4 +192,47 @@ FX.grade = (c, W, H, look, amt) => {
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;
 };
+
+// ================= MEZISNÍMEK PODLE OPTICKÉHO TOKU =================
+// A, B = sousední snímky (plátna stejné velikosti), flow = pohyb A→B (TRK.denseFlow), w = poloha mezi nimi 0..1
+const IFS = `precision highp float;
+uniform sampler2D ta, tb, tf; uniform float w, M; varying vec2 v;
+void main(){
+  vec4 fl=texture2D(tf,v); vec2 F=(fl.rg*2.0-1.0)*M;   // pohyb v podílech obrazu
+  vec3 a=texture2D(ta,v-w*F).rgb, b=texture2D(tb,v+(1.0-w)*F).rgb;
+  gl_FragColor=vec4(mix(a,b,w),1.0);
+}`;
+let iprog = null, IU = {}, texB = null, texF = null, fcv = null;
+function initInterp() {
+  if (iprog) return true; if (!init()) return false;
+  try {
+    const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+    iprog = gl.createProgram(); gl.attachShader(iprog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(iprog, sh(gl.FRAGMENT_SHADER, IFS)); gl.linkProgram(iprog);
+    if (!gl.getProgramParameter(iprog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(iprog));
+    for (const n of ['ta', 'tb', 'tf', 'w', 'M']) IU[n] = gl.getUniformLocation(iprog, n);
+    const mk = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; };
+    texB = mk(); texF = mk();
+    return true;
+  } catch (e) { console.warn('Optický tok (WebGL):', e); iprog = null; return false; }
+}
+// vrátí plátno s mezisnímkem (nebo null, když WebGL nejde)
+FX.interp = (A, B, flow, w) => {
+  if (!initInterp()) return null;
+  const W = A.width, H = A.height;
+  // tok → malá textura (R,G = pohyb x,y; rozsah ±M obrazu)
+  const M = 0.25; if (!fcv) fcv = document.createElement('canvas'); fcv.width = flow.gw; fcv.height = flow.gh;
+  const fx = fcv.getContext('2d'), id = fx.createImageData(flow.gw, flow.gh);
+  for (let k = 0; k < flow.fx.length; k++) { const ux = flow.fx[k] / flow.w / M, uy = -flow.fy[k] / flow.h / M; id.data[k * 4] = Math.max(0, Math.min(255, Math.round((ux * 0.5 + 0.5) * 255))); id.data[k * 4 + 1] = Math.max(0, Math.min(255, Math.round((uy * 0.5 + 0.5) * 255))); id.data[k * 4 + 3] = 255; }
+  fx.putImageData(id, 0, 0);
+  useProg(iprog);
+  if (glc.width !== W || glc.height !== H) { glc.width = W; glc.height = H; }
+  gl.viewport(0, 0, W, H);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, A);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texB); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, B);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, texF); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, fcv);
+  gl.uniform1i(IU.ta, 0); gl.uniform1i(IU.tb, 1); gl.uniform1i(IU.tf, 2); gl.uniform1f(IU.w, w); gl.uniform1f(IU.M, M);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+  return glc;
+};
 })(window);

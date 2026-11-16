@@ -859,10 +859,14 @@ function drawPersonOver(c, mask){
 // Titulky, zóny i overlaye žijí ve VÝSLEDNÉM čase (po střihu). tr = přechod na začátku úseku ('flash2' | 'none').
 E.clips=null; E.srcDur=0;
 E.clipList=()=> (E.clips&&E.clips.length)? E.clips : [{s:0,e:E.srcDur||0,tr:'none'}];
-E.outDur=()=>E.clipList().reduce((a,c)=>a+(c.e-c.s),0);
-E.out2src=t=>{ const L=E.clipList(); let o=0; for (const c of L){ const d=c.e-c.s; if (t<o+d || c===L[L.length-1]) return Math.min(c.e, c.s+Math.max(0,t-o)); o+=d; } return 0; };
-E.src2out=ts=>{ const L=E.clipList(); let o=0; for (const c of L){ if (ts<c.s) return o; if (ts<c.e) return o+(ts-c.s); o+=c.e-c.s; } return o; };
-E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=c.e-c.s; } return r; };
+// rychlost úseku (speed < 1 = zpomalení, > 1 = zrychlení): výsledná délka úseku = zdrojová délka / speed
+E.clipSp=c=>Math.max(0.1,Math.min(4,(c&&c.speed)||1));
+E.clipDur=c=>(c.e-c.s)/E.clipSp(c);
+E.outDur=()=>E.clipList().reduce((a,c)=>a+E.clipDur(c),0);
+E.out2src=t=>{ const L=E.clipList(); let o=0; for (const c of L){ const d=E.clipDur(c); if (t<o+d || c===L[L.length-1]) return Math.min(c.e, c.s+Math.max(0,t-o)*E.clipSp(c)); o+=d; } return 0; };
+E.src2out=ts=>{ const L=E.clipList(); let o=0; for (const c of L){ if (ts<c.s) return o; if (ts<c.e) return o+(ts-c.s)/E.clipSp(c); o+=E.clipDur(c); } return o; };
+E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=E.clipDur(c); } return r; };
+E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
 E.TRANSITIONS=[['none','Žádný'],['push','Vcucnutí (zoom + čočka)'],['swing','Zahoupání'],['whip','Švihnutí do strany'],['flashw','Bílý záblesk'],['flash2','2× negativní záblesk']];
 E.TRDEF={push:0.5,swing:0.6,whip:0.45,flashw:0.4,flash2:0.12};   // výchozí délka přechodu (s)
