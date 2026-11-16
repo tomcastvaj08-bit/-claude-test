@@ -206,14 +206,14 @@ function drawShine(c, o, t, W, H, MM, mc, A) {
   // Rozmazání postupným zmenšováním a zvětšováním (hladké jako gauss, funguje i v Safari bez ctx.filter).
   const G = clamp((o.shGlow ?? 80) / 100, 0, 1.5), L = glowLevels(oc, W, H);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen'; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.55); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.75); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.7); c.drawImage(L[2], 0, 0, W, H); }
+  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.6); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.55); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.35); c.drawImage(L[2], 0, 0, W, H); }
   c.globalAlpha = I; c.drawImage(oc, 0, 0);
   c.restore();
 }
 // tři úrovně rozmazání (malé / střední / široké), vrácené ve velikosti, ze které se hladce zvětší přes celé plátno
 const GL = [];
 function glowLevels(src, W, H) {
-  const sizes = [6, 16, 40], out = [];
+  const sizes = [4, 8, 16], out = [];   // úzká záře – jen lehce přečuhuje kolem objektu, do všech stran stejně
   let prev = src, pw = W, ph = H;
   for (let k = 0; k < sizes.length; k++) {
     const w = Math.max(1, Math.round(W / sizes[k])), h = Math.max(1, Math.round(H / sizes[k]));
