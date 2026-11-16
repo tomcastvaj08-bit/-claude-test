@@ -114,7 +114,7 @@ let flowKey='', flow=null;
 // odkud slova vylétají: ústa (spodní část obličeje z AI), jinak střed obrazu nad titulky
 function mouthAt(t,W,H){ const f=faceAt(t); if (f) return {x:(f[0]+f[2])/2*W, y:(f[1]+(f[3]-f[1])*0.78)*H}; return {x:W*0.5, y:H*0.36}; }
 function faceAt(t){ if (!E.face) return null; const ts=E.out2src?E.out2src(t):t; const i=Math.round(ts*10); return E.face[i]||E.face[i-1]||E.face[i+1]||null; }
-const Z0=-0.14;                                   // po příletu je slovo chvilku blíž ke kameře, pak ustupuje do dálky
+const Z0=-0.62;                                   // po příletu je slovo chvilku blíž ke kameře, pak ustupuje do dálky
 const zOf=(vz,a)=>Z0 + vz*a*(1+0.5*a);           // hloubka roste plynule a lehce zrychluje → pohyb nikdy nestojí
 const sOf=z=>1/(1+Math.max(-0.6,z));
 function layoutFlow(W,H){
@@ -151,7 +151,7 @@ E.drawMix=(c,t)=>{
     let A=smooth(age/0.22) * smooth((S-0.34)/0.4) * (0.35+0.65*smooth((S-0.45)/0.5));
     if (L.faceB!=null && age>0.5) A*=clamp((y-L.faceB)/(base*0.5)+0.3);
     A*=op; if (A<=0.01) continue;
-    const blur=Math.max(0,(S-1.05))*14 + Math.max(0,(0.92-S))*16;   // u kamery i v dálce rozmazané
+    const blur=Math.max(0,(S-1.0))*9 + Math.max(0,(0.92-S))*16;   // u kamery i v dálce rozmazané
     const px=base*L.size, words=L.ids.map(txt), sp=words.map(w=>sprite(w,L.kind,px));
     const gap=px*(L.kind==='serif'?0.22:0.2), tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
     let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
@@ -163,14 +163,11 @@ E.drawMix=(c,t)=>{
       const wt=E.words[L.ids[wi]], wa=t-(wt.s-0.08);
       const ww=o.tw*SS, wx=xx; xx+=ww+gap*SS;
       if (wa<0) return;
-      // přílet z úst / obličeje směrem do telefonu: začne malé v hloubce u obličeje a letí k divákovi na své místo
-      const FLY=0.5, e=wa>=FLY?1:1-Math.pow(1-wa/FLY,3);
-      const mouth=mouthAt(t,W,H), tx=wx+ww/2, ty=y;
-      const cx2=mouth.x+(tx-mouth.x)*e, cy2=mouth.y+(ty-mouth.y)*e;
-      const S2=SS*(0.1+0.9*e), qa=smooth(wa/0.18), wb=(1-e)*3;
-      const dw=o.w*S2, dh=o.h*S2, dx=cx2-(o.pad+o.tw/2)*S2, dy=cy2-o.base*S2+o.asc*S2*0.35;
+      // slovo přilétá od diváka (obří a rozmazané) a jedním plynulým pohybem letí do obrazovky
+      const qa=smooth(wa/0.2);
+      const dw=o.w*SS, dh=o.h*SS, dx=wx+ww/2-(o.pad+o.tw/2)*SS, dy=y-o.base*SS+o.asc*SS*0.35;
       c.globalAlpha=A*qa;
-      drawBlur(c,o,dx,dy,dw,dh,blur*(e)+wb);
+      drawBlur(c,o,dx,dy,dw,dh,blur);
     });
   }
   c.restore();
