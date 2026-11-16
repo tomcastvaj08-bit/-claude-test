@@ -749,6 +749,12 @@ E.drawOverlay = (c, o, t) => {
   if (o.emoji) return;   // emoji nálepky už aplikace nemá (ani ze starých projektů)
   if (t<o.s || t>o.e) return;
   const W=cv.width, H=cv.height, since=t-o.s, left=o.e-t;
+  // překrytí celého videa (náhrada úseku): přes celý obraz, bez animace a bez wiggle, pod titulky
+  if (o.full){
+    const s=o.src; if (!s) return; const iw=s.naturalWidth||s.videoWidth, ih=s.naturalHeight||s.videoHeight; if (!iw||!ih) return;
+    const sc=Math.max(W/iw,H/ih), dw=iw*sc, dh=ih*sc;
+    c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; try{ c.drawImage(s,(W-dw)/2,(H-dh)/2,dw,dh); }catch(e){} c.restore(); return;
+  }
   const q=clamp(since/0.5), eo=1-Math.pow(2,-10*q), fadeOut=clamp(left/0.25);
   let a=fadeOut, sx=1, sy=1, dx=0, dy=0, r=(o.rot||0)*Math.PI/180;
   let wpx=W*o.w/100;
@@ -767,7 +773,11 @@ E.drawOverlay = (c, o, t) => {
     case 'slideD': dy=-(1-eo)*H*0.5; a*=clamp(q*3); break;
     default: a*=eo;
   }
-  if (o.wiggle){ r+=Math.sin(t*6+o.id)*0.06; dx+=Math.sin(t*9+o.id)*W*0.004; dy+=Math.cos(t*7+o.id)*W*0.004; }
+  if (o.wiggle){
+    // síla (wigAmt) a rychlost (wigSpd) třesení, 50 = původní wiggle
+    const A=(o.wigAmt??50)/50, F=(o.wigSpd??50)/50;
+    r+=Math.sin(t*6*F+o.id)*0.06*A; dx+=Math.sin(t*9*F+o.id)*W*0.004*A; dy+=Math.cos(t*7*F+o.id)*W*0.004*A;
+  }
   if (a<=0.001) return;
   c.save(); c.globalAlpha=a; c.translate(W*(o.x+(tro?tro.dx:0))/100+dx, H*(o.y+(tro?tro.dy:0))/100+dy); c.rotate(r); c.scale(sx,sy);
   if (o.emoji){ c.font=`${wpx}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(o.emoji,0,0); }
@@ -924,15 +934,16 @@ E.render = (t, opts={}) => {
       ctx.restore();
     } else if (vfOk) ctx.drawImage(vframe,0,0);
   }
+  for (const o of E.overlays) if (o.full) E.drawOverlay(ctx,o,t);   // překrytí celého videa = nový základ (pod přechody i titulky)
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
   // overlaye pod titulky
-  for (const o of E.overlays) if (!o.above) E.drawOverlay(ctx,o,t);
+  for (const o of E.overlays) if (!o.above && !o.full) E.drawOverlay(ctx,o,t);
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni
   // samostatný mód 3D mix (kostka): vlastní vykreslení titulků
-  if (E.G.mix3d && !F.hidden && E.drawMix){ E.lastBox=null; E.lastLines=null; E.drawMix(ctx,t); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.shadowColor='transparent'; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
+  if (E.G.mix3d && !F.hidden && E.drawMix){ E.lastBox=null; E.lastLines=null; E.drawMix(ctx,t); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.shadowColor='transparent'; for (const o of E.overlays) if (o.above && !o.full) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);
-  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
+  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above && !o.full) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   let mainLines=null, mainS=null, behind=false;
   for (const kk of ks){
     const r=drawPage(kk,t);
@@ -942,7 +953,7 @@ E.render = (t, opts={}) => {
   E.lastLines=mainLines;
   // text za postavou: přes titulky se znovu nakreslí jen postava z videa
   if (behind && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }
-  for (const o of E.overlays) if (o.above) E.drawOverlay(ctx,o,t);
+  for (const o of E.overlays) if (o.above && !o.full) E.drawOverlay(ctx,o,t);
   E.drawWatermark(ctx,cv.width,cv.height);
   if (opts.box && mainLines) E.drawBox(mainLines,mainS);
 };
