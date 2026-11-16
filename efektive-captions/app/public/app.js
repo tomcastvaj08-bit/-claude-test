@@ -651,6 +651,18 @@ binders.clip=()=>{
 };
 
 // ---------- 3D MIX (kostka) – samostatný mód ----------
+// seznam řádků 3D mixu: klepnutím zvýrazníš / zrušíš zvýraznění (oranžové)
+function mixWordsHTML(){
+  let plan; try{ plan=E.mixPlan(); }catch(e){ return ''; }
+  if (!plan || !plan.lines.length) return '';
+  const idx=new Map(plan.lines.map((L,i)=>[L,i]));
+  const sc=plan.scenes.map(s=>`<div class="mixsc">${s.lines.map(L=>`<span class="mixw ${L.kind==='hi'?'hi':''}" data-l="${idx.get(L)}">${esc(L.ids.map(i=>E.words[i].t).join(' '))}</span>`).join('')}</div>`).join('');
+  return `<div class="clabel">Zvýrazněná slova (klepni na slovo)</div>
+  <div class="note">Oranžová = zvýrazněné. Klepnutím zvýrazníš další slova nebo zvýraznění zrušíš.</div>
+  <div class="row"><span>Appka sama vybírá zvýraznění</span><input type="checkbox" class="sw" id="mixAutoHi" ${E.G.mixAutoHi!==false?'checked':''}></div>
+  <div id="mixWords" class="mixwords">${sc}</div>
+  <button class="btn small" id="mixHiReset">${I('reset')} Zrušit moje změny zvýraznění</button>`;
+}
 // starší nastavení (před verzí, kdy byl shine + 3D hloubka v základu zapnutý) → zapnout na zvýrazněných slovech
 function mixDefaults(src){ if (src && !('mixFx' in src)){ E.G.mixShine='hi'; E.G.mixExtrude='hi'; E.G.mixFx=2; } }
 // AI najde obličej, ať titulky 3D mixu nejedou přes něj (běží na pozadí, jednou za projekt)
@@ -672,7 +684,8 @@ function pMix(){
   ${slider('Rychlost letu','mixSpeed',40,200,1,'%')}
   <div class="clabel">Barva zvýrazněných slov</div><div class="colors">${color('Nahoře','mixA')}${color('Dole','mixB')}</div>
   ${chips('Shine (lesk přejede přes slovo)','mixShine',[['off','Vypnuto'],['hi','Jen zvýrazněná slova'],['all','Všechna slova']])}
-  ${chips('3D hloubka (extrusion)','mixExtrude',[['off','Vypnuto'],['hi','Jen zvýrazněná slova'],['all','Všechna slova']])}`:''}`;
+  ${chips('3D hloubka (extrusion)','mixExtrude',[['off','Vypnuto'],['hi','Jen zvýrazněná slova'],['all','Všechna slova']])}
+  ${mixWordsHTML()}`:''}`;
 }
 binders.mix=()=>{
   $('mixOn').onclick=async()=>{ E.G.mix3d=!E.G.mix3d; E.mixInvalidate&&E.mixInvalidate(); changed(); renderPanel(); toast(E.G.mix3d?'3D mix zapnutý':'3D mix vypnutý – zpátky běžné titulky');
@@ -680,6 +693,13 @@ binders.mix=()=>{
     if (E.G.mix3d && E.G.mixFx!==2){ E.G.mixShine='hi'; E.G.mixExtrude='hi'; E.G.mixFx=2; E.mixInvalidate&&E.mixInvalidate(); renderPanel(); }   // v základu shine + 3D hloubka na zvýrazněných slovech
     if (E.G.mix3d && !E.face) mixFaces();
   };
+  if ($('mixWords')) $('mixWords').onclick=e=>{ const d=e.target.closest('[data-l]'); if(!d) return; const P=E.mixPlan(), L=P.lines[+d.dataset.l]; if (!L) return;
+    const on=d.classList.contains('hi');
+    // ve skupině řádků nejdřív „zafixovat“ to, co je teď zvýrazněné – přidání slova nic jiného nezhasne
+    for (const M of P.lines) if (M.g===L.g) M.ids.forEach(i=>{ E.words[i].mh = M.kind==='hi'; });
+    L.ids.forEach(i=>{ E.words[i].mh=!on; }); E.mixInvalidate(); changed(); renderPanel(); vid.pause(); PV.currentTime=Math.max(0,L.s+0.6); };
+  if ($('mixAutoHi')) $('mixAutoHi').onchange=e=>{ E.G.mixAutoHi=e.target.checked; E.mixInvalidate(); changed(); renderPanel(); };
+  if ($('mixHiReset')) $('mixHiReset').onclick=()=>{ E.words.forEach(w=>{ delete w.mh; }); E.mixInvalidate(); changed(); renderPanel(); toast('Zvýraznění zase vybírá appka sama'); };
   if ($('mixShuffle')) $('mixShuffle').onclick=()=>{ E.G.mixSeed=Math.floor(Math.random()*9999)+2; E.mixInvalidate&&E.mixInvalidate(); changed(); };
 };
 

@@ -91,7 +91,7 @@ E.G = {
 };E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
 
 // klíče, které jsou vždy společné pro celé video
-E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
+E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
 
 // ================= FONTY (kompletní seznam jako v SA Captions) =================
 // [rodina (CSS stack: Apple systémový font → webová náhrada), tloušťka, popisek, kurzíva]

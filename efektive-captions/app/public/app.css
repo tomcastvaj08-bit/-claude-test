@@ -452,3 +452,9 @@ button.pro.on{background:var(--green)}
 .lay-i{display:flex}.lay-i .ic{width:24px;height:24px}
 .lay-t{flex:1;display:flex;flex-direction:column;line-height:1.2}.lay-t small{color:var(--muted);font-size:12px}
 .lay-h{display:flex;color:var(--muted)}.lay-h .ic{width:22px;height:22px}
+
+/* 3D mix – výběr zvýrazněných slov */
+.mixwords{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px;max-height:46vh;overflow:auto}
+.mixsc{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--card);border:1px solid var(--line)}
+.mixw{padding:7px 10px;border:1px solid var(--line);background:#fff;font-weight:700;font-size:14px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.mixw.hi{background:linear-gradient(180deg,#ffa21e,#f38b00);color:#fff;border-color:#f38b00}

@@ -20,7 +20,7 @@ let cacheKey='', plan=null;
 // řádky (1–2 slova) a scény (max 4 řádky, nová po větě / pauze)
 function build(){
   const W=E.words, seed=E.G.mixSeed||1;
-  const key=W.length+'|'+(W[0]?W[0].id:0)+'|'+(W.length?W[W.length-1].e:0)+'|'+seed+'|'+W.map(w=>w.t).join(' ')+'|'+(E.zones||[]).length;
+  const key=W.length+'|'+(W[0]?W[0].id:0)+'|'+(W.length?W[W.length-1].e:0)+'|'+seed+'|'+W.map(w=>w.t).join(' ')+'|'+(E.zones||[]).length+'|'+W.map(w=>w.mh===true?1:w.mh===false?2:0).join('')+'|'+(E.G.mixAutoHi===false?0:1);
   if (key===cacheKey && plan) return plan; cacheKey=key;
   const lines=[]; let cur=null;
   for (let i=0;i<W.length;i++){
@@ -55,7 +55,14 @@ function build(){
     for (let g0=0; g0<s.lines.length; g0+=5){
       const grp=s.lines.slice(g0,g0+5);
       let cand=grp.filter((L,j)=>!L.fn && (g0+j>0||grp.length===1)); if (!cand.length) cand=grp.filter(L=>!L.fn); if (!cand.length) cand=grp;
-      let H=grp.find(L=>L.ids.some(i=>W[i].em));
+      // ručně zvýrazněné řádky (klepnutím v panelu 3D mix) – kolik chceš; ručně vypnuté se nikdy nezvýrazní
+      const on=grp.filter(L=>L.ids.some(i=>W[i].mh===true)), offL=L=>L.ids.some(i=>W[i].mh===false);
+      grp.forEach(L=>{ L.g=si+'|'+g0; });
+      on.forEach(L=>HS.add(L));
+      // skupina upravená ručně = platí jen ruční výběr; jinak appka vybere jedno slovo sama
+      if (grp.some(L=>L.ids.some(i=>W[i].mh!==undefined)) || E.G.mixAutoHi===false) continue;
+      cand=cand.filter(L=>!offL(L)); if (!cand.length) continue;
+      let H=grp.find(L=>L.ids.some(i=>W[i].em) && !offL(L));
       if (!H){ H=cand[0]; const sc2=L=>txtOf(L).replace(/\s/g,'').length + (/\d/.test(txtOf(L))?3:0) + (L.ids.some(i=>emSet.has(i))?1:0); for (const L of cand) if (sc2(L)>sc2(H)) H=L; }
       HS.add(H);
     }
@@ -215,4 +222,5 @@ E.drawMix=(c,t)=>{
   c.restore();
 };
 E.mixInvalidate=()=>{ cacheKey=''; };
+E.mixPlan=()=>build();   // pro panel: řádky a které jsou zvýrazněné
 })();
