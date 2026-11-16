@@ -1724,7 +1724,7 @@ function pObj(){
   <div class="row"><span>Shine přes objekt</span><input type="checkbox" class="sw" id="objShine" ${o.shine?'checked':''}></div>
   ${o.shine?`<div class="note">Shine má na timeline vlastní zlatý blok – posuň ho na moment, kdy má projet, a za okraje ho zkrať / prodluž (delší blok = pomalejší průjezd).</div>
   <div class="row"><span>Opakovat shine v bloku</span><input type="checkbox" class="sw" id="objRep" ${o.shRep?'checked':''}></div>
-  ${colorRow('Barva shine','shineC',o)}${o.shRep?oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)+oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s'):''}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}`:''}
+  ${colorRow('Barva shine','shineC',o)}${o.shRep?oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)+oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s'):''}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}${oslider('Záře kolem objektu','objSG',0,150,o.shGlow??80)}`:''}
   <div class="clabel">Obrys</div><div class="chips" id="objLine">${[['off','Žádný'],['solid','Plná čára'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${(o.line||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   ${o.line&&o.line!=='off'?`${colorRow('Barva čáry','lineC',o)}${oslider('Tloušťka čáry','objLW',10,200,o.lineW??50)}`:''}
   ${oslider('Výplň (barevný nádech)','objFA',0,70,o.fillA||0,' %')}
@@ -1755,7 +1755,7 @@ binders.obj=()=>{
   num('objDur',v=>{ o.e=Math.min(PV.duration,o.s+v); });
   $('objShine').onchange=e=>{ o.shine=e.target.checked; changed(); renderPanel(); };
   if ($('objRep')) $('objRep').onchange=e=>{ o.shRep=e.target.checked; changed(); renderPanel(); };
-  num('objSS',v=>o.shineSpd=v); num('objSE',v=>o.shineEvery=v); num('objSW',v=>o.shineW=v); num('objSI',v=>o.shineI=v); num('objLW',v=>o.lineW=v);
+  num('objSS',v=>o.shineSpd=v); num('objSE',v=>o.shineEvery=v); num('objSW',v=>o.shineW=v); num('objSI',v=>o.shineI=v); num('objSG',v=>o.shGlow=v); num('objLW',v=>o.lineW=v);
   num('objFA',v=>o.fillA=v); if ($('objFA')) $('objFA').onchange=()=>{ changed(); renderPanel(); };
   num('objTS',v=>{ if (o.trk){ o.trk.smooth=v; o.trk._S=null; } });
   $('objLine').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; o.line=d.dataset.v; changed(); renderPanel(); };

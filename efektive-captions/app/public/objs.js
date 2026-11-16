@@ -202,14 +202,30 @@ function drawShine(c, o, t, W, H, MM, mc, A) {
   gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.35, hexA(col, 0.35)); gr.addColorStop(0.5, 'rgba(255,255,255,0.8)'); gr.addColorStop(0.65, hexA(col, 0.35)); gr.addColorStop(1, hexA(col, 0));
   ox.fillStyle = gr; ox.fillRect(0, 0, W, H);
   const I = A * clamp((o.shineI ?? 80) / 100, 0, 1.5);
-  // záře kolem (rozmazaná kopie přes zmenšení – funguje i v Safari)
-  const q = 8, hw = Math.max(1, Math.round(W / q)), hh = Math.max(1, Math.round(H / q));
-  if (!hc || hc.width !== hw || hc.height !== hh) { hc = document.createElement('canvas'); hc.width = hw; hc.height = hh; hx = hc.getContext('2d'); }
-  hx.clearRect(0, 0, hw, hh); hx.imageSmoothingEnabled = true; hx.drawImage(oc, 0, 0, hw, hh);
-  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen';
-  c.globalAlpha = I * 0.6; c.imageSmoothingEnabled = true; c.drawImage(hc, 0, 0, W, H);
+  // záře kolem okrajů: světlo z pruhu se rozlije i do okolí objektu (blízká + široká měkká záře).
+  // Rozmazání postupným zmenšováním a zvětšováním (hladké jako gauss, funguje i v Safari bez ctx.filter).
+  const G = clamp((o.shGlow ?? 80) / 100, 0, 1.5), L = glowLevels(oc, W, H);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen'; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.55); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.75); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.7); c.drawImage(L[2], 0, 0, W, H); }
   c.globalAlpha = I; c.drawImage(oc, 0, 0);
   c.restore();
+}
+// tři úrovně rozmazání (malé / střední / široké), vrácené ve velikosti, ze které se hladce zvětší přes celé plátno
+const GL = [];
+function glowLevels(src, W, H) {
+  const sizes = [6, 16, 40], out = [];
+  let prev = src, pw = W, ph = H;
+  for (let k = 0; k < sizes.length; k++) {
+    const w = Math.max(1, Math.round(W / sizes[k])), h = Math.max(1, Math.round(H / sizes[k]));
+    if (!GL[k] || GL[k].c.width !== w || GL[k].c.height !== h) { const c = document.createElement('canvas'); c.width = w; c.height = h; GL[k] = { c, x: c.getContext('2d') }; }
+    const g = GL[k]; g.x.clearRect(0, 0, w, h); g.x.imageSmoothingEnabled = true; g.x.imageSmoothingQuality = 'high'; g.x.drawImage(prev, 0, 0, pw, ph, 0, 0, w, h);
+    prev = g.c; pw = w; ph = h;
+  }
+  // nejširší úroveň zvětšit přes střední velikost (hladší, bez „kosočtverců“)
+  const k = 3; const w2 = GL[1].c.width, h2 = GL[1].c.height;
+  if (!GL[k] || GL[k].c.width !== w2 || GL[k].c.height !== h2) { const c = document.createElement('canvas'); c.width = w2; c.height = h2; GL[k] = { c, x: c.getContext('2d') }; }
+  GL[k].x.clearRect(0, 0, w2, h2); GL[k].x.imageSmoothingEnabled = true; GL[k].x.imageSmoothingQuality = 'high'; GL[k].x.drawImage(GL[2].c, 0, 0, w2, h2);
+  return [GL[0].c, GL[1].c, GL[k].c];
 }
 function drawLine(c, o, t, W, H, MM, A) {
   if (!o._ct) o._ct = OBJ.contours(o._m);
