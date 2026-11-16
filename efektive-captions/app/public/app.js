@@ -1865,8 +1865,8 @@ $('layersBtn').onclick=openLayers;
 // ================= EXPORT =================
 $('exportBtn').onclick=()=>{
   vid.pause();
-  const opts=[['orig',`Původní (${fullW}×${fullH})`]]; const short=Math.min(fullW,fullH);
-  for (const s of [2160,1440,1080,720]) if (s<short || (s===1080 && short<1080)){ const sc=s/short; opts.push([String(s),`${s}p (${Math.round(fullW*sc/2)*2}×${Math.round(fullH*sc/2)*2})${s>short?' – doporučeno, ostré titulky':''}`]); }
+  const short=Math.min(fullW,fullH), opts=[['orig',`Původní (${fullW}×${fullH})${short>1200?' – pomalý export':''}`]];
+  for (const s of [2160,1440,1080,720]) if (s<short || (s===1080 && short<1080)){ const sc=s/short; opts.push([String(s),`${s}p (${Math.round(fullW*sc/2)*2}×${Math.round(fullH*sc/2)*2})${s===1080?(s>short?' – doporučeno, ostré titulky':' – doporučeno, rychlý export'):''}`]); }
   $('exRes').innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
   const q=$('quality').value; if ([...$('exRes').options].some(o=>o.value===q)) $('exRes').value=q;
   if (short<1080) $('exRes').value='1080';   // video v nízké kvalitě → výsledek 1080p, ať titulky nejsou rozmazané
@@ -1891,7 +1891,7 @@ async function runExport(){
     const o={file:videoFile,src:videoURL,w,h,fps,mode,mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
-    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.audioNote?` · pozor: ${res.audioNote}`:''));
+    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));
     // na iPhonu nabídnout sdílení (uložit do Fotek)
     a.onclick=async ev=>{
       // mobilní aplikace: rovnou do galerie

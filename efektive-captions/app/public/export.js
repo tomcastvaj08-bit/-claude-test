@@ -46,14 +46,16 @@ X.buildAudio = async (file, duration, mute, ovAudio) => {
 };
 
 async function pickVideoCodec(w,h,fps){
-  const bitrate=Math.round(w*h*fps*0.22); // vysoká kvalita (~ CRF 16)
+  const bitrate=Math.round(w*h*fps*0.12); // ~7,5 Mb/s u 1080p30 – kvalita pro sociální sítě, menší soubor
   const cands=[
     {codec:'avc1.640034', mux:'avc'},{codec:'avc1.640033', mux:'avc'},{codec:'avc1.64002A', mux:'avc'},{codec:'avc1.4d0034', mux:'avc'},
     {codec:'hvc1.1.6.L153.B0', mux:'hevc'},
     {codec:'vp09.00.51.08', mux:'vp9'},{codec:'vp09.00.41.08', mux:'vp9'},{codec:'av01.0.12M.08', mux:'av1'}
   ];
-  for (const c of cands){
+  // nejdřív hardwarový kodér (výrazně rychlejší, hlavně na iPhonu), pak jakýkoli
+  for (const hw of ['prefer-hardware', null]) for (const c of cands){
     const cfg={codec:c.codec,width:w,height:h,bitrate,framerate:fps,latencyMode:'quality'};
+    if (hw) cfg.hardwareAcceleration=hw;
     if (c.mux==='avc') cfg.avc={format:'avc'};
     try{ const s=await VideoEncoder.isConfigSupported(cfg); if (s.supported) return {cfg,mux:c.mux}; }catch(e){}
   }
@@ -206,7 +208,7 @@ X.exportVideo = async (opts) => {
     }
     await venc.flush(); venc.close();
     muxer.finalize();
-    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote};
+    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek'};
   } finally {
     E.flags.transparent=false; E.flags.exporting=false; E.personMask=prevMask;
     if (prev) E.attach(prev[0],prev[1]);
