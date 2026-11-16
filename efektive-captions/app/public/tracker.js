@@ -190,27 +190,38 @@ TRK.frames = async function* (o) {
   const { file, video, t0, t1, fps, W, H } = o;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d', { willReadFrequently: true });
-  let src = null;
+  let src = null; TRK.mode = 'decode';
   if (g.openFrameSource && file) { try { src = await g.openFrameSource(file, video.videoWidth, video.videoHeight); } catch (e) { src = null; } }
+  let tStart = t0;
   try {
     if (src && src.times && src.times.length) {
-      const T = src.times, min = 1 / fps - 0.004; let last = -1e9;
-      for (let i = 0; i < T.length; i++) {
-        const t = T[i]; if (t < t0 - 1e-3) continue; if (t > t1 + 1e-3) break;
-        if (t - last < min) continue; last = t;
-        const fr = await src.frameAt(t + 0.0005); if (!fr) continue;
-        src.draw(x, fr, W, H);
-        yield { t, data: TRK.gray(x.getImageData(0, 0, W, H).data) };
-      }
-    } else {
+      const T = src.times, min = 1 / fps - 0.004; let last = -1e9, n = 0;
+      try {
+        for (let i = 0; i < T.length; i++) {
+          const t = T[i]; if (t < t0 - 1e-3) continue; if (t > t1 + 1e-3) break;
+          if (t - last < min) continue; last = t;
+          const fr = await src.frameAt(t + 0.0005); if (!fr) continue;
+          src.draw(x, fr, W, H);
+          const data = TRK.gray(x.getImageData(0, 0, W, H).data);
+          // první snímek prázdný (dekodér nedal obraz) → raději přetáčení videa
+          if (!n) { let mn = 255, mx = 0; for (let k = 0; k < data.length; k += 97) { if (data[k] < mn) mn = data[k]; if (data[k] > mx) mx = data[k]; } if (mx - mn < 8) throw new Error('prázdný snímek'); }
+          n++; tStart = t + 1 / fps;
+          yield { t, data, canvas: c };
+        }
+      } catch (e) { if (n) throw e; console.warn('Rychlé čtení snímků nejde, použiji přetáčení', e); src.close(); src = null; }
+    }
+    if (!src) {
       const v = video;
-      for (let t = t0; t <= t1 + 1e-4; t += 1 / fps) {
+      TRK.mode = 'seek';
+      // iPhone: video, které se nikdy nespustilo, nedává při přetáčení obraz → krátce spustit a zastavit
+      try { v.muted = true; await v.play(); v.pause(); } catch (e) {}
+      for (let t = tStart; t <= t1 + 1e-4; t += 1 / fps) {
         await new Promise(r => { const d = () => { v.removeEventListener('seeked', d); r(); }; v.addEventListener('seeked', d); v.currentTime = Math.min(t, (v.duration || t) - 0.01); setTimeout(d, 3000); });
         x.drawImage(v, 0, 0, W, H);
-        yield { t, data: TRK.gray(x.getImageData(0, 0, W, H).data) };
+        yield { t, data: TRK.gray(x.getImageData(0, 0, W, H).data), canvas: c };
       }
     }
-  } finally { if (src) src.close(); }
+  } finally { if (src) try { src.close(); } catch (e) {} }
 };
 
 // ---------- střih ve videu (úplně jiný obraz) ----------
@@ -224,7 +235,7 @@ TRK.run = async (o) => {
   const long = 640, W = Math.round(ar >= 1 ? long : long * ar) & ~1, H = Math.round(ar >= 1 ? long / ar : long) & ~1;
   const fps = 30, back = Math.min(t0, o.back != null ? o.back : 8), tEnd = Math.min(dur, o.t1 != null ? o.t1 : dur);
   const toPx = b => ({ cx: b.cx * W, cy: b.cy * H, w: Math.max(12, b.w * W), h: Math.max(12, b.h * H) });
-  const res = [];
+  const res = []; TRK.why = '';
   const total = (tEnd - (t0 - back)) || 1;
   let lastYield = performance.now();
   const breathe = async () => { if (performance.now() - lastYield > 40) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); } };
@@ -237,12 +248,18 @@ TRK.run = async (o) => {
     if (st && lastG && TRK.isCut(lastG, fr.data)) { TRK.why = 'střih ' + fr.t.toFixed(2); break; }   // střih → dál už je jiný záběr
     lastG = fr.data;
     const Q = TRK.pyramid(fr.data, W, H);
-    if (!st) { firstG = fr.data; st = TRK.init(toPx(box), Q); w0 = st.w; res.push({ t: fr.t, cx: st.cx, cy: st.cy, w: st.w, c: 1 }); prev = Q; st.Pfirst = Q; continue; }
+    if (!st) {
+      // prázdný (černý / jednobarevný) snímek = video se nepodařilo přečíst
+      let mn = 255, mx = 0; for (let i = 0; i < fr.data.length; i += 97) { const v = fr.data[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+      if (mx - mn < 8) { TRK.why = 'prázdný obraz'; return null; }
+      firstG = fr.data; st = TRK.init(toPx(box), Q); w0 = st.w; res.push({ t: fr.t, cx: st.cx, cy: st.cy, w: st.w, c: 1 }); prev = Q; st.Pfirst = Q; continue; }
     let n = TRK.step(st, prev, Q);
     if (!n) n = TRK.recover(st, Q);
     if (!n) { if (++lost > 8) { TRK.why = 'ztraceno ' + fr.t.toFixed(2); break; } prev = Q; continue; }   // ztraceno → pár snímků zkusit znovu, pak konec
     lost = 0; Object.assign(st, n); TRK.adapt(st, Q);
     res.push({ t: fr.t, cx: st.cx, cy: st.cy, w: st.w, c: n.conf });
+    // živý náhled: aktuální snímek + kde je objekt
+    if (o.onFrame && fr.canvas && res.length % 2 === 0) o.onFrame(fr.canvas, { cx: st.cx / W, cy: st.cy / H, w: st.w / W, h: st.h / H });
     prev = Q; await breathe();
   }
   // 2) zpátky od bodu (snímky před ním)

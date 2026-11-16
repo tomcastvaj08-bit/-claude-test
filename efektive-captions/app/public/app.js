@@ -1391,7 +1391,11 @@ function drawTrkPick(){
   // střed (sledovaný bod)
   const r=Math.min(B.w,B.h)*0.12; c.strokeStyle='#fff'; c.lineWidth=lw; c.beginPath(); c.moveTo(B.cx-r,B.cy); c.lineTo(B.cx+r,B.cy); c.moveTo(B.cx,B.cy-r); c.lineTo(B.cx,B.cy+r); c.stroke();
   if (!P.running){ const hr=Math.min(W,H)*0.028; c.fillStyle='#fff'; c.beginPath(); c.arc(B.cx+B.w/2,B.cy+B.h/2,hr,0,Math.PI*2); c.fill(); c.strokeStyle='#111'; c.lineWidth=hr*0.18; c.beginPath(); c.moveTo(B.cx+B.w/2-hr*0.45,B.cy+B.h/2+hr*0.45); c.lineTo(B.cx+B.w/2+hr*0.45,B.cy+B.h/2-hr*0.45); c.stroke(); }
-  else { const bw=W*0.6, bh=Math.max(4,H*0.008); c.fillStyle='rgba(255,255,255,.3)'; c.fillRect((W-bw)/2,H*0.06,bw,bh); c.fillStyle='#27e1c1'; c.fillRect((W-bw)/2,H*0.06,bw*P.prog,bh); }
+  else { const bw=W*0.6, bh=Math.max(4,H*0.008);
+    // živý náhled: snímek, který se právě sleduje, a kde na něm objekt je
+    if (P.live){ const L=P.live.box; c.drawImage(P.live.img,0,0,W,H); const lx=L.cx*W, ly=L.cy*H, lw2=L.w*W, lh2=L.h*H;
+      c.strokeStyle='#27e1c1'; c.lineWidth=lw*2; c.strokeRect(lx-lw2/2,ly-lh2/2,lw2,lh2); c.beginPath(); c.moveTo(lx-lw2*0.15,ly); c.lineTo(lx+lw2*0.15,ly); c.moveTo(lx,ly-lh2*0.15); c.lineTo(lx,ly+lh2*0.15); c.stroke(); }
+    c.fillStyle='rgba(255,255,255,.3)'; c.fillRect((W-bw)/2,H*0.06,bw,bh); c.fillStyle='#27e1c1'; c.fillRect((W-bw)/2,H*0.06,bw*P.prog,bh); }
   c.restore();
 }
 // značka sledovaného bodu u vybraného titulku / overlaye (při pauze)
@@ -1416,17 +1420,27 @@ async function trkRun(){
   try{
     v=await auxVideo();
     let last=0;
-    tr=await TRK.run({video:v, file:videoFile, t0, box, back:8, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; trkBarUpd(); } }, cancel:()=>P.cancel});
-  }catch(e){ console.warn(e); }
+    tr=await TRK.run({video:v, file:videoFile, t0, box, back:8, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; trkBarUpd(); } }, onFrame:(img,b)=>{ P.live={img,box:b}; }, cancel:()=>P.cancel});
+  }catch(e){ console.warn(e); TRK.why='chyba: '+(e&&e.message||e); }
   if (v) freeVideo(v);
   trkEnd();
-  if (!tr){ toast('Objekt se nepodařilo sledovat – zkus větší rámeček nebo výraznější místo'); return; }
+  if (!tr){ trkMsg(TRK.why==='prázdný obraz'?'Video se nepodařilo přečíst (prázdný obraz). Zkus video uložit znovu z Fotek a nahrát.':'Objekt se nepodařilo sledovat – zkus větší rámeček nebo výraznější místo'+(TRK.why?' ('+TRK.why+')':'')); return; }
   const id='k'+Date.now().toString(36);
   E.tracks[id]={id, t0, smooth:55, scale:false, t:tr.t, x:tr.x, y:tr.y, s:tr.s, c:tr.c};
-  P.setId(id); trkGC(); changed(); renderPanel();
-  const len=tr.t[tr.t.length-1]-tr.t[0];
-  toast(len<1 ? 'Objekt se rychle ztratil – zkus větší rámeček' : `Hotovo – sleduje objekt ${len.toFixed(1).replace('.',',')} s`);
+  P.setId(id);
+  // titulky: objekt sledují všechny titulky v úseku, kde se objekt sledoval
+  let n=1;
+  if (P.kind==='page'){ const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); n=0; for (const p of E.pages) if (p.e>a && p.s<b){ pageMeta(p).trk=id; n++; } }
+  trkGC(); changed(); renderPanel();
+  PV.currentTime=Math.max(0,E.src2out(tr.t[0])+0.05);
+  const len=tr.t[tr.t.length-1]-tr.t[0], L=len.toFixed(1).replace('.',',');
+  // pohyb objektu na obrazovce (ať je vidět, jestli se vůbec hýbe)
+  const mx=Math.max(...tr.x)-Math.min(...tr.x), my=Math.max(...tr.y)-Math.min(...tr.y), mv=Math.round(Math.max(mx,my)*100);
+  trkMsg(len<1 ? `Objekt se ztratil po ${L} s – zkus větší rámeček nebo výraznější místo${TRK.why?' ('+TRK.why+')':''}.`
+    : `Hotovo – objekt sledován ${L} s${P.kind==='page'?`, jede za ním ${n} ${n===1?'titulek':n<5?'titulky':'titulků'}`:''}. Objekt se na obrazovce posunul až o ${mv} %. Pusť video a uvidíš.`);
 }
+// delší zpráva (déle vidět než běžný toast)
+function trkMsg(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),6000); }
 $('trkGo').onclick=()=>trkRun();
 $('trkCancel').onclick=()=>{ if (!trkPick) return; if (trkPick.running) trkPick.cancel=true; else trkEnd(); };
 
