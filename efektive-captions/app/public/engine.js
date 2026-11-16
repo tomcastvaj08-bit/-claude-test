@@ -812,16 +812,21 @@ E.drawTransition=(c,W,H,t)=>{
 // ================= KLÍČOVÉ SNÍMKY VIDEA (zoom, posun, průhlednost) =================
 // E.kf=[{t, z(zoom %), x, y (posun v % šířky/výšky), op (%), ease}] – ease = průběh z předchozího klíčového snímku do tohoto
 E.kf=[];
-E.EASES=[['tok2','Tok 2'],['quad','Kvadratický'],['lin','Lineární']];
+E.EASES=[['tok1','Tok 1'],['tok2','Tok 2'],['quad','Kvadratický'],['lin','Lineární']];
+// průběh z rychlostního profilu v(q): plynulé (bez cuknutí), počítá se jednou do tabulky
+function easeFromSpeed(v){ const N=512, T=new Float32Array(N+1); let acc=0; T[0]=0; for (let i=1;i<=N;i++){ acc+=v((i-0.5)/N); T[i]=acc; } for (let i=1;i<=N;i++) T[i]/=acc;
+  return q=>{ if (q<=0) return 0; if (q>=1) return 1; const f=q*N, i=Math.floor(f); return T[i]+(T[i+1]-T[i])*(f-i); }; }
 const EASE={
-  tok2:q=>q<0.5?8*q*q*q*q:1-8*Math.pow(1-q,4),          // speedrampa: pomalý rozjezd → velmi rychlý střed → měkký dojezd (jeden plynulý pohyb)
-  quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),                       // plynulý rozjezd i dojezd
+  tok1:easeFromSpeed(q=>Math.exp(-Math.pow((q-0.5)/0.18,2))),   // speedrampa: pomalu → prudce zrychlí uprostřed → pomalu doletí (jeden plynulý pohyb)
+  tok2:easeFromSpeed(q=>Math.pow(q,1.2)*Math.pow(1-q,5)),        // rychlý nástup hned na začátku → dlouhý měkký dojezd
+  quad:q=>q<0.5?8*q*q*q*q:1-8*Math.pow(1-q,4),                  // plynulý rozjezd i dojezd (dřívější „Tok 2“)
   lin:q=>q,
 };
+E.EASE=EASE;
 E.kfAt=t=>{
   const K=E.kf; if (!K||!K.length) return null;
   if (t<=K[0].t) return K[0]; if (t>=K[K.length-1].t) return K[K.length-1];
-  for (let i=1;i<K.length;i++){ const b=K[i]; if (t<=b.t){ const a=K[i-1], q=(t-a.t)/Math.max(1e-6,b.t-a.t), e=(EASE[b.ease]||EASE.tok2)(Math.max(0,Math.min(1,q)));
+  for (let i=1;i<K.length;i++){ const b=K[i]; if (t<=b.t){ const a=K[i-1], q=(t-a.t)/Math.max(1e-6,b.t-a.t), e=(EASE[b.ease]||EASE.tok1)(Math.max(0,Math.min(1,q)));
     return {z:a.z+(b.z-a.z)*e, x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e, op:a.op+(b.op-a.op)*e}; } }
   return K[K.length-1];
 };

@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf});
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:2});
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -105,7 +105,7 @@ function restore(json){
   const s=JSON.parse(json);
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
   E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.map(c=>({...c})):null;
-  E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k})):[];
+  E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease: s.kfVer===2?k.ease:(k.ease==='tok2'?'quad':k.ease)})):[];   // starší projekty: dřívější „Tok 2“ = dnešní Kvadratický
   E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
@@ -567,7 +567,7 @@ const binders={};
 function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+(c.e-c.s); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
 function kfHere(){ const t=PV.currentTime; return E.kf.findIndex(k=>Math.abs(k.t-t)<0.05); }
 function kfVals(){ const k=E.kfAt(PV.currentTime); return k?{z:k.z,x:k.x,y:k.y,op:k.op}:{z:100,x:0,y:0,op:100}; }
-function kfEnsure(){ let i=kfHere(); if (i<0){ const v=kfVals(); E.kf.push({t:PV.currentTime,...v,ease:'tok2'}); E.kf.sort((a,b)=>a.t-b.t); i=kfHere(); } selKf=i; return E.kf[i]; }
+function kfEnsure(){ let i=kfHere(); if (i<0){ const v=kfVals(); E.kf.push({t:PV.currentTime,...v,ease:'tok1'}); E.kf.sort((a,b)=>a.t-b.t); i=kfHere(); } selKf=i; return E.kf[i]; }
 function pKf(noHead){
   const i=kfHere(); if (i>=0) selKf=i; const k=i>=0?E.kf[i]:null, v=k||kfVals();
   const rng=(lb,key,min,max,st,unit)=>`<label class="ctl"><div class="lb"><span>${lb}</span><span id="kf_${key}v">${Math.round(v[key]*10)/10}${unit}</span></div><input type="range" id="kf_${key}" min="${min}" max="${max}" step="${st}" value="${v[key]}"></label>`;
@@ -577,10 +577,10 @@ function pKf(noHead){
   ${rng('Posun doleva / doprava','x',-50,50,0.5,' %')}
   ${rng('Posun nahoru / dolů','y',-50,50,0.5,' %')}
   ${rng('Průhlednost videa','op',0,100,1,' %')}
-  ${k && i>0?`<div class="clabel">Průběh do tohoto snímku (speed rampa)</div><div class="eases" id="kfEase">${E.EASES.map(([e,l])=>`<div class="ease ${k.ease===e?'on':''} ${e==='tok2'?'gold':''}" data-v="${e}"><svg viewBox="0 0 60 40"><path d="${easePath(e)}"/></svg><span>${l}</span></div>`).join('')}</div>`:(k?'<div class="note">Průběh se nastavuje u druhého (a dalšího) klíčového bodu.</div>':'')}
+  ${k && i>0?`<div class="clabel">Průběh do tohoto snímku (speed rampa)</div><div class="eases" id="kfEase">${E.EASES.map(([e,l])=>`<div class="ease ${k.ease===e?'on':''} ${e==='tok1'?'gold':''}" data-v="${e}"><svg viewBox="0 0 60 40"><path d="${easePath(e)}"/></svg><span>${l}</span></div>`).join('')}</div>`:(k?'<div class="note">Průběh se nastavuje u druhého (a dalšího) klíčového bodu.</div>':'')}
   ${E.kf.length?`<button class="btn small" id="kfClear">Smazat všechny klíčové body</button>`:''}`;
 }
-function easePath(e){ const f={tok2:q=>q<0.5?8*q*q*q*q:1-8*Math.pow(1-q,4),quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),lin:q=>q}[e]; let d=''; for(let i=0;i<=20;i++){ const q=i/20; d+=(i?'L':'M')+(4+q*52).toFixed(1)+' '+(36-f(q)*32).toFixed(1); } return d; }
+function easePath(e){ const f=E.EASE[e]||E.EASE.lin; let d=''; for(let i=0;i<=20;i++){ const q=i/20; d+=(i?'L':'M')+(4+q*52).toFixed(1)+' '+(36-f(q)*32).toFixed(1); } return d; }
 binders.kf=()=>{
   for (const key of ['z','x','y','op']){ const el=$('kf_'+key); if (!el) continue;
     el.oninput=()=>{ const k=kfEnsure(); k[key]=+el.value; if (key!=='op'){ const f=vFit(k); k.z=f.z; k.x=f.x; k.y=f.y; vGuide=null; } $('kf_'+key+'v').textContent=(Math.round(+el.value*10)/10)+(key==='x'||key==='y'||key==='z'||key==='op'?' %':''); renderVideoTrack(); };
@@ -1023,7 +1023,7 @@ function renderVideoTrack(){
   tr.innerHTML=L.map((c,k)=>{ const x=pad+st[k]*pps, w=Math.max(4,(c.e-c.s)*pps-2); let im='';
     for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
     return `<div class="vb ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
-    + (E.kf||[]).map((k,i)=>`<div class="vkf ${i===selKf?'cur':''} ${k.ease==='tok2'?'gold':''}" data-kf="${i}" style="left:${pad+k.t*pps}px"></div>`).join('')
+    + (E.kf||[]).map((k,i)=>`<div class="vkf ${i===selKf?'cur':''} ${k.ease==='tok1'?'gold':''}" data-kf="${i}" style="left:${pad+k.t*pps}px"></div>`).join('')
     + L.map((c,k)=>k? `<div class="vtr ${c.tr&&c.tr!=='none'?'on':''}" data-tr="${k}" style="left:${pad+st[k]*pps}px" title="Přechod">${I(c.tr&&c.tr!=='none'?'sparkles':'plus')}</div>`:'').join('');
 }
 // --- úpravy výsledného času (titulky, zóny, overlaye) při střihu ---
@@ -1181,10 +1181,10 @@ const videoMode=()=>panel==='clip' && selClip>=0;
 let vGuide=null;
 function vFit(v){
   let z=v.z; const g={};
-  if (z<100){ z=100; } if (z<104){ z=100; g.fit=true; }
+  if (z<101.2){ z=100; g.fit=true; }
   const lim=(z/100-1)*50;                       // max posun v % (aby okraj videa nevjel dovnitř)
   let x=clamp(v.x,-lim,lim), y=clamp(v.y,-lim,lim);
-  const mag=1.6;
+  const mag=1;
   if (Math.abs(x)<mag){ x=0; g.cx=true; } if (Math.abs(y)<mag){ y=0; g.cy=true; }
   if (lim>0){ if (lim-x<mag){ x=lim; g.l=true; } if (lim+x<mag){ x=-lim; g.r=true; } if (lim-y<mag){ y=lim; g.t=true; } if (lim+y<mag){ y=-lim; g.b=true; } }
   vGuide=g; return {z:Math.round(z*10)/10, x:Math.round(x*10)/10, y:Math.round(y*10)/10};
@@ -1208,14 +1208,20 @@ function kfSet(vals){ const cur0=kfVals(); if (kfHere()<0 && ['z','x','y','op'].
 function syncVmode(){ $('stage').classList.toggle('vmode',videoMode()); const i=E.kf.findIndex(k=>Math.abs(k.t-PV.currentTime)<0.05); $('kfTop').classList.toggle('on',i>=0); }
 const ptrs=new Map(); let gest=null;
 function cvPt(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]; }
-cv.addEventListener('pointerdown',e=>{
-  if (inlineOpen) return;
-  try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,cvPt(e));
+const stg=$('stage');
+const stgOK=e=>e.target===cv||e.target===stg;
+stg.addEventListener('gesturestart',e=>e.preventDefault()); stg.addEventListener('gesturechange',e=>e.preventDefault());
+const pinchFrom=v=>{ const [a,b]=[...ptrs.values()]; return {type:'vpinch',d0:Math.max(1,Math.hypot(a[0]-b[0],a[1]-b[1])),m0:[(a[0]+b[0])/2,(a[1]+b[1])/2],v0:v,moved:true}; };
+stg.addEventListener('pointerdown',e=>{
+  if (inlineOpen || !stgOK(e)) return;
+  try{ stg.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,cvPt(e));
   const [x,y]=cvPt(e), hr=Math.min(cv.width,cv.height)*0.05;
   if (videoMode()){ vid.pause(); const v=kfVals();
-    if (ptrs.size>=2){ const [a,b]=[...ptrs.values()]; gest={type:'vpinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),m0:[(a[0]+b[0])/2,(a[1]+b[1])/2],v0:v,moved:false}; }
+    if (ptrs.size>=2) gest=pinchFrom(v);
     else gest={type:'vpan',x0:x,y0:y,v0:v,moved:false};
     return; }
+  // druhý prst mimo titulky = zoom videa i bez vybraného klipu
+  if (ptrs.size>=2 && gest && (gest.type==='tap'||gest.type==='vpan')){ vid.pause(); gest=pinchFrom(kfVals()); return; }
   if (ptrs.size===2 && gest && gest.type==='move'){ const [a,b]=[...ptrs.values()]; gest={type:'pinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),size0:cur().size}; return; }
   // overlay?
   const t=PV.currentTime;
@@ -1230,14 +1236,14 @@ cv.addEventListener('pointerdown',e=>{
   }
   gest={type:'tap',x0:x,y0:y,v0:kfVals()};
 });
-cv.addEventListener('pointermove',e=>{
+stg.addEventListener('pointermove',e=>{
   if (!ptrs.has(e.pointerId)||!gest) return; ptrs.set(e.pointerId,cvPt(e)); const [x,y]=cvPt(e);
   if (gest.type==='vpan'){
-    if (ptrs.size>=2){ const [a,b]=[...ptrs.values()]; gest={type:'vpinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),m0:[(a[0]+b[0])/2,(a[1]+b[1])/2],v0:kfVals(),moved:false}; return; }
-    if (Math.hypot(x-gest.x0,y-gest.y0)<6 && !gest.moved) return; gest.moved=true;
+    if (ptrs.size>=2){ gest=pinchFrom(kfVals()); return; }
+    if (Math.hypot(x-gest.x0,y-gest.y0)<4 && !gest.moved) return; gest.moved=true;
     kfSet(vFit({z:gest.v0.z, x:gest.v0.x+(x-gest.x0)/cv.width*100, y:gest.v0.y+(y-gest.y0)/cv.height*100})); return; }
   if (gest.type==='vpinch'){ if (ptrs.size<2) return; const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]), m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-    gest.moved=true; const W=cv.width, H=cv.height, s0=gest.v0.z/100, s1=clamp(s0*d/Math.max(1,gest.d0),0.92,4);
+    gest.moved=true; const W=cv.width, H=cv.height, s0=gest.v0.z/100, s1=clamp(s0*d/gest.d0,0.9,6);
     // bod videa pod středem prstů zůstává pod prsty (zoom kolem prstů + posun dvěma prsty)
     const T0x=gest.v0.x/100*W, T0y=gest.v0.y/100*H, px=(gest.m0[0]-W/2-T0x)/s0, py=(gest.m0[1]-H/2-T0y)/s0;
     const Tx=m[0]-W/2-px*s1, Ty=m[1]-H/2-py*s1;
@@ -1251,12 +1257,15 @@ cv.addEventListener('pointermove',e=>{
   else if (gest.type==='pinch' && ptrs.size>=2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }
 });
 function endPtr(e){
-  ptrs.delete(e.pointerId); if (ptrs.size) return;
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (ptrs.size===1 && gest && gest.type==='vpinch'){ const [x,y]=[...ptrs.values()][0]; gest={type:'vpan',x0:x,y0:y,v0:kfVals(),moved:true}; return; }
+  if (ptrs.size) return;
   if (gest && (gest.type==='vpan'||gest.type==='vpinch')){ if (gest.moved){ changed(); renderPanel(); } else togglePlay(); gest=null; vGuide=null; return; }
   if (gest){ if (gest.type==='tap'){ selOv=null; togglePlay(); } else if (gest.type!=='move'||gest.moved) { changed(); if (panel==='style'||panel==='overlay') renderPanel(); } else if (gest.type==='move' && !gest.moved){ markCur(); if (panel==='captions') renderPanel(); } }
   gest=null; guides=false;
 }
-cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
+stg.addEventListener('pointerup',endPtr); stg.addEventListener('pointercancel',endPtr);
 
 // ================= EXPORT =================
 $('exportBtn').onclick=()=>{
