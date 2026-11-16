@@ -829,6 +829,11 @@ function glQuad(src,dst,q){
   dst.drawImage(g.c,0,g.c.height-rh,rw,rh,rx,ry,rw,rh);
   return true;
 }
+// pořadí vrstev: overlaye mají z (vyšší = víc vpředu), titulky jsou jeden blok se z = E.capZ
+E.capZ=0;
+E.ovZ=o=>o.z!=null? o.z : (o.above?1:-1)+E.overlays.indexOf(o)*0.001;
+E.ovAbove=o=>E.ovZ(o)>(E.capZ||0);
+E.ovOrder=()=>E.overlays.filter(o=>!o.full).sort((a,b)=>E.ovZ(a)-E.ovZ(b));
 E.overlayBox = (o) => { const W=cv.width,H=cv.height, tro=o.trk&&E._t!=null?E.trkOffset(o.trk,E._t):null; let wpx=W*o.w/100; if (tro && E.tracks[o.trk].scale) wpx*=tro.k; let h=wpx; if (o.src&&(o.src.naturalWidth||o.src.videoWidth)){ const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; } return {cx:W*(o.x+(tro?tro.dx:0))/100, cy:H*(o.y+(tro?tro.dy:0))/100, w:wpx, h}; };
 
 // ---------- TEXT ZA POSTAVOU ----------
@@ -984,13 +989,13 @@ E.render = (t, opts={}) => {
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
   if (window.OBJ && E.objs && E.objs.length && !F.transparent) OBJ.draw(ctx,cv.width,cv.height,t);   // zvýrazněné objekty (shine, obrys, výplň)
   // overlaye pod titulky
-  for (const o of E.overlays) if (!o.above && !o.full) E.drawOverlay(ctx,o,t);
+  for (const o of E.ovOrder()) if (!E.ovAbove(o)) E.drawOverlay(ctx,o,t);
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni
   // samostatný mód 3D mix (kostka): vlastní vykreslení titulků
-  if (E.G.mix3d && !F.hidden && E.drawMix){ E.lastBox=null; E.lastLines=null; E.drawMix(ctx,t); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.shadowColor='transparent'; for (const o of E.overlays) if (o.above && !o.full) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
+  if (E.G.mix3d && !F.hidden && E.drawMix){ E.lastBox=null; E.lastLines=null; E.drawMix(ctx,t); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.shadowColor='transparent'; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);
-  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.overlays) if (o.above && !o.full) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
+  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   let mainLines=null, mainS=null, behind=false;
   for (const kk of ks){
     const r=drawPage(kk,t);
@@ -1000,7 +1005,7 @@ E.render = (t, opts={}) => {
   E.lastLines=mainLines;
   // text za postavou: přes titulky se znovu nakreslí jen postava z videa
   if (behind && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }
-  for (const o of E.overlays) if (o.above && !o.full) E.drawOverlay(ctx,o,t);
+  for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t);
   E.drawWatermark(ctx,cv.width,cv.height);
   if (opts.box && mainLines) E.drawBox(mainLines,mainS);
 };

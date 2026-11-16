@@ -99,7 +99,7 @@ button,select,input,textarea{font:inherit;color:inherit}
 .inline-edit{position:absolute;left:8%;right:8%;top:38%;background:rgba(0,0,0,.75);border:2px solid #fff;border-radius:12px;color:#fff;font-size:20px;font-weight:800;text-align:center;padding:10px;outline:none;resize:none}
 .inline-bar{position:absolute;left:8%;right:8%;top:calc(38% + 110px);display:flex;justify-content:space-between}
 .ctrl{display:flex;align-items:center;padding:4px 8px;flex:none}
-.ctrl .tm{width:96px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ctrl .tm{width:84px;white-space:nowrap;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ctrl-c{flex:1;display:flex;justify-content:center;gap:8px}
 .ctrl-r{width:96px;display:flex;justify-content:flex-end}
 .ico.play{background:#fff;color:#000;border-radius:50%;font-size:16px}
@@ -443,3 +443,12 @@ button.pro.on{background:var(--green)}
 .objcols i.on{outline:3px solid #2b5cff;outline-offset:2px}
 .objcols .cpick{width:30px;height:30px;border:2px dashed var(--line);position:relative;overflow:hidden;cursor:pointer}
 .objcols .cpick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+
+/* vrstvy */
+.laylist{display:flex;flex-direction:column;gap:8px;margin-top:10px;touch-action:none;user-select:none;-webkit-user-select:none}
+.lay{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--line);box-shadow:inset 0 1px 0 #fff,3px 3px 0 rgba(10,13,20,.08);cursor:grab;transition:box-shadow .15s}
+.lay.drag{position:relative;z-index:2;box-shadow:0 10px 24px rgba(10,13,20,.22);cursor:grabbing;transition:none;background:#fff}
+.lay.fixed{opacity:.6;cursor:default}
+.lay-i{display:flex}.lay-i .ic{width:24px;height:24px}
+.lay-t{flex:1;display:flex;flex-direction:column;line-height:1.2}.lay-t small{color:var(--muted);font-size:12px}
+.lay-h{display:flex;color:var(--muted)}.lay-h .ic{width:22px;height:22px}

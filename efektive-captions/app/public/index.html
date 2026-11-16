@@ -116,6 +116,7 @@
       <button class="ico" id="redoBtn" title="Znovu"><svg class="ic"><use href="#i-redo"/></svg></button>
     </div>
     <div class="ctrl-r">
+      <button class="ico" id="layersBtn" title="Vrstvy"><svg class="ic"><use href="#i-layers"/></svg></button>
       <button class="ico" id="kfTop" title="Klíčový bod (přidat / smazat)"><svg class="ic"><use href="#i-kf"/></svg></button>
       <button class="ico" id="eyeBtn" title="Skrýt titulky"><svg class="ic"><use href="#i-eye"/></svg></button>
       <button class="ico" id="fsBtn" title="Velký náhled"><svg class="ic"><use href="#i-maximize"/></svg></button>
@@ -163,6 +164,12 @@
   <div class="frow"><input class="inp" id="findIn" placeholder="Najít"><input class="inp" id="replIn" placeholder="Nahradit"><button class="btn small" id="replBtn">Nahradit vše</button></div>
   <textarea id="batchText" class="inp mono" rows="14"></textarea>
   <button class="btn primary" id="batchOk">Uložit</button>
+</div></div>
+
+<div class="sheet" id="sheetLayers"><div class="sh">
+  <div class="sh-h"><b>Vrstvy v tomhle místě</b><button class="ico" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="muted">Nahoře = vpředu. Chyť vrstvu prstem a přetáhni ji výš nebo níž.</div>
+  <div id="layList" class="laylist"></div>
 </div></div>
 
 <div class="sheet" id="sheetDict"><div class="sh">
