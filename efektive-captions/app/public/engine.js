@@ -747,9 +747,14 @@ function project3D(src, bx, by, S, target){
 
 // ---------- OVERLAY (nálepky / obrázky přes video) ----------
 // o = {id, src:Image|Video|null, emoji?, s, e, x, y (střed v %), w (% šířky), rot, anim, wiggle, above}
+// čas uvnitř video overlaye: od začátku overlaye, se zpomalením / zrychlením (speed), dokola
+E.ovTime=(o,t)=>{ const el=o.src, d=(el&&el.duration&&isFinite(el.duration))?el.duration:0, v=Math.max(0,(t-o.s)*(o.speed||1)); return d>0.05 ? (v % d) : v; };
 E.drawOverlay = (c, o, t) => {
   if (o.emoji) return;   // emoji nálepky už aplikace nemá (ani ze starých projektů)
   if (t<o.s || t>o.e) return;
+  // video bez obrazu (ještě nenačtené) nekreslit – dřív z toho byl černý čtverec
+  if (o.src && o.src.tagName==='VIDEO' && (o.src.readyState<2 || !o.src.videoWidth)) return;
+  if (o.src && o.src.tagName==='IMG' && !o.src.naturalWidth) return;
   const W=cv.width, H=cv.height, since=t-o.s, left=o.e-t;
   // překrytí celého videa (náhrada úseku): přes celý obraz, bez animace a bez wiggle, pod titulky
   if (o.full){

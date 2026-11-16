@@ -1030,7 +1030,13 @@ binders.overlay=()=>{
 };
 async function loadAsset(id,blob){
   const url=URL.createObjectURL(blob); let el;
-  if (blob.type.startsWith('video')){ el=document.createElement('video'); el.src=url; el.muted=true; el.loop=true; el.playsInline=true; el.preload='auto'; await new Promise(r=>{ el.onloadeddata=r; el.onerror=r; }); el.play().catch(()=>{}); }
+  if (blob.type.startsWith('video')){
+    // iPhone: video musí být v dokumentu (skryté) a „inline“, jinak po otevření projektu nedá obraz ani se nespustí
+    el=document.createElement('video'); el.muted=true; el.loop=false; el.playsInline=true; el.setAttribute('playsinline',''); el.setAttribute('muted',''); el.preload='auto'; el.className='srcvid';
+    document.body.appendChild(el); el.src=url;
+    await new Promise(r=>{ el.onloadeddata=r; el.onloadedmetadata=()=>setTimeout(r,400); el.onerror=r; setTimeout(r,6000); });
+    el.play().then(()=>el.pause()).catch(()=>{});   // „probudit“ dekodér (když to iPhone dovolí)
+  }
   else { el=new Image(); el.src=url; await new Promise(r=>{ el.onload=r; el.onerror=r; }); }
   ovAssets[id]={blob,el,type:blob.type}; return el;
 }
@@ -1042,12 +1048,14 @@ $('ovFullIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; 
   toast('Nová verze záběru položená přes video od místa hlavy'); };
 // synchronizace překrytí videa s časem (přehrávání i posouvání)
 function syncOverlays(t,playing){
-  for (const o of E.overlays){ const el=o.src; if (!o.sync || !el || el.tagName!=='VIDEO') continue;
+  for (const o of E.overlays){ const el=o.src; if (!el || el.tagName!=='VIDEO') continue;
     if (t<o.s || t>o.e){ if (!el.paused) el.pause(); continue; }
-    const want=t-o.s;
+    const want=E.ovTime(o,t);
     if (playing){ if (el.paused) el.play().catch(()=>{}); if (Math.abs(el.currentTime-want)>0.15) el.currentTime=want; }
     else { if (!el.paused) el.pause(); if (Math.abs(el.currentTime-want)>0.03 && !el.seeking) el.currentTime=want; }
   } }
+function wakeOverlays(){ for (const o of E.overlays){ const el=o.src; if (el && el.tagName==='VIDEO' && el.paused && el.readyState<2) el.play().then(()=>{ if (vid.paused) el.pause(); }).catch(()=>{}); } }
+document.addEventListener('pointerdown',wakeOverlays,{passive:true,capture:true});
 $('ovIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const id='a'+Date.now(); const el=await loadAsset(id,f); addOverlay({asset:id,src:el}); };
 function addOverlay(o){
   const t=PV.currentTime; const ov={id:Date.now()%1e9, s:t, e:Math.min(PV.duration,t+2), x:50, y:35, w:o.emoji?22:40, rot:0, anim:'pop', wiggle:false, above:false, ...o};

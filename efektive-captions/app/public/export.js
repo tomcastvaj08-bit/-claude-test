@@ -156,7 +156,7 @@ X.exportVideo = async (opts) => {
       if (err) throw err;
       const t=i/fps;
       // překrytí videa novou verzí: přesný snímek v čase t
-      for (const o of E.overlays){ if (!o.sync || !o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e) continue; o.src.pause(); const want=Math.min(t-o.s,(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
+      for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e) continue; o.src.pause(); const want=Math.min(E.ovTime(o,t),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
       if (src){
         const fr=await src.frameAt(o2s(t));
         E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
