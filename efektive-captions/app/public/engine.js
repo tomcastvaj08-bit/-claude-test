@@ -590,7 +590,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
 }
 
 // ---------- 3D perspektiva (cedule otočená v prostoru) ----------
-let vframe=null, vfc=null, vfOk=false, vfFor=null;
+let vframe=null, vfc=null, vfOk=false, vfFor=null, vfN=0;
 let gblur=null, gbc=null, gblur2=null, gbc2=null;
 const SB={}; function shineBlur(i,w,h){ let o=SB[i]; if(!o){ const cv2=document.createElement('canvas'); o=SB[i]={cv:cv2,c:cv2.getContext('2d')}; } if (o.cv.width!==w||o.cv.height!==h){ o.cv.width=w; o.cv.height=h; } else o.c.clearRect(0,0,w,h); o.w=w; o.h=h; o.c.imageSmoothingEnabled=true; o.c.imageSmoothingQuality='high'; return o; }
 let halo=null, haloC=null; function haloCtx(w,h){ if(!halo){ halo=document.createElement('canvas'); haloC=halo.getContext('2d'); } if (halo.width!==w||halo.height!==h){ halo.width=w; halo.height=h; } else { haloC.setTransform(1,0,0,1,0,0); haloC.clearRect(0,0,w,h); } haloC.setTransform(1,0,0,1,0,0); haloC.globalCompositeOperation='source-over'; return haloC; }
@@ -846,10 +846,12 @@ E.render = (t, opts={}) => {
     // čistý podklad + poslední dobrý snímek videa: když iPhone snímek zrovna nedá, nezůstane na plátně starý obraz se starými titulky
     if (!vframe||vframe.width!==cv.width||vframe.height!==cv.height){ vframe=document.createElement('canvas'); vframe.width=cv.width; vframe.height=cv.height; vfc=vframe.getContext('2d'); vfOk=false; }
     if (vfFor!==vid){ vfFor=vid; vfOk=false; }
-    if (vid.readyState>=2){ try{ vfc.drawImage(vid,0,0,cv.width,cv.height); vfOk=true; }catch(e){} }
+    const k=E.kfAt(t), zoomed=!!(k && (k.z!==100 || k.x || k.y || k.op<100));
+    // záložní kopie snímku: při zoomu jen občas (jinak by se každý snímek kopíroval dvakrát → sekání na iPhonu)
+    vfN=(vfN+1)%8;
+    if (vid.readyState>=2 && (!zoomed || !vfOk || vfN===0)){ try{ vfc.drawImage(vid,0,0,cv.width,cv.height); vfOk=true; }catch(e){} }
     ctx.fillStyle='#000'; ctx.fillRect(0,0,cv.width,cv.height);
-    const k=E.kfAt(t);
-    if (k && (k.z!==100 || k.x || k.y || k.op<100)){
+    if (zoomed){
       // zoom: výřez přímo z plného rozlišení videa (ostré, plynulé), ne zvětšený malý snímek
       const W=cv.width, H=cv.height, sc=Math.max(1,k.z/100), Tx=k.x/100*W, Ty=k.y/100*H;
       const qx0=W/2+(-W/2-Tx)/sc, qy0=H/2+(-H/2-Ty)/sc, qw=W/sc, qh=H/sc;
