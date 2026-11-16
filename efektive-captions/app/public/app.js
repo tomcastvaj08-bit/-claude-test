@@ -1204,7 +1204,7 @@ function drawVGuide(){
   c.restore();
 }
 let kfTrackT=0;
-function kfSet(vals){ const n=E.kf.length; const k=kfEnsure(); Object.assign(k,vals); if (E.kf.length!==n) renderVideoTrack(); }   // během gesta nepřekreslovat timeline (plynulost)
+function kfSet(vals){ const cur0=kfVals(); if (kfHere()<0 && ['z','x','y','op'].every(k=>vals[k]==null||Math.abs(vals[k]-cur0[k])<0.05)) return; const n=E.kf.length; const k=kfEnsure(); Object.assign(k,vals); if (E.kf.length!==n) renderVideoTrack(); }   // během gesta nepřekreslovat timeline (plynulost)
 function syncVmode(){ $('stage').classList.toggle('vmode',videoMode()); const i=E.kf.findIndex(k=>Math.abs(k.t-PV.currentTime)<0.05); $('kfTop').classList.toggle('on',i>=0); }
 const ptrs=new Map(); let gest=null;
 function cvPt(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]; }
@@ -1228,7 +1228,7 @@ cv.addEventListener('pointerdown',e=>{
     const P=B.P, inside=x>Math.min(...P.map(p=>p[0]))-hr&&x<Math.max(...P.map(p=>p[0]))+hr&&y>Math.min(...P.map(p=>p[1]))-hr&&y<Math.max(...P.map(p=>p[1]))+hr;
     if (inside){ const S=cur(); gest={type:'move',x0:x,y0:y,px:S.posX,py:S.posY,moved:false}; return; }
   }
-  gest={type:'tap',x0:x,y0:y};
+  gest={type:'tap',x0:x,y0:y,v0:kfVals()};
 });
 cv.addEventListener('pointermove',e=>{
   if (!ptrs.has(e.pointerId)||!gest) return; ptrs.set(e.pointerId,cvPt(e)); const [x,y]=cvPt(e);
@@ -1242,6 +1242,8 @@ cv.addEventListener('pointermove',e=>{
     const T0x=gest.v0.x/100*W, T0y=gest.v0.y/100*H, px=(gest.m0[0]-W/2-T0x)/s0, py=(gest.m0[1]-H/2-T0y)/s0;
     const Tx=m[0]-W/2-px*s1, Ty=m[1]-H/2-py*s1;
     kfSet(vFit({z:s1*100, x:Tx/W*100, y:Ty/H*100})); return; }
+  if (gest.type==='tap' && Math.hypot(x-gest.x0,y-gest.y0)>8){ gest={type:'vpan',x0:gest.x0,y0:gest.y0,v0:gest.v0,moved:true}; }   // tah mimo titulky = posun videa
+  if (gest.type==='vpan' && !videoMode()){ kfSet(vFit({z:gest.v0.z, x:gest.v0.x+(x-gest.x0)/cv.width*100, y:gest.v0.y+(y-gest.y0)/cv.height*100})); return; }
   if (gest.type==='ov'){ gest.moved=true; gest.o.x=clamp(gest.ox+(x-gest.x0)/cv.width*100,0,100); gest.o.y=clamp(gest.oy+(y-gest.y0)/cv.height*100,0,100); }
   else if (gest.type==='move'){ if (Math.hypot(x-gest.x0,y-gest.y0)>6){ gest.moved=true; guides=true; } if (!gest.moved) return;
     let nx=gest.px+(x-gest.x0)/cv.width*100, ny=gest.py+(y-gest.y0)/cv.height*100; if (Math.abs(nx-50)<1.5) nx=50; setVal('posX',+nx.toFixed(1),true); setVal('posY',+clamp(ny,3,97).toFixed(1),true); }
@@ -1264,15 +1266,15 @@ $('exportBtn').onclick=()=>{
   $('exRes').innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
   const q=$('quality').value; if ([...$('exRes').options].some(o=>o.value===q)) $('exRes').value=q;
   $('exDl').classList.add('hidden'); $('exStatus').textContent=EXP.canPrecise()?'':'Tento prohlížeč neumí přesný export – použije se nahrávání v reálném čase.';
-  $('exGo').classList.remove('hidden'); $('exBarW').classList.add('hidden'); $('exMore').open=false;
+  $('exGo').classList.remove('hidden'); $('exGo').textContent='Exportovat'; $('exBarW').classList.add('hidden'); $('exMore').open=true;
   openSheet('sheetExport');
-  runExport();   // export hned po kliknutí – nastavení jsou schovaná v „Další možnosti“
 };
 let exCancel=null;
 $('exCancel').onclick=()=>{ if (exCancel) exCancel.v=true; };
 $('exGo').onclick=()=>runExport();
 async function runExport(){
   if (exCancel) return;
+  $('exMore').open=false;
   const r=$('exRes').value, short=Math.min(fullW,fullH), sc=r==='orig'?1:(+r)/short;
   const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2, fps=+$('exFps').value, mode=segVal('exMode');
   $('exGo').classList.add('hidden'); $('exCancel').classList.remove('hidden'); $('exBarW').classList.remove('hidden'); $('exDl').classList.add('hidden');
@@ -1295,7 +1297,7 @@ async function runExport(){
       if (navigator.canShare){ const f=new File([res.blob],a.download,{type:res.blob.type}); if (navigator.canShare({files:[f]})){ ev.preventDefault(); try{ await navigator.share({files:[f]}); }catch(e){} } } };
     window.__lastExport=res;
   }catch(e){ console.error(e); $('exStatus').textContent='Export se nepovedl: '+e.message; }
-  finally{ $('exCancel').classList.add('hidden'); $('exGo').classList.remove('hidden'); exCancel=null; }
+  finally{ $('exCancel').classList.add('hidden'); $('exGo').classList.remove('hidden'); $('exGo').textContent='Exportovat znovu'; exCancel=null; }
 }
 $('quality').onchange=()=>toast('Kvalita exportu: '+$('quality').selectedOptions[0].textContent);
 
