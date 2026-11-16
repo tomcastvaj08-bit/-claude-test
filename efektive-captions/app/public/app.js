@@ -86,7 +86,7 @@ async function renderProjects(){
 }
 $('projects').onclick=async e=>{
   const d=e.target.closest('[data-del]');
-  if (d){ e.stopPropagation(); if (confirm('Smazat projekt?')){ await dbDo('readwrite',st=>st.delete(d.dataset.del)); try{ await dbDo('readwrite',st=>st.delete(d.dataset.del),'files'); }catch(e){} renderProjects(); } return; }
+  if (d){ e.stopPropagation(); if (confirm('Smazat projekt?')){ try{ const r0=await dbDo('readonly',st=>st.get(d.dataset.del)); for (const a of (r0&&r0.assets)||[]) await dbDo('readwrite',st=>st.delete(d.dataset.del+'|'+a.id),'files'); }catch(e){} await dbDo('readwrite',st=>st.delete(d.dataset.del)); try{ await dbDo('readwrite',st=>st.delete(d.dataset.del),'files'); }catch(e){} renderProjects(); } return; }
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
@@ -129,7 +129,9 @@ async function saveProject0(){
   dedupeWords();
   try{
     const th=document.createElement('canvas'); const sc=240/Math.max(cv.width,cv.height); th.width=Math.round(cv.width*sc); th.height=Math.round(cv.height*sc); th.getContext('2d').drawImage(cv,0,0,th.width,th.height);
-    const assets=Object.entries(ovAssets).map(([id,a])=>({id,blob:a.blob,type:a.type}));
+    // overlay soubory: uložit JEDNOU do samostatného úložiště (opakované ukládání stejného souboru ho na iPhonu rozbije)
+    for (const [id,a] of Object.entries(ovAssets)) if (!a.saved && a.blob){ await dbDo('readwrite',st=>st.put({id:project.id+'|'+id,file:a.blob,fileName:id}),'files'); a.saved=true; }
+    const assets=Object.entries(ovAssets).map(([id,a])=>({id,type:a.type,inFiles:true}));
     // video jen jednou (je velké); pak se ukládají jen úpravy
     if (!project.fileSaved){ await dbDo('readwrite',st=>st.put({id:project.id,file:videoFile,fileName:videoFile.name}),'files'); project.fileSaved=true; }
     const rec={id:project.id,name:project.name,created:project.created,updated:Date.now(),thumb:th.toDataURL('image/jpeg',0.7),fileName:videoFile.name,state:snapshot(),assets,analysed};
@@ -144,7 +146,17 @@ async function openProject(id){
   let fileRec=null; try{ fileRec=await dbDo('readonly',st=>st.get(id),'files'); }catch(e){}
   const raw=(fileRec&&fileRec.file)||rec.file; if (!raw){ show('home'); homeMsg('Video k projektu se nenašlo.'); return; }
   project={id:rec.id,name:rec.name,created:rec.created,fileSaved:!!fileRec};   // starý projekt (video v záznamu) se při uložení převede
-  for (const a of rec.assets||[]) await loadAsset(a.id,a.blob,a.type);
+  let missing=0;
+  for (const a of rec.assets||[]){
+    let blob=a.blob, fromFiles=false;
+    if (!blob){ try{ const fr=await dbDo('readonly',st=>st.get(rec.id+'|'+a.id),'files'); blob=fr&&fr.file; fromFiles=!!blob; }catch(e){} }
+    if (!blob){ missing++; continue; }
+    // načíst data hned do paměti (soubor z úložiště iPhone jinak někdy nejde přehrát)
+    let mem; try{ mem=new Blob([await blob.arrayBuffer()],{type:blob.type||a.type||''}); }catch(e){ console.warn('Overlay soubor je poškozený',e); missing++; continue; }
+    if (!mem.size){ missing++; continue; }
+    await loadAsset(a.id,mem,a.type); if (fromFiles) ovAssets[a.id].saved=true;
+  }
+  if (missing) setTimeout(()=>toast(`${missing===1?'Jeden overlay':'Některé overlaye'} se nepodařilo načíst – vlož ho prosím znovu (Overlay → Přidat)`),1200);
   busy('Otevírám projekt…','Načítám video',0.5);
   await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
   restore(rec.state); analysed={...(rec.analysed||analysed)}; analysed.face=!!E.face;
