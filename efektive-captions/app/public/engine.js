@@ -814,7 +814,7 @@ E.drawTransition=(c,W,H,t)=>{
 E.kf=[];
 E.EASES=[['tok2','Tok 2'],['quad','Kvadratický'],['lin','Lineární']];
 const EASE={
-  tok2:q=>{ const d=q-0.5; return 0.5+4*d*d*d; },            // rychle – zpomalí uprostřed – rychle (jako „Tok 2“)
+  tok2:q=>q<0.5?8*q*q*q*q:1-8*Math.pow(1-q,4),          // speedrampa: pomalý rozjezd → velmi rychlý střed → měkký dojezd (jeden plynulý pohyb)
   quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),                       // plynulý rozjezd i dojezd
   lin:q=>q,
 };

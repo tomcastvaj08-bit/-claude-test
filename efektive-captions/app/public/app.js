@@ -579,7 +579,7 @@ function pKf(noHead){
   ${k && i>0?`<div class="clabel">Průběh do tohoto snímku (speed rampa)</div><div class="eases" id="kfEase">${E.EASES.map(([e,l])=>`<div class="ease ${k.ease===e?'on':''} ${e==='tok2'?'gold':''}" data-v="${e}"><svg viewBox="0 0 60 40"><path d="${easePath(e)}"/></svg><span>${l}</span></div>`).join('')}</div>`:(k?'<div class="note">Průběh se nastavuje u druhého (a dalšího) klíčového bodu.</div>':'')}
   ${E.kf.length?`<button class="btn small" id="kfClear">Smazat všechny klíčové body</button>`:''}`;
 }
-function easePath(e){ const f={tok2:q=>{const d=q-0.5;return 0.5+4*d*d*d;},quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),lin:q=>q}[e]; let d=''; for(let i=0;i<=20;i++){ const q=i/20; d+=(i?'L':'M')+(4+q*52).toFixed(1)+' '+(36-f(q)*32).toFixed(1); } return d; }
+function easePath(e){ const f={tok2:q=>q<0.5?8*q*q*q*q:1-8*Math.pow(1-q,4),quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),lin:q=>q}[e]; let d=''; for(let i=0;i<=20;i++){ const q=i/20; d+=(i?'L':'M')+(4+q*52).toFixed(1)+' '+(36-f(q)*32).toFixed(1); } return d; }
 binders.kf=()=>{
   for (const key of ['z','x','y','op']){ const el=$('kf_'+key); if (!el) continue;
     el.oninput=()=>{ const k=kfEnsure(); k[key]=+el.value; $('kf_'+key+'v').textContent=(Math.round(+el.value*10)/10)+(key==='x'||key==='y'||key==='z'||key==='op'?' %':''); renderVideoTrack(); };
