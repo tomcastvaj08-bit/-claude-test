@@ -808,20 +808,47 @@ E.drawTransition=(c,W,H,t)=>{
   }
 };
 
+
+// ================= KLÍČOVÉ SNÍMKY VIDEA (zoom, posun, průhlednost) =================
+// E.kf=[{t, z(zoom %), x, y (posun v % šířky/výšky), op (%), ease}] – ease = průběh z předchozího klíčového snímku do tohoto
+E.kf=[];
+E.EASES=[['tok2','Tok 2'],['quad','Kvadratický'],['lin','Lineární']];
+const EASE={
+  tok2:q=>{ const d=q-0.5; return 0.5+4*d*d*d; },            // rychle – zpomalí uprostřed – rychle (jako „Tok 2“)
+  quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),                       // plynulý rozjezd i dojezd
+  lin:q=>q,
+};
+E.kfAt=t=>{
+  const K=E.kf; if (!K||!K.length) return null;
+  if (t<=K[0].t) return K[0]; if (t>=K[K.length-1].t) return K[K.length-1];
+  for (let i=1;i<K.length;i++){ const b=K[i]; if (t<=b.t){ const a=K[i-1], q=(t-a.t)/Math.max(1e-6,b.t-a.t), e=(EASE[b.ease]||EASE.tok2)(Math.max(0,Math.min(1,q)));
+    return {z:a.z+(b.z-a.z)*e, x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e, op:a.op+(b.op-a.op)*e}; } }
+  return K[K.length-1];
+};
+function drawVideoXf(t, draw){
+  const k=E.kfAt(t);
+  if (!k || (k.z===100 && !k.x && !k.y && k.op>=100)){ draw(); return; }
+  const W=cv.width, H=cv.height;
+  ctx.save(); ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=Math.max(0,Math.min(1,k.op/100));
+  ctx.translate(W/2+k.x/100*W, H/2+k.y/100*H); ctx.scale(k.z/100,k.z/100); ctx.translate(-W/2,-H/2);
+  draw(); ctx.restore();
+}
+
 // ================= HLAVNÍ RENDER =================
 E.render = (t, opts={}) => {
   if (!vid || !vid.videoWidth) return;
   const F=E.flags;
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.shadowColor='transparent'; ctx.filter='none';
   if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height);
-  else if (opts.frameDraw) opts.frameDraw(ctx,cv.width,cv.height);
+  else if (opts.frameDraw) drawVideoXf(t,()=>opts.frameDraw(ctx,cv.width,cv.height));
   else {
     // čistý podklad + poslední dobrý snímek videa: když iPhone snímek zrovna nedá, nezůstane na plátně starý obraz se starými titulky
     if (!vframe||vframe.width!==cv.width||vframe.height!==cv.height){ vframe=document.createElement('canvas'); vframe.width=cv.width; vframe.height=cv.height; vfc=vframe.getContext('2d'); vfOk=false; }
     if (vfFor!==vid){ vfFor=vid; vfOk=false; }
     if (vid.readyState>=2){ try{ vfc.drawImage(vid,0,0,cv.width,cv.height); vfOk=true; }catch(e){} }
     ctx.fillStyle='#000'; ctx.fillRect(0,0,cv.width,cv.height);
-    if (vfOk) ctx.drawImage(vframe,0,0);
+    if (vfOk) drawVideoXf(t,()=>ctx.drawImage(vframe,0,0));
   }
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
   // overlaye pod titulky

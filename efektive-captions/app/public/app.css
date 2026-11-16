@@ -411,3 +411,15 @@ button.pro.on{background:var(--green)}
 .vtr{position:absolute;top:5px;width:20px;height:20px;margin-left:-10px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;z-index:4;cursor:pointer;box-shadow:1px 1px 0 rgba(10,13,20,.2)}
 .vtr .ic{width:12px;height:12px}
 .vtr.on{background:var(--grad);border-color:transparent}.vtr.on .ic{stroke:#fff}
+.vkf{position:absolute;top:8px;width:14px;height:14px;margin-left:-7px;background:#fff;border:2px solid var(--acc);transform:rotate(45deg);z-index:5;cursor:pointer;box-shadow:1px 1px 0 rgba(10,13,20,.3)}
+.vkf.gold{border-color:#e0a400;background:#fff6d6}
+.vkf.cur{background:var(--acc)}.vkf.gold.cur{background:#f2b705}
+.eases{display:flex;gap:8px;margin:6px 0 10px}
+.ease{flex:1;border:1px solid var(--line);background:var(--card);padding:8px 6px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;box-shadow:inset 0 1px 0 #fff,2px 2px 0 rgba(10,13,20,.08)}
+.ease svg{width:100%;height:44px;background:#f4f6f9}
+.ease path{fill:none;stroke:var(--text);stroke-width:2.2}
+.ease span{font-size:12px;font-weight:700}
+.ease.gold{border-color:#e9c34a;background:linear-gradient(#fffaf0,#fff1c9)}
+.ease.gold path{stroke:#c98a00}
+.ease.on{outline:2px solid var(--acc);outline-offset:1px}
+.ease.gold.on{outline-color:#e0a400}

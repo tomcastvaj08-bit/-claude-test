@@ -74,7 +74,7 @@ async function openFrameSource(file, dispW, dispH) {
       }
     },
     draw(c, frame, W, H) {
-      c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+      c.save();   // bez resetu transformace – zoom / posun z klíčových snímků se zachová
       if (rot === 90) { c.translate(W, 0); c.rotate(Math.PI / 2); c.drawImage(frame, 0, 0, H, W); }
       else if (rot === 270) { c.translate(0, H); c.rotate(-Math.PI / 2); c.drawImage(frame, 0, 0, H, W); }
       else if (rot === 180) { c.translate(W, H); c.rotate(Math.PI); c.drawImage(frame, 0, 0, W, H); }
