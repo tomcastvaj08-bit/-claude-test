@@ -588,7 +588,9 @@ function pMix(){
   ${slider('Velikost písma','mixSize',50,180,1,'%')}
   ${slider('Výška na videu','mixY',20,80,1,'%')}
   ${slider('Rychlost letu','mixSpeed',40,200,1,'%')}
-  <div class="clabel">Barva zvýrazněných slov</div><div class="colors">${color('Nahoře','mixA')}${color('Dole','mixB')}</div>`:''}`;
+  <div class="clabel">Barva zvýrazněných slov</div><div class="colors">${color('Nahoře','mixA')}${color('Dole','mixB')}</div>
+  ${chips('Shine (lesk přejede přes slovo)','mixShine',[['off','Vypnuto'],['hi','Jen zvýrazněná slova'],['all','Všechna slova']])}
+  ${chips('3D hloubka (extrusion)','mixExtrude',[['off','Vypnuto'],['hi','Jen zvýrazněná slova'],['all','Všechna slova']])}`:''}`;
 }
 binders.mix=()=>{
   $('mixOn').onclick=async()=>{ E.G.mix3d=!E.G.mix3d; E.mixInvalidate&&E.mixInvalidate(); changed(); renderPanel(); toast(E.G.mix3d?'3D mix zapnutý':'3D mix vypnutý – zpátky běžné titulky');

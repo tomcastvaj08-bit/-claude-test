@@ -75,8 +75,9 @@ function txt(i){ const w=E.words[i]; return E.G.punct?(w.raw||w.t):w.t; }
 
 // obrázek slova v mezipaměti: jemný přechod bílá → světle šedá (oranžová), měkký tmavý stín kolem
 const SPR=new Map();
-function sprite(word,kind,px){
-  const G=E.G, key=word+'|'+kind+'|'+Math.round(px)+'|'+(G.mixA||'')+(G.mixB||'');
+function sprite(word,kind,px,ex){
+  ex=ex||0;
+  const G=E.G, key=word+'|'+kind+'|'+Math.round(px)+'|'+(G.mixA||'')+(G.mixB||'')+'|'+Math.round(ex);
   let o=SPR.get(key); if (o) return o;
   const st=FONTS[kind], c=document.createElement('canvas'), x=c.getContext('2d');
   const font=`${st.it?'italic ':''}${st.wt} ${px}px ${st.fam}`, ls=(st.ls*px).toFixed(2)+'px';
@@ -84,18 +85,47 @@ function sprite(word,kind,px){
   set();
   const m=x.measureText(word), asc=Math.max(m.actualBoundingBoxAscent||0,px*0.75), desc=Math.max(m.actualBoundingBoxDescent||0,px*0.25);
   const tw=Math.ceil(Math.max(m.width, (m.actualBoundingBoxRight||0)+(m.actualBoundingBoxLeft||0)));
-  const pad=Math.ceil(px*0.75), w=tw+pad*2, h=Math.ceil(asc+desc)+pad*2, base=pad+asc;
+  const pad=Math.ceil(px*0.75+ex), w=tw+pad*2, h=Math.ceil(asc+desc)+pad*2, base=pad+asc-ex*0.3;
   c.width=w; c.height=h; set();
   const g=x.createLinearGradient(0,base-asc,0,base+desc*0.3);
   if (kind==='hi'){ g.addColorStop(0,G.mixA||'#ffa21e'); g.addColorStop(1,G.mixB||'#f38b00'); }
   else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d6d8dc'); }
   // měkký atmosférický stín (tmavé písmo pod přední vrstvou, z něj zůstane jen stín)
+  const bx0=pad+ex*0.6, by0=base+ex;   // zadní vrstva (u 3D hloubky)
   x.save(); x.fillStyle='#000';
-  x.shadowColor='rgba(0,0,0,0.6)'; x.shadowBlur=px*0.5; x.shadowOffsetY=px*0.09; x.fillText(word,pad,base);
-  x.shadowColor='rgba(0,0,0,0.45)'; x.shadowBlur=px*0.18; x.shadowOffsetY=px*0.05; x.fillText(word,pad,base); x.restore();
+  x.shadowColor='rgba(0,0,0,0.6)'; x.shadowBlur=px*0.5; x.shadowOffsetY=px*0.09; x.fillText(word,bx0,by0);
+  x.shadowColor='rgba(0,0,0,0.45)'; x.shadowBlur=px*0.18; x.shadowOffsetY=px*0.05; x.fillText(word,bx0,by0); x.restore();
+  if (ex>0){
+    // 3D hloubka: kopie písma šikmo dozadu ve stejné, tmavší barvě
+    const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d');
+    tc.font=font; try{ tc.letterSpacing=ls; }catch(e){} tc.textBaseline='alphabetic'; tc.textAlign='left'; tc.fillStyle=g;
+    const n=Math.max(4,Math.round(ex)); for (let i=n;i>=1;i--){ const q=i/n; tc.fillText(word,pad+ex*q*0.6,base+ex*q); }
+    tc.globalCompositeOperation='source-atop'; tc.fillStyle='rgba(0,0,0,0.38)'; tc.fillRect(0,0,w,h);
+    x.drawImage(t,0,0);
+  }
   x.fillStyle=g; x.fillText(word,pad,base);
-  o={c,w,h,pad,tw,base,asc}; SPR.set(key,o); if (SPR.size>200) SPR.delete(SPR.keys().next().value);
+  // jemný odlesk navrch (jen s hloubkou)
+  if (ex>0){ const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d'); tc.font=font; try{ tc.letterSpacing=ls; }catch(e){} tc.textBaseline='alphabetic'; tc.fillStyle='#fff'; tc.fillText(word,pad,base); tc.globalCompositeOperation='source-in'; const gl=tc.createLinearGradient(0,base-asc,0,base); gl.addColorStop(0,'rgba(255,255,255,0.45)'); gl.addColorStop(0.5,'rgba(255,255,255,0.05)'); gl.addColorStop(1,'rgba(255,255,255,0)'); tc.fillStyle=gl; tc.fillRect(0,0,w,h); x.drawImage(t,0,0); }
+  o={c,w,h,pad,tw,base,asc,word,font,ls}; SPR.set(key,o); if (SPR.size>260) SPR.delete(SPR.keys().next().value);
   return o;
+}
+// shine: světlo přejede přes slovo (v písmu + jemná záře kolem)
+let shC=null, shX=null;
+function drawShine(c,o,dx,dy,dw,dh,ph,A){
+  if (!shC){ shC=document.createElement('canvas'); shX=shC.getContext('2d'); }
+  // pracuje ve zmenšeném rozlišení (lesk je měkký, ostrost nepotřebuje) → rychlé i na telefonu
+  const k=Math.max(1,o.w/260), w=Math.ceil(o.w/k), h=Math.ceil(o.h/k);
+  if (shC.width!==w||shC.height!==h){ shC.width=w; shC.height=h; } else { shX.setTransform(1,0,0,1,0,0); shX.globalCompositeOperation='source-over'; shX.clearRect(0,0,w,h); }
+  shX.setTransform(1/k,0,0,1/k,0,0); shX.font=o.font; try{ shX.letterSpacing=o.ls; }catch(e){} shX.textBaseline='alphabetic'; shX.textAlign='left'; shX.fillStyle='#fff'; shX.fillText(o.word,o.pad,o.base);
+  shX.setTransform(1,0,0,1,0,0); shX.globalCompositeOperation='source-in';
+  const bw=Math.max(h*0.5,o.tw/k*0.28), sk=h*0.3, x=-bw-sk+ph*(w+2*bw+2*sk);
+  const g=shX.createLinearGradient(x-bw/2,0,x+bw/2,0); g.addColorStop(0,'rgba(255,250,235,0)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,250,235,0)');
+  shX.setTransform(1,0,-sk/h,1,sk/2,0); shX.fillStyle=g; shX.fillRect(-sk,0,w+sk*2,h); shX.setTransform(1,0,0,1,0,0);
+  const env=Math.sin(Math.PI*ph);
+  c.save(); c.globalCompositeOperation='lighter';
+  c.globalAlpha=A*0.5*env; drawBlur(c,{c:shC,w,h},dx,dy,dw,dh,6);   // záře kolem
+  c.globalAlpha=A*0.65*env; c.drawImage(shC,0,0,w,h,dx,dy,dw,dh);   // světlo v písmu
+  c.restore();
 }
 // rozmazání bez filtru (i Safari): zmenšit a zase zvětšit
 let bc=null, bx=null;
@@ -104,7 +134,7 @@ function drawBlur(c,o,dx,dy,dw,dh,blur){
   const k=1+blur*0.45, w=Math.max(2,Math.round(o.w/k)), h=Math.max(2,Math.round(o.h/k));
   if (!bc){ bc=document.createElement('canvas'); bx=bc.getContext('2d'); }
   if (bc.width<w||bc.height<h){ bc.width=Math.max(bc.width,w); bc.height=Math.max(bc.height,h); }
-  bx.clearRect(0,0,w,h); bx.imageSmoothingEnabled=true; bx.imageSmoothingQuality='medium'; bx.drawImage(o.c,0,0,w,h);
+  bx.clearRect(0,0,w,h); bx.imageSmoothingEnabled=true; bx.imageSmoothingQuality='high'; bx.drawImage(o.c,0,0,w,h);
   c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high'; c.drawImage(bc,0,0,w,h,dx,dy,dw,dh);
 }
 
@@ -152,7 +182,11 @@ E.drawMix=(c,t)=>{
     if (L.faceB!=null && age>0.5) A*=clamp((y-L.faceB)/(base*0.5)+0.3);
     A*=op; if (A<=0.01) continue;
     const blur=Math.max(0,(S-1.0))*9 + Math.max(0,(0.92-S))*16;   // u kamery i v dálce rozmazané
-    const px=base*L.size, words=L.ids.map(txt), sp=words.map(w=>sprite(w,L.kind,px));
+    const px=base*L.size, words=L.ids.map(txt);
+    // u kamery jsou slova až 2,5× větší → kreslit je ve vyšším rozlišení (žádné rozpixelování)
+    const Q=S>1.6?2.5:S>1.05?1.7:1;
+    const isHi=L.kind==='hi', exOn=G.mixExtrude==='all'||(G.mixExtrude==='hi'&&isHi), shOn=G.mixShine==='all'||(G.mixShine==='hi'&&isHi);
+    const spQ=words.map(w=>sprite(w,L.kind,px*Q, exOn?px*Q*0.09:0)), sp=spQ.map(o=>({...o, w:o.w/Q, h:o.h/Q, pad:o.pad/Q, tw:o.tw/Q, base:o.base/Q, asc:o.asc/Q, src:o}));
     const gap=px*(L.kind==='serif'?0.22:0.2), tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
     let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
     let x0=W*L.indent; if (x0+tw*fit>W*0.95) x0=Math.max(W*0.04, W*0.95-tw*fit);
@@ -167,7 +201,8 @@ E.drawMix=(c,t)=>{
       const qa=smooth(wa/0.2);
       const dw=o.w*SS, dh=o.h*SS, dx=wx+ww/2-(o.pad+o.tw/2)*SS, dy=y-o.base*SS+o.asc*SS*0.35;
       c.globalAlpha=A*qa;
-      drawBlur(c,o,dx,dy,dw,dh,blur);
+      drawBlur(c,o.src,dx,dy,dw,dh,blur);
+      if (shOn){ const ph=(wa-0.1)/1.5; if (ph>0&&ph<1) drawShine(c,o.src,dx,dy,dw,dh,ph,A*qa); }
     });
   }
   c.restore();

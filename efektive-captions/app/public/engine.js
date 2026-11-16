@@ -91,7 +91,7 @@ E.G = {
 };E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
 
 // klíče, které jsou vždy společné pro celé video
-E.GLOBAL_ONLY = new Set(['mixSpeed','mix3d','mixSeed','mixSize','mixY','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
+E.GLOBAL_ONLY = new Set(['mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
 
 // ================= FONTY (kompletní seznam jako v SA Captions) =================
 // [rodina (CSS stack: Apple systémový font → webová náhrada), tloušťka, popisek, kurzíva]
@@ -124,7 +124,7 @@ E.FONTS = [
 
 // ================= ŠABLONY =================
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
-const common = {mix3d:false,mixSpeed:100,mixSeed:1,mixSize:100,mixY:60,mixA:'#ffa21e',mixB:'#f38b00',rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
+const common = {mix3d:false,mixShine:'off',mixExtrude:'off',mixSpeed:100,mixSeed:1,mixSize:100,mixY:60,mixA:'#ffa21e',mixB:'#f38b00',rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.COMMON = common;
 E.TEMPLATES = {
