@@ -41,6 +41,12 @@ function unsign(token) {
   if (want.length !== sig.length || !crypto.timingSafeEqual(Buffer.from(want), Buffer.from(sig))) return null;
   try { return JSON.parse(Buffer.from(p, 'base64url').toString()); } catch { return null; }
 }
+// porovnání v konstantním čase (kód nejde uhodnout měřením času odpovědi)
+function isMaster(token) {
+  const m = process.env.PRO_MASTER_CODE; const t = String(token || '').trim();
+  if (!m || m.length < 12 || t.length !== m.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(t), Buffer.from(m));
+}
 const ACTIVE = new Set(['active', 'trialing', 'past_due']);
 function state(sub) {
   const end = sub.current_period_end || sub.items?.data?.[0]?.current_period_end || 0;
@@ -112,6 +118,8 @@ module.exports = async function handler(req, res) {
     // 3) Ověření PRO kódu (při spuštění appky a při zadání kódu na jiném zařízení)
     if (action === 'check') {
       const body = req.method === 'POST' ? await readJSON(req) : {};
+      // kód majitele (PRO_MASTER_CODE v nastavení serveru): PRO zdarma, bez Stripe, bez konce
+      if (isMaster(body.token || url.searchParams.get('token'))) return send(res, 200, { pro: true, status: 'owner', until: 0, cancelAtEnd: false });
       const t = unsign(body.token || url.searchParams.get('token'));
       if (!t) return send(res, 400, { error: 'Tenhle PRO kód neznám. Zkontroluj, že je zkopírovaný celý.' });
       const sub = await stripe('GET', 'subscriptions/' + encodeURIComponent(t.s));
@@ -121,6 +129,7 @@ module.exports = async function handler(req, res) {
     // 4) Správa / zrušení předplatného (Stripe zákaznický portál)
     if (action === 'portal') {
       const body = req.method === 'POST' ? await readJSON(req) : {};
+      if (isMaster(body.token || url.searchParams.get('token'))) return send(res, 400, { error: 'Tohle je kód majitele – předplatné ke správě nemá.' });
       const t = unsign(body.token || url.searchParams.get('token'));
       if (!t) return send(res, 400, { error: 'Neplatný PRO kód.' });
       const p = await stripe('POST', 'billing_portal/sessions', { customer: t.c, return_url: origin(req) + '/', locale: 'cs' });

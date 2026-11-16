@@ -1718,7 +1718,7 @@ const PRO={
     const p=PRO.get();
     $('proBuy').hidden=on; $('proHave').hidden=!on;
     const nat=NATIVE.isNative; document.querySelectorAll('.web-only').forEach(x=>x.hidden=nat); document.querySelectorAll('.app-only').forEach(x=>x.hidden=!nat);
-    if (on){ $('proCodeOut').value=p.token; $('proUntil').textContent=p.until?((p.cancelAtEnd?'Platí do ':'Další platba ')+new Date(p.until).toLocaleDateString('cs-CZ')):''; }
+    if (on){ $('proCodeOut').value=p.token; $('proUntil').textContent=p.status==='owner'?'Kód majitele – bez omezení':p.until?((p.cancelAtEnd?'Platí do ':'Další platba ')+new Date(p.until).toLocaleDateString('cs-CZ')):''; }
   },
   async api(a,q='',body){
     const r=await fetch(NATIVE.api('/api/pro?a='+a+q),body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
