@@ -1892,6 +1892,9 @@ async function runExport(){
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));
+    // rozpis času (pro ladění rychlosti): čtení videa / overlaye / vykreslení / ukládání / příprava (zvuk…)
+    if (res.prof){ const P=res.prof, tot=(performance.now()-t0)/1000, s=v=>(v/1000).toFixed(0)+' s', rest=Math.max(0,tot-(P.ov+P.dec+P.ren+P.enc)/1000);
+      $('exStatus').textContent+=` · rozpis: video ${s(P.dec)} (${res.codecIn}), overlay ${s(P.ov)}, titulky+efekty ${s(P.ren)}, ukládání ${s(P.enc)}, zvuk a příprava ${rest.toFixed(0)} s`; }
     // na iPhonu nabídnout sdílení (uložit do Fotek)
     a.onclick=async ev=>{
       // mobilní aplikace: rovnou do galerie

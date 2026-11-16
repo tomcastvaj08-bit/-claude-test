@@ -162,9 +162,11 @@ X.exportVideo = async (opts) => {
     }
     const ovFrames=async t=>{ for (const q of OVS){ const o=q.o; if (t<o.s||t>o.e){ o._frame=null; continue; }
       const want=E.ovTime(o,t);
+      if (Math.abs(want-q.last)<1e-6 && o._frame) continue;   // stejný snímek jako minule (60 fps titulky) → nic nepřekreslovat
       if (want<q.last-0.001){ try{ q.s.close(); q.s=await openFrameSource(q.blob,o.src.videoWidth,o.src.videoHeight); }catch(e){} }   // overlay se opakuje dokola → číst znovu od začátku
       q.last=want; const fr=q.s&&await q.s.frameAt(want); if (fr){ const x=q.c.getContext('2d'); x.clearRect(0,0,q.c.width,q.c.height); q.s.draw(x,fr,q.c.width,q.c.height); o._frame=q.c; } } };
     const t0=performance.now();
+    const PF={ov:0,dec:0,ren:0,enc:0};   // měření: kde export tráví čas
     // ZPOMALENÍ: mezisnímky z dvojice sousedních zdrojových snímků – prolnutí nebo optický tok (tok se počítá jednou na dvojici)
     const IP={cache:new Map(), flows:new Map(), fw:0, fh:0, g1:null, g2:null};
     const ipFrame=async i=>{ if (IP.cache.has(i)) return IP.cache.get(i); const T=src.times; const fr=await src.frameAt(T[i]+0.0005); const c=document.createElement('canvas'); c.width=w; c.height=h; if (fr) src.draw(c.getContext('2d'),fr,w,h); IP.cache.set(i,c); for (const k of [...IP.cache.keys()]) if (k<i-1) IP.cache.delete(k); return c; };
@@ -184,27 +186,31 @@ X.exportVideo = async (opts) => {
     for (let i=0;i<N;i++){
       if (opts.cancel&&opts.cancel.v) throw new Error('Zrušeno');
       if (err) throw err;
-      const t=i/fps;
+      const t=i/fps, pf0=performance.now();
       // „plynulé titulky“: titulky v každém snímku (60 fps), video a overlaye se čtou jen 30× za sekundu
       const tv=opts.videoFps? Math.floor(t*opts.videoFps+1e-6)/opts.videoFps : t;
       // překrytí videa novou verzí: přesný snímek v čase t
-      await ovFrames(tv);
+      await ovFrames(tv); const pf1=performance.now(); PF.ov+=pf1-pf0;
       for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e || OVS.some(q=>q.o===o)) continue; o.src.pause(); const want=Math.min(E.ovTime(o,tv),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
       const ck=cut?E.clipList()[E.clipAt(t)]:null, slow=ck && E.clipSp(ck)<1 && (ck.blend||'flow')!=='none' && src && src.times && src.times.length>1;
       if (slow){
-        const ts=o2s(tv), draw=await slowFrame(t,ts,ck.blend||'flow');
-        E.render(t,{frameDraw:(c,W,H)=>draw(c), frameT:ts});
+        const ts=o2s(tv), draw=await slowFrame(t,ts,ck.blend||'flow'); const a=performance.now(); PF.dec+=a-pf1;
+        E.render(t,{frameDraw:(c,W,H)=>draw(c), frameT:ts}); PF.ren+=performance.now()-a;
       } else if (src){
-        const fr=await src.frameAt(o2s(tv));
+        const fr=await src.frameAt(o2s(tv)); const a=performance.now(); PF.dec+=a-pf1;
         E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
+        PF.ren+=performance.now()-a;
       } else {
         await seek(v,o2s(tv)); await frameReady(v);
         if (ctxBehind){ try{ const m=await AI.segment(v,Math.round(w/3),Math.round(h/3)); E.personMask=()=>m; }catch(e){} }
-        E.render(t);
+        const a=performance.now(); PF.dec+=a-pf1;
+        E.render(t); PF.ren+=performance.now()-a;
       }
+      const pf2=performance.now();
       const f=new VideoFrame(cv,{timestamp:Math.round(t*1e6),duration:Math.round(1e6/fps)});
       venc.encode(f,{keyFrame:i%(fps*2)===0}); f.close();
       while (venc.encodeQueueSize>8) await new Promise(r=>setTimeout(r,5));
+      PF.enc+=performance.now()-pf2;
       if (i%3===0){ const el=(performance.now()-t0)/1000, left=el/(i+1)*(N-i-1); onP(i/N, `Snímek ${i+1} / ${N}`+(i>10?` · zbývá ${left<60?Math.ceil(left)+' s':Math.ceil(left/60)+' min'}`:'')); }
     }
     } finally { if (src) src.close(); for (const q of OVS){ try{ q.s&&q.s.close(); }catch(e){} q.o._frame=null; } }
@@ -221,7 +227,7 @@ X.exportVideo = async (opts) => {
     }
     await venc.flush(); venc.close();
     muxer.finalize();
-    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek'};
+    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—'};
   } finally {
     E.flags.transparent=false; E.flags.exporting=false; E.personMask=prevMask;
     if (prev) E.attach(prev[0],prev[1]);
