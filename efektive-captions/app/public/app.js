@@ -957,7 +957,9 @@ function pOverlay(){
     <div class="row"><span>Wiggle</span><input type="checkbox" class="sw" id="ovWig" ${o.wiggle?'checked':''}></div>
     ${o.wiggle?`<label class="ctl"><div class="lb"><span>Síla wiggle</span><span>${o.wigAmt??50}</span></div><input type="range" id="ovWA" min="0" max="200" value="${o.wigAmt??50}"></label>
     <label class="ctl"><div class="lb"><span>Rychlost wiggle</span><span>${o.wigSpd??50}</span></div><input type="range" id="ovWS" min="5" max="200" value="${o.wigSpd??50}"></label>`:''}
-    <div class="row"><span>Před titulky (jinak za nimi)</span><input type="checkbox" class="sw" id="ovAbove" ${o.above?'checked':''}></div>
+    <div class="clabel">Vrstva</div>
+    <div class="chips" id="ovLayer"><div class="chip ${!o.above?'on':''}" data-v="0">Pod titulky</div><div class="chip ${o.above?'on':''}" data-v="1">Nad titulky</div></div>
+    ${E.overlays.filter(x=>!x.full).length>1?`<div class="btnrow"><button class="btn small" id="ovUp">${I('arrow-up')} Výš (přes ostatní overlaye)</button><button class="btn small" id="ovDown">${I('arrow-down')} Níž</button></div>`:''}
     <label class="ctl"><div class="lb"><span>Velikost</span><span>${o.w}%</span></div><input type="range" id="ovW" min="5" max="100" value="${o.w}"></label>
     <label class="ctl"><div class="lb"><span>Rotace</span><span>${o.rot||0}°</span></div><input type="range" id="ovR" min="-180" max="180" value="${o.rot||0}"></label>
     <div class="clabel">Vzhled</div>
@@ -989,7 +991,10 @@ binders.overlay=()=>{
   $('ovAnim').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; o.anim=c.dataset.v; changed(); renderPanel(); PV.currentTime=o.s; };
   $('ovWig').onchange=e=>{ o.wiggle=e.target.checked; changed(); renderPanel(); };
   for (const [id,key] of [['ovWA','wigAmt'],['ovWS','wigSpd']]){ const el=$(id); if (!el) continue; el.oninput=e=>{ o[key]=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o[key]; }; el.onchange=()=>changed(); }
-  $('ovAbove').onchange=e=>{ o.above=e.target.checked; changed(); };
+  $('ovLayer').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; o.above=d.dataset.v==='1'; changed(); renderPanel(); toast(o.above?'Overlay je nad titulky':'Titulky jsou nad overlayem'); };
+  // pořadí mezi overlayi (kreslí se v pořadí seznamu – poslední je nahoře)
+  const mv=dir=>{ const L=E.overlays, i=L.indexOf(o), j=i+dir; if (j<0||j>=L.length) return; [L[i],L[j]]=[L[j],L[i]]; changed(); toast(dir>0?'Overlay je výš':'Overlay je níž'); };
+  if ($('ovUp')) $('ovUp').onclick=()=>mv(1); if ($('ovDown')) $('ovDown').onclick=()=>mv(-1);
   $('ovW').oninput=e=>{ o.w=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.w+'%'; }; $('ovW').onchange=()=>changed();
   $('ovR').oninput=e=>{ o.rot=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=o.rot+'°'; }; $('ovR').onchange=()=>changed();
   // vzhled overlaye: rohy, rámeček, stín, 3D náklon (posuvníky, které mění i obsah panelu, ho po puštění překreslí)
@@ -1024,7 +1029,7 @@ function syncOverlays(t,playing){
   } }
 $('ovIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const id='a'+Date.now(); const el=await loadAsset(id,f); addOverlay({asset:id,src:el}); };
 function addOverlay(o){
-  const t=PV.currentTime; const ov={id:Date.now()%1e9, s:t, e:Math.min(PV.duration,t+2), x:50, y:35, w:o.emoji?22:40, rot:0, anim:'pop', wiggle:false, above:true, ...o};
+  const t=PV.currentTime; const ov={id:Date.now()%1e9, s:t, e:Math.min(PV.duration,t+2), x:50, y:35, w:o.emoji?22:40, rot:0, anim:'pop', wiggle:false, above:false, ...o};
   E.overlays.push(ov); selOv=ov.id; changed(); renderPanel(); toast('Overlay přidaný – posuň ho prstem');
 }
 function drawOvSel(){
@@ -1348,7 +1353,9 @@ stg.addEventListener('pointerdown',e=>{
   if (ptrs.size===2 && gest && gest.type==='move'){ const [a,b]=[...ptrs.values()]; gest={type:'pinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),size0:cur().size}; return; }
   // overlay?
   const t=PV.currentTime;
-  for (const o of [...E.overlays].reverse()){ if (t<o.s||t>o.e||o.full) continue; const b=E.overlayBox(o); if (Math.abs(x-b.cx)<b.w/2 && Math.abs(y-b.cy)<b.h/2){ selOv=o.id; gest={type:'ov',o,x0:x,y0:y,ox:o.x,oy:o.y,moved:false}; vid.pause(); if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='overlay')); } renderPanel(); renderTimeline(); return; } }
+  // titulek nad overlayem má při klepnutí přednost před overlayem pod ním
+  const inCap=(()=>{ const B=E.lastBox; if (!B||!B.P) return false; const xs=B.P.map(p=>p[0]), ys=B.P.map(p=>p[1]); return x>Math.min(...xs)-hr && x<Math.max(...xs)+hr && y>Math.min(...ys)-hr && y<Math.max(...ys)+hr; })();
+  for (const o of [...E.overlays].reverse()){ if (t<o.s||t>o.e||o.full) continue; if (!o.above && inCap) continue; const b=E.overlayBox(o); if (Math.abs(x-b.cx)<b.w/2 && Math.abs(y-b.cy)<b.h/2){ selOv=o.id; gest={type:'ov',o,x0:x,y0:y,ox:o.x,oy:o.y,moved:false}; vid.pause(); if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='overlay')); } renderPanel(); renderTimeline(); return; } }
   const B=E.lastBox;
   if (B){
     const k=E.pageAt(t); if (k>=0) curPage=k;
