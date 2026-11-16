@@ -122,7 +122,7 @@ function maskCanvas(o) {
 function feather(m) {
   const { w, h, d } = m; let x0 = w, y0 = h, x1 = 0, y1 = 0;
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[j * w + i]) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }
-  const R = Math.max(4, Math.round(Math.max(w, h) * 0.013));   // měkký okraj kolem celého objektu (stejně široký u malých i velkých objektů)
+  const R = Math.max(6, Math.round(Math.hypot(x1 - x0, y1 - y0) * 0.05));   // měkký okraj kolem celého objektu – stejně měkký jako boky pruhu, takže pruh nikde nekončí natvrdo (ani nahoře / dole)
   let A = new Float32Array(w * h); for (let i = 0; i < A.length; i++) A[i] = d[i];
   const box = (src, horiz) => { const out = new Float32Array(w * h), n = 2 * R + 1;
     if (horiz) for (let y = 0; y < h; y++) { let s = 0; const r = y * w; for (let x = -R; x <= R; x++) s += src[r + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x++) { out[r + x] = s / n; s += src[r + Math.min(w - 1, x + R + 1)] - src[r + Math.max(0, x - R)]; } }
@@ -206,7 +206,7 @@ function drawShine(c, o, t, W, H, MM, mc, A) {
   // Rozmazání postupným zmenšováním a zvětšováním (hladké jako gauss, funguje i v Safari bez ctx.filter).
   const G = clamp((o.shGlow ?? 80) / 100, 0, 1.5), L = glowLevels(oc, W, H);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen'; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.6); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.55); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.35); c.drawImage(L[2], 0, 0, W, H); }
+  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.6); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.45); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.25); c.drawImage(L[2], 0, 0, W, H); }
   c.globalAlpha = I; c.drawImage(oc, 0, 0);
   c.restore();
 }
