@@ -77,7 +77,7 @@ function render(o){
   for(const el of [document.documentElement,document.body]) el.style.cssText=`width:${W}px;height:${H}px`;
   const c=document.getElementById('c'); c.style.width=W+'px'; c.style.height=H+'px';
   const LT=o.theme==='light'; c.className=LT?'light':''; document.body.style.background=LT?'#fff':'';
-  document.getElementById('word').src=LT?'assets/logo_word_black.png':'assets/logo_word_white.png';
+  document.getElementById('word').src=LT?'assets/logo_word_black_hd.png':'assets/logo_word_white_hd.png';
   // lev vpravo
   let lw,lh,lx,ly; const lion=document.getElementById('lion');
   if(o.cut){ lh=o.cut.h*u; lw=lh*1188/1324; lx=o.cut.x*u; ly=H-lh+(o.cut.dy||0)*u;
@@ -140,7 +140,7 @@ function render(o){
   Object.assign(tb.style,{width:o.tabW*u+'px',height:240*u+'px',fontSize:112*u+'px',borderTopLeftRadius:78*u+'px'});
   const st=document.createElement('style'); st.textContent=`#tab::before{top:${-20*u}px;left:${-20*u}px;border-width:${7*u}px;border-top-left-radius:${104*u}px}`; document.head.appendChild(st);
   // silvestr: ohňostroj + jiskry
-  const cv=document.getElementById('fw'); cv.width=W; cv.height=H; const x=cv.getContext('2d');
+  const cv=document.getElementById('fw'), DPR=window.devicePixelRatio||1; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; const x=cv.getContext('2d'); x.scale(DPR,DPR);
   let seed=21; const r=()=>((seed=(seed*16807)%2147483647)/2147483647);
   x.globalCompositeOperation=LT?'source-over':'lighter';
   for(const b of (o.bursts||[])){
