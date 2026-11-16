@@ -91,8 +91,8 @@ function sprite(word,kind,px){
   else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d6d8dc'); }
   // měkký atmosférický stín (tmavé písmo pod přední vrstvou, z něj zůstane jen stín)
   x.save(); x.fillStyle='#000';
-  x.shadowColor='rgba(0,0,0,0.62)'; x.shadowBlur=px*0.5; x.shadowOffsetY=px*0.05; x.fillText(word,pad,base);
-  x.shadowColor='rgba(0,0,0,0.55)'; x.shadowBlur=px*0.18; x.shadowOffsetY=px*0.03; x.fillText(word,pad,base); x.restore();
+  x.shadowColor='rgba(0,0,0,0.75)'; x.shadowBlur=px*0.55; x.shadowOffsetY=px*0.06; x.fillText(word,pad,base); x.fillText(word,pad,base);
+  x.shadowColor='rgba(0,0,0,0.7)'; x.shadowBlur=px*0.2; x.shadowOffsetY=px*0.03; x.fillText(word,pad,base); x.restore();
   x.fillStyle=g; x.fillText(word,pad,base);
   o={c,w,h,pad,tw,base,asc}; SPR.set(key,o); if (SPR.size>200) SPR.delete(SPR.keys().next().value);
   return o;
@@ -157,7 +157,7 @@ E.drawMix=(c,t)=>{
     let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
     let x0=W*L.indent; if (x0+tw*fit>W*0.95) x0=Math.max(W*0.04, W*0.95-tw*fit);
     // perspektiva: řádek se stahuje k úběžníku uprostřed
-    const lc=x0+tw*fit/2, lcx=cxp+(lc-cxp)*S, SS=S*fit;
+    const lcx=x0+tw*fit/2, SS=S*fit;   // žádný posun do strany – jen let do dálky
     let xx=lcx-tw*SS/2;
     sp.forEach((o,wi)=>{
       const wt=E.words[L.ids[wi]], wa=t-(wt.s-0.08);
