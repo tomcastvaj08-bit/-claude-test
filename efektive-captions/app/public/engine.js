@@ -870,8 +870,8 @@ E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L)
 E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
 E.TRANSITIONS=[['none','Žádný'],['push','Vcucnutí (zoom + čočka)'],['swing','Zahoupání'],['whip','Švihnutí do strany'],['flashw','Bílý záblesk'],['flash2','2× negativní záblesk']];
-E.TRDEF={push:0.5,swing:0.6,whip:0.45,flashw:0.4,flash2:0.12};   // výchozí délka přechodu (s)
-E.TRDIR=new Set(['push','swing','whip']);                          // přechody se směrem (doprava / doleva)
+E.TRDEF={push:0.3,swing:0.6,whip:0.45,flashw:0.4,flash2:0.12};   // výchozí délka přechodu (s)
+E.TRDIR=new Set(['swing','whip']);                          // přechody se směrem (doprava / doleva)
 E.drawTransition=(c,W,H,t)=>{
   const L=E.clipList(); if (L.length<2) return;
   const st=E.clipStarts();

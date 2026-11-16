@@ -82,11 +82,14 @@ const outBack = (q, s) => { const u = q - 1; return 1 + (s + 1) * u * u * u + s 
 const DEG = Math.PI / 180;
 const CURVES = {
   // vcucnutí: zrychlený zoom dovnitř se zkreslením čočky → nový záběr vyletí z hloubky, natočený, a dosedne (speedrampa)
-  push(d, D, o) {
-    const h = D / 2, side = o.dir === 'l' ? -1 : 1;
-    if (d < 0) { const q = cl(1 + d / h), a = inC(q); return { z: 1 + 1.6 * a, r: side * 4 * DEG * a, x: 0, y: 0, k: 0.45 * a, e: 0.12 * a * a, c: 0.012 * a }; }
-    const q = cl(d / h), a = 1 - outC(q);
-    return { z: 1 + 0.9 * a, r: -side * 14 * DEG * a, x: 0, y: 0, k: 0.5 * a, e: 0.12 * a * a, c: 0.012 * a };
+  // podle předlohy: krátký zrychlený zoom dovnitř (střed zůstává ostrý, okraje se rozmažou a ohnou čočkou),
+  // po střihu nový záběr začne mírně přiblížený s rozmazanými okraji a rychle dosedne – bez natočení
+  push(d, D) {
+    const pre = D * 0.4, post = D * 0.6;
+    // zkreslení čočky roste ke krajům (∝ r³) → při pohybu se rozmažou hlavně okraje, střed zůstane ostrý
+    if (d < 0) { const q = cl(1 + d / pre), a = Math.pow(q, 2.5); return { z: 1 + 0.16 * a, r: 0, x: 0, y: 0, k: 0.65 * a, e: 0, c: 0.008 * a }; }
+    const q = cl(d / post), a = Math.pow(1 - q, 2.2);
+    return { z: 1 + 0.14 * a, r: 0, x: 0, y: 0, k: 0.65 * a, e: 0, c: 0.008 * a };
   },
   // zahoupání: obraz se zhoupne do strany (natočení + posun), střih se schová v rozmazání, nový záběr se zhoupne zpátky a dosedne
   swing(d, D, o) {
@@ -114,7 +117,7 @@ FX.state = (type, d, D, o) => { const f = CURVES[type]; return f ? f(d, D, o || 
 FX.has = type => !!CURVES[type];
 
 // závěrka: o kolik dřív začíná rozmazání (s) – odpovídá filmové závěrce ~180° při 24 fps, trochu víc pro „AE“ vzhled
-const SHUT = { push: 0.045, swing: 0.04, whip: 0.03, flashw: 0.02 };
+const SHUT = { push: 0.05, swing: 0.04, whip: 0.03, flashw: 0.02 };
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
   const B = FX.state(type, d, D, o), A = FX.state(type, d - (SHUT[type] || 0.03), D, o);
