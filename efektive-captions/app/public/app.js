@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -112,6 +112,7 @@ function restore(json){
   E.face=Array.isArray(s.face)?s.face:null;
   E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
   E.stab=s.stab && s.stab.trk && E.tracks[s.stab.trk] ? {...s.stab} : null;
+  E.objs=(s.objs||[]).map(o=>({...o, _mk:Math.random()}));
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
 }
@@ -181,7 +182,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.kf=[]; E.tracks={}; E.stab=null; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
@@ -479,7 +480,8 @@ function loop(now){
     syncOverlays(t, !vid.paused || PB.on);
     E.render(t,{});
     syncVmode();
-    if (trkPick){ drawTrkPick(); E.lastBox=null; }
+    if (objEdit){ drawObjEdit(); E.lastBox=null; }
+    else if (trkPick){ drawTrkPick(); E.lastBox=null; }
     else if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleAt(p,t),guides); }
     else E.lastBox=null;
     if (selOv && vid.paused) drawOvSel();
@@ -556,7 +558,7 @@ function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s
 function renderPanel(){
   const P=$('panel'); C.length=0;
   let h='';
-  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='kf'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='kf' && panel!=='obj'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
   switch(panel){
     case 'captions': h=pCaptions(); break;
     case 'templates': h=pTemplates(); break;
@@ -568,6 +570,7 @@ function renderPanel(){
     case 'mix': h=pMix(); break;
     case 'clip': h=pClip(); break;
     case 'kf': h=pKf(); break;
+    case 'obj': h=pObj(); break;
   }
   P.innerHTML=h; bindControls(); bindScope(); bindSub();
   const fn=binders[panel]; fn&&fn();
@@ -1316,6 +1319,7 @@ const pinchFrom=v=>{ const [a,b]=[...ptrs.values()]; return {type:'vpinch',d0:Ma
 stg.addEventListener('pointerdown',e=>{
   if (inlineOpen || !stgOK(e)) return;
   try{ stg.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,cvPt(e));
+  if (objEdit){ objDown(...cvPt(e)); return; }
   if (trkPick){ trkDown(...cvPt(e)); return; }
   const [x,y]=cvPt(e), hr=Math.min(cv.width,cv.height)*0.05;
   if (videoMode()){ vid.pause(); const v=kfVals();
@@ -1340,6 +1344,7 @@ stg.addEventListener('pointerdown',e=>{
 });
 stg.addEventListener('pointermove',e=>{
   if (!ptrs.has(e.pointerId)||!gest) return; ptrs.set(e.pointerId,cvPt(e)); const [x,y]=cvPt(e);
+  if (objEdit){ objMove(x,y); return; }
   if (trkPick){ trkMove(x,y); return; }
   if (gest.type==='vpan'){
     if (ptrs.size>=2){ gest=pinchFrom(kfVals()); return; }
@@ -1362,6 +1367,7 @@ stg.addEventListener('pointermove',e=>{
 function endPtr(e){
   if (!ptrs.has(e.pointerId)) return;
   ptrs.delete(e.pointerId);
+  if (objEdit){ if (!ptrs.size){ objUp(); gest=null; } return; }
   if (trkPick){ if (!ptrs.size){ trkUp(); gest=null; } return; }
   if (ptrs.size===1 && gest && gest.type==='vpinch'){ const [x,y]=[...ptrs.values()][0]; gest={type:'vpan',x0:x,y0:y,v0:kfVals(),moved:true}; return; }
   if (ptrs.size) return;
@@ -1437,6 +1443,11 @@ function trkUp(){ const P=trkPick; if (!P||P.running||!gest) return; if (gest.ty
 function drawTrkPick(){
   const P=trkPick, B=P.box, c=cv.getContext('2d'), W=cv.width, H=cv.height, lw=Math.max(2,W*0.004);
   c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.shadowColor='transparent';
+  if (P.obj){   // sledování tvaru objektu: jen živý náhled + průběh
+    if (P.live) { c.drawImage(P.live.img,0,0,W,H); objLiveOutline(c,P.obj,P.live.A,W,H); }
+    const bw=W*0.6, bh=Math.max(4,H*0.008); c.fillStyle='rgba(255,255,255,.3)'; c.fillRect((W-bw)/2,H*0.06,bw,bh); c.fillStyle='#27e1c1'; c.fillRect((W-bw)/2,H*0.06,bw*P.prog,bh);
+    c.restore(); return;
+  }
   const x0=B.cx-B.w/2, y0=B.cy-B.h/2;
   c.fillStyle='rgba(0,0,0,.38)'; c.beginPath(); c.rect(0,0,W,H); c.rect(x0,y0,B.w,B.h); c.fill('evenodd');
   c.strokeStyle='#fff'; c.lineWidth=lw; c.strokeRect(x0,y0,B.w,B.h);
@@ -1449,7 +1460,8 @@ function drawTrkPick(){
   if (!P.running){ const hr=Math.min(W,H)*0.028; c.fillStyle='#fff'; c.beginPath(); c.arc(B.cx+B.w/2,B.cy+B.h/2,hr,0,Math.PI*2); c.fill(); c.strokeStyle='#111'; c.lineWidth=hr*0.18; c.beginPath(); c.moveTo(B.cx+B.w/2-hr*0.45,B.cy+B.h/2+hr*0.45); c.lineTo(B.cx+B.w/2+hr*0.45,B.cy+B.h/2-hr*0.45); c.stroke(); }
   else { const bw=W*0.6, bh=Math.max(4,H*0.008);
     // živý náhled: snímek, který se právě sleduje, a kde na něm objekt je
-    if (P.live){ const L=P.live.box; c.drawImage(P.live.img,0,0,W,H); const lx=L.cx*W, ly=L.cy*H, lw2=L.w*W, lh2=L.h*H;
+    if (P.live && P.live.A && P.obj){ c.drawImage(P.live.img,0,0,W,H); objLiveOutline(c,P.obj,P.live.A,W,H); }
+    else if (P.live && P.live.box){ const L=P.live.box; c.drawImage(P.live.img,0,0,W,H); const lx=L.cx*W, ly=L.cy*H, lw2=L.w*W, lh2=L.h*H;
       c.strokeStyle='#27e1c1'; c.lineWidth=lw*2; c.strokeRect(lx-lw2/2,ly-lh2/2,lw2,lh2); c.beginPath(); c.moveTo(lx-lw2*0.15,ly); c.lineTo(lx+lw2*0.15,ly); c.moveTo(lx,ly-lh2*0.15); c.lineTo(lx,ly+lh2*0.15); c.stroke(); }
     c.fillStyle='rgba(255,255,255,.3)'; c.fillRect((W-bw)/2,H*0.06,bw,bh); c.fillStyle='#27e1c1'; c.fillRect((W-bw)/2,H*0.06,bw*P.prog,bh); }
   c.restore();
@@ -1500,6 +1512,154 @@ async function trkRun(){
 function trkMsg(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),6000); }
 $('trkGo').onclick=()=>trkRun();
 $('trkCancel').onclick=()=>{ if (!trkPick) return; if (trkPick.running) trkPick.cancel=true; else trkEnd(); };
+
+// ================= ZVÝRAZNĚNÍ OBJEKTU (shine, obrys, výplň, sledování tvaru) =================
+// výběr: AI klepnutím / kouzelná hůlka / štětec + / guma; vykreslení a sledování: objs.js + tracker.js
+let objEdit=null, selObj=null;
+const OBJ_COLORS=['#ffffff','#ffd27a','#ff9c00','#9fdcff','#27e1c1','#ff9ad5'];
+function objSave(o){ const r={}; for (const k in o) if (k[0]!=='_') r[k]=o[k]; return r; }
+function objInvalidate(o){ o._m=null; o._mk=Math.random(); o._bb=null; o._ct=null; if (o.trk) o.trk._S=null; }
+const curObj=()=>E.objs.find(o=>o.id===selObj);
+function openObjPanel(){ panel='obj'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); if (selClip>=0){ selClip=-1; renderVideoTrack(); } renderPanel(); }
+$('objBtn').onclick=()=>{ vid.pause(); openObjPanel(); if (!E.objs.length) objBegin(null); };
+// obraz výchozího snímku v rozlišení masky (bez zoomu z klíčových bodů)
+function objFrame(m){ const c=document.createElement('canvas'); c.width=m.w; c.height=m.h; const x=c.getContext('2d',{willReadFrequently:true}); try{ x.drawImage(vid,0,0,m.w,m.h); }catch(e){} return {c, img:x.getImageData(0,0,m.w,m.h)}; }
+function objBegin(o){
+  vid.pause(); if (trkPick) return;
+  if (o){ PV.currentTime=E.src2out(o.t0); }
+  setTimeout(()=>{   // počkat na snímek po přetočení
+    const m=o? (()=>{ const a=OBJ.unrle(o.mask); return {w:a.w,h:a.h,d:a.d.slice()}; })() : OBJ.newMask(fullW/fullH);
+    const f=objFrame(m);
+    objEdit={m, c:f.c, img:f.img, tool:'ai', size:14, tol:26, obj:o, t0:o?o.t0:vid.currentTime, dirty:true, busy:false};
+    renderPanel(); trkMsgShort('Klepni na objekt – AI ho vybere. Štětcem přidáš, gumou ubereš.');
+  }, o?350:0);
+}
+function trkMsgShort(m){ toast(m); }
+// plátno → maskové pixely (zpětně přes zoom / stabilizaci videa)
+function objPt(x,y){ const W=cv.width,H=cv.height,k=E.vxfAt(PV.currentTime)||{z:100,x:0,y:0},z=k.z/100, m=objEdit.m;
+  const nx=((x-(W/2+k.x/100*W))/z+W/2)/W, ny=((y-(H/2+k.y/100*H))/z+H/2)/H; return [nx*m.w, ny*m.h]; }
+async function objDown(x,y){
+  const E2=objEdit; if (!E2 || E2.busy) return; const [mx,my]=objPt(x,y);
+  if (E2.tool==='ai'){
+    E2.busy=true; toast('AI vybírá objekt…');
+    try{ const n=await OBJ.aiSelect(E2.c,E2.m,mx,my,true); E2.dirty=true; toast(n?'Vybráno – klepni na další část, nebo uprav štětcem':'Tady AI nic nenašla – zkus jiné místo nebo kouzelnou hůlku'); }
+    catch(e){ console.warn(e); toast('AI výběr se nenačetl (je potřeba internet) – použij kouzelnou hůlku'); E2.tool='wand'; renderPanel(); }
+    E2.busy=false; return;
+  }
+  if (E2.tool==='wand'){ OBJ.wand(E2.img,E2.m,mx,my,E2.tol,true); E2.dirty=true; return; }
+  gest={type:'obrush'}; OBJ.brush(E2.m,mx,my,E2.size,E2.tool==='add'?1:0); E2.dirty=true; E2.cur=[x,y];
+}
+function objMove(x,y){ const E2=objEdit; if (!E2) return; E2.cur=[x,y]; if (!gest || gest.type!=='obrush') return; const [mx,my]=objPt(x,y); OBJ.brush(E2.m,mx,my,E2.size,E2.tool==='add'?1:0); E2.dirty=true; }
+function objUp(){ }
+let objTint=null;
+function drawObjEdit(){
+  const E2=objEdit, m=E2.m, W=cv.width, H=cv.height, c=cv.getContext('2d');
+  if (!objTint || objTint.width!==m.w || objTint.height!==m.h){ objTint=document.createElement('canvas'); objTint.width=m.w; objTint.height=m.h; E2.dirty=true; }
+  if (E2.dirty){ const x=objTint.getContext('2d'), id=x.createImageData(m.w,m.h); for (let i=0;i<m.d.length;i++) if (m.d[i]){ id.data[i*4]=39; id.data[i*4+1]=225; id.data[i*4+2]=193; id.data[i*4+3]=130; } x.putImageData(id,0,0); E2.dirty=false; }
+  const k=E.vxfAt(PV.currentTime)||{z:100,x:0,y:0}, z=k.z/100;
+  c.save(); c.setTransform(1,0,0,1,0,0); c.translate(W/2+k.x/100*W,H/2+k.y/100*H); c.scale(z,z); c.translate(-W/2,-H/2); c.imageSmoothingEnabled=true; c.drawImage(objTint,0,0,W,H); c.restore();
+  if (E2.cur && (E2.tool==='add'||E2.tool==='erase')){ const r=E2.size/m.w*W*z; c.save(); c.setTransform(1,0,0,1,0,0); c.strokeStyle=E2.tool==='add'?'#27e1c1':'#ff5a5a'; c.lineWidth=Math.max(2,W*0.003); c.beginPath(); c.arc(E2.cur[0],E2.cur[1],r,0,Math.PI*2); c.stroke(); c.restore(); }
+}
+function objLiveOutline(c,o,A,W,H){
+  if (!o._m) o._m=OBJ.unrle(o.mask); if (!o._ct) o._ct=OBJ.contours(o._m); const m=o._m;
+  c.save(); c.setTransform(1,0,0,1,0,0); c.strokeStyle='#27e1c1'; c.lineWidth=Math.max(2,W*0.004);
+  for (const P of o._ct){ c.beginPath(); P.forEach(([x,y],i)=>{ const nx=x/m.w, ny=y/m.h, X=(A[0]*nx+A[2]*ny+A[4])*W, Y=(A[1]*nx+A[3]*ny+A[5])*H; i?c.lineTo(X,Y):c.moveTo(X,Y); }); c.closePath(); c.stroke(); }
+  c.restore();
+}
+function objFinish(save){
+  const E2=objEdit; objEdit=null; if (!save){ renderPanel(); return; }
+  if (OBJ.area(E2.m)<30){ toast('Nic není vybrané'); renderPanel(); return; }
+  OBJ.tidy(E2.m);
+  if (E2.obj){ E2.obj.mask=OBJ.rle(E2.m); objInvalidate(E2.obj); selObj=E2.obj.id; }
+  else {
+    const s=E.src2out(E2.t0), o={id:'o'+Date.now().toString(36), t0:E2.t0, s, e:Math.min(PV.duration||s+4, s+4), mask:OBJ.rle(E2.m), _mk:1,
+      shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, line:'off', lineC:'#ffffff', lineW:50, fillA:0, fillC:'#27e1c1', trk:null};
+    E.objs.push(o); selObj=o.id;
+  }
+  changed(); renderPanel(); renderTimeline();
+  // hned sledovat pohyb kamery (zastaví se samo u střihu) – u reality se kamera skoro vždy hýbe
+  const o=curObj(); if (o && !E2.obj) objTrack(o); else toast('Výběr upravený');
+}
+function colorRow(lb,key,o){ const v=o[key]||'#ffffff'; return `<div class="clabel">${lb}</div><div class="objcols" data-k="${key}">${OBJ_COLORS.map(c=>`<i class="${v.toLowerCase()===c?'on':''}" data-c="${c}" style="background:${c}"></i>`).join('')}<label class="cpick" style="background:${v}"><input type="color" value="${v}" data-k="${key}"></label></div>`; }
+function oslider(lb,id,min,max,val,unit=''){ return `<label class="ctl"><div class="lb"><span>${lb}</span><span>${val}${unit}</span></div><input type="range" id="${id}" min="${min}" max="${max}" step="${(max-min)>20?1:0.1}" value="${val}"></label>`; }
+function pObj(){
+  const E2=objEdit;
+  if (E2){
+    const T=[['ai','AI výběr (klepni)'],['wand','Kouzelná hůlka'],['add','Štětec +'],['erase','Guma']];
+    return `<div class="mixhead"><svg class="ic grad"><use href="#i-sparkles"/></svg><div><b>${E2.obj?'Úprava výběru':'Vyber objekt'}</b><small>Klepni na objekt (stůl, gauč, okno, pozemek…). Štětcem přidáš, gumou ubereš. Video stojí na snímku, ze kterého se výběr dělá.</small></div></div>
+    <div class="chips" id="objTool">${T.map(([v,l])=>`<div class="chip ${E2.tool===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+    ${E2.tool==='add'||E2.tool==='erase'?oslider('Velikost štětce','objSize',2,60,E2.size):''}
+    ${E2.tool==='wand'?oslider('Tolerance barvy','objTol',4,80,E2.tol):''}
+    <div class="btnrow"><button class="btn" id="objClear">${I('reset')} Vymazat výběr</button></div>
+    <div class="btnrow"><button class="btn" id="objCancel">Zrušit</button><button class="btn primary" id="objDone">${I('check')} Hotovo</button></div>`;
+  }
+  const o=curObj();
+  let h=`<div class="mixhead"><svg class="ic grad"><use href="#i-sparkles"/></svg><div><b>Zvýraznění objektu</b><small>Vyber objekt ve videu – přes něj projede shine, může mít obrys (plný / přerušovaný) a výplň. Se sledováním drží tvar i při pohybu kamery (např. pozemek z dronu).</small></div></div>
+  <button class="btn ${o?'':'primary'}" id="objNew">${I('plus')} Vybrat objekt</button>
+  ${E.objs.length?`<div class="chips" id="objList">${E.objs.map((x,i)=>`<div class="chip ${x.id===selObj?'on':''}" data-v="${x.id}">Objekt ${i+1}</div>`).join('')}</div>`:''}`;
+  if (!o) return h;
+  const tr=o.trk;
+  h+=`<div class="clabel">Čas · ${fmt(o.s)}–${fmt(o.e)}</div>
+  <div class="btnrow"><button class="btn small" id="objHere">${I('pin')} Začít v místě hlavy</button></div>
+  ${oslider('Délka zobrazení','objDur',0.5,30,+(o.e-o.s).toFixed(1),' s')}
+  <div class="row"><span>Shine přes objekt</span><input type="checkbox" class="sw" id="objShine" ${o.shine?'checked':''}></div>
+  ${o.shine?`${colorRow('Barva shine','shineC',o)}${oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)}${oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s')}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}`:''}
+  <div class="clabel">Obrys</div><div class="chips" id="objLine">${[['off','Žádný'],['solid','Plná čára'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${(o.line||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  ${o.line&&o.line!=='off'?`${colorRow('Barva čáry','lineC',o)}${oslider('Tloušťka čáry','objLW',10,200,o.lineW??50)}`:''}
+  ${oslider('Výplň (barevný nádech)','objFA',0,70,o.fillA||0,' %')}
+  ${(o.fillA||0)>0?colorRow('Barva výplně','fillC',o):''}
+  <div class="clabel">Pohyb kamery</div>
+  <button class="btn" id="objTrk">${I('target','grad')} ${tr?'Sledovat znovu':'Sledovat pohyb objektu'}</button>
+  ${tr?`<div class="note">Sledováno ${fmt(E.src2out(tr.t[0]))}–${fmt(E.src2out(tr.t[tr.t.length-1]))}. Tvar drží posun, natočení, zvětšení i zkosení.</div>${oslider('Plynulost sledování','objTS',0,60,tr.smooth??8)}<button class="btn small" id="objTrkOff">Zrušit sledování</button>`:'<div class="note">Bez sledování zůstane zvýraznění na místě (statický záběr). Při pohybu kamery dej „Sledovat“.</div>'}
+  <div class="btnrow"><button class="btn" id="objEditBtn">${I('pencil')} Upravit výběr</button><button class="btn" id="objDel">${I('trash')} Smazat</button></div>`;
+  return h;
+}
+binders.obj=()=>{
+  const E2=objEdit;
+  if (E2){
+    $('objTool').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; E2.tool=d.dataset.v; renderPanel(); };
+    if ($('objSize')) $('objSize').oninput=e=>{ E2.size=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=E2.size; };
+    if ($('objTol')) $('objTol').oninput=e=>{ E2.tol=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=E2.tol; };
+    $('objClear').onclick=()=>{ E2.m.d.fill(0); E2.dirty=true; };
+    $('objCancel').onclick=()=>objFinish(false); $('objDone').onclick=()=>objFinish(true);
+    // AI model načíst hned na pozadí, ať je první klepnutí rychlé
+    OBJ.aiLoad().catch(()=>{});
+    return;
+  }
+  $('objNew').onclick=()=>objBegin(null);
+  if ($('objList')) $('objList').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; selObj=d.dataset.v; const o=curObj(); if (o && (PV.currentTime<o.s||PV.currentTime>o.e)) PV.currentTime=o.s+0.05; renderPanel(); };
+  const o=curObj(); if (!o) return;
+  const num=(id,fn)=>{ const el=$(id); if (!el) return; el.oninput=e=>{ fn(+e.target.value); e.target.previousElementSibling.lastElementChild.textContent=e.target.value+(e.target.previousElementSibling.lastElementChild.textContent.replace(/^[\d.,-]+/,'')); }; el.onchange=()=>changed(); };
+  $('objHere').onclick=()=>{ const d=o.e-o.s; o.s=PV.currentTime; o.e=Math.min(PV.duration,o.s+d); changed(); renderPanel(); renderTimeline(); };
+  num('objDur',v=>{ o.e=Math.min(PV.duration,o.s+v); });
+  $('objShine').onchange=e=>{ o.shine=e.target.checked; changed(); renderPanel(); };
+  num('objSS',v=>o.shineSpd=v); num('objSE',v=>o.shineEvery=v); num('objSW',v=>o.shineW=v); num('objSI',v=>o.shineI=v); num('objLW',v=>o.lineW=v);
+  num('objFA',v=>o.fillA=v); if ($('objFA')) $('objFA').onchange=()=>{ changed(); renderPanel(); };
+  num('objTS',v=>{ if (o.trk){ o.trk.smooth=v; o.trk._S=null; } });
+  $('objLine').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; o.line=d.dataset.v; changed(); renderPanel(); };
+  document.querySelectorAll('#panel .objcols').forEach(row=>{ row.onclick=e=>{ const d=e.target.closest('[data-c]'); if(!d) return; o[row.dataset.k]=d.dataset.c; changed(); renderPanel(); }; const inp=row.querySelector('input[type=color]'); if (inp){ inp.oninput=e=>{ o[inp.dataset.k]=e.target.value; inp.parentElement.style.background=e.target.value; }; inp.onchange=()=>{ changed(); renderPanel(); }; } });
+  $('objTrk').onclick=()=>objTrack(o);
+  if ($('objTrkOff')) $('objTrkOff').onclick=()=>{ o.trk=null; changed(); renderPanel(); };
+  $('objEditBtn').onclick=()=>objBegin(o);
+  $('objDel').onclick=()=>{ E.objs=E.objs.filter(x=>x!==o); selObj=null; changed(); renderPanel(); renderTimeline(); };
+};
+// sledování tvaru objektu (afinní) – s živým náhledem obrysu
+async function objTrack(o){
+  if (trkPick || !window.TRK) return; vid.pause();
+  if (!o._m) o._m=OBJ.unrle(o.mask);
+  const W=cv.width,H=cv.height;
+  trkPick={box:{cx:W/2,cy:H/2,w:W,h:H}, kind:'obj', obj:o, running:true, cancel:false, prog:0};
+  $('trkBar').classList.remove('hidden'); trkBarUpd(); $('trkHint').textContent='Sleduji objekt… 0 %';
+  const P=trkPick; let v=null, tr=null, last=0;
+  try{ v=await auxVideo(); tr=await TRK.runAffine({video:v, file:videoFile, t0:o.t0, mask:o._m, back:6, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; $('trkHint').textContent=`Sleduji objekt… ${Math.round(p*100)} %`; } }, onFrame:(img,A)=>{ if (A) P.live={img,A}; }, cancel:()=>P.cancel}); }
+  catch(e){ console.warn(e); TRK.why='chyba: '+(e&&e.message||e); }
+  if (v) freeVideo(v); trkEnd();
+  if (!tr){ trkMsg('Objekt se nepodařilo sledovat'+(TRK.why?' ('+TRK.why+')':'')+'. Zkus výběr s výraznější kresbou.'); return; }
+  o.trk={t:tr.t, A:tr.A.map(a=>a.map(v=>Math.round(v*1e5)/1e5)), c:tr.c.map(v=>Math.round(v*100)/100), smooth:8};
+  o.s=E.src2out(tr.t[0]); o.e=E.src2out(tr.t[tr.t.length-1]);
+  changed(); renderPanel(); renderTimeline(); PV.currentTime=o.s+0.05;
+  trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s. Pusť video a uvidíš.`);
+}
 
 // ================= EXPORT =================
 $('exportBtn').onclick=()=>{

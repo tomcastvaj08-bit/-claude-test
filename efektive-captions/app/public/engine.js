@@ -847,6 +847,7 @@ E.kfAt=t=>{
 // E.tracks[id] = {id, t0, t[], x[], y[], s[], c[] (syrová dráha, čas = čas zdrojového videa), smooth 0–100, scale (měnit velikost s objektem)}
 // titulek / overlay s trk:id se posouvá o to, o kolik se objekt na obrazovce posunul od okamžiku t0 (i se zoomem videa)
 E.tracks={};
+E.objs=[];   // zvýrazněné objekty – viz objs.js
 const KF0={z:100,x:0,y:0};
 E.trackSm=T=>{ if (!T._sm || T._smK!==T.smooth || T._smN!==T.t.length){ T._sm=window.TRK?TRK.smooth(T,T.smooth):null; T._smK=T.smooth; T._smN=T.t.length; } return T._sm; };
 E.trkOffset=(id,t)=>{
@@ -936,6 +937,7 @@ E.render = (t, opts={}) => {
   }
   for (const o of E.overlays) if (o.full) E.drawOverlay(ctx,o,t);   // překrytí celého videa = nový základ (pod přechody i titulky)
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
+  if (window.OBJ && E.objs && E.objs.length && !F.transparent) OBJ.draw(ctx,cv.width,cv.height,t);   // zvýrazněné objekty (shine, obrys, výplň)
   // overlaye pod titulky
   for (const o of E.overlays) if (!o.above && !o.full) E.drawOverlay(ctx,o,t);
   // titulky ve vrstvách: vrstva 1 („pod“) se kreslí první, hlavní vrstva 0 přes ni

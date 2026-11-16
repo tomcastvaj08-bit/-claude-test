@@ -330,4 +330,125 @@ TRK.at = (S, t) => {
   const cr = A => { const p0 = A[i0], p1 = A[i], p2 = A[i2], p3 = A[i3]; return 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (-p0 + 3 * p1 - 3 * p2 + p3) * u * u * u); };
   return { x: cr(S.x), y: cr(S.y), s: cr(S.s) };
 };
+
+// ================= SLEDOVÁNÍ TVARU (afinní: posun, natočení, zvětšení, zkosení) =================
+// pro zvýrazněné objekty – např. pozemek při průletu dronem. Body uvnitř objektu se sledují snímek po snímku,
+// z jejich polohy vůči výchozímu snímku se robustně (RANSAC) spočítá afinní transformace; ztracené body se doplňují.
+function goodFeatures(L, inside, maxN, minD) {
+  const { w, h, gx, gy } = L, cand = [];
+  for (let y = 3; y < h - 3; y += 2) for (let x = 3; x < w - 3; x += 2) {
+    if (!inside(x, y)) continue;
+    let a = 0, b = 0, c = 0;
+    for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const k = (y + j) * w + x + i, X = gx[k], Y = gy[k]; a += X * X; b += X * Y; c += Y * Y; }
+    const tr = a + c, det = a * c - b * b, ev = tr / 2 - Math.sqrt(Math.max(0, tr * tr / 4 - det));
+    if (ev > 30) cand.push([ev, x, y]);
+  }
+  cand.sort((p, q) => q[0] - p[0]);
+  const out = [], md2 = minD * minD;
+  for (const [, x, y] of cand) { if (out.length >= maxN) break; if (out.every(p => (p[0] - x) ** 2 + (p[1] - y) ** 2 >= md2)) out.push([x, y]); }
+  return out;
+}
+function fitAffine(P, Q) {   // nejmenší čtverce: Q ≈ A·P   (A = [a,b,c,d,e,f] ve tvaru DOMMatrix: x'=a·x+c·y+e, y'=b·x+d·y+f)
+  let sxx = 0, sxy = 0, syy = 0, sx = 0, sy = 0, n = P.length, ux = [0, 0, 0], uy = [0, 0, 0];
+  for (let i = 0; i < n; i++) { const [x, y] = P[i], [X, Y] = Q[i]; sxx += x * x; sxy += x * y; syy += y * y; sx += x; sy += y; ux[0] += x * X; ux[1] += y * X; ux[2] += X; uy[0] += x * Y; uy[1] += y * Y; uy[2] += Y; }
+  const M = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]];
+  const det = M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+  if (Math.abs(det) < 1e-9) return null;
+  const sol = Y => { const r = []; for (let k = 0; k < 3; k++) { const C = M.map(r2 => r2.slice()); for (let j = 0; j < 3; j++) C[j][k] = Y[j];
+    r.push((C[0][0] * (C[1][1] * C[2][2] - C[1][2] * C[2][1]) - C[0][1] * (C[1][0] * C[2][2] - C[1][2] * C[2][0]) + C[0][2] * (C[1][0] * C[2][1] - C[1][1] * C[2][0])) / det); } return r; };
+  const [a, c, e] = sol(ux), [b, d, f] = sol(uy);
+  return [a, b, c, d, e, f];
+}
+const apply = (A, x, y) => [A[0] * x + A[2] * y + A[4], A[1] * x + A[3] * y + A[5]];
+const invA = A => { const det = A[0] * A[3] - A[1] * A[2]; if (Math.abs(det) < 1e-9) return null; const a = A[3] / det, b = -A[1] / det, c = -A[2] / det, d = A[0] / det; return [a, b, c, d, -(a * A[4] + c * A[5]), -(b * A[4] + d * A[5])]; };
+function ransac(P, Q) {
+  const n = P.length; if (n < 4) return null;
+  let best = null, bestIn = null;
+  for (let it = 0; it < 120; it++) {
+    const i = (Math.random() * n) | 0, j = (Math.random() * n) | 0, k = (Math.random() * n) | 0; if (i === j || j === k || i === k) continue;
+    const A = fitAffine([P[i], P[j], P[k]], [Q[i], Q[j], Q[k]]); if (!A) continue;
+    const ins = []; for (let m = 0; m < n; m++) { const r = apply(A, P[m][0], P[m][1]); if ((r[0] - Q[m][0]) ** 2 + (r[1] - Q[m][1]) ** 2 < 4) ins.push(m); }
+    if (!bestIn || ins.length > bestIn.length) { bestIn = ins; best = A; if (ins.length > n * 0.9) break; }
+  }
+  if (!bestIn || bestIn.length < Math.max(4, n * 0.3)) return null;
+  const A = fitAffine(bestIn.map(m => P[m]), bestIn.map(m => Q[m])) || best;
+  return { A, inl: new Set(bestIn) };
+}
+// mask = {w,h,d} (výběr ve výchozím snímku), vrací {t:[], A:[[6]...], c:[]} – A v normalizovaných souřadnicích
+TRK.runAffine = async (o) => {
+  const { video, file, t0, mask, onP, cancel } = o;
+  const dur = video.duration || 0, ar = (video.videoWidth || 9) / (video.videoHeight || 16);
+  const long = 640, W = Math.round(ar >= 1 ? long : long * ar) & ~1, H = Math.round(ar >= 1 ? long / ar : long) & ~1;
+  const fps = 30, back = Math.min(t0, o.back != null ? o.back : 6), tEnd = Math.min(dur, o.t1 != null ? o.t1 : dur);
+  // je bod (pracovní px, výchozí snímek) uvnitř objektu? (s malou rezervou kolem okraje – hrany jsou nejlepší body)
+  const R = 3, inMask = (x, y) => { for (let j = -R; j <= R; j += R) for (let i = -R; i <= R; i += R) { const mx = Math.round((x + i) / W * mask.w), my = Math.round((y + j) / H * mask.h); if (mx >= 0 && my >= 0 && mx < mask.w && my < mask.h && mask.d[my * mask.w + mx]) return true; } return false; };
+  const toN = A => [A[0], A[1] * W / H, A[2] * H / W, A[3], A[4] / W, A[5] / H];
+  const total = (tEnd - (t0 - back)) || 1; TRK.why = '';
+  let lastYield = performance.now();
+  const breathe = async () => { if (performance.now() - lastYield > 40) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); } };
+  const track = (P0, frames, out) => {   // P0 = pyramida výchozího snímku, frames = iterátor {t, Q}
+    return (async () => {
+      let pts = goodFeatures(P0[0], inMask, 160, 7).map(p => ({ a: p, c: p })), n0 = Math.max(8, pts.length), prev = P0, A = [1, 0, 0, 1, 0, 0], lost = 0, lastG = null;
+      if (pts.length < 6) { TRK.why = 'málo kresby v objektu'; return false; }
+      const f = [0, 0], b = [0, 0];
+      for await (const fr of frames) {
+        if (cancel && cancel()) break;
+        if (fr.cut) break;
+        const Q = fr.Q; const keep = [];
+        for (const p of pts) { if (!lk(prev, Q, p.c[0], p.c[1], f) || !lk(Q, prev, f[0], f[1], b)) continue; if (Math.hypot(b[0] - p.c[0], b[1] - p.c[1]) > 1.0) continue; keep.push({ a: p.a, c: [f[0], f[1]] }); }
+        const r = ransac(keep.map(p => p.a), keep.map(p => p.c));
+        if (!r) { if (++lost > 6) { TRK.why = 'ztraceno ' + fr.t.toFixed(2); break; } prev = Q; continue; }
+        lost = 0; A = r.A; pts = keep.filter((_, i) => r.inl.has(i));
+        // doplnit body, když jich ubylo (nové body se přepočítají zpět do výchozího snímku)
+        if (pts.length < n0 * 0.55) {
+          const iA = invA(A);
+          if (iA) { const nw = goodFeatures(Q[0], (x, y) => { const q = apply(iA, x, y); return inMask(q[0], q[1]); }, 160, 7);
+            for (const p of nw) { if (pts.length >= 160) break; if (pts.some(s => (s.c[0] - p[0]) ** 2 + (s.c[1] - p[1]) ** 2 < 36)) continue; pts.push({ a: apply(iA, p[0], p[1]), c: p }); } }
+        }
+        out.push({ t: fr.t, A: toN(A), c: Math.min(1, pts.length / n0) });
+        prev = Q; await breathe();
+      }
+      return true;
+    })();
+  };
+  // 1) dopředu (snímky před bodem se uloží pro zpětný průchod)
+  const stored = []; let P0 = null, lastG = null, firstG = null; const fwd = [];
+  const gen = TRK.frames({ file, video, t0: t0 - back, t1: tEnd, fps, W, H });
+  const fwdFrames = (async function* () {
+    for await (const fr of gen) {
+      onP && onP((fr.t - (t0 - back)) / total);
+      if (fr.t < t0 - 0.02) { stored.push({ t: fr.t, data: fr.data }); continue; }
+      if (!P0) { P0 = TRK.pyramid(fr.data, W, H); firstG = lastG = fr.data; fwd.push({ t: fr.t, A: [1, 0, 0, 1, 0, 0], c: 1 }); continue; }
+      const cut = TRK.isCut(lastG, fr.data); lastG = fr.data;
+      if (o.onFrame && fr.canvas) o.onFrame(fr.canvas, fwd.length ? fwd[fwd.length - 1].A : null);
+      yield { t: fr.t, Q: TRK.pyramid(fr.data, W, H), cut };
+    }
+  })();
+  // první snímek je potřeba mít před spuštěním sledování
+  const first = await fwdFrames.next();
+  if (!P0) return null;
+  const rest = (async function* () { if (!first.done) yield first.value; for await (const v of fwdFrames) yield v; })();
+  await track(P0, rest, fwd);
+  // 2) zpátky
+  const bk = [];
+  if (stored.length && !(cancel && cancel())) {
+    const bFrames = (async function* () { let lg = firstG; for (let i = stored.length - 1; i >= 0; i--) { const d = stored[i].data; const cut = TRK.isCut(lg, d); lg = d; yield { t: stored[i].t, Q: TRK.pyramid(d, W, H), cut }; stored[i].data = null; } })();
+    await track(P0, bFrames, bk);
+  }
+  const all = bk.reverse().concat(fwd);
+  if (all.length < 2) return null;
+  return { t: all.map(r => r.t), A: all.map(r => r.A), c: all.map(r => r.c), t0 };
+};
+// vyhlazená afinní transformace v čase ts (zdrojový čas)
+TRK.affAt = (tr, ts, sm) => {
+  if (!tr._S || tr._Sk !== sm || tr._Sn !== tr.t.length) {
+    const sig = TRK.sigma(sm), dt = 1 / 60, ta = tr.t[0], tb = tr.t[tr.t.length - 1];
+    const n = Math.max(2, Math.round((tb - ta) / dt) + 1), tt = new Float32Array(n); for (let i = 0; i < n; i++) tt[i] = ta + i * dt;
+    const P = []; for (let k = 0; k < 6; k++) P.push(loess(tr.t, tr.A.map(a => a[k]), tr.c, tt, sig));
+    tr._S = { ta, dt, n, P }; tr._Sk = sm; tr._Sn = tr.t.length;
+  }
+  const S = tr._S; let f = (ts - S.ta) / S.dt; f = Math.max(0, Math.min(S.n - 1, f));
+  const i = Math.min(S.n - 2, Math.floor(f)), u = f - i, i0 = Math.max(0, i - 1), i2 = Math.min(S.n - 1, i + 1), i3 = Math.min(S.n - 1, i + 2);
+  return S.P.map(A => { const p0 = A[i0], p1 = A[i], p2 = A[i2], p3 = A[i3]; return 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (-p0 + 3 * p1 - 3 * p2 + p3) * u * u * u); });
+};
 })(window);
