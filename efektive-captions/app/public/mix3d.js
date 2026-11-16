@@ -113,28 +113,26 @@ function drawBlur(c,o,dx,dy,dw,dh,blur){
 let flowKey='', flow=null;
 function faceAt(t){ if (!E.face) return null; const ts=E.out2src?E.out2src(t):t; const i=Math.round(ts*10); return E.face[i]||E.face[i-1]||E.face[i+1]||null; }
 const Z0=-0.32;                                   // start kousek před „kamerou“ (větší a rozmazané)
-const zOf=(vz,a)=>Z0 + vz*a*(1+0.7*a);           // hloubka roste plynule a lehce zrychluje → pohyb nikdy nestojí
+const zOf=(vz,a)=>Z0 + vz*a*(1+0.5*a);           // hloubka roste plynule a lehce zrychluje → pohyb nikdy nestojí
 const sOf=z=>1/(1+Math.max(-0.6,z));
 function layoutFlow(W,H){
   const {lines}=build(), G=E.G;
   const key=cacheKey+'|'+W+'|'+H+'|'+(G.mixSize||100)+'|'+(G.mixY??60)+'|'+(E.face?E.face.length:0)+'|'+(G.mixSpeed||100);
   if (key===flowKey && flow) return flow; flowKey=key;
   const base=W*0.165*(G.mixSize||100)/100, lh=L=>base*L.size*0.8;
-  const vpY=H*0.1, land=H*((G.mixY??60)/100);
-  // rychlost do hloubky tak, aby se řádky (při běžném tempu řeči) skoro nepřekrývaly
+  // úběžník jen kousek nad místem dosednutí → řádky letí skoro jen do dálky, jen lehce stoupají
+  const land=H*((G.mixY??60)/100), vpY=land-H*0.13;
   const gaps=[]; for (let i=1;i<lines.length;i++){ const g=lines[i].s-lines[i-1].s; if (g>0.05&&g<2) gaps.push(g); }
-  gaps.sort((a,b)=>a-b); const g=gaps.length? gaps[Math.floor(gaps.length*0.35)] : 0.4;
-  const avgLh=lines.length? lines.reduce((a,L)=>a+lh(L),0)/lines.length : base*0.8;
-  const aSet=0.32;                                  // kdy je nový řádek „usazený“ (měřítko ~1)
-  const ok=vz=>{ const sN=sOf(zOf(vz,aSet)), sP=sOf(zOf(vz,aSet+g)); const yN=vpY+(land-vpY)*sN, yP=vpY+(land-vpY)*sP; return (yN-avgLh*sN*0.5) - (yP+avgLh*sP*0.5) >= -avgLh*0.12; };
-  let lo=0.2, hi=6; for (let i=0;i<30;i++){ const m=(lo+hi)/2; if (ok(m)) hi=m; else lo=m; }
+  gaps.sort((a,b)=>a-b); const g=gaps.length? gaps[Math.floor(gaps.length*0.5)] : 0.4;
+  // rychlost do hloubky: za běžný rozestup řádků se předchozí řádek zmenší asi na 60 % (je „za“ novým)
+  const aSet=0.3; let lo=0.1, hi=8; for (let i=0;i<30;i++){ const m=(lo+hi)/2; if (sOf(zOf(m,aSet+g))<=0.67) hi=m; else lo=m; }
   const vz=hi*(G.mixSpeed||100)/100;
   for (const L of lines){
     L.land=land; L.faceB=null;
     const f=faceAt(L.s+0.3);
     if (f){ const fb=f[3]*H; L.faceB=fb; if (land-lh(L)*0.6<fb) L.land=Math.min(H*0.9, fb+lh(L)*0.75); }
   }
-  flow={vz,base,vpY,lh}; return flow;
+  flow={vz,base,vpY,lh}; lines.forEach(L=>{ L.vpY=L.land-H*0.13; }); return flow;
 }
 E.drawMix=(c,t)=>{
   const {lines}=build(); if (!lines.length) return;
@@ -145,13 +143,13 @@ E.drawMix=(c,t)=>{
   for (const L of lines){
     const age=t-L.s; if (age<0 || age>6) continue;
     const z=zOf(vz,age), S=sOf(z);
-    if (S<0.4) continue;
-    const y=vpY+(L.land-vpY)*S;
+    if (S<0.34) continue;
+    const y=L.vpY+(L.land-L.vpY)*S;
     // průhlednost: rychle naběhne, v dálce plynule mizí; u obličeje zmizí dřív, než do něj vjede
-    let A=smooth(age/0.22) * smooth((S-0.42)/0.33);
+    let A=smooth(age/0.22) * smooth((S-0.34)/0.4) * (0.35+0.65*smooth((S-0.45)/0.5));
     if (L.faceB!=null) A*=clamp((y-L.faceB)/(base*0.5)+0.3);
     A*=op; if (A<=0.01) continue;
-    const blur=Math.max(0,(S-1.05))*14 + Math.max(0,(0.9-S))*12;   // u kamery i v dálce rozmazané
+    const blur=Math.max(0,(S-1.05))*14 + Math.max(0,(0.92-S))*16;   // u kamery i v dálce rozmazané
     const px=base*L.size, words=L.ids.map(txt), sp=words.map(w=>sprite(w,L.kind,px));
     const gap=px*(L.kind==='serif'?0.22:0.2), tw=sp.reduce((a,o)=>a+o.tw,0)+gap*(sp.length-1);
     let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
