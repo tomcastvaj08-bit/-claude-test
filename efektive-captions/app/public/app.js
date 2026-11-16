@@ -656,7 +656,8 @@ binders.mix=()=>{
 function pCaptions(){
   const pg=E.pages.map((p,k)=>{ const ws=[]; for(let i=p.a;i<=p.b;i++){ const w=E.words[i]; ws.push(`<span class="w ${w.em?'em':''}" data-i="${i}">${esc(w.t)}</span>`); }
     const m=E.meta[E.keyOf(p)]; return `<div class="pg ${k===curPage?'cur':''}" data-k="${k}"><div class="t">${fmt(p.s)}</div><div class="ws">${ws.join('')}</div><button class="ed" data-ed="${k}">${I('pencil')}</button></div>`; }).join('');
-  return `<div class="btnrow"><button class="btn" id="editTxt">${I('pencil')} Upravit text</button><button class="btn" id="batchBtn">${I('list')} Hromadná úprava</button></div>
+  return `${trkSection(E.pages[curPage]?(E.meta[E.keyOf(E.pages[curPage])]||{}).trk:null,'page')}
+  <div class="btnrow"><button class="btn" id="editTxt">${I('pencil')} Upravit text</button><button class="btn" id="batchBtn">${I('list')} Hromadná úprava</button></div>
   <div class="note">Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo). Tužka u titulku = upravit text.</div>
   ${chips('Hlavní řádek','mainLine',[['mid','Auto (střed)'],['1','1.'],['2','2.'],['3','3.'],['4','4.'],['word','Nejdelší slovo'],['none','Žádný']])}
   ${toggle('Plnit řádky podle šířky (3 / 2 / 2 slova)','split','fill','words')}
@@ -669,7 +670,6 @@ function pCaptions(){
   <div class="btnrow"><button class="btn" id="dictBtn">${I('book')} Slovník oprav</button><button class="btn" id="resetOne">${I('reset')} Zrušit vlastní styl</button></div>
   <div class="btnrow"><button class="btn" id="layerBtn">${E.pages[curPage]&&E.pages[curPage].layer?I('arrow-up')+' Vybraný titulek do hlavní vrstvy':I('arrow-down')+' Vybraný titulek do vrstvy pod'}</button></div>
   <div class="note">Na timeline můžeš titulek i chytit a stáhnout dolů do 2. vrstvy (nebo zpátky nahoru).</div>
-  ${trkSection(E.pages[curPage]?(E.meta[E.keyOf(E.pages[curPage])]||{}).trk:null,'page')}
   <div class="pglist" id="pglist">${pg}</div>`;
 }
 binders.captions=()=>{
@@ -1189,6 +1189,15 @@ $('tlIn').addEventListener('pointerup',e=>{
 $('kfTop').onclick=()=>{ vid.pause(); const i=kfHere();
   if (i>=0){ E.kf.splice(i,1); toast('Klíčový bod smazaný'); } else { kfEnsure(); toast('Klíčový bod přidaný – teď můžeš video na náhledu zvětšit / posunout'); }
   openKfPanel(); changed(); renderVideoTrack(); };
+// Tracking z lišty: overlay (když je vybraný v panelu Overlay), jinak titulek v místě hlavy
+$('trkBtn').onclick=()=>{
+  vid.pause();
+  if (panel==='overlay' && selOv!=null){ const o=E.overlays.find(x=>x.id===selOv); if (o){ trkBegin('ov',id=>{ if (id) o.trk=id; else delete o.trk; }); return; } }
+  let k=E.pageAt(PV.currentTime); if (k<0) k=curPage; if (!E.pages[k]){ toast('Nejdřív vytvoř titulky'); return; }
+  curPage=k; if (panel!=='captions'){ panel='captions'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='captions')); }
+  renderPanel(); markCur();
+  trkBegin('page',id=>{ const p=E.pages[k]; if (p){ const m=pageMeta(p); if (id) m.trk=id; else delete m.trk; } });
+};
 $('cutBtn').onclick=()=>{ vid.pause(); cutAt(PV.currentTime); openClipPanel(); };
 $('splitBtn').onclick=()=>{
   const t=PV.currentTime, k=E.pageAt(t); if (k<0) return toast('Postav přehrávací hlavu na titulek');
