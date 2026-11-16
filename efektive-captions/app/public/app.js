@@ -668,6 +668,7 @@ function pMix(){
   ${on?`<button class="btn" id="mixShuffle">${I('refresh','grad')} Zamíchat znovu (jiné rozložení a písma)</button>
   ${slider('Velikost písma','mixSize',50,180,1,'%')}
   ${slider('Výška na videu','mixY',20,80,1,'%')}
+  ${slider('Do stran (vlevo ← → vpravo)','mixX',0,100,1,'%')}
   ${slider('Rychlost letu','mixSpeed',40,200,1,'%')}
   <div class="clabel">Barva zvýrazněných slov</div><div class="colors">${color('Nahoře','mixA')}${color('Dole','mixB')}</div>
   ${chips('Shine (lesk přejede přes slovo)','mixShine',[['off','Vypnuto'],['hi','Jen zvýrazněná slova'],['all','Všechna slova']])}

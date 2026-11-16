@@ -195,7 +195,7 @@ E.drawMix=(c,t)=>{
     let fit=1; if (tw>W*0.88) fit=W*0.88/tw;
     let x0=W*L.indent; if (x0+tw*fit>W*0.95) x0=Math.max(W*0.04, W*0.95-tw*fit);
     // perspektiva: řádek se stahuje k úběžníku uprostřed
-    const lcx=x0+tw*fit/2, SS=S*fit;   // žádný posun do strany – jen let do dálky
+    const lcx=x0+tw*fit/2+W*(((G.mixX??50)-50)/100), SS=S*fit;   // posun celého mixu doleva / doprava (posuvník „Do stran“)
     let xx=lcx-tw*SS/2;
     sp.forEach((o,wi)=>{
       const wt=E.words[L.ids[wi]], wa=t-(wt.s-0.08);
