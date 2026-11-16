@@ -122,7 +122,7 @@ function maskCanvas(o) {
 function feather(m) {
   const { w, h, d } = m; let x0 = w, y0 = h, x1 = 0, y1 = 0;
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[j * w + i]) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }
-  const R = Math.max(3, Math.round(Math.hypot(x1 - x0, y1 - y0) * 0.025));
+  const R = Math.max(4, Math.round(Math.max(w, h) * 0.013));   // měkký okraj kolem celého objektu (stejně široký u malých i velkých objektů)
   let A = new Float32Array(w * h); for (let i = 0; i < A.length; i++) A[i] = d[i];
   const box = (src, horiz) => { const out = new Float32Array(w * h), n = 2 * R + 1;
     if (horiz) for (let y = 0; y < h; y++) { let s = 0; const r = y * w; for (let x = -R; x <= R; x++) s += src[r + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x++) { out[r + x] = s / n; s += src[r + Math.min(w - 1, x + R + 1)] - src[r + Math.max(0, x - R)]; } }
@@ -195,11 +195,11 @@ function drawShine(c, o, t, W, H, MM, mc, A) {
   ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-in';
   // šikmý pruh (25°) jede zleva doprava přes celý objekt
   const ang = -25 * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-  const span = bw + bh * Math.abs(Math.tan(ang)), band = Math.max(bw, bh) * (0.22 + 0.25 * clamp((o.shineW ?? 50) / 100));
+  const span = bw + bh * Math.abs(Math.tan(ang)), band = Math.max(bw, bh) * (0.05 + 0.14 * clamp((o.shineW ?? 50) / 100));   // užší pruh – měkký jen kousek kolem čáry
   const cx = bb.x0 - band - bh * Math.abs(Math.tan(ang)) / 2 + (span + band * 2) * e, cy = (bb.y0 + bb.y1) / 2;
   const gx0 = cx - band * ca, gy0 = cy - band * sa, gx1 = cx + band * ca, gy1 = cy + band * sa;
   const gr = ox.createLinearGradient(gx0, gy0, gx1, gy1), col = o.shineC || '#ffffff';
-  gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.35, hexA(col, 0.35)); gr.addColorStop(0.5, 'rgba(255,255,255,0.8)'); gr.addColorStop(0.65, hexA(col, 0.35)); gr.addColorStop(1, hexA(col, 0));
+  gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.3, hexA(col, 0.22)); gr.addColorStop(0.5, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.7, hexA(col, 0.22)); gr.addColorStop(1, hexA(col, 0));
   ox.fillStyle = gr; ox.fillRect(0, 0, W, H);
   const I = A * clamp((o.shineI ?? 80) / 100, 0, 1.5);
   // záře kolem okrajů: světlo z pruhu se rozlije i do okolí objektu (blízká + široká měkká záře).
