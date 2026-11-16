@@ -47,9 +47,10 @@ module.exports = async function handler(req, res) {
     const lang = (url.searchParams.get('lang') || '').slice(0, 5);
     const quality = url.searchParams.get('quality') || 'max';
 
-    // Max přesnost + ElevenLabs klíč → ElevenLabs Scribe (nejpřesnější na češtinu/slovenštinu); jinak OpenAI Whisper
+    // Přepis jede přes Groq (Whisper large v3, bez nákladů v rámci jeho bezplatných limitů).
+    // ElevenLabs (placený) se použije jen tehdy, když na serveru Groq klíč vůbec není.
     let elError = null;
-    if (elKey && (quality === 'max' || (!key && !groqKey) || !groqKey)) {
+    if (elKey && !groqKey) {
       const f = new FormData();
       f.append('file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
       f.append('model_id', 'scribe_v1');
