@@ -1203,7 +1203,8 @@ function drawVGuide(){
   c.fillStyle='rgba(10,13,20,.75)'; c.fillRect(W/2-tw/2-W*0.025,H*0.04,tw+W*0.05,W*0.07); c.fillStyle=vGuide.fit?col:'#fff'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(txt,W/2,H*0.04+W*0.035);
   c.restore();
 }
-function kfSet(vals){ const k=kfEnsure(); Object.assign(k,vals); renderVideoTrack(); }
+let kfTrackT=0;
+function kfSet(vals){ const n=E.kf.length; const k=kfEnsure(); Object.assign(k,vals); if (E.kf.length!==n) renderVideoTrack(); }   // během gesta nepřekreslovat timeline (plynulost)
 function syncVmode(){ $('stage').classList.toggle('vmode',videoMode()); const i=E.kf.findIndex(k=>Math.abs(k.t-PV.currentTime)<0.05); $('kfTop').classList.toggle('on',i>=0); }
 const ptrs=new Map(); let gest=null;
 function cvPt(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]; }

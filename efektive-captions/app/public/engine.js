@@ -848,7 +848,17 @@ E.render = (t, opts={}) => {
     if (vfFor!==vid){ vfFor=vid; vfOk=false; }
     if (vid.readyState>=2){ try{ vfc.drawImage(vid,0,0,cv.width,cv.height); vfOk=true; }catch(e){} }
     ctx.fillStyle='#000'; ctx.fillRect(0,0,cv.width,cv.height);
-    if (vfOk) drawVideoXf(t,()=>ctx.drawImage(vframe,0,0));
+    const k=E.kfAt(t);
+    if (k && (k.z!==100 || k.x || k.y || k.op<100)){
+      // zoom: výřez přímo z plného rozlišení videa (ostré, plynulé), ne zvětšený malý snímek
+      const W=cv.width, H=cv.height, sc=Math.max(1,k.z/100), Tx=k.x/100*W, Ty=k.y/100*H;
+      const qx0=W/2+(-W/2-Tx)/sc, qy0=H/2+(-H/2-Ty)/sc, qw=W/sc, qh=H/sc;
+      ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,k.op/100)); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      const src=vid.readyState>=2?vid:(vfOk?vframe:null);
+      if (src){ const sw=src===vid?vid.videoWidth:W, sh=src===vid?vid.videoHeight:H, fx=sw/W, fy=sh/H;
+        try{ ctx.drawImage(src, qx0*fx, qy0*fy, qw*fx, qh*fy, 0,0,W,H); }catch(e){ if (vfOk) ctx.drawImage(vframe, qx0, qy0, qw, qh, 0,0,W,H); } }
+      ctx.restore();
+    } else if (vfOk) ctx.drawImage(vframe,0,0);
   }
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
   // overlaye pod titulky
