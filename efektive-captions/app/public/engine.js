@@ -448,6 +448,8 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   return sp;
 }
 function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
+  // dvouprůchodové kreslení negativu s 3D náklonem: v každém průchodu jen „jeho“ slova
+  if (E._negPass){ const neg=!!(L.em && S.negativ); if ((E._negPass==='skip' && neg) || (E._negPass==='only' && !neg)) return; }
   const exitDur = S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
@@ -536,7 +538,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
     c.shadowColor='transparent'; c.drawImage(sp.cv,sp.x,sp.y);
   } else {
-  if (L.em && S.negativ){ c.globalCompositeOperation='difference'; fill='#ffffff'; }
+  if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
   c.fillStyle=fill; fillT(c,s,0,0,L.px,tk);
   }
@@ -964,21 +966,32 @@ function drawPage(k,t){
   const lines=E.layoutPage(p,S); E.lastLines=lines;
   const bx=cv.width*S.posX/100, by=cv.height*S.posY/100;
   const noTilt = !S.tilt && !S.tiltX;
-  const direct = (noTilt || S.negativ);
-  const c = direct ? ctx : layerCtx();
-  E._glowUsed=false; E._band=direct?null:[Infinity,-Infinity];
-  if (!direct){ const P=padX(); c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,c.canvas.width,c.canvas.height); const m=glowMaskCtx(); m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,m.canvas.width,m.canvas.height); c.setTransform(1,0,0,1,P,0); }
+  const direct = noTilt;
+  // negativ + 3D náklon: dva průchody – běžná slova se promítnou normálně, negativní hlavní slova se promítnou
+  // zvlášť a do videa se vloží „rozdílem“ (negativ) – takže se naklánějí stejně jako ostatní text
+  const twoPass = !direct && S.negativ;
   // odchod celého bloku: rychlé zmenšení kolem středu titulku (Base: na 60 % za 0,1 s)
   let bs=1;
   if (S.exitScale!=null && S.fadeOut){ const ex=clamp((p.e-t)/(S.exitDur||0.1)), exs=ex*ex*(3-2*ex); bs=S.exitScale+(1-S.exitScale)*exs; }
-  if (bs<0.999){
-    const x0=Math.min(...lines.map(L=>L.x0)), x1=Math.max(...lines.map(L=>L.x0+L.total)), y0=Math.min(...lines.map(L=>L.y-L.px*0.5)), y1=Math.max(...lines.map(L=>L.y+L.px*0.5));
-    const ccx=(x0+x1)/2, ccy=(y0+y1)/2; c.save(); c.translate(ccx,ccy); c.scale(bs,bs); c.translate(-ccx,-ccy);
-  }
-  let j=0;
-  for (const L of lines){ let x=L.x0; L.ids.forEach((i,jj)=>{ drawWord(c,E.words[i],L,x,L.ws[jj],t,p,S,k,j++); x+=L.ws[jj]+L.sp; }); }
-  if (bs<0.999) c.restore();
-  if (!direct) project3D(layer, bx, by, S, ctx);
+  const pass=(mode)=>{
+    E._negPass=mode;
+    const c = direct ? ctx : layerCtx();
+    E._glowUsed=false; E._band=direct?null:[Infinity,-Infinity];
+    if (!direct){ const P=padX(); c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,c.canvas.width,c.canvas.height); const m=glowMaskCtx(); m.setTransform(1,0,0,1,0,0); m.clearRect(0,0,m.canvas.width,m.canvas.height); c.setTransform(1,0,0,1,P,0); }
+    if (bs<0.999){
+      const x0=Math.min(...lines.map(L=>L.x0)), x1=Math.max(...lines.map(L=>L.x0+L.total)), y0=Math.min(...lines.map(L=>L.y-L.px*0.5)), y1=Math.max(...lines.map(L=>L.y+L.px*0.5));
+      const ccx=(x0+x1)/2, ccy=(y0+y1)/2; c.save(); c.translate(ccx,ccy); c.scale(bs,bs); c.translate(-ccx,-ccy);
+    }
+    let j=0;
+    for (const L of lines){ let x=L.x0; L.ids.forEach((i,jj)=>{ drawWord(c,E.words[i],L,x,L.ws[jj],t,p,S,k,j++); x+=L.ws[jj]+L.sp; }); }
+    if (bs<0.999) c.restore();
+    if (!direct){
+      if (mode==='only'){ ctx.save(); ctx.globalCompositeOperation='difference'; project3D(layer, bx, by, S, ctx); ctx.restore(); }
+      else project3D(layer, bx, by, S, ctx);
+    }
+  };
+  if (twoPass){ pass('skip'); pass('only'); } else pass(null);
+  E._negPass=null;
   ctx.setTransform(1,0,0,1,0,0);
   return {lines,S};
 }
