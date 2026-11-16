@@ -423,3 +423,8 @@ button.pro.on{background:var(--green)}
 .ease.gold path{stroke:#c98a00}
 .ease.on{outline:2px solid var(--acc);outline-offset:1px}
 .ease.gold.on{outline-color:#e0a400}
+.stage.vmode::after{content:"Úprava videa: 2 prsty = zoom, 1 prst = posun";position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:var(--grad);color:#fff;font:700 12px var(--ui);padding:5px 10px;pointer-events:none;white-space:nowrap}
+.stage.vmode{box-shadow:inset 0 0 0 3px var(--acc)}
+#kfTop.on .ic{stroke:#e0a400;fill:#fff1c9}
+.ctrl-r{width:auto;gap:2px}
+.kfh .ic{width:16px;height:16px}

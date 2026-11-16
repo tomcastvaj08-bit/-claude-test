@@ -470,7 +470,8 @@ function loop(now){
     }
     lastT=t;
     E.render(t,{});
-    if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleOf(p),guides); }
+    syncVmode();
+    if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleOf(p),guides); }
     else E.lastBox=null;
     if (selOv && vid.paused) drawOvSel();
     $('tm').textContent=fmt(t)+' / '+fmt(PV.duration);
@@ -562,30 +563,30 @@ function renderPanel(){
 }
 const binders={};
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
-function openKfPanel(){ panel='kf'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
+function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+(c.e-c.s); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
 function kfHere(){ const t=PV.currentTime; return E.kf.findIndex(k=>Math.abs(k.t-t)<0.05); }
 function kfVals(){ const k=E.kfAt(PV.currentTime); return k?{z:k.z,x:k.x,y:k.y,op:k.op}:{z:100,x:0,y:0,op:100}; }
 function kfEnsure(){ let i=kfHere(); if (i<0){ const v=kfVals(); E.kf.push({t:PV.currentTime,...v,ease:'tok2'}); E.kf.sort((a,b)=>a.t-b.t); i=kfHere(); } selKf=i; return E.kf[i]; }
-function pKf(){
+function pKf(noHead){
   const i=kfHere(); if (i>=0) selKf=i; const k=i>=0?E.kf[i]:null, v=k||kfVals();
   const rng=(lb,key,min,max,st,unit)=>`<label class="ctl"><div class="lb"><span>${lb}</span><span id="kf_${key}v">${Math.round(v[key]*10)/10}${unit}</span></div><input type="range" id="kf_${key}" min="${min}" max="${max}" step="${st}" value="${v[key]}"></label>`;
-  return `<div class="mixhead"><svg class="ic grad"><use href="#i-kf"/></svg><div><b>Klíčové snímky videa</b><small>${k?'Upravuješ klíčový snímek v '+fmt(k.t)+'.':'Postav hlavu na místo a posuň posuvník – klíčový snímek se vytvoří sám.'} Mezi dvěma klíčovými snímky se video plynule přiblíží / posune.</small></div></div>
-  <div class="btnrow"><button class="btn" id="kfAdd">${I('plus','grad')} Klíčový snímek tady</button>${k?`<button class="btn" id="kfDel">${I('trash')} Smazat</button>`:''}</div>
+  return `${noHead?'<div class="clabel kfh">'+I('kf','grad')+' Klíčové body (zoom, posun, průhlednost)</div><div class="note">':'<div class="mixhead"><svg class="ic grad"><use href="#i-kf"/></svg><div><b>Klíčové body videa</b><small>'}${k?'Upravuješ klíčový bod v '+fmt(k.t)+'.':'Posuň posuvník nebo video na náhledu (dvěma prsty zoom, jedním posun) – klíčový bod se vytvoří sám.'} Mezi dvěma klíčovými body se video plynule přiblíží / posune.${noHead?'</div>':'</small></div></div>'}
+  <div class="btnrow"><button class="btn" id="kfAdd">${I('plus','grad')} Klíčový bod tady</button>${k?`<button class="btn" id="kfDel">${I('trash')} Smazat</button>`:''}</div>
   ${rng('Zoom','z',100,300,1,' %')}
   ${rng('Posun doleva / doprava','x',-50,50,0.5,' %')}
   ${rng('Posun nahoru / dolů','y',-50,50,0.5,' %')}
   ${rng('Průhlednost videa','op',0,100,1,' %')}
-  ${k && i>0?`<div class="clabel">Průběh do tohoto snímku (speed rampa)</div><div class="eases" id="kfEase">${E.EASES.map(([e,l])=>`<div class="ease ${k.ease===e?'on':''} ${e==='tok2'?'gold':''}" data-v="${e}"><svg viewBox="0 0 60 40"><path d="${easePath(e)}"/></svg><span>${l}</span></div>`).join('')}</div>`:(k?'<div class="note">Průběh se nastavuje u druhého (a dalšího) klíčového snímku.</div>':'')}
-  ${E.kf.length?`<button class="btn small" id="kfClear">Smazat všechny klíčové snímky</button>`:''}`;
+  ${k && i>0?`<div class="clabel">Průběh do tohoto snímku (speed rampa)</div><div class="eases" id="kfEase">${E.EASES.map(([e,l])=>`<div class="ease ${k.ease===e?'on':''} ${e==='tok2'?'gold':''}" data-v="${e}"><svg viewBox="0 0 60 40"><path d="${easePath(e)}"/></svg><span>${l}</span></div>`).join('')}</div>`:(k?'<div class="note">Průběh se nastavuje u druhého (a dalšího) klíčového bodu.</div>':'')}
+  ${E.kf.length?`<button class="btn small" id="kfClear">Smazat všechny klíčové body</button>`:''}`;
 }
 function easePath(e){ const f={tok2:q=>{const d=q-0.5;return 0.5+4*d*d*d;},quad:q=>q<0.5?2*q*q:1-2*(1-q)*(1-q),lin:q=>q}[e]; let d=''; for(let i=0;i<=20;i++){ const q=i/20; d+=(i?'L':'M')+(4+q*52).toFixed(1)+' '+(36-f(q)*32).toFixed(1); } return d; }
 binders.kf=()=>{
   for (const key of ['z','x','y','op']){ const el=$('kf_'+key); if (!el) continue;
     el.oninput=()=>{ const k=kfEnsure(); k[key]=+el.value; $('kf_'+key+'v').textContent=(Math.round(+el.value*10)/10)+(key==='x'||key==='y'||key==='z'||key==='op'?' %':''); renderVideoTrack(); };
     el.onchange=()=>{ changed(); renderPanel(); }; }
-  $('kfAdd').onclick=()=>{ kfEnsure(); changed(); renderPanel(); renderVideoTrack(); toast('Klíčový snímek přidaný'); };
+  $('kfAdd').onclick=()=>{ kfEnsure(); changed(); renderPanel(); renderVideoTrack(); toast('Klíčový bod přidaný'); };
   if ($('kfDel')) $('kfDel').onclick=()=>{ const i=kfHere(); if (i>=0) E.kf.splice(i,1); selKf=-1; changed(); renderPanel(); renderVideoTrack(); };
-  if ($('kfClear')) $('kfClear').onclick=()=>{ if (!confirm('Smazat všechny klíčové snímky?')) return; E.kf=[]; selKf=-1; changed(); renderPanel(); renderVideoTrack(); };
+  if ($('kfClear')) $('kfClear').onclick=()=>{ if (!confirm('Smazat všechny klíčové body?')) return; E.kf=[]; selKf=-1; changed(); renderPanel(); renderVideoTrack(); };
   const ez=$('kfEase'); if (ez) ez.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; const i=kfHere(); if (i>=0){ E.kf[i].ease=d.dataset.v; changed(); renderPanel(); renderVideoTrack(); } };
 };
 
@@ -599,9 +600,11 @@ function pClip(){
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
   ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="0.6" step="0.01" value="${c.trDur||0.12}"></label><div class="note">Vlevo = rychlejší záblesk, vpravo = pomalejší.</div>`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
-  <div class="note">Další přechody a zvuky k nim brzy přibudou.</div>`;
+  <div class="note">Další přechody a zvuky k nim brzy přibudou.</div>
+  ${pKf(true)}`;
 }
 binders.clip=()=>{
+  binders.kf();
   $('clCut').onclick=()=>cutAt(PV.currentTime);
   $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
   const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
@@ -1112,7 +1115,7 @@ $('tlIn').addEventListener('pointerup',e=>{
   if (!tlDrag) return; const {blk,mode,moved}=tlDrag, newLayer=tlDrag.layer; const dt=(e.clientX-tlDrag.x0)/pps; tlDrag=null;
   if (blk.dataset.k!==undefined){
     const k=+blk.dataset.k;
-    if (!moved){ selectPage(k); return; }
+    if (!moved){ if (selClip>=0){ selClip=-1; renderVideoTrack(); if (panel==='clip'){ panel='captions'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.p==='captions')); } } selectPage(k); renderPanel(); return; }
     const p=E.pages[k], m=pageMeta(p);
     if (newLayer!=null){ E.words[p.a].br=true; if (p.b+1<E.words.length) E.words[p.b+1].br=true; if (newLayer) m.layer=1; else delete m.layer; p.layer=newLayer; }
     // sousedi jen ve stejné vrstvě (jiná vrstva se může překrývat)
@@ -1146,7 +1149,9 @@ $('tlIn').addEventListener('pointerup',e=>{
   }
 });
 // rozdělit titulek v místě přehrávací hlavy
-$('kfBtn').onclick=()=>{ vid.pause(); openKfPanel(); };
+$('kfTop').onclick=()=>{ vid.pause(); const i=kfHere();
+  if (i>=0){ E.kf.splice(i,1); toast('Klíčový bod smazaný'); } else { kfEnsure(); toast('Klíčový bod přidaný – teď můžeš video na náhledu zvětšit / posunout'); }
+  openKfPanel(); changed(); renderVideoTrack(); };
 $('cutBtn').onclick=()=>{ vid.pause(); cutAt(PV.currentTime); openClipPanel(); };
 $('splitBtn').onclick=()=>{
   const t=PV.currentTime, k=E.pageAt(t); if (k<0) return toast('Postav přehrávací hlavu na titulek');
@@ -1169,12 +1174,20 @@ function setLayer(k,layer){
 }
 
 // ================= GESTA NA VIDEU =================
+// když je na timeline vybrané video (ne titulek), gesta na náhledu hýbou videem: 2 prsty = zoom, 1 prst = posun
+const videoMode=()=>panel==='clip' && selClip>=0;
+function kfSet(vals){ const k=kfEnsure(); Object.assign(k,vals); renderVideoTrack(); }
+function syncVmode(){ $('stage').classList.toggle('vmode',videoMode()); const i=E.kf.findIndex(k=>Math.abs(k.t-PV.currentTime)<0.05); $('kfTop').classList.toggle('on',i>=0); }
 const ptrs=new Map(); let gest=null;
 function cvPt(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]; }
 cv.addEventListener('pointerdown',e=>{
   if (inlineOpen) return;
-  cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,cvPt(e));
+  try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,cvPt(e));
   const [x,y]=cvPt(e), hr=Math.min(cv.width,cv.height)*0.05;
+  if (videoMode()){ vid.pause(); const v=kfVals();
+    if (ptrs.size===2){ const [a,b]=[...ptrs.values()]; gest={type:'vpinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),z0:v.z,moved:false}; }
+    else gest={type:'vpan',x0:x,y0:y,vx:v.x,vy:v.y,moved:false};
+    return; }
   if (ptrs.size===2 && gest && gest.type==='move'){ const [a,b]=[...ptrs.values()]; gest={type:'pinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),size0:cur().size}; return; }
   // overlay?
   const t=PV.currentTime;
@@ -1191,6 +1204,10 @@ cv.addEventListener('pointerdown',e=>{
 });
 cv.addEventListener('pointermove',e=>{
   if (!ptrs.has(e.pointerId)||!gest) return; ptrs.set(e.pointerId,cvPt(e)); const [x,y]=cvPt(e);
+  if (gest.type==='vpan'){ if (ptrs.size>=2){ const [a,b]=[...ptrs.values()]; gest={type:'vpinch',d0:Math.hypot(a[0]-b[0],a[1]-b[1]),z0:kfVals().z,moved:false}; return; }
+    if (Math.hypot(x-gest.x0,y-gest.y0)<6 && !gest.moved) return; gest.moved=true; const z=kfVals().z/100;
+    kfSet({x:+clamp(gest.vx+(x-gest.x0)/cv.width*100,-60,60).toFixed(1), y:+clamp(gest.vy+(y-gest.y0)/cv.height*100,-60,60).toFixed(1)}); return; }
+  if (gest.type==='vpinch' && ptrs.size>=2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); gest.moved=true; kfSet({z:Math.round(clamp(gest.z0*d/gest.d0,50,400))}); return; }
   if (gest.type==='ov'){ gest.moved=true; gest.o.x=clamp(gest.ox+(x-gest.x0)/cv.width*100,0,100); gest.o.y=clamp(gest.oy+(y-gest.y0)/cv.height*100,0,100); }
   else if (gest.type==='move'){ if (Math.hypot(x-gest.x0,y-gest.y0)>6){ gest.moved=true; guides=true; } if (!gest.moved) return;
     let nx=gest.px+(x-gest.x0)/cv.width*100, ny=gest.py+(y-gest.y0)/cv.height*100; if (Math.abs(nx-50)<1.5) nx=50; setVal('posX',+nx.toFixed(1),true); setVal('posY',+clamp(ny,3,97).toFixed(1),true); }
@@ -1199,6 +1216,7 @@ cv.addEventListener('pointermove',e=>{
 });
 function endPtr(e){
   ptrs.delete(e.pointerId); if (ptrs.size) return;
+  if (gest && (gest.type==='vpan'||gest.type==='vpinch')){ if (gest.moved){ changed(); renderPanel(); } else togglePlay(); gest=null; return; }
   if (gest){ if (gest.type==='tap'){ selOv=null; togglePlay(); } else if (gest.type!=='move'||gest.moved) { changed(); if (panel==='style'||panel==='overlay') renderPanel(); } else if (gest.type==='move' && !gest.moved){ markCur(); if (panel==='captions') renderPanel(); } }
   gest=null; guides=false;
 }
