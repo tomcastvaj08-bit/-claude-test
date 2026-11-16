@@ -559,7 +559,7 @@ function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s
 function renderPanel(){
   const P=$('panel'); C.length=0;
   let h='';
-  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='kf' && panel!=='obj'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
   switch(panel){
     case 'captions': h=pCaptions(); break;
     case 'templates': h=pTemplates(); break;
@@ -572,6 +572,7 @@ function renderPanel(){
     case 'clip': h=pClip(); break;
     case 'kf': h=pKf(); break;
     case 'obj': h=pObj(); break;
+    case 'color': h=pColor(); break;
   }
   P.innerHTML=h; bindControls(); bindScope(); bindSub();
   const fn=binders[panel]; fn&&fn();
@@ -1713,6 +1714,27 @@ async function objTrack(o){
   changed(); renderPanel(); renderTimeline(); PV.currentTime=o.s+0.05;
   trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s. Pusť video a uvidíš.`);
 }
+
+// ================= BARVY (filtry celého videa) =================
+function pColor(){
+  const g=E.G.grade||'none';
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-palette"/></svg><div><b>Barvy videa</b><small>Filtr se použije na celé video (titulky a overlaye zůstanou, jak jsou). Náhledy jsou z aktuálního snímku.</small></div></div>
+  <div class="looks" id="looks">${FX.LOOKS.map(([v,l])=>`<div class="look ${g===v?'on':''}" data-v="${v}"><canvas width="72" height="96"></canvas><span>${l}</span></div>`).join('')}</div>
+  ${g!=='none'?`<label class="ctl"><div class="lb"><span>Síla filtru</span><span>${E.G.gradeI??70} %</span></div><input type="range" id="gradeI" min="0" max="150" value="${E.G.gradeI??70}"></label>`:''}`;
+}
+function lookThumbs(){
+  const cvs=[...document.querySelectorAll('#looks canvas')]; if (!cvs.length || !vid.videoWidth) return;
+  const ar=vid.videoWidth/vid.videoHeight, H0=96, W0=Math.round(H0*ar); 
+  cvs.forEach((c,i)=>{ c.width=W0; c.height=H0; const x=c.getContext('2d'); const sc=Math.max(W0/vid.videoWidth,H0/vid.videoHeight);
+    try{ x.drawImage(vid,(W0-vid.videoWidth*sc)/2,(H0-vid.videoHeight*sc)/2,vid.videoWidth*sc,vid.videoHeight*sc); }catch(e){}
+    const v=FX.LOOKS[i][0]; if (v!=='none') FX.grade(x,W0,H0,v,(E.G.gradeI??70)/100); });
+}
+binders.color=()=>{
+  $('looks').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; E.G.grade=d.dataset.v; if (E.G.gradeI==null) E.G.gradeI=70; changed(); renderPanel(); };
+  if ($('gradeI')){ $('gradeI').oninput=e=>{ E.G.gradeI=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=E.G.gradeI+' %'; }; $('gradeI').onchange=()=>{ changed(); lookThumbs(); }; }
+  setTimeout(lookThumbs,30);
+};
+$('colorBtn').onclick=()=>{ vid.pause(); panel='color'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); if (selClip>=0){ selClip=-1; renderVideoTrack(); } renderPanel(); };
 
 // ================= VRSTVY (co je právě na obrazovce, pořadí přetažením) =================
 function layerItems(){

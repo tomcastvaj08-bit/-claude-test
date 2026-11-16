@@ -70,6 +70,9 @@ function init() {
   } catch (e) { console.warn('Přechody (WebGL):', e); failed = true; gl = null; return false; }
 }
 
+// přepnutí programu (přechody / barvy) – oba kreslí stejný obdélník přes celé plátno
+function useProg(pr) { gl.useProgram(pr); const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0); }
+
 // ---------- průběhy přechodů ----------
 // d = čas od střihu (s; záporný = před střihem), D = délka přechodu. Vrací stav kamery {z, r, x, y, k, e, c}.
 const S0 = { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0 };
@@ -120,6 +123,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3;
   if (idle(A) && idle(B)) return false;
   if (!init()) return false;
+  useProg(prog);
   if (glc.width !== W || glc.height !== H) { glc.width = W; glc.height = H; }
   gl.viewport(0, 0, W, H);
   gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -127,6 +131,63 @@ FX.apply = (c, W, H, type, d, D, o) => {
   gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, W, H);
   gl.uniform4f(U.A, A.z, A.r, A.x, A.y); gl.uniform4f(U.B, B.z, B.r, B.x, B.y);
   gl.uniform2f(U.K, A.k, B.k); gl.uniform1f(U.expo, B.e); gl.uniform1f(U.chroma, B.c);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
+  return true;
+};
+
+// ================= BARVY (filtry / looky) =================
+// jednoduchý color grading celého videa: expozice, vyvážení bílé, kontrast, sytost, „vibrance“ (víc sytí málo syté barvy –
+// pleť zůstane přirozená), barevné tónování stínů a světel, zvednuté černé. Síla = míchání s původním obrazem.
+const GFS = `precision mediump float;
+uniform sampler2D tex; varying vec2 v;
+uniform float expo, temp, tint, con, sat, vib, split, fade, mixA;
+void main(){
+  vec3 o=texture2D(tex,v).rgb, c=o;
+  c*=pow(2.0,expo);
+  c*=vec3(1.0+temp*0.16, 1.0+tint*0.08, 1.0-temp*0.16);
+  c=(c-0.5)*(1.0+con)+0.5;
+  float l=dot(c,vec3(0.2126,0.7152,0.0722));
+  c=mix(vec3(l),c,1.0+sat);
+  float mx=max(c.r,max(c.g,c.b)), mn=min(c.r,min(c.g,c.b));
+  c=mix(vec3(l),c,1.0+vib*(1.0-clamp(mx-mn,0.0,1.0)));
+  c+=split*mix(vec3(-0.035,0.015,0.05),vec3(0.06,0.02,-0.045),smoothstep(0.15,0.85,l));
+  c=mix(c,0.07+c*0.93,fade);
+  c=clamp(c,0.0,1.0);
+  gl_FragColor=vec4(mix(o,c,mixA),1.0);
+}`;
+FX.LOOKS = [
+  ['none', 'Bez filtru', {}],
+  ['vivid', 'Sytější', { expo: 0.03, con: 0.12, sat: 0.22, vib: 0.35 }],
+  ['natural', 'Přirozené +', { con: 0.06, sat: 0.05, vib: 0.25 }],
+  ['bright', 'Světlé interiéry', { expo: 0.12, con: 0.04, vib: 0.2, temp: 0.04, fade: 0.08 }],
+  ['warm', 'Teplé', { con: 0.08, sat: 0.08, vib: 0.15, temp: 0.14 }],
+  ['cool', 'Studené', { con: 0.08, sat: 0.04, vib: 0.15, temp: -0.12 }],
+  ['cinema', 'Kino', { con: 0.16, sat: -0.08, vib: 0.1, split: 1, fade: 0.06 }],
+  ['bw', 'Černobílé', { con: 0.18, sat: -1 }],
+];
+let gprog = null, GU = {};
+function initGrade() {
+  if (gprog) return true; if (!init()) return false;
+  try {
+    const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+    gprog = gl.createProgram(); gl.attachShader(gprog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(gprog, sh(gl.FRAGMENT_SHADER, GFS)); gl.linkProgram(gprog);
+    if (!gl.getProgramParameter(gprog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gprog));
+    for (const n of ['tex', 'expo', 'temp', 'tint', 'con', 'sat', 'vib', 'split', 'fade', 'mixA']) GU[n] = gl.getUniformLocation(gprog, n);
+    return true;
+  } catch (e) { console.warn('Barvy (WebGL):', e); gprog = null; return false; }
+}
+// look = id z FX.LOOKS, amt = síla 0..1
+FX.grade = (c, W, H, look, amt) => {
+  const L = FX.LOOKS.find(x => x[0] === look); if (!L || look === 'none' || !(amt > 0.001)) return false;
+  if (!initGrade()) return false;
+  useProg(gprog);
+  if (glc.width !== W || glc.height !== H) { glc.width = W; glc.height = H; }
+  gl.viewport(0, 0, W, H); gl.bindTexture(gl.TEXTURE_2D, tex);
+  try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c.canvas); } catch (e) { return false; }
+  const P = L[2]; gl.uniform1i(GU.tex, 0);
+  for (const k of ['expo', 'temp', 'tint', 'con', 'sat', 'vib', 'split', 'fade']) gl.uniform1f(GU[k], P[k] || 0);
+  gl.uniform1f(GU.mixA, Math.min(1.5, amt));
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;

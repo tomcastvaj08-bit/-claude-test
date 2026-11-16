@@ -91,7 +91,7 @@ E.G = {
 };E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
 
 // klíče, které jsou vždy společné pro celé video
-E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
+E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','grade','gradeI','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
 
 // ================= FONTY (kompletní seznam jako v SA Captions) =================
 // [rodina (CSS stack: Apple systémový font → webová náhrada), tloušťka, popisek, kurzíva]
@@ -991,6 +991,7 @@ E.render = (t, opts={}) => {
     } else if (vfOk) ctx.drawImage(vframe,0,0);
   }
   for (const o of E.overlays) if (o.full) E.drawOverlay(ctx,o,t);   // překrytí celého videa = nový základ (pod přechody i titulky)
+  if (!F.transparent && E.G.grade && E.G.grade!=='none' && window.FX) FX.grade(ctx,cv.width,cv.height,E.G.grade,(E.G.gradeI??70)/100);   // barvy (filtr) jen na video
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
   if (window.OBJ && E.objs && E.objs.length && !F.transparent) OBJ.draw(ctx,cv.width,cv.height,t);   // zvýrazněné objekty (shine, obrys, výplň)
   // overlaye pod titulky
