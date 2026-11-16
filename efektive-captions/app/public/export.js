@@ -45,8 +45,8 @@ X.buildAudio = async (file, duration, mute, ovAudio) => {
   return await off.startRendering();
 };
 
-async function pickVideoCodec(w,h,fps){
-  const bitrate=Math.round(w*h*fps*0.12); // ~7,5 Mb/s u 1080p30 – kvalita pro sociální sítě, menší soubor
+async function pickVideoCodec(w,h,fps,br){
+  const bitrate=Math.round(w*h*Math.min(fps,30)*(br||0.12)); // ~7,5 Mb/s u 1080p30 – kvalita pro sociální sítě, menší soubor
   const cands=[
     {codec:'avc1.640034', mux:'avc'},{codec:'avc1.640033', mux:'avc'},{codec:'avc1.64002A', mux:'avc'},{codec:'avc1.4d0034', mux:'avc'},
     {codec:'hvc1.1.6.L153.B0', mux:'hevc'},
@@ -105,7 +105,7 @@ X.exportVideo = async (opts) => {
       return {blob:zip.blob(), name:'efektive-titulky-pruhledne.zip'};
     }
     // ---------- celé video ----------
-    const vc=await pickVideoCodec(w,h,fps); if (!vc) throw new Error('Tento prohlížeč neumí kódovat video');
+    const vc=await pickVideoCodec(w,h,fps,opts.br); if (!vc) throw new Error('Tento prohlížeč neumí kódovat video');
     onP(0,'Připravuju zvuk…');
     // Zvuk: bez zvukových efektů (nebo když prohlížeč neumí kódovat zvuk – iPhone) se vloží původní stopa
     // bez překódování → vždy se zvukem, rychle a v původní kvalitě. Se SFX se zvuk smíchá a zakóduje.
@@ -154,6 +154,16 @@ X.exportVideo = async (opts) => {
     // rychlá cesta: snímky se dekódují postupně (MP4/MOV), bez přetáčení; text za postavou potřebuje <video> → přetáčení
     let src=null;
     if (!ctxBehind && window.openFrameSource){ try{ src=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); }catch(e){ console.warn('Rychlé čtení snímků nejde, použiji přetáčení',e); } }
+    // VIDEO OVERLAYE: snímky se čtou postupně (WebCodecs) jako u hlavního videa – přetáčení <video> na každý snímek je na iPhonu velmi pomalé
+    const OVS=[];
+    if (window.openFrameSource) for (const o of E.overlays){
+      if (!o.src || o.src.tagName!=='VIDEO') continue; const blob=opts.ovBlobs&&opts.ovBlobs[o.asset]; if (!blob) continue;
+      try{ const s=await openFrameSource(blob,o.src.videoWidth,o.src.videoHeight); if (s && s.times && s.times.length){ const vw=o.src.videoWidth, vh=o.src.videoHeight, k=Math.min(1,1280/Math.max(vw,vh)), c=document.createElement('canvas'); c.width=Math.round(vw*k); c.height=Math.round(vh*k); OVS.push({o,s,c,blob,last:-1}); } }catch(e){ console.warn('Overlay – rychlé čtení nejde, použiji přetáčení',e); }
+    }
+    const ovFrames=async t=>{ for (const q of OVS){ const o=q.o; if (t<o.s||t>o.e){ o._frame=null; continue; }
+      const want=E.ovTime(o,t);
+      if (want<q.last-0.001){ try{ q.s.close(); q.s=await openFrameSource(q.blob,o.src.videoWidth,o.src.videoHeight); }catch(e){} }   // overlay se opakuje dokola → číst znovu od začátku
+      q.last=want; const fr=q.s&&await q.s.frameAt(want); if (fr){ const x=q.c.getContext('2d'); x.clearRect(0,0,q.c.width,q.c.height); q.s.draw(x,fr,q.c.width,q.c.height); o._frame=q.c; } } };
     const t0=performance.now();
     // ZPOMALENÍ: mezisnímky z dvojice sousedních zdrojových snímků – prolnutí nebo optický tok (tok se počítá jednou na dvojici)
     const IP={cache:new Map(), flows:new Map(), fw:0, fh:0, g1:null, g2:null};
@@ -176,7 +186,8 @@ X.exportVideo = async (opts) => {
       if (err) throw err;
       const t=i/fps;
       // překrytí videa novou verzí: přesný snímek v čase t
-      for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e) continue; o.src.pause(); const want=Math.min(E.ovTime(o,t),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
+      await ovFrames(t);
+      for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e || OVS.some(q=>q.o===o)) continue; o.src.pause(); const want=Math.min(E.ovTime(o,t),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
       const ck=cut?E.clipList()[E.clipAt(t)]:null, slow=ck && E.clipSp(ck)<1 && (ck.blend||'flow')!=='none' && src && src.times && src.times.length>1;
       if (slow){
         const ts=o2s(t), draw=await slowFrame(t,ts,ck.blend||'flow');
@@ -194,7 +205,7 @@ X.exportVideo = async (opts) => {
       while (venc.encodeQueueSize>8) await new Promise(r=>setTimeout(r,5));
       if (i%3===0){ const el=(performance.now()-t0)/1000, left=el/(i+1)*(N-i-1); onP(i/N, `Snímek ${i+1} / ${N}`+(i>10?` · zbývá ${left<60?Math.ceil(left)+' s':Math.ceil(left/60)+' min'}`:'')); }
     }
-    } finally { if (src) src.close(); }
+    } finally { if (src) src.close(); for (const q of OVS){ try{ q.s&&q.s.close(); }catch(e){} q.o._frame=null; } }
     // závěr s logem EFEKTIVE (zdarma)
     if (E.wantOutro()){
       const M=Math.round(E.OUTRO_SEC*fps), c2=cv.getContext('2d');

@@ -753,12 +753,12 @@ E.drawOverlay = (c, o, t) => {
   if (o.emoji) return;   // emoji nálepky už aplikace nemá (ani ze starých projektů)
   if (t<o.s || t>o.e) return;
   // video bez obrazu (ještě nenačtené) nekreslit – dřív z toho byl černý čtverec
-  if (o.src && o.src.tagName==='VIDEO' && (o.src.readyState<2 || !o.src.videoWidth)) return;
+  if (!o._frame && o.src && o.src.tagName==='VIDEO' && (o.src.readyState<2 || !o.src.videoWidth)) return;
   if (o.src && o.src.tagName==='IMG' && !o.src.naturalWidth) return;
   const W=cv.width, H=cv.height, since=t-o.s, left=o.e-t;
   // překrytí celého videa (náhrada úseku): přes celý obraz, bez animace a bez wiggle, pod titulky
   if (o.full){
-    const s=o.src; if (!s) return; const iw=s.naturalWidth||s.videoWidth, ih=s.naturalHeight||s.videoHeight; if (!iw||!ih) return;
+    const s=o._frame||o.src; if (!s) return; const iw=s.naturalWidth||s.videoWidth||s.width, ih=s.naturalHeight||s.videoHeight||s.height; if (!iw||!ih) return;
     const sc=Math.max(W/iw,H/ih), dw=iw*sc, dh=ih*sc;
     c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; try{ c.drawImage(s,(W-dw)/2,(H-dh)/2,dw,dh); }catch(e){} c.restore(); return;
   }
@@ -767,6 +767,7 @@ E.drawOverlay = (c, o, t) => {
   let wpx=W*o.w/100;
   const tro=o.trk?E.trkOffset(o.trk,t):null; if (tro && E.tracks[o.trk].scale) wpx*=tro.k;
   let h = wpx; if (o.src && (o.src.naturalWidth||o.src.videoWidth)) { const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; }
+  const SRC=o._frame||o.src;   // při exportu předem přečtený snímek overlaye
   switch(o.anim){
     case 'standard': a*=eo; sx=sy=0.9+0.1*eo; break;
     case '3d': { const ang=(1-eo)*Math.PI/2; sx=Math.cos(ang); a*=clamp(q*3); dy=-(1-eo)*h*0.05; break; }
@@ -790,7 +791,7 @@ E.drawOverlay = (c, o, t) => {
   // karta: zaoblené rohy, rámeček, stín – vykreslí se zvlášť a pak (případně) nakloní do 3D
   const card = o.src && ((o.rad||0)>0 || (o.stW||0)>0 || (o.shA||0)>0 || o.tiltX || o.tiltY);
   if (card){
-    const C=ovCard(o,wpx,h), tl=(o.tiltX||o.tiltY) && E._gl();
+    const C=ovCard(o,wpx,h,SRC), tl=(o.tiltX||o.tiltY) && E._gl();
     if (tl){
       // rohy karty → otočení / zvětšení animace → 3D náklon kolem středu overlaye → WebGL čtyřúhelník
       const S3={tilt:o.tiltY||0, tiltX:o.tiltX||0, persp:o.persp??55}, cs=Math.cos(r), sn=Math.sin(r);
@@ -803,11 +804,11 @@ E.drawOverlay = (c, o, t) => {
   }
   c.save(); c.globalAlpha=a; c.translate(cx,cy); c.rotate(r); c.scale(sx,sy);
   if (o.emoji){ c.font=`${wpx}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(o.emoji,0,0); }
-  else if (o.src){ try{ c.drawImage(o.src,-wpx/2,-h/2,wpx,h); }catch(e){} }
+  else if (SRC){ try{ c.drawImage(SRC,-wpx/2,-h/2,wpx,h); }catch(e){} }
   c.restore();
 };
 // overlay jako „karta“: obrázek / video se zaoblenými rohy, rámečkem a stínem (v rezervě kolem, ať se stín neořízne)
-function ovCard(o,w,h){
+function ovCard(o,w,h,SRC){
   const m=Math.min(w,h), rad=Math.min(m/2, m*(o.rad||0)/100), sw=(o.stW||0)/100*m*0.12, shA=(o.shA||0)/100, shD=(o.shD??30)/100;
   const blur=shA>0? m*(0.04+0.12*shA) : 0, off=shA>0? m*0.12*shD : 0, pad=Math.ceil(blur*1.6+off+sw+2);
   const CW=Math.ceil(w+2*pad), CH=Math.ceil(h+2*pad);
@@ -815,7 +816,7 @@ function ovCard(o,w,h){
   const x=cvx.getContext('2d'); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,CW,CH);
   const path=()=>{ x.beginPath(); if (x.roundRect) x.roundRect(pad,pad,w,h,rad); else { const R=rad; x.moveTo(pad+R,pad); x.arcTo(pad+w,pad,pad+w,pad+h,R); x.arcTo(pad+w,pad+h,pad,pad+h,R); x.arcTo(pad,pad+h,pad,pad,R); x.arcTo(pad,pad,pad+w,pad,R); x.closePath(); } };
   if (shA>0){ x.save(); x.shadowColor=`rgba(0,0,0,${Math.min(0.95,0.35+0.6*shA)})`; x.shadowBlur=blur; x.shadowOffsetY=off; x.fillStyle='#000'; path(); x.fill(); x.restore(); }
-  x.save(); path(); x.clip(); try{ x.drawImage(o.src,pad,pad,w,h); }catch(e){} x.restore();
+  x.save(); path(); x.clip(); try{ x.drawImage(SRC||o.src,pad,pad,w,h); }catch(e){} x.restore();
   if (sw>0){ x.save(); x.lineWidth=sw; x.strokeStyle=o.stC||'#ffffff'; path(); x.stroke(); x.restore(); }
   return {cv:cvx, w:CW, h:CH};
 }

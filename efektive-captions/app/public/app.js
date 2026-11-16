@@ -1888,7 +1888,7 @@ async function runExport(){
   const t0=performance.now();
   try{
     let res;
-    const o={file:videoFile,src:videoURL,w,h,fps,mode,mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
+    const o={file:videoFile,src:videoURL,w,h,fps,mode,br:+($('exBr')?$('exBr').value:0.12),ovBlobs:Object.fromEntries(Object.entries(ovAssets).filter(([k,a])=>a.el&&a.el.tagName==='VIDEO').map(([k,a])=>[k,a.blob])),mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));
