@@ -14,8 +14,20 @@ uniform sampler2D tex; uniform vec2 res;
 uniform vec4 A; uniform vec4 B;          // stav na začátku a na konci závěrky: zoom, rotace (rad), posun x, y (podíl šířky/výšky)
 uniform vec2 K;                           // zkreslení čočky (začátek, konec)
 uniform float expo, chroma;
+uniform vec2 RA, RB; uniform float rcy;   // „propad plátna“: střed × A, okraje + B·r² (začátek, konec závěrky), střed deformace (výška)
 varying vec2 v;
 vec2 mirror(vec2 u){ return 1.0-abs(1.0-mod(u,2.0)); }
+// pružné plátno: bod p se zobrazí na p·(A + B·|p|²) → pro každý pixel obrazovky najít zdrojový bod (pár iterací)
+vec2 rub(vec2 q, vec2 ab){
+  if (abs(ab.x-1.0)<1e-4 && abs(ab.y)<1e-4) return q;
+  float h=0.5*res.y;
+  vec2 pc=vec2(q.x*res.x-0.5*res.x, (1.0-q.y)*res.y-rcy*res.y)/h;
+  float rq=length(pc); if (rq<1e-5) return q;
+  float rp=rq/ab.x;
+  for (int i=0;i<6;i++){ rp=rq/max(0.05,ab.x+ab.y*rp*rp); }
+  vec2 pp=pc*(rp/rq);
+  return vec2((pp.x*h+0.5*res.x)/res.x, 1.0-(pp.y*h+rcy*res.y)/res.y);
+}
 vec2 xf(vec2 q, vec4 s, float k){
   float ar=res.x/res.y;
   vec2 c=(q-0.5)*vec2(ar,1.0);
@@ -33,12 +45,13 @@ void main(){
   for (int i=0;i<N;i++){
     float f=(float(i)+jit)/float(N);
     vec4 s=mix(A,B,f); float k=mix(K.x,K.y,f);
+    vec2 q=rub(v,vec2(mix(RA.x,RA.y,f),mix(RB.x,RB.y,f)));
     if (chroma>0.001){
       // barevný rozklad na okrajích (jako u reálného objektivu při prudkém pohybu)
-      acc.r+=texture2D(tex,mirror(xf(v,vec4(s.x*(1.0+chroma),s.yzw),k))).r;
-      acc.g+=texture2D(tex,mirror(xf(v,s,k))).g;
-      acc.b+=texture2D(tex,mirror(xf(v,vec4(s.x*(1.0-chroma),s.yzw),k))).b;
-    } else acc+=texture2D(tex,mirror(xf(v,s,k))).rgb;
+      acc.r+=texture2D(tex,mirror(xf(q,vec4(s.x*(1.0+chroma),s.yzw),k))).r;
+      acc.g+=texture2D(tex,mirror(xf(q,s,k))).g;
+      acc.b+=texture2D(tex,mirror(xf(q,vec4(s.x*(1.0-chroma),s.yzw),k))).b;
+    } else acc+=texture2D(tex,mirror(xf(q,s,k))).rgb;
   }
   acc/=float(N);
   if (expo>0.001){
@@ -61,7 +74,7 @@ function init() {
     gl.useProgram(prog);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma']) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy']) U[n] = gl.getUniformLocation(prog, n);
     tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -80,16 +93,26 @@ const cl = v => v < 0 ? 0 : v > 1 ? 1 : v;
 const inC = q => q * q * q, outC = q => 1 - Math.pow(1 - q, 3);
 const outBack = (q, s) => { const u = q - 1; return 1 + (s + 1) * u * u * u + s * u * u; };   // dojezd s lehkým přehoupnutím
 const DEG = Math.PI / 180;
+// [čas (s), u, b] – před střihem a po něm (snímky 124–138 předlohy)
+const RUB_PRE = [[-0.3, 0.0, 0.0], [-0.25, 0.0, 0.0], [-0.217, 0.0045, 0.0095], [-0.183, 0.018, 0.0378], [-0.15, 0.0525, 0.1103], [-0.117, 0.105, 0.2205], [-0.083, 0.18, 0.378], [-0.05, 0.2325, 0.4883], [-0.017, 0.285, 0.5985], [0, 0.36, 0.756]];
+const RUB_POST = [[0, 0.375, 0.7875], [0.017, 0.225, 0.4725], [0.033, 0.09, 0.189], [0.05, 0.045, 0.0945], [0.083, 0.015, 0.0315], [0.117, 0.0045, 0.0095], [0.15, 0.0, 0.0], [0.3, 0.0, 0.0]];
+// plynulá křivka přes klíčové body (Catmull–Rom), mimo rozsah 0
+function interp(K, t, j) {
+  if (t <= K[0][0] || t >= K[K.length - 1][0]) return 0;
+  let i = 0; while (i < K.length - 2 && t > K[i + 1][0]) i++;
+  const p1 = K[i], p2 = K[i + 1], p0 = K[Math.max(0, i - 1)], p3 = K[Math.min(K.length - 1, i + 2)], u = (t - p1[0]) / (p2[0] - p1[0]);
+  const a = p0[j], b = p1[j], c = p2[j], d = p3[j];
+  return 0.5 * ((2 * b) + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
+}
 const CURVES = {
   // vcucnutí: zrychlený zoom dovnitř se zkreslením čočky → nový záběr vyletí z hloubky, natočený, a dosedne (speedrampa)
-  // podle předlohy: krátký zrychlený zoom dovnitř (střed zůstává ostrý, okraje se rozmažou a ohnou čočkou),
-  // po střihu nový záběr začne mírně přiblížený s rozmazanými okraji a rychle dosedne – bez natočení
+  // PROPAD PLÁTNA – změřeno z předlohy po snímcích: střed obrazu se zrychleně propadá dozadu (zmenšuje), okraje se natahují ven,
+  // po střihu nový záběr začne propadlý, pružně se přehoupne lehce dopředu a usadí se. (u = 1 − měřítko středu, b = natažení okrajů)
   push(d, D) {
-    const pre = D * 0.4, post = D * 0.6;
-    // zkreslení čočky roste ke krajům (∝ r³) → při pohybu se rozmažou hlavně okraje, střed zůstane ostrý
-    if (d < 0) { const q = cl(1 + d / pre), a = Math.pow(q, 2.5); return { z: 1 + 0.16 * a, r: 0, x: 0, y: 0, k: 0.65 * a, e: 0, c: 0.008 * a }; }
-    const q = cl(d / post), a = Math.pow(1 - q, 2.2);
-    return { z: 1 + 0.14 * a, r: 0, x: 0, y: 0, k: 0.65 * a, e: 0, c: 0.008 * a };
+    const t = d * 0.5 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,5 s
+    const K = t < 0 ? RUB_PRE : RUB_POST;
+    const u = interp(K, t, 1), b = interp(K, t, 2);
+    return { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0, ra: 1 - u, rb: b, rcy: 0.45 };
   },
   // zahoupání: obraz se zhoupne do strany (natočení + posun), střih se schová v rozmazání, nový záběr se zhoupne zpátky a dosedne
   swing(d, D, o) {
@@ -117,13 +140,14 @@ FX.state = (type, d, D, o) => { const f = CURVES[type]; return f ? f(d, D, o || 
 FX.has = type => !!CURVES[type];
 
 // závěrka: o kolik dřív začíná rozmazání (s) – odpovídá filmové závěrce ~180° při 24 fps, trochu víc pro „AE“ vzhled
-const SHUT = { push: 0.05, swing: 0.04, whip: 0.03, flashw: 0.02 };
+const SHUT = { push: 0.06, swing: 0.04, whip: 0.03, flashw: 0.02 };
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
-  const B = FX.state(type, d, D, o), A = FX.state(type, d - (SHUT[type] || 0.03), D, o);
+  // závěrka: u propadu plátna dopředu (rozmazání v prvním snímku po střihu jako v předloze), jinak vystředěná
+  const sh = SHUT[type] || 0.03, fw = type === 'push', B = FX.state(type, fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, fw ? d : d - sh / 2, D, o);
   if (!B) return false;
   // mimo přechod nic nedělat
-  const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3;
+  const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3 && Math.abs((s.ra ?? 1) - 1) < 1e-4 && Math.abs(s.rb ?? 0) < 1e-4;
   if (idle(A) && idle(B)) return false;
   if (!init()) return false;
   useProg(prog);
@@ -134,6 +158,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, W, H);
   gl.uniform4f(U.A, A.z, A.r, A.x, A.y); gl.uniform4f(U.B, B.z, B.r, B.x, B.y);
   gl.uniform2f(U.K, A.k, B.k); gl.uniform1f(U.expo, B.e); gl.uniform1f(U.chroma, B.c);
+  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;
