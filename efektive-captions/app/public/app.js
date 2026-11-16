@@ -21,6 +21,8 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){}
 let videoFile=null, videoURL=null, project=null, fullW=1080, fullH=1920;
 let curPage=0, scope='all', panel='captions', sub={style:'color',templates:'trending',motion:'in'}, fontTarget='em', textTarget='em';
 let selOv=null; const ovAssets={}; // id → {blob, el}
+E.audios=[];   // zvukové stopy (hudba / zvuk ze zařízení): [{id, asset, name, s, e (výsledný čas), off (začátek v souboru), vol (%), fi, fo (náběh / doznění s)}]
+E.assetEl=id=>ovAssets[id]&&ovAssets[id].el;
 let analysed={face:false, person:false};
 const DEFAULT_DICT=`Lidáte → Hledáte
 biznisem → byznysem
@@ -90,7 +92,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, capZ:E.capZ, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), mute:E.flags.mute, clips:E.clips, audios:E.audios||[], kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, capZ:E.capZ, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -104,7 +106,8 @@ function dedupeWords(){
 function restore(json){
   const s=JSON.parse(json);
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
-  E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.map(c=>({...c})):null;
+  E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.filter(c=>!c.a||(ovAssets[c.a]&&ovAssets[c.a].el)).map(c=>({...c})):null;   // vložený klip bez souboru vynechat
+  E.audios=(s.audios||[]).filter(a=>ovAssets[a.asset]).map(a=>({...a}));
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease:'tok2'})):[];   // zatím jediný průběh: Tok 2
   E.G=Object.assign({},E.G0,E.COMMON,s.G); mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
@@ -116,6 +119,7 @@ function restore(json){
   E.capZ=+s.capZ||0;
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
+  setTimeout(()=>{ for (const c of E.clips||[]) if (c.a) makeExtThumb(c.a); },300);
 }
 let saveT=null;
 function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(saveProject,1500); }
@@ -195,7 +199,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.audios=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
@@ -313,7 +317,10 @@ function syncTop(){ $('undoBtn').disabled=hi<=0; $('redoBtn').disabled=hi>=hist.
 function togglePlay(){
   if (PB.on){ pbStop(); return; }
   if (swap){ endSwap(false); return; }
-  const needPB = E.clips && (E.clips.length>1 || E.clips.some(c=>E.clipSp(c)!==1));
+  const needPB = (E.clips && (E.clips.length>1 || E.clips.some(c=>E.clipSp(c)!==1))) || (E.audios&&E.audios.length);
+  // vložené klipy / hudba: počkat na zvuk (jinak by se přehrávalo bez nich)
+  if (hasExt() || (E.audios&&E.audios.length)){ if (PB.waiting) return; PB.waiting=true; $('playBtn').innerHTML=I('pause');
+    Promise.all([pbDecode(), pbExtAudio()]).then(()=>{ PB.waiting=false; pbStart(); }); return; }
   if (needPB && PB.bufFor===videoURL && PB.buf && PB.buf!=='none'){ pbStart(); return; }
   if (needPB) pbDecode();
   if (vid.paused){ ensureAC(); const pr=vid.play(); if (pr && pr.catch) pr.catch(e=>{ console.warn('play',e); $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); }); }
@@ -372,7 +379,17 @@ function smoothTime(){
   return Math.min(t, vid.duration||t);
 }
 // čas na timeline = výsledný čas (po střihu); video samo běží ve zdrojovém čase
-const PV={ get currentTime(){ return E.src2out(vid.currentTime); }, set currentTime(t){ vid.currentTime=E.out2src(t); }, get duration(){ return vid.duration?E.outDur():NaN; } };
+// ve vloženém klipu (jiné video) hlavní přehrávač stojí → poloha hlavy se drží zvlášť (vpos)
+let vpos=null;
+const PV={ get currentTime(){ return vpos!=null? vpos : E.src2out(vid.currentTime); },
+  set currentTime(t){ const x=E.extClipAt(t);
+    if (x){ vpos=t; for (const el of extEls()) if (el!==x.el && !el.paused) el.pause(); if (x.el){ if (!x.el.paused && !PB.on) x.el.pause(); if (Math.abs(x.el.currentTime-x.ts)>0.02 && !x.el.seeking) x.el.currentTime=x.ts; } }
+    else { vpos=null; for (const el of extEls()) if (!el.paused) el.pause(); }
+    vid.currentTime=E.out2src(t); },
+  get duration(){ return vid.duration?E.outDur():NaN; } };
+// přehrávače vložených klipů
+function extEls(){ const r=new Set(); for (const c of E.clips||[]) if (c.a){ const el=E.assetEl(c.a); if (el) r.add(el); } return [...r]; }
+const hasExt=()=>!!(E.clips&&E.clips.some(c=>c.a));
 // přehrávání přes střihy bez zastavení: druhý (neviditelný) přehrávač má další úsek připravený dopředu.
 // Ve střihu se obraz i zvuk přepnou na něj, hlavní přehrávač se mezitím v klidu přetočí a pak se zase převezme.
 let swapQuiet=false, swap=null;
@@ -429,32 +446,57 @@ async function pbDecode(){
   PB.decoding=(async()=>{ try{ const b=await decodeVideoAudio(file); if (PB.bufFor===url) PB.buf=b; }catch(e){ console.warn('Zvuk pro přehrávání se střihem',e); PB.buf='none'; } PB.decoding=null; })();
   return PB.decoding;
 }
+// zvuk vložených klipů a zvukových stop (dekóduje se jednou na soubor)
+PB.abuf={};
+async function pbExtAudio(more){
+  const ids=new Set([...(E.clips||[]).filter(c=>c.a).map(c=>c.a), ...(E.audios||[]).map(a=>a.asset), ...(more||[])]);
+  await Promise.all([...ids].map(async id=>{ if (PB.abuf[id]!==undefined || !ovAssets[id]) return;
+    PB.abuf[id]=null; try{ PB.abuf[id]=await decodeVideoAudio(ovAssets[id].blob); }catch(e){ console.warn('Zvuk souboru nejde přečíst',id,e); PB.abuf[id]='none'; } }));
+}
+// hlasitost s náběhem / dozněním (Web Audio): node hraje výsledný úsek [s,e] od času T
+function schedGain(g,a,T,at){ const v=(a.vol??100)/100, fi=Math.min(a.fi||0,(a.e-a.s)/2), fo=Math.min(a.fo||0,(a.e-a.s)/2), P=g.gain;
+  const lv=t=>v*Math.min(1, fi>0?(t-a.s)/fi:1, fo>0?(a.e-t)/fo:1);
+  const t0=Math.max(T,a.s); P.setValueAtTime(Math.max(0,lv(t0)),at(t0));
+  if (fi>0 && t0<a.s+fi) P.linearRampToValueAtTime(v,at(a.s+fi));
+  if (fo>0){ const f0=Math.max(t0,a.e-fo); P.setValueAtTime(Math.max(0,lv(f0)),at(f0)); P.linearRampToValueAtTime(0,at(a.e)); } }
 const pbNow=()=>PB.t0+Math.max(0,AC.currentTime-PB.a0);
 function pbStart(){
   ensureAC();
   const L=E.clipList(), st=E.clipStarts(), T=clamp(PV.currentTime,0,Math.max(0,E.outDur()-0.05));
   PB.gain=AC.createGain(); PB.gain.gain.value=E.flags.mute?0:1; PB.gain.connect(AC.destination);
   PB.a0=AC.currentTime+0.06; PB.t0=T; PB.nodes=[];
+  // zvukové stopy (hudba) – nezávisle na tlačítku „Zvuk videa“
+  PB.mgain=AC.createGain(); PB.mgain.connect(AC.destination);
+  const at=x=>PB.a0+Math.max(0,x-T);
+  for (const a of E.audios||[]){ const b=PB.abuf[a.asset]; if (!b || b==='none' || a.e<=T) continue;
+    const skip=Math.max(0,T-a.s), len=a.e-a.s-skip; if (len<=0.01) continue;
+    const g=AC.createGain(); g.connect(PB.mgain); schedGain(g,a,T,at);
+    const n=AC.createBufferSource(); n.buffer=b; n.connect(g); n.start(at(a.s), (a.off||0)+skip, len); PB.nodes.push(n); }
+  // zvuk vložených klipů
+  L.forEach((c,k)=>{ if (!c.a) return; const b=PB.abuf[c.a], o=st[k], d=E.clipDur(c); if (!b || b==='none' || o+d<=T || E.clipSp(c)!==1) return;
+    const g=AC.createGain(); g.gain.value=(c.vol??100)/100; g.connect(PB.gain);
+    const n=AC.createBufferSource(); n.buffer=b; n.connect(g); const skip=Math.max(0,T-o); n.start(PB.a0+Math.max(0,o-T), c.s+skip, Math.max(0.01,d-skip)); PB.nodes.push(n); });
   if (PB.buf && PB.buf!=='none'){
-    L.forEach((c,k)=>{ const o=st[k], d=E.clipDur(c); if (o+d<=T || E.clipSp(c)!==1) return;   // zpomalený / zrychlený úsek je bez zvuku
+    L.forEach((c,k)=>{ const o=st[k], d=E.clipDur(c); if (c.a || o+d<=T || E.clipSp(c)!==1) return;   // zpomalený / zrychlený úsek je bez zvuku
       const n=AC.createBufferSource(); n.buffer=PB.buf; n.connect(PB.gain);
       const skip=Math.max(0,T-o); n.start(PB.a0+Math.max(0,o-T), c.s+skip, d-skip); PB.nodes.push(n); });
   }
   // obraz: hlavní přehrávač na aktuální úsek, druhý připravit na další
   PB.on=true; swapQuiet=true; vid.muted=true; vidB.muted=true;
   if (vidB.dataset.src!==videoURL){ vidB.dataset.src=videoURL; vidB.src=videoURL; vidB.load(); }
-  PB.act=vid; PB.other=vidB; PB.k=-1; PB.prep=null;
-  vid.currentTime=E.out2src(T); vid.playbackRate=E.clipSp(L[E.clipAt(T)]); vid.play().catch(()=>{});
+  PB.act=vid; PB.other=vidB; PB.k=-1; PB.prep=null; PB.xprepK=-1; PB.xprep=null;
+  vpos=null; vid.currentTime=E.out2src(T); vid.playbackRate=E.clipSp(L[E.clipAt(T)]); if (!L[E.clipAt(T)].a) vid.play().catch(()=>{});
   E.attach(cv,vid);
   $('playBtn').innerHTML=I('pause'); $('fsPlay').innerHTML=I('pause'); lastT=T;
 }
 function pbStop(){
   if (!PB.on) return;
   const T=Math.min(pbNow(), E.outDur()-0.03);
-  PB.nodes.forEach(n=>{ try{ n.stop(); }catch(e){} }); PB.nodes=[]; try{ PB.gain.disconnect(); }catch(e){}
+  PB.nodes.forEach(n=>{ try{ n.stop(); }catch(e){} }); PB.nodes=[]; try{ PB.gain.disconnect(); }catch(e){} try{ PB.mgain&&PB.mgain.disconnect(); }catch(e){}
   PB.on=false; vidB.pause(); vid.pause(); vid.playbackRate=1; vidB.playbackRate=1;
+  for (const el of extEls()){ el.pause(); el.playbackRate=1; }
   E.attach(cv,vid); vid.muted=E.flags.mute;
-  vid.currentTime=E.out2src(T);
+  PV.currentTime=T;
   setTimeout(()=>{ swapQuiet=false; },50);
   $('playBtn').innerHTML=I('play'); $('fsPlay').innerHTML=I('play'); clkReset();
 }
@@ -463,6 +505,13 @@ function pbTick(){
   if (T>=E.outDur()-0.02){ pbStop(); return E.outDur()-0.03; }
   let k=0; for (let i=0;i<L.length;i++) if (T>=st[i]) k=i;
   const c=L[k], sp=E.clipSp(c), ts=c.s+(T-st[k])*sp;
+  // vložený klip (jiné video): hraje jeho přehrávač, hlavní stojí
+  const xel=c.a?E.assetEl(c.a):null;
+  for (const el of extEls()) if (el!==xel && el!==PB.xprep && !el.paused) el.pause();
+  if (c.a){
+    if (k!==PB.k){ if (!PB.act.paused) PB.act.pause(); PB.k=k; if (PB.prep===k) PB.prep=null; }
+    if (xel){ xel.muted=true; if (xel.playbackRate!==sp) xel.playbackRate=sp; if (Math.abs(xel.currentTime-ts)>0.25 && !xel.seeking) xel.currentTime=ts; if (xel.paused) xel.play().catch(()=>{}); if (PB.xprep===xel) PB.xprep=null; }
+  } else {
   if (PB.act.playbackRate!==sp) PB.act.playbackRate=sp;
   if (k!==PB.k){
     // střih: přepnout na druhý přehrávač, pokud má tenhle úsek připravený a rozjetý
@@ -471,9 +520,17 @@ function pbTick(){
     if (PB.act.paused) PB.act.play().catch(()=>{});
     PB.k=k; PB.prep=null;
   } else if (Math.abs(PB.act.currentTime-ts)>0.25 && !PB.act.seeking){ PB.act.currentTime=ts; }   // dorovnat jen při velkém rozdílu
+  }
   // příprava dalšího úseku: 0,3 s před střihem rozjet druhý přehrávač z místa o 0,3 s dřív
   const nk=k+1;
-  if (nk<L.length){
+  if (nk<L.length && L[nk].a){
+    // další je vložený klip: jeho přehrávač připravit na začátek a rozjet s předstihem
+    const nel=E.assetEl(L[nk].a), left=st[nk]-T, lead=0.3, n=L[nk], nsp=E.clipSp(n);
+    if (nel && nel!==xel){
+      if (PB.xprepK!==nk && left<1.5){ PB.xprepK=nk; PB.xprep=nel; PB.xstart=false; try{ nel.pause(); nel.muted=true; nel.playbackRate=nsp; nel.currentTime=Math.max(0,n.s-lead*nsp); }catch(e){} }
+      if (PB.xprepK===nk && !PB.xstart && left<=lead+0.02 && !nel.seeking){ PB.xstart=true; if (n.s>=lead*nsp*0.9) nel.play().catch(()=>{}); }
+    }
+  } else if (nk<L.length){
     const left=st[nk]-T, lead=0.3;
     if (PB.prep!==nk && left<1.5){ PB.prep=nk; PB.prepStart=false; try{ PB.other.pause(); PB.other.playbackRate=E.clipSp(L[nk]); PB.other.currentTime=Math.max(0,L[nk].s-lead*E.clipSp(L[nk])); }catch(e){} }
     if (PB.prep===nk && !PB.prepStart && left<=lead+0.02 && !PB.other.seeking){ PB.prepStart=true; PB.other.play().catch(()=>{}); }
@@ -484,7 +541,7 @@ let lastFrame=0;
 function loop(now){
   if (now && now-lastFrame<14){ requestAnimationFrame(loop); return; }
   lastFrame=now||performance.now();
-  const t= PB.on ? pbTick() : (( (!vid.paused || swap) && clipGuard()), E.src2out(swap? vidB.currentTime : smoothTime()));
+  const t= PB.on ? pbTick() : (vpos!=null && vid.paused && !swap) ? vpos : (( (!vid.paused || swap) && clipGuard()), E.src2out(swap? vidB.currentTime : smoothTime()));
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused || swap || PB.on){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
@@ -573,7 +630,7 @@ function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s
 function renderPanel(){
   const P=$('panel'); C.length=0;
   let h='';
-  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='audio' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
   switch(panel){
     case 'captions': h=pCaptions(); break;
     case 'templates': h=pTemplates(); break;
@@ -584,6 +641,7 @@ function renderPanel(){
     case 'ai': h=pAI(); break;
     case 'mix': h=pMix(); break;
     case 'clip': h=pClip(); break;
+    case 'audio': h=pAudio(); break;
     case 'kf': h=pKf(); break;
     case 'obj': h=pObj(); break;
     case 'color': h=pColor(); break;
@@ -624,8 +682,9 @@ binders.kf=()=>{
 function openClipPanel(){ panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
 function pClip(){
   const L=E.clipList(), k=clamp(selClip,0,L.length-1), c=L[k], st=E.clipStarts();
-  return `<div class="mixhead"><svg class="ic grad"><use href="#i-scissors"/></svg><div><b>Úsek videa ${k+1} / ${L.length}</b><small>${fmt(st[k])} – ${fmt(st[k]+E.clipDur(c))} · délka ${E.clipDur(c).toFixed(1)} s${E.clipSp(c)!==1?` (rychlost ${E.clipSp(c)}×)`:''}. Konce úseku zkrátíš tažením za okraje na stopě videa.</small></div></div>
-  <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button></div>
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-scissors"/></svg><div><b>${c.a?'Vložený klip':'Úsek videa'} ${k+1} / ${L.length}</b><small>${fmt(st[k])} – ${fmt(st[k]+E.clipDur(c))} · délka ${E.clipDur(c).toFixed(1)} s${E.clipSp(c)!==1?` (rychlost ${E.clipSp(c)}×)`:''}. Konce úseku zkrátíš tažením za okraje na stopě videa.</small></div></div>
+  <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button><button class="btn" id="clAdd">${I('plus','grad')} Vložit klip</button></div>
+  ${c.a?`<label class="ctl"><div class="lb"><span>Hlasitost klipu</span><span>${c.vol??100} %</span></div><input type="range" id="clVol" min="0" max="200" value="${c.vol??100}"></label>`:''}
   <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
   ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||E.TRDEF[c.tr]||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="1.5" step="0.01" value="${c.trDur||E.TRDEF[c.tr]||0.12}"></label><div class="note">Vlevo = rychlejší, vpravo = pomalejší.</div>
@@ -666,6 +725,8 @@ binders.clip=()=>{
   if ($('clSp')) $('clSp').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setClipSpeed(k0,+d.dataset.v); };
   if ($('clBl')) $('clBl').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[k0].blend=d.dataset.v; changed(); renderPanel(); };
   $('clCut').onclick=()=>cutAt(PV.currentTime);
+  $('clAdd').onclick=()=>$('clipIn').click();
+  const cv0=$('clVol'); if (cv0){ cv0.oninput=()=>{ ensureClips(); E.clips[k0].vol=+cv0.value; cv0.previousElementSibling.lastElementChild.textContent=cv0.value+' %'; }; cv0.onchange=()=>changed(); }
   $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
   const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; E.clips[selClip].trDur=E.TRDEF[d.dataset.v]||0.12; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
   const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const src=E.clips[Math.max(1,selClip)]; E.clips.forEach((c,i)=>{ if (i){ c.tr=src.tr||'none'; c.trDur=src.trDur||E.TRDEF[src.tr]||0.12; c.trDir=src.trDir; } }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
@@ -1060,6 +1121,7 @@ binders.overlay=()=>{
 async function loadAsset(id,blob,typeHint){
   let type=blob.type||typeHint||'';
   if (!blob.type && type) blob=new Blob([blob],{type});
+  if (type.startsWith('audio')){ ovAssets[id]={blob,el:null,type}; return null; }   // zvuk: hraje se přes Web Audio
   const asVideo=async()=>{
     const url=URL.createObjectURL(blob);
     // iPhone: video musí být v dokumentu (skryté) a „inline“, jinak nedá obraz ani se nespustí
@@ -1174,6 +1236,7 @@ function renderTimeline(){
   // zvýrazněné objekty (tyrkysově) a jejich shine (zlatě) – oba jdou posunout a zkrátit / prodloužit
   $('trX').innerHTML=(E.objs||[]).map((o,i)=>{ if (window.OBJ) OBJ.shineWin(o);
     return `<div class="xb ${o.shine?'sh':''} ${o.id===selObj?'cur':''}" data-x="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('sparkles')} ${o.shine?'Shine':'Objekt'} ${i+1}<span class="hr"></span></div>`; }).join('');
+  $('trA').innerHTML=(E.audios||[]).map(a=>`<div class="ab ${a.id===selAud?'cur':''}" data-au="${a.id}" style="left:${X(a.s)}px;width:${Math.max(6,(a.e-a.s)*pps)}px"><span class="hl"></span>${I('music')} ${esc(a.name||'Zvuk')} · ${a.vol??100} %<span class="hr"></span></div>`).join('');
   renderVideoTrack();
   if (panel==='captions'){ /* seznam se obnoví při renderPanel */ }
   followTimeline(PV.currentTime,true);
@@ -1209,8 +1272,9 @@ function renderVideoTrack(){
   const tr=$('trV'); if (!tr) return; const pad=tlPad(), L=E.clipList(), st=E.clipStarts();
   tr.style.paddingLeft='0';
   tr.innerHTML=L.map((c,k)=>{ const x=pad+st[k]*pps, w=Math.max(4,E.clipDur(c)*pps-2); let im='';
-    for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
-    return `<div class="vb ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
+    if (c.a){ const th=extThumb[c.a]; if (th) for (let q=0; q*pps<w; q++) im+=`<img src="${th}" style="left:${q*pps}px;width:${pps}px">`; }
+    else for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
+    return `<div class="vb ${c.a?'ext':''} ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
     + (E.kf||[]).map((k,i)=>`<div class="vkf ${i===selKf?'cur':''} ${k.ease==='tok2'?'gold':''}" data-kf="${i}" style="left:${pad+k.t*pps}px"></div>`).join('')
     + L.map((c,k)=>k? `<div class="vtr ${c.tr&&c.tr!=='none'?'on':''}" data-tr="${k}" style="left:${pad+st[k]*pps}px" title="Přechod">${I(c.tr&&c.tr!=='none'?'sparkles':'plus')}</div>`:'').join('');
 }
@@ -1226,6 +1290,7 @@ function removeOut(a,b){
   E.overlays=E.overlays.filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); return o.e-o.s>0.05; });
   E.objs=(E.objs||[]).filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); if (o.shS!=null){ o.shS=sh(o.shS); o.shE=sh(o.shE); } return o.e-o.s>0.05; });
   E.kf=E.kf.filter(k=>!(k.t>a+0.01&&k.t<b-0.01)).map(k=>({...k,t:sh(k.t)}));
+  E.audios=(E.audios||[]).filter(x=>{ if (x.s>a && x.s<b) x.off=(x.off||0)+(b-x.s); x.s=sh(x.s); x.e=sh(x.e); return x.e-x.s>0.05; });
 }
 function insertOut(at,len){
   if (len<=0) return;
@@ -1235,6 +1300,7 @@ function insertOut(at,len){
   for (const o of E.overlays) if (o.s>=at){ o.s+=len; o.e+=len; }
   for (const o of (E.objs||[])) if (o.s>=at){ o.s+=len; o.e+=len; if (o.shS!=null){ o.shS+=len; o.shE+=len; } }
   for (const k of E.kf) if (k.t>=at) k.t+=len;
+  for (const x of E.audios||[]) if (x.s>=at){ x.s+=len; x.e+=len; }
 }
 // výsledný úsek [a,b] se natáhne / zkrátí na délku D1 – titulky a ostatní věci v něm se roztáhnou, za ním posunou
 function remapOut(a,b,D1){
@@ -1246,6 +1312,7 @@ function remapOut(a,b,D1){
   for (const o of E.overlays){ o.s=mp(o.s); o.e=mp(o.e); }
   for (const o of (E.objs||[])){ o.s=mp(o.s); o.e=mp(o.e); if (o.shS!=null){ o.shS=mp(o.shS); o.shE=mp(o.shE); } }
   for (const k of E.kf) k.t=mp(k.t);
+  for (const x of E.audios||[]) if (x.s>=b-1e-6){ x.s+=dl; x.e+=dl; }   // hudba se nenatahuje, jen posune
 }
 function setClipSpeed(k,sp){
   ensureClips(); const c=E.clips[k]; if (!c) return; const st=E.clipStarts(), a=st[k], D0=E.clipDur(c);
@@ -1254,27 +1321,100 @@ function setClipSpeed(k,sp){
   changed(true); renderVideoTrack(); renderTimeline(); renderPanel(); PV.currentTime=a+0.02;
   toast(sp<1?`Zpomaleno na ${Math.round(sp*100)} % – úsek je teď ${D1.toFixed(1).replace('.',',')} s`:sp>1?`Zrychleno ${sp}×`:'Normální rychlost');
 }
+// ---------- VLOŽENÍ KLIPU (jiné video) na místo hlavy – jako v CapCutu ----------
+const extThumb={};
+async function makeExtThumb(id){ const el=E.assetEl(id); if (!el || extThumb[id]) return;
+  try{ const was=el.currentTime; await AI.seek(el,Math.min(0.1,(el.duration||1)/2)); extThumb[id]=AI.grab(el,90).toDataURL('image/jpeg',0.6); el.currentTime=was; }catch(e){} renderVideoTrack(); }
+async function insertClipFile(f){
+  if (PB.on) pbStop(); vid.pause();
+  toast('Načítám klip…');
+  const id='c'+Date.now(); let el=null;
+  try{ el=await loadAsset(id,f,f.type||'video/mp4'); }catch(e){}
+  if (!el || el.tagName!=='VIDEO' || !(el.duration>0.1)){ delete ovAssets[id]; return toast('Tohle video se nepodařilo načíst'); }
+  el.pause();
+  ensureClips();
+  // hlava blízko střihu / konce úseku → klip se vloží na nejbližší hranici mezi úseky (nic se nerozstřihne)
+  const T=PV.currentTime, st=E.clipStarts(), L=E.clips, end=E.outDur();
+  let k=L.length, best=Infinity; for (let i=0;i<=L.length;i++){ const b=i<L.length?st[i]:end; if (Math.abs(b-T)<best){ best=Math.abs(b-T); k=i; } }
+  const at=k<L.length?st[k]:end, d=el.duration;
+  L.splice(k,0,{s:0,e:d,a:id,tr:'none',vol:100});
+  insertOut(at,d);
+  await makeExtThumb(id);
+  selClip=k; changed(true); renderTimeline(); openClipPanel(); PV.currentTime=at+0.02; followTimeline(at+0.02,true);
+  pbExtAudio();
+  toast(`Klip vložený (${d.toFixed(1).replace('.',',')} s) – titulky za ním se posunuly`);
+}
+// ---------- ZVUK ZE ZAŘÍZENÍ (hudba, zvukový efekt) ----------
+let selAud=null;
+const audDur=a=>{ const b=PB.abuf[a.asset]; return b&&b!=='none'?b.duration:(a.dur||a.e-a.s+(a.off||0)); };
+async function addAudioFile(f){
+  if (PB.on) pbStop(); vid.pause();
+  const id='s'+Date.now(), type=f.type&&f.type.startsWith('audio')?f.type:(/\.(mp3)$/i.test(f.name)?'audio/mpeg':/\.(wav)$/i.test(f.name)?'audio/wav':'audio/mp4');
+  toast('Načítám zvuk…');
+  ovAssets[id]={blob:new Blob([f],{type}),el:null,type};
+  delete PB.abuf[id]; await pbExtAudio([id]);
+  const b=PB.abuf[id]; if (!b || b==='none'){ delete ovAssets[id]; return toast('Tenhle zvuk neumím přečíst (zkus MP3 nebo M4A)'); }
+  const T=PV.currentTime, D=PV.duration, s0=T>=D-0.3?0:T;
+  const a={id:Date.now()%1e9, asset:id, name:(f.name||'Zvuk').replace(/\.[^.]+$/,'').slice(0,28), s:s0, e:Math.min(D,s0+b.duration), off:0, vol:100, fi:0, fo:0, dur:b.duration};
+  E.audios.push(a); selAud=a.id; changed(); renderTimeline(); openAudPanel();
+  toast('Zvuk přidaný – hlasitost nastavíš dole');
+}
+function openAudPanel(){ selClip=-1; panel='audio'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderTimeline(); }
+function pAudio(){
+  const a=(E.audios||[]).find(x=>x.id===selAud);
+  if (!a) return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>Zvuk</b><small>Přidej hudbu nebo zvuk z telefonu. Položí se na místo hlavy.</small></div></div><button class="btn primary" id="auAdd">${I('plus')} Přidat zvuk ze zařízení</button>`;
+  const rng=(lb,id,min,max,st,v,u)=>`<label class="ctl"><div class="lb"><span>${lb}</span><span>${v}${u}</span></div><input type="range" id="${id}" min="${min}" max="${max}" step="${st}" value="${v}"></label>`;
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>${esc(a.name||'Zvuk')}</b><small>${fmt(a.s)} – ${fmt(a.e)} · délka ${(a.e-a.s).toFixed(1)} s. Na stopě ho posuneš prstem, konce zkrátíš tažením za okraje.</small></div></div>
+  ${rng('Hlasitost','auVol',0,200,1,a.vol??100,' %')}
+  <div class="chips" id="auVq">${[[0,'Ztlumit'],[25,'25 %'],[50,'50 %'],[100,'100 %'],[150,'150 %']].map(([v,l])=>`<div class="chip ${(a.vol??100)===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  ${rng('Náběh (fade in)','auFi',0,5,0.1,a.fi||0,' s')}
+  ${rng('Doznění (fade out)','auFo',0,5,0.1,a.fo||0,' s')}
+  <div class="row"><span>Zvuk videa</span><input type="checkbox" class="sw" id="auVm" ${E.flags.mute?'':'checked'}></div>
+  <div class="btnrow"><button class="btn" id="auHere">${I('arrow-right')} Začít v místě hlavy</button><button class="btn" id="auDel">${I('trash')} Smazat</button></div>
+  <button class="btn small" id="auAdd">${I('plus')} Přidat další zvuk</button>`;
+}
+binders.audio=()=>{
+  $('auAdd').onclick=()=>$('audIn').click();
+  const a=(E.audios||[]).find(x=>x.id===selAud); if (!a) return;
+  const live=()=>{ if (PB.on){ pbStop(); togglePlay(); } };
+  for (const [id,key,u] of [['auVol','vol',' %'],['auFi','fi',' s'],['auFo','fo',' s']]){ const el=$(id);
+    el.oninput=()=>{ a[key]=+el.value; el.previousElementSibling.lastElementChild.textContent=a[key]+u; };
+    el.onchange=()=>{ changed(); renderTimeline(); live(); }; }
+  $('auVq').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; a.vol=+d.dataset.v; changed(); renderTimeline(); renderPanel(); live(); };
+  $('auVm').onchange=e=>{ E.flags.mute=!e.target.checked; updateMute(); changed(); };
+  $('auHere').onclick=()=>{ const len=a.e-a.s, T=PV.currentTime; a.s=Math.min(T,PV.duration-0.2); a.e=Math.min(PV.duration,a.s+len); changed(); renderTimeline(); renderPanel(); };
+  $('auDel').onclick=()=>{ E.audios=E.audios.filter(x=>x!==a); selAud=null; changed(); renderTimeline(); renderPanel(); };
+};
+$('audIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if (f) addAudioFile(f); };
+$('clipIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if (f) insertClipFile(f); };
+$('clipAdd').onclick=()=>$('clipIn').click();
+$('audAdd').onclick=()=>{ if ((E.audios||[]).length){ selAud=selAud||E.audios[E.audios.length-1].id; openAudPanel(); } else $('audIn').click(); };
 function ensureClips(){ if (!E.clips||!E.clips.length) E.clips=[{s:0,e:E.srcDur||vid.duration||0,tr:'none'}]; }
 function cutAt(T){
   ensureClips(); const st=E.clipStarts(); const k=E.clips.findIndex((c,i)=>T>st[i]+0.08 && T<st[i]+E.clipDur(c)-0.08);
   if (k<0) return toast('Tady stříhat nejde (moc blízko střihu nebo konce)');
   const c=E.clips[k], ts=c.s+(T-st[k])*E.clipSp(c);
-  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none',trDur:c.trDur,speed:c.speed,blend:c.blend},{s:ts,e:c.e,tr:'none',trDur:0.12,speed:c.speed,blend:c.blend});
+  E.clips.splice(k,1,{s:c.s,e:ts,tr:c.tr||'none',trDur:c.trDur,speed:c.speed,blend:c.blend,a:c.a,vol:c.vol},{s:ts,e:c.e,tr:'none',trDur:0.12,speed:c.speed,blend:c.blend,a:c.a,vol:c.vol});
   selClip=k+1; changed(true); renderVideoTrack(); pbDecode(); toast('Video rozstřižené – přechod přidáš klepnutím na značku ve střihu');
 }
 function deleteClip(k){
   ensureClips(); if (E.clips.length<2) return toast('Poslední úsek videa smazat nejde');
-  const st=E.clipStarts(), c=E.clips[k]; removeOut(st[k], st[k]+E.clipDur(c));
+  const st=E.clipStarts(), c=E.clips[k];
+  if (!c.a && E.clips.filter(x=>!x.a).length<2) return toast('Poslední úsek původního videa smazat nejde'); removeOut(st[k], st[k]+E.clipDur(c));
   E.clips.splice(k,1); if (E.clips[0]) E.clips[0].tr='none';
+  if (c.a && !E.clips.some(x=>x.a===c.a)){ const el=E.assetEl(c.a); if (el) el.pause(); }
   selClip=-1; vid.pause(); PV.currentTime=Math.min(st[k], E.outDur()-0.05);
   changed(true); renderVideoTrack(); renderPanel(); toast('Úsek smazaný – titulky se posunuly');
 }
 function trimClip(k,side,dt){
-  ensureClips(); const c=E.clips[k], st=E.clipStarts(), prev=E.clips[k-1], next=E.clips[k+1];
+  ensureClips(); const c=E.clips[k], st=E.clipStarts();
+  // sousední úseky STEJNÉHO videa (vložený klip má vlastní video → meze 0 až jeho délka)
+  const prev=c.a?null:E.clips.slice(0,k).reverse().find(x=>!x.a), next=c.a?null:E.clips.slice(k+1).find(x=>!x.a);
+  const srcEnd=c.a?((E.assetEl(c.a)||{}).duration||c.e):(E.srcDur||vid.duration);
   const sp=E.clipSp(c);   // zdrojový posun d → na timeline d/sp
   if (side==='l'){ const ns=clamp(c.s+dt*sp, prev?prev.e:0, c.e-0.2), d=(ns-c.s)/sp; if (Math.abs(d)<0.01) return;
     if (d>0) removeOut(st[k], st[k]+d); else insertOut(st[k], -d); c.s=ns; }
-  else { const ne=clamp(c.e+dt*sp, c.s+0.2, next?next.s:(E.srcDur||vid.duration)), d=(ne-c.e)/sp; if (Math.abs(d)<0.01) return;
+  else { const ne=clamp(c.e+dt*sp, c.s+0.2, next?next.s:srcEnd), d=(ne-c.e)/sp; if (Math.abs(d)<0.01) return;
     const endO=st[k]+E.clipDur(c); if (d<0) removeOut(endO+d, endO); else insertOut(endO, d); c.e=ne; }
   changed(true); renderVideoTrack();
 }
@@ -1301,7 +1441,7 @@ $('tlIn').addEventListener('pointerdown',e=>{
   const zx=e.target.closest('[data-zx]'); if (zx){ E.zones.splice(+zx.dataset.zx,1); changed(true); return; }
   const kfm=e.target.closest('.vkf'); if (kfm){ vid.pause(); selKf=+kfm.dataset.kf; PV.currentTime=E.kf[selKf].t; openKfPanel(); return; }
   const trm=e.target.closest('.vtr'); if (trm){ vid.pause(); selClip=+trm.dataset.tr; openClipPanel(); return; }
-  const blk=e.target.closest('.cb,.zb,.ob,.vb,.xb,.sb'); if (!blk) return;
+  const blk=e.target.closest('.cb,.zb,.ob,.vb,.xb,.sb,.ab'); if (!blk) return;
   e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
   const mode=e.target.classList.contains('hl')?'l':e.target.classList.contains('hr')?'r':'m';
   tlDrag={blk,mode,x0:e.clientX,y0:e.clientY,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width),layer0:blk.parentElement&&blk.parentElement.id==='trC2'?1:0,layer:null};
@@ -1362,6 +1502,15 @@ $('tlIn').addEventListener('pointerup',e=>{
     } else PV.currentTime=o.s+0.05;
     if (panel!=='obj') openObjPanel(); else renderPanel();
     changed();
+  } else if (blk.dataset.au!==undefined){
+    const a=(E.audios||[]).find(x=>x.id===+blk.dataset.au); if (!a) return; selAud=a.id;
+    const D=PV.duration, full=audDur(a);
+    if (moved){
+      if (mode==='m'){ const d=clamp(dt,-a.s,D-a.e); a.s+=d; a.e+=d; }
+      else if (mode==='l'){ const d=clamp(dt,-Math.min(a.s,a.off||0),a.e-a.s-0.2); a.s+=d; a.off=(a.off||0)+d; }
+      else a.e=clamp(a.e+dt,a.s+0.2,Math.min(D,a.s+full-(a.off||0)));
+    } else PV.currentTime=a.s+0.05;
+    openAudPanel(); changed();
   } else if (blk.dataset.o!==undefined){
     const o=E.overlays.find(x=>x.id===+blk.dataset.o); if (!o) return;
     selOv=o.id;
@@ -1888,7 +2037,7 @@ async function runExport(){
   const t0=performance.now();
   try{
     let res;
-    const o={file:videoFile,src:videoURL,w,h,fps,videoFps,mode,br:+($('exBr')?$('exBr').value:0.12),ovBlobs:Object.fromEntries(Object.entries(ovAssets).filter(([k,a])=>a.el&&a.el.tagName==='VIDEO').map(([k,a])=>[k,a.blob])),mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
+    const o={file:videoFile,src:videoURL,w,h,fps,videoFps,mode,br:+($('exBr')?$('exBr').value:0.12),ovBlobs:Object.fromEntries(Object.entries(ovAssets).filter(([k,a])=>a.el&&a.el.tagName==='VIDEO').map(([k,a])=>[k,a.blob])),blobs:Object.fromEntries(Object.entries(ovAssets).map(([k,a])=>[k,a.blob])),mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));

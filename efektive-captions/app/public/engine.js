@@ -864,8 +864,18 @@ E.clipList=()=> (E.clips&&E.clips.length)? E.clips : [{s:0,e:E.srcDur||0,tr:'non
 E.clipSp=c=>Math.max(0.1,Math.min(4,(c&&c.speed)||1));
 E.clipDur=c=>(c.e-c.s)/E.clipSp(c);
 E.outDur=()=>E.clipList().reduce((a,c)=>a+E.clipDur(c),0);
-E.out2src=t=>{ const L=E.clipList(); let o=0; for (const c of L){ const d=E.clipDur(c); if (t<o+d || c===L[L.length-1]) return Math.min(c.e, c.s+Math.max(0,t-o)*E.clipSp(c)); o+=d; } return 0; };
-E.src2out=ts=>{ const L=E.clipList(); let o=0; for (const c of L){ if (ts<c.s) return o; if (ts<c.e) return o+(ts-c.s)/E.clipSp(c); o+=E.clipDur(c); } return o; };
+// c.a = úsek z JINÉHO videa (vložený klip, id souboru); s/e jsou pak časy v tom videu.
+// out2src vrací vždy čas v HLAVNÍM videu – ve vloženém klipu místo, kde hlavní video navazuje.
+E.out2src=t=>{ const L=E.clipList(); let o=0, last=0; for (const c of L){ const d=E.clipDur(c);
+  if (t<o+d || c===L[L.length-1]){ if (!c.a) return Math.min(c.e, c.s+Math.max(0,t-o)*E.clipSp(c)); const nx=L.slice(L.indexOf(c)+1).find(x=>!x.a); return o>0||!nx?last:nx.s; }
+  if (!c.a) last=c.e; o+=d; } return last; };
+E.src2out=ts=>{ const L=E.clipList(); let o=0; for (const c of L){ if (c.a){ o+=E.clipDur(c); continue; } if (ts<c.s) return o; if (ts<c.e) return o+(ts-c.s)/E.clipSp(c); o+=E.clipDur(c); } return o; };
+// vložený klip v čase t → {c, el (přehrávač), ts (čas v jeho videu)} nebo null
+E.assetEl=null;   // nastaví aplikace: id → <video>
+E.extClipAt=t=>{ const L=E.clipList(); if (!L.some(c=>c.a)) return null; const st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i;
+  const c=L[k]; if (!c.a) return null; return {c, k, el:E.assetEl?E.assetEl(c.a):null, ts:Math.min(c.e, c.s+Math.max(0,t-st[k])*E.clipSp(c))}; };
+// obraz vyplní celé plátno (oříznutí jako v CapCutu), když má vložené video jiný poměr stran
+E.drawCover=(c,src,sw,sh,W,H)=>{ if (!src || !sw || !sh) return; const k=Math.max(W/sw,H/sh), dw=sw*k, dh=sh*k; c.drawImage(src,(W-dw)/2,(H-dh)/2,dw,dh); };
 E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=E.clipDur(c); } return r; };
 E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
@@ -940,7 +950,7 @@ function stabZoom(T,st,S){
 }
 E.stabInfo=()=>{ const st=E.stab, T=st&&E.tracks[st.trk]; if (!T||!window.TRK) return null; const S=stabSm(T,st); return {zoom:stabZoom(T,st,S)}; };
 E.stabAt=t=>{
-  const st=E.stab; if (!st || !st.trk || !window.TRK) return null; const T=E.tracks[st.trk]; if (!T || !T.t || T.t.length<2) return null;
+  const st=E.stab; if (!st || !st.trk || !window.TRK) return null; if (E.extClipAt(t)) return null; const T=E.tracks[st.trk]; if (!T || !T.t || T.t.length<2) return null;
   const S=stabSm(T,st), zs=stabZoom(T,st,S), ts=E._fT!=null ? E._fT : (E.out2src?E.out2src(t):t);
   const ta=T.t[0], tb=T.t[T.t.length-1], out=ts<ta?ta-ts:ts>tb?ts-tb:0;
   const w=out<=0?1:Math.max(0,1-out/0.35), ww=w*w*(3-2*w); if (ww<=0) return null;   // za koncem sledování plynule zpět
@@ -969,6 +979,9 @@ function drawVideoXf(t, draw){
 E.render = (t, opts={}) => {
   if (!vid || !vid.videoWidth) return;
   E._t=t;
+  // vložený klip z jiného videa: kreslí se jeho přehrávač (export si snímek předá sám)
+  if (!opts.frameDraw && !E.flags.transparent){ const x=E.extClipAt(t); if (x){ const el=x.el;
+    opts={...opts, frameT:null, frameDraw:(c,W,H)=>{ c.fillStyle='#000'; c.fillRect(0,0,W,H); if (el && el.readyState>=2) E.drawCover(c,el,el.videoWidth,el.videoHeight,W,H); }}; } }
   // přesný čas snímku, který se kreslí (pro stabilizaci): export ho předá, při přehrávání ho hlásí requestVideoFrameCallback
   E._fT = opts.frameT!=null ? opts.frameT : (!opts.frameDraw && !vid.paused && vid._mt!=null && Math.abs(vid._mt-vid.currentTime)<0.25 ? vid._mt : null);
   const F=E.flags;

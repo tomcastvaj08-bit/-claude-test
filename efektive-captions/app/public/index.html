@@ -131,13 +131,16 @@
         <div class="tr tr-z" id="trZ"></div>
         <div class="tr tr-o" id="trO"></div>
         <div class="tr tr-x" id="trX"></div>
+        <div class="tr tr-a" id="trA"></div>
       </div>
     </div>
     <div class="tl-head"></div>
+    <button class="tl-add" id="clipAdd" title="Vložit klip na místo hlavy"><svg class="ic"><use href="#i-plus"/></svg></button>
     <div class="tl-tools">
       <button id="colorBtn" class="chipbtn"><svg class="ic grad"><use href="#i-palette"/></svg> Barvy</button>
       <button id="objBtn" class="chipbtn"><svg class="ic grad"><use href="#i-sparkles"/></svg> Objekt</button>
       <button id="trkBtn" class="chipbtn"><svg class="ic grad"><use href="#i-target"/></svg> Tracking</button>
+      <button id="audAdd" class="chipbtn"><svg class="ic grad"><use href="#i-music"/></svg> Zvuk</button>
       <button id="muteBtn" class="chipbtn"><svg class="ic"><use href="#i-volume"/></svg> Zvuk videa</button>
       <button id="zoneAdd" class="chipbtn"><svg class="ic"><use href="#i-ban"/></svg> Bez titulků</button>
       <button id="cutBtn" class="chipbtn"><svg class="ic grad"><use href="#i-scissors"/></svg> Střih videa</button>
@@ -233,6 +236,8 @@
 <video id="vid" playsinline webkit-playsinline preload="auto" class="srcvid"></video>
 <input type="file" id="ovIn" accept="image/*,video/*" hidden>
 <input type="file" id="ovFullIn" accept="video/*" hidden>
+<input type="file" id="clipIn" accept="video/*" hidden>
+<input type="file" id="audIn" accept="audio/*,.mp3,.m4a,.wav,.aac" hidden>
 
 <script src="native.js"></script>
 <script src="vendor/mp4-muxer.js"></script>
