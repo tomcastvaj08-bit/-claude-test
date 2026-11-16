@@ -91,8 +91,8 @@ function sprite(word,kind,px){
   else { g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d6d8dc'); }
   // měkký atmosférický stín (tmavé písmo pod přední vrstvou, z něj zůstane jen stín)
   x.save(); x.fillStyle='#000';
-  x.shadowColor='rgba(0,0,0,0.75)'; x.shadowBlur=px*0.55; x.shadowOffsetY=px*0.06; x.fillText(word,pad,base); x.fillText(word,pad,base);
-  x.shadowColor='rgba(0,0,0,0.7)'; x.shadowBlur=px*0.2; x.shadowOffsetY=px*0.03; x.fillText(word,pad,base); x.restore();
+  x.shadowColor='rgba(0,0,0,0.6)'; x.shadowBlur=px*0.5; x.shadowOffsetY=px*0.09; x.fillText(word,pad,base);
+  x.shadowColor='rgba(0,0,0,0.45)'; x.shadowBlur=px*0.18; x.shadowOffsetY=px*0.05; x.fillText(word,pad,base); x.restore();
   x.fillStyle=g; x.fillText(word,pad,base);
   o={c,w,h,pad,tw,base,asc}; SPR.set(key,o); if (SPR.size>200) SPR.delete(SPR.keys().next().value);
   return o;
