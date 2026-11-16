@@ -839,7 +839,7 @@ E.trkOffset=(id,t)=>{
   const T=E.tracks[id]; if (!T || !window.TRK || !T.t || T.t.length<2) return null;
   const S=E.trackSm(T); if (!S) return null;
   const ts=E.out2src?E.out2src(t):t, a=TRK.at(S,ts), b=TRK.at(S,T.t0);
-  const k=E.kfAt(t)||KF0, k0=E.kfAt(E.src2out?E.src2out(T.t0):T.t0)||KF0;
+  const k=E.vxfAt(t)||KF0, k0=E.vxfAt(E.src2out?E.src2out(T.t0):T.t0)||KF0;
   const X=(p,k)=>50+k.x+(p.x*100-50)*k.z/100, Y=(p,k)=>50+k.y+(p.y*100-50)*k.z/100;
   return {dx:X(a,k)-X(b,k0), dy:Y(a,k)-Y(b,k0), k:(a.s/b.s)*(k.z/k0.z), x:X(a,k), y:Y(a,k)};
 };
@@ -847,8 +847,41 @@ E.trkOffset=(id,t)=>{
 E.styleAt=(p,t)=>{ const S=E.styleOf(p); const m=p&&E.meta[E.keyOf(p)];
   if (m && m.trk && E.tracks[m.trk]){ const o=E.trkOffset(m.trk,t); if (o){ S.posX+=o.dx; S.posY+=o.dy; if (E.tracks[m.trk].scale) S.size*=o.k; } }
   return S; };
+// ================= STABILIZACE NA OBJEKT =================
+// E.stab = {trk:id, smooth 0–100, scale:false}: video se v každém snímku posune (a jednou provždy přiblíží),
+// aby sledovaný objekt (obličej…) stál na obrazovce pořád na stejném místě; s „scale“ i ve stejné velikosti.
+E.stab=null;
+const stabSm=(T,st)=>{ const key=(st.smooth??5)+'|'+T.t.length+'|'+(st.scale?1:0); if (T._ssK!==key){ T._ss=TRK.smooth(T,st.smooth??5); T._ssK=key; T._sz=null; } return T._ss; };
+function stabZoom(T,st,S){
+  if (T._sz) return T._sz;
+  const p0=TRK.at(S,T.t0); let zs=1;
+  for (let i=0;i<S.n;i++){
+    const f=st.scale? p0.s/S.s[i] : 1;
+    for (const [a,b] of [[p0.x-0.5,S.x[i]-0.5],[p0.y-0.5,S.y[i]-0.5]]){
+      const den=f/2-Math.abs(a-f*b); zs=Math.max(zs, den>0.05? 0.5/den : 10);
+    }
+  }
+  T._sz=Math.min(3,zs*1.005); return T._sz;
+}
+E.stabInfo=()=>{ const st=E.stab, T=st&&E.tracks[st.trk]; if (!T||!window.TRK) return null; const S=stabSm(T,st); return {zoom:stabZoom(T,st,S)}; };
+E.stabAt=t=>{
+  const st=E.stab; if (!st || !st.trk || !window.TRK) return null; const T=E.tracks[st.trk]; if (!T || !T.t || T.t.length<2) return null;
+  const S=stabSm(T,st), zs=stabZoom(T,st,S), ts=E._fT!=null ? E._fT : (E.out2src?E.out2src(t):t);
+  const ta=T.t[0], tb=T.t[T.t.length-1], out=ts<ta?ta-ts:ts>tb?ts-tb:0;
+  const w=out<=0?1:Math.max(0,1-out/0.35), ww=w*w*(3-2*w); if (ww<=0) return null;   // za koncem sledování plynule zpět
+  const p=TRK.at(S,ts), p0=TRK.at(S,T.t0), f=st.scale? p0.s/p.s : 1, Z=zs*f;
+  // bod p se má zobrazit tam, kde byl v čase t0 (po přiblížení zs)
+  const Tx=zs*(p0.x-0.5)-Z*(p.x-0.5), Ty=zs*(p0.y-0.5)-Z*(p.y-0.5);
+  return {z:1+(Z-1)*ww, x:Tx*100*ww, y:Ty*100*ww};
+};
+// výsledná transformace videa v čase t = klíčové body (zoom/posun/průhlednost) + stabilizace
+E.vxfAt=t=>{
+  const k=E.kfAt(t), s=E.stabAt(t); if (!s) return k;
+  const b=k||{z:100,x:0,y:0,op:100};
+  return {z:b.z*s.z, x:b.x+b.z/100*s.x, y:b.y+b.z/100*s.y, op:b.op??100};
+};
 function drawVideoXf(t, draw){
-  const k=E.kfAt(t);
+  const k=E.vxfAt(t);
   if (!k || (k.z===100 && !k.x && !k.y && k.op>=100)){ draw(); return; }
   const W=cv.width, H=cv.height;
   ctx.save(); ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
@@ -861,6 +894,8 @@ function drawVideoXf(t, draw){
 E.render = (t, opts={}) => {
   if (!vid || !vid.videoWidth) return;
   E._t=t;
+  // přesný čas snímku, který se kreslí (pro stabilizaci): export ho předá, při přehrávání ho hlásí requestVideoFrameCallback
+  E._fT = opts.frameT!=null ? opts.frameT : (!opts.frameDraw && !vid.paused && vid._mt!=null && Math.abs(vid._mt-vid.currentTime)<0.25 ? vid._mt : null);
   const F=E.flags;
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; ctx.shadowColor='transparent'; ctx.filter='none';
   if (F.transparent) ctx.clearRect(0,0,cv.width,cv.height);
@@ -869,7 +904,7 @@ E.render = (t, opts={}) => {
     // čistý podklad + poslední dobrý snímek videa: když iPhone snímek zrovna nedá, nezůstane na plátně starý obraz se starými titulky
     if (!vframe||vframe.width!==cv.width||vframe.height!==cv.height){ vframe=document.createElement('canvas'); vframe.width=cv.width; vframe.height=cv.height; vfc=vframe.getContext('2d'); vfOk=false; }
     if (vfFor!==vid){ vfFor=vid; vfOk=false; }
-    const k=E.kfAt(t), zoomed=!!(k && (k.z!==100 || k.x || k.y || k.op<100));
+    const k=E.vxfAt(t), zoomed=!!(k && (k.z!==100 || k.x || k.y || k.op<100));
     // záložní kopie snímku: při zoomu jen občas (jinak by se každý snímek kopíroval dvakrát → sekání na iPhonu)
     vfN=(vfN+1)%8;
     if (vid.readyState>=2 && (!zoomed || !vfOk || vfN===0)){ try{ vfc.drawImage(vid,0,0,cv.width,cv.height); vfOk=true; }catch(e){} }

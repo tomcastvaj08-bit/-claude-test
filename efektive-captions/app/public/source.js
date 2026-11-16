@@ -63,7 +63,7 @@ async function openFrameSource(file, dispW, dispH) {
   // časy všech snímků (s, od začátku videa) – pro sledování objektu snímek po snímku
   const times = samples.map(x => x.cts / x.timescale - first / 1e6).sort((a, b) => a - b);
   return {
-    rot, codec, times,
+    rot, codec, times, first: first / 1e6,
     // vrátí snímek, který má být vidět v čase t (s); t musí růst
     async frameAt(t) {
       const us = t * 1e6 + first + 500;

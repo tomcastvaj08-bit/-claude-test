@@ -90,7 +90,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined})), mute:E.flags.mute, clips:E.clips, kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -111,6 +111,7 @@ function restore(json){
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.face=Array.isArray(s.face)?s.face:null;
   E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
+  E.stab=s.stab && s.stab.trk && E.tracks[s.stab.trk] ? {...s.stab} : null;
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
 }
@@ -180,7 +181,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.kf=[]; E.tracks={}; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.kf=[]; E.tracks={}; E.stab=null; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
@@ -336,7 +337,7 @@ function videoNow(now){ // nejlepší odhad skutečného času videa
   if (clk.ref) return clk.ref.media+(now-clk.ref.at)/1000*(vid.playbackRate||1);
   return vid.currentTime;
 }
-if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
+if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid._mt=md.mediaTime; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
 vid.addEventListener('playing',()=>{ if (swapQuiet) return; clkReset(); clk.run=true; });
 ['pause','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ if (swapQuiet) return; clk.run=false; clkReset(); }));
 vid.addEventListener('seeked',()=>{ if (swapQuiet) return; clkReset(); clk.run=!vid.paused; });
@@ -361,6 +362,7 @@ const PV={ get currentTime(){ return E.src2out(vid.currentTime); }, set currentT
 // Ve střihu se obraz i zvuk přepnou na něj, hlavní přehrávač se mezitím v klidu přetočí a pak se zase převezme.
 let swapQuiet=false, swap=null;
 const vidB=document.createElement('video'); vidB.muted=true; vidB.playsInline=true; vidB.setAttribute('playsinline',''); vidB.preload='auto'; vidB.className='srcvid'; document.body.appendChild(vidB);
+if (vidB.requestVideoFrameCallback){ const cb=(n,md)=>{ vidB._mt=md.mediaTime; vidB.requestVideoFrameCallback(cb); }; vidB.requestVideoFrameCallback(cb); }   // přesný čas snímku (stabilizace)
 function prepB(next){
   if (!videoURL) return;
   if (vidB.dataset.src!==videoURL){ vidB.dataset.src=videoURL; vidB.src=videoURL; vidB.load(); vidB.prepFor=null; }
@@ -609,10 +611,31 @@ function pClip(){
   ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="0.6" step="0.01" value="${c.trDur||0.12}"></label><div class="note">Vlevo = rychlejší záblesk, vpravo = pomalejší.</div>`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
   <div class="note">Další přechody a zvuky k nim brzy přibudou.</div>
+  ${stabSection()}
   ${pKf(true)}`;
 }
+// stabilizace na objekt: obličej (nebo cokoli) stojí na obrazovce pořád na jednom místě
+function stabSection(){
+  const st=E.stab, T=st&&E.tracks[st.trk];
+  if (!T) return `<div class="clabel">Stabilizace na objekt</div><button class="btn" id="stabStart">${I('target','grad')} Stabilizovat na obličej / objekt</button>
+    <div class="note">Video se bude posouvat tak, aby vybraný obličej nebo objekt stál pořád na jednom místě – i když člověk jde a kýve se. Nejdřív zastav video tam, kde je objekt dobře vidět.</div>`;
+  const inf=E.stabInfo(), a=E.src2out(T.t[0]), b=E.src2out(T.t[T.t.length-1]);
+  return `<div class="clabel">Stabilizace na objekt · ${fmt(a)}–${fmt(b)}</div>
+    <div class="note">Video je kvůli stabilizaci přiblížené na ${Math.round((inf?inf.zoom:1)*100)} % (aby nebyly vidět okraje).</div>
+    <div class="row"><span>I stejná velikost objektu</span><input type="checkbox" class="sw" id="stabSc" ${st.scale?'checked':''}></div>
+    <label class="ctl"><div class="lb"><span>Vyhlazení (0 = úplně pevně)</span><span>${st.smooth??5}</span></div><input type="range" id="stabSm" min="0" max="60" value="${st.smooth??5}"></label>
+    <div class="btnrow"><button class="btn" id="stabStart">${I('target')} Nastavit znovu</button><button class="btn" id="stabOff">${I('x')} Vypnout</button></div>`;
+}
+function stabBind(){
+  if (!$('stabStart')) return;
+  $('stabStart').onclick=()=>trkBegin('stab',id=>{ E.stab=id?{trk:id,smooth:(E.stab&&E.stab.smooth)??5,scale:!!(E.stab&&E.stab.scale)}:null; });
+  if (!E.stab) return;
+  $('stabSc').onchange=e=>{ E.stab.scale=e.target.checked; changed(); renderPanel(); };
+  $('stabSm').oninput=e=>{ E.stab.smooth=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=E.stab.smooth; }; $('stabSm').onchange=()=>{ changed(); renderPanel(); };
+  $('stabOff').onclick=()=>{ E.stab=null; trkGC(); changed(); renderPanel(); };
+}
 binders.clip=()=>{
-  binders.kf();
+  binders.kf(); stabBind();
   $('clCut').onclick=()=>cutAt(PV.currentTime);
   $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
   const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
@@ -1193,6 +1216,7 @@ $('kfTop').onclick=()=>{ vid.pause(); const i=kfHere();
 $('trkBtn').onclick=()=>{
   vid.pause();
   if (panel==='overlay' && selOv!=null){ const o=E.overlays.find(x=>x.id===selOv); if (o){ trkBegin('ov',id=>{ if (id) o.trk=id; else delete o.trk; }); return; } }
+  if (panel==='clip'){ trkBegin('stab',id=>{ E.stab=id?{trk:id,smooth:(E.stab&&E.stab.smooth)??5,scale:!!(E.stab&&E.stab.scale)}:null; }); return; }   // vybrané video = stabilizace
   let k=E.pageAt(PV.currentTime); if (k<0) k=curPage; if (!E.pages[k]){ toast('Nejdřív vytvoř titulky'); return; }
   curPage=k; if (panel!=='captions'){ panel='captions'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='captions')); }
   renderPanel(); markCur();
@@ -1345,14 +1369,14 @@ function trkBind(getId,setId,kind){
   };
   $('trkOff').onclick=()=>{ setId(null); trkGC(); changed(); renderPanel(); };
 }
-function trkGC(){ const used=new Set(); for (const k in E.meta) if (E.meta[k] && E.meta[k].trk) used.add(E.meta[k].trk); for (const o of E.overlays) if (o.trk) used.add(o.trk); for (const id in E.tracks) if (!used.has(id)) delete E.tracks[id]; }
+function trkGC(){ const used=new Set(); for (const k in E.meta) if (E.meta[k] && E.meta[k].trk) used.add(E.meta[k].trk); for (const o of E.overlays) if (o.trk) used.add(o.trk); if (E.stab && E.stab.trk) used.add(E.stab.trk); for (const id in E.tracks) if (!used.has(id)) delete E.tracks[id]; }
 function trkBegin(kind,setId){
   if (!window.TRK){ toast('Sledování se nenačetlo – obnov stránku'); return; }
   vid.pause();
   // objekt musí být v daném okamžiku vidět: video na začátek titulku / overlaye, pokud je mimo
   const t=PV.currentTime;
   if (kind==='page'){ const p=E.pages[curPage]; if (!p) return; if (t<p.s||t>p.e) PV.currentTime=Math.min(p.e-0.02,p.s+0.3); }
-  else { const o=E.overlays.find(x=>x.id===selOv); if (!o) return; if (t<o.s||t>o.e) PV.currentTime=Math.min(o.e-0.02,o.s+0.1); }
+  else if (kind==='ov'){ const o=E.overlays.find(x=>x.id===selOv); if (!o) return; if (t<o.s||t>o.e) PV.currentTime=Math.min(o.e-0.02,o.s+0.1); }
   const W=cv.width, H=cv.height, sz=Math.min(W,H)*0.16;
   trkPick={box:{cx:W/2,cy:H*0.38,w:sz,h:sz}, kind, setId, running:false, cancel:false, prog:0};
   $('trkBar').classList.remove('hidden'); trkBarUpd();
@@ -1410,7 +1434,7 @@ function drawTrkMark(t){
 async function trkRun(){
   const P=trkPick; if (!P || P.running) return;
   P.running=true; P.prog=0; trkBarUpd();
-  const W=cv.width, H=cv.height, k=E.kfAt(PV.currentTime)||{z:100,x:0,y:0}, z=k.z/100;
+  const W=cv.width, H=cv.height, k=E.vxfAt(PV.currentTime)||{z:100,x:0,y:0}, z=k.z/100;
   // rámeček z obrazovky → do souřadnic původního videa (bez zoomu z klíčových bodů)
   const inv=(X,Y)=>[(X-(W/2+k.x/100*W))/z+W/2, (Y-(H/2+k.y/100*H))/z+H/2];
   const [cx,cy]=inv(P.box.cx,P.box.cy);
@@ -1436,6 +1460,7 @@ async function trkRun(){
   const len=tr.t[tr.t.length-1]-tr.t[0], L=len.toFixed(1).replace('.',',');
   // pohyb objektu na obrazovce (ať je vidět, jestli se vůbec hýbe)
   const mx=Math.max(...tr.x)-Math.min(...tr.x), my=Math.max(...tr.y)-Math.min(...tr.y), mv=Math.round(Math.max(mx,my)*100);
+  if (P.kind==='stab' && len>=1){ const inf=E.stabInfo(); trkMsg(`Stabilizace hotová (${L} s) – objekt stojí na místě, video je přiblížené na ${Math.round((inf?inf.zoom:1)*100)} %. Pusť video a uvidíš.`); return; }
   trkMsg(len<1 ? `Objekt se ztratil po ${L} s – zkus větší rámeček nebo výraznější místo${TRK.why?' ('+TRK.why+')':''}.`
     : `Hotovo – objekt sledován ${L} s${P.kind==='page'?`, jede za ním ${n} ${n===1?'titulek':n<5?'titulky':'titulků'}`:''}. Objekt se na obrazovce posunul až o ${mv} %. Pusť video a uvidíš.`);
 }
