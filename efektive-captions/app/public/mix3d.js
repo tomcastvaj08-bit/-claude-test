@@ -151,7 +151,7 @@ function layoutFlow(W,H){
   const {lines}=build(), G=E.G;
   const key=cacheKey+'|'+W+'|'+H+'|'+(G.mixSize||100)+'|'+(G.mixY??60)+'|'+(E.face?E.face.length:0)+'|'+(G.mixSpeed||100);
   if (key===flowKey && flow) return flow; flowKey=key;
-  const base=W*0.165*(G.mixSize||100)/100, lh=L=>base*L.size*0.8;
+  const base=Math.min(W,H)*0.165*(G.mixSize||100)/100, lh=L=>base*L.size*0.8;
   // úběžník jen kousek nad místem dosednutí → řádky letí skoro jen do dálky, jen lehce stoupají
   const land=H*((G.mixY??60)/100), vpY=land-H*0.13;
   const gaps=[]; for (let i=1;i<lines.length;i++){ const g=lines[i].s-lines[i-1].s; if (g>0.05&&g<2) gaps.push(g); }
