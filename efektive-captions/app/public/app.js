@@ -1881,14 +1881,14 @@ async function runExport(){
   if (exCancel) return;
   $('exMore').open=false;
   const r=$('exRes').value, short=Math.min(fullW,fullH), sc=r==='orig'?1:(+r)/short;
-  const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2, fps=+$('exFps').value, mode=segVal('exMode');
+  const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2, fps=$('exFps').value==='s60'?60:+$('exFps').value, videoFps=$('exFps').value==='s60'?30:0, mode=segVal('exMode');
   $('exGo').classList.add('hidden'); $('exCancel').classList.remove('hidden'); $('exBarW').classList.remove('hidden'); $('exDl').classList.add('hidden');
   exCancel={v:false};
   const onP=(p,m)=>{ $('exBar').style.width=(p*100)+'%'; $('exStatus').textContent=`${Math.round(p*100)} % · ${m}`; };
   const t0=performance.now();
   try{
     let res;
-    const o={file:videoFile,src:videoURL,w,h,fps,mode,br:+($('exBr')?$('exBr').value:0.12),ovBlobs:Object.fromEntries(Object.entries(ovAssets).filter(([k,a])=>a.el&&a.el.tagName==='VIDEO').map(([k,a])=>[k,a.blob])),mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
+    const o={file:videoFile,src:videoURL,w,h,fps,videoFps,mode,br:+($('exBr')?$('exBr').value:0.12),ovBlobs:Object.fromEntries(Object.entries(ovAssets).filter(([k,a])=>a.el&&a.el.tagName==='VIDEO').map(([k,a])=>[k,a.blob])),mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
     if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));

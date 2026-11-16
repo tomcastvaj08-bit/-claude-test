@@ -185,18 +185,20 @@ X.exportVideo = async (opts) => {
       if (opts.cancel&&opts.cancel.v) throw new Error('Zrušeno');
       if (err) throw err;
       const t=i/fps;
+      // „plynulé titulky“: titulky v každém snímku (60 fps), video a overlaye se čtou jen 30× za sekundu
+      const tv=opts.videoFps? Math.floor(t*opts.videoFps+1e-6)/opts.videoFps : t;
       // překrytí videa novou verzí: přesný snímek v čase t
-      await ovFrames(t);
-      for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e || OVS.some(q=>q.o===o)) continue; o.src.pause(); const want=Math.min(E.ovTime(o,t),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
+      await ovFrames(tv);
+      for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e || OVS.some(q=>q.o===o)) continue; o.src.pause(); const want=Math.min(E.ovTime(o,tv),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
       const ck=cut?E.clipList()[E.clipAt(t)]:null, slow=ck && E.clipSp(ck)<1 && (ck.blend||'flow')!=='none' && src && src.times && src.times.length>1;
       if (slow){
-        const ts=o2s(t), draw=await slowFrame(t,ts,ck.blend||'flow');
+        const ts=o2s(tv), draw=await slowFrame(t,ts,ck.blend||'flow');
         E.render(t,{frameDraw:(c,W,H)=>draw(c), frameT:ts});
       } else if (src){
-        const fr=await src.frameAt(o2s(t));
+        const fr=await src.frameAt(o2s(tv));
         E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
       } else {
-        await seek(v,o2s(t)); await frameReady(v);
+        await seek(v,o2s(tv)); await frameReady(v);
         if (ctxBehind){ try{ const m=await AI.segment(v,Math.round(w/3),Math.round(h/3)); E.personMask=()=>m; }catch(e){} }
         E.render(t);
       }
