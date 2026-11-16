@@ -428,3 +428,5 @@ button.pro.on{background:var(--green)}
 #kfTop.on .ic{stroke:#e0a400;fill:#fff1c9}
 .ctrl-r{width:auto;gap:2px}
 .kfh .ic{width:16px;height:16px}
+
+.hero-tip{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink2,#6b7280);max-width:38ch}

@@ -191,7 +191,10 @@ $('fileIn').onchange=async e=>{
   clearInterval(tick); busy('Načítám video…','Hotovo',1);
   $('setupPrev').src=videoURL+'#t=0.5'; $('setupPrev').muted=true; $('setupPrev').setAttribute('playsinline',''); $('setupPrev').preload='metadata';
   $('sPunct').checked=!!E.G.punct; setStep('sLines',E.G.maxLines||3); setStep('sChars',E.G.maxChars||0); setStep('sWpp',E.G.wpp||4); $('sMain').value=String(E.G.mainLine||'mid');
-  renderLangs(); $('setupStatus').textContent=''; $('setupStatus').classList.remove('err'); show('setup');
+  renderLangs(); $('setupStatus').textContent=''; $('setupStatus').classList.remove('err');
+  // video v nízké kvalitě (typicky „Pořídit video“ přímo z výběru souboru – iPhone ho tam ukládá zmenšené)
+  if (Math.min(fullW,fullH)<1080) $('setupStatus').textContent=`Pozor: video má jen ${fullW}×${fullH}. Pro ostré video natoč v aplikaci Fotoaparát (4K) a sem ho vyber z Fotek nebo ze Souborů – „Pořídit video“ v nabídce iPhone ukládá ve snížené kvalitě.`;
+  show('setup');
 };
 $('setupBack').onclick=()=>{ genRun++; $('genBtn').disabled=false; show('home'); };
 
@@ -673,28 +676,42 @@ function markCur(){
 }
 // --- úprava textu titulku ---
 function pageText(p){ const a=[]; for(let i=p.a;i<=p.b;i++) a.push(E.G.punct?E.words[i].raw:E.words[i].t); return a.join(' '); }
+// text titulku po řádcích tak, jak je teď vidět v náhledu (každý řádek = nový řádek v bublině)
+function pageLines(p){ const wt=i=>E.G.punct?(E.words[i].raw||E.words[i].t):E.words[i].t;
+  let g=null; try{ g=E.groupsOf(p,E.styleOf(p)); }catch(e){}
+  if (!g || !g.length) return pageText(p);
+  return g.map(x=>x.ids.map(wt).join(' ')).join('\n'); }
 function setPageText(k,text){
   const p=E.pages[k]; if (!p) return;
-  const list=text.trim().split(/\s+/).filter(Boolean);
+  // řádky z bubliny: Enter = nový řádek v titulku
+  const rows=text.split(/\n/).map(r=>r.trim().split(/\s+/).filter(Boolean)).filter(r=>r.length);
+  const list=rows.flat(), starts=new Set(); { let n=0; rows.forEach((r,j)=>{ if (j) starts.add(n); n+=r.length; }); }
   const old=E.words.slice(p.a,p.b+1);
   if (!list.length){ E.words.splice(p.a,p.b-p.a+1); return; }
+  const key=old[0].id, meta=E.meta[key];
   let neu;
   if (list.length===old.length) neu=old.map((w,i)=>({...w,raw:list[i],t:E.stripPunct(list[i])||list[i]}));
-  else { neu=E.spread(list,old[0].s,old[old.length-1].e); }
+  else { neu=E.spread(list,old[0].s,old[old.length-1].e); neu[0].id=key; }   // stejné id → titulek si nechá svůj styl a časy
+  neu.forEach((w,i)=>{ w.nl=starts.has(i); });
+  neu[0].br=true;
   E.words.splice(p.a,p.b-p.a+1,...neu);
+  const nx=E.words[p.a+neu.length]; if (nx) nx.br=true;          // hranice titulku zůstanou, jak jsou
+  E.meta[key]={...(meta||{}), ml:true};
 }
 let inlineK=-1;
 function openInline(k){
   const p=E.pages[k]; if(!p) return; vid.pause(); inlineK=k; inlineOpen=true;
   PV.currentTime=Math.min(p.e-0.02,p.s+0.45);
-  const ta=$('inlineEdit'); ta.value=pageText(p); ta.classList.remove('hidden'); $('inlineBar').classList.remove('hidden'); ta.focus(); ta.select();
+  const ta=$('inlineEdit'); ta.value=pageLines(p); ta.rows=Math.max(2,Math.min(5,ta.value.split('\n').length+1)); ta.classList.remove('hidden'); $('inlineBar').classList.remove('hidden'); ta.focus(); ta.select();
 }
 function closeInline(save){
   if (save && inlineK>=0){ setPageText(inlineK,$('inlineEdit').value); changed(true); renderPanel(); }
   $('inlineEdit').classList.add('hidden'); $('inlineBar').classList.add('hidden'); inlineOpen=false; inlineK=-1;
 }
 $('inlineOk').onclick=()=>closeInline(true); $('inlineCancel').onclick=()=>closeInline(false);
-$('inlineEdit').onkeydown=e=>{ if (e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); closeInline(true); } if (e.key==='Escape') closeInline(false); };
+// Enter = nový řádek (rozdělí titulek na řádky); uložit = Hotovo (na počítači i Ctrl/Cmd + Enter)
+$('inlineEdit').onkeydown=e=>{ if (e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); closeInline(true); } if (e.key==='Escape') closeInline(false); };
+$('inlineEdit').oninput=e=>{ const ta=e.target; ta.rows=Math.max(2,Math.min(5,ta.value.split('\n').length+1)); };
 // --- hromadná úprava ---
 function openBatch(){ $('batchText').value=E.pages.map(pageText).join('\n'); openSheet('sheetBatch'); }
 $('replBtn').onclick=()=>{ const f=$('findIn').value; if(!f) return; const ta=$('batchText'); const n=ta.value.split(f).length-1; ta.value=ta.value.split(f).join($('replIn').value); toast(`Nahrazeno ${n}×`); };

@@ -210,6 +210,8 @@ E.buildPages = () => {
   for (let i=0;i<W.length;i++){
     const w=W[i], prev=W[i-1];
     if (E.inZone(w)){ if (c){ pages.push(c); c=null; } continue; }
+    // titulek s řádky napsanými ručně v bublině (Enter = nový řádek): drží slova i řádky přesně tak, jak jsou napsané
+    if (c && c.manual && !w.br){ if (w.nl) c.lines.push([i]); else c.lines[c.lines.length-1].push(i); c.b=i; continue; }
     let br = !c || w.br || (prev && w.s-prev.e > 0.6) || (prev && endsSentence(prev)) || (prev && E.inZone(prev));
     if (!br && c){
       if (fill){
@@ -227,7 +229,7 @@ E.buildPages = () => {
         else { L.push(i); c.b=i; continue; }
       } else if ((i-c.a) >= G.wpp) br=true;
     }
-    if (br){ if(c) pages.push(c); c={a:i,b:i,lines:(G.maxChars>0||fill)?[[i]]:null,fill}; } else { c.b=i; }
+    if (br){ if(c) pages.push(c); const man=!!(E.meta[w.id] && E.meta[w.id].ml); c={a:i,b:i,lines:(man||G.maxChars>0||fill)?[[i]]:null,fill:fill&&!man,manual:man}; if (man) continue; } else { c.b=i; }
   }
   if (c) pages.push(c);
   pages.forEach(p=>{ const m=E.meta[W[p.a].id]; p.s=(m && m.so!=null)?m.so:W[p.a].s; });
@@ -259,16 +261,16 @@ const range=(a,b)=>{ const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; };
 E.groupsOf = (p,S) => {
   const W=E.words;
   const manual=[]; for(let i=p.a;i<=p.b;i++) if(W[i].em) manual.push(i);
-  if (manual.length){ const e0=Math.min(...manual), e1=Math.max(...manual);
+  if (manual.length && !p.manual){ const e0=Math.min(...manual), e1=Math.max(...manual);
     return [{ids:range(p.a,e0-1),em:false},{ids:range(e0,e1),em:true},{ids:range(e1+1,p.b),em:false}].filter(g=>g.ids.length); }
   const n=p.b-p.a+1, ids=range(p.a,p.b), ml=String(S.mainLine);
-  if (ml==='word'){ let best=p.a,len=0; for(let i=p.a;i<=p.b;i++){ const L=letters(W[i]); if(L>len){len=L;best=i;} }
+  if (ml==='word' && !p.manual){ let best=p.a,len=0; for(let i=p.a;i<=p.b;i++){ const L=letters(W[i]); if(L>len){len=L;best=i;} }
     return [{ids:range(p.a,best-1),em:false},{ids:[best],em:true},{ids:range(best+1,p.b),em:false}].filter(g=>g.ids.length); }
-  if (ml==='none') return [{ids,em:false}];
+  if (ml==='none' && !p.manual) return [{ids,em:false}];
   let lines;
   if (p.lines){ lines=p.lines.map(l=>l.slice());
     // osamocené krátké slůvko („a“, „v“) na posledním řádku se připojí k předchozímu řádku
-    const L=lines[lines.length-1]; if (!p.fill && lines.length>1 && L.length===1 && letters(W[L[0]])<=2) lines[lines.length-2].push(...lines.pop()); }
+    const L=lines[lines.length-1]; if (!p.fill && !p.manual && lines.length>1 && L.length===1 && letters(W[L[0]])<=2) lines[lines.length-2].push(...lines.pop()); }
   else {
     const maxL=Math.max(1,Math.min(4,S.maxLines||3));
     if (n===1 || maxL===1) lines=[ids];
@@ -283,12 +285,15 @@ E.groupsOf = (p,S) => {
   }
   lines=lines.filter(l=>l.length);
   let mains;
-  if (ml==='mid'){
+  const emL=p.manual?lines.map((l,i)=>l.some(j=>W[j].em)?i:-1).filter(i=>i>=0):[];
+  if (emL.length) mains=emL;                      // ručně zvýrazněné slovo → jeho řádek je hlavní
+  else if (p.manual && ml==='none') mains=[];
+  else if (ml==='mid' || (p.manual && ml==='word')){
     if (lines.length===1) mains=S.singleSec?[]:[0];
     else if (lines.length===4) mains=[1,3];       // 4 řádky: 2. a 4. řádek jsou hlavní (střídání)
     else mains=[Math.min(1,lines.length-1)];
   } else mains=[clamp(+ml-1,0,lines.length-1)];
-  return lines.map((l,i)=>({ids:l,em:mains.includes(i),slot:p.fill&&p.lines&&!manual.length?i:undefined}));
+  return lines.map((l,i)=>({ids:l,em:mains.includes(i),slot:(p.fill&&!manual.length)||p.manual?Math.min(i,2):undefined}));
 };
 function applyCase(s,mode){ if (mode==='upper') return s.toLocaleUpperCase(); if (mode==='lower') return s.toLocaleLowerCase(); if (mode==='title') return s.charAt(0).toLocaleUpperCase()+s.slice(1); return s; }
 E.txt = (w,S,isEm) => {
