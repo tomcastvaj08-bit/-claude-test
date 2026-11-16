@@ -799,15 +799,19 @@ E.out2src=t=>{ const L=E.clipList(); let o=0; for (const c of L){ const d=c.e-c.
 E.src2out=ts=>{ const L=E.clipList(); let o=0; for (const c of L){ if (ts<c.s) return o; if (ts<c.e) return o+(ts-c.s); o+=c.e-c.s; } return o; };
 E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=c.e-c.s; } return r; };
 // přechody: 2× negativní záblesk kolem střihu
-E.TRANSITIONS=[['none','Žádný'],['flash2','2× negativní záblesk']];
+E.TRANSITIONS=[['none','Žádný'],['push','Vcucnutí (zoom + čočka)'],['swing','Zahoupání'],['whip','Švihnutí do strany'],['flashw','Bílý záblesk'],['flash2','2× negativní záblesk']];
+E.TRDEF={push:0.5,swing:0.6,whip:0.45,flashw:0.4,flash2:0.12};   // výchozí délka přechodu (s)
+E.TRDIR=new Set(['push','swing','whip']);                          // přechody se směrem (doprava / doleva)
 E.drawTransition=(c,W,H,t)=>{
   const L=E.clipList(); if (L.length<2) return;
   const st=E.clipStarts();
   for (let k=1;k<L.length;k++){
-    const tr=L[k].tr||'none', T=st[k], d=t-T; if (tr==='none' || d<-0.5 || d>0.5) continue;
+    const tr=L[k].tr||'none', T=st[k], d=t-T, D=L[k].trDur||E.TRDEF[tr]||0.12; if (tr==='none' || d<-Math.max(0.5,D) || d>Math.max(0.5,D)) continue;
+    // AE přechody (WebGL): pohyb kamery s motion blurem kolem střihu
+    if (window.FX && FX.has(tr)){ FX.apply(c,W,H,tr,d,D,{dir:L[k].trDir||'r'}); continue; }
     if (tr==='flash2'){
       // délka přechodu D (s): dva krátké negativy – jeden před střihem, druhý hned po něm
-      const D=L[k].trDur||0.12, f=D/4;
+      const f=D/4;
       const on=(d>=-D/2&&d<-D/2+f)||(d>=0&&d<f);
       if (on){ c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=1; c.shadowColor='transparent'; c.globalCompositeOperation='difference'; c.fillStyle='#fff'; c.fillRect(0,0,W,H); c.restore(); }
     }

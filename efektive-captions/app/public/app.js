@@ -608,9 +608,10 @@ function pClip(){
   <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button></div>
   <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
-  ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="0.6" step="0.01" value="${c.trDur||0.12}"></label><div class="note">Vlevo = rychlejší záblesk, vpravo = pomalejší.</div>`:''}
+  ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||E.TRDEF[c.tr]||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="1.5" step="0.01" value="${c.trDur||E.TRDEF[c.tr]||0.12}"></label><div class="note">Vlevo = rychlejší, vpravo = pomalejší.</div>
+  ${E.TRDIR.has(c.tr)?`<div class="clabel">Směr</div><div class="chips" id="clTrDir">${[['r','Doprava'],['l','Doleva']].map(([v,l])=>`<div class="chip ${(c.trDir||'r')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:''}`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
-  <div class="note">Další přechody a zvuky k nim brzy přibudou.</div>
+  <div class="note">Vcucnutí, zahoupání a švihnutí mají skutečný motion blur a zkreslení čočky. Zvuky k přechodům brzy přibudou.</div>
   ${stabSection()}
   ${pKf(true)}`;
 }
@@ -638,8 +639,9 @@ binders.clip=()=>{
   binders.kf(); stabBind();
   $('clCut').onclick=()=>cutAt(PV.currentTime);
   $('clDel').onclick=()=>{ if (confirm('Smazat tento úsek videa? Titulky v něm zmizí a další se posunou.')) deleteClip(clamp(selClip,0,E.clipList().length-1)); };
-  const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
-  const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const src=E.clips[Math.max(1,selClip)]; E.clips.forEach((c,i)=>{ if (i){ c.tr=src.tr||'none'; c.trDur=src.trDur||0.12; } }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
+  const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; E.clips[selClip].trDur=E.TRDEF[d.dataset.v]||0.12; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
+  const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const src=E.clips[Math.max(1,selClip)]; E.clips.forEach((c,i)=>{ if (i){ c.tr=src.tr||'none'; c.trDur=src.trDur||E.TRDEF[src.tr]||0.12; c.trDir=src.trDir; } }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
+  const dr=$('clTrDir'); if (dr) dr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].trDir=d.dataset.v; changed(); renderPanel(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.6); };
   const rd=$('clTrD'); if (rd){ rd.oninput=()=>{ ensureClips(); E.clips[selClip].trDur=+rd.value; $('clTrDv').textContent=(+rd.value).toFixed(2)+' s'; }; rd.onchange=()=>{ changed(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.5); }; }
 };
 
