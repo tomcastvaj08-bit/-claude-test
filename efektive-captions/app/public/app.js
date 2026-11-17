@@ -298,7 +298,7 @@ $('dictSave').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); $(
 $('dictApply').onclick=()=>{ dict=$('dictText').value; lsSet('efk_dict',dict); const n=E.applyCorrections(parseDict(dict)); E.buildPages(); changed(); $('sheetDict').classList.remove('on'); toast(n?`Opraveno ${n}×`:'Nic k opravě'); };
 
 // ================= EDITOR =================
-function openEditor(){ if (E.clips && E.clips.length>1) setTimeout(pbDecode,500); freeVideo($('setupPrev')); show('editor'); sizeCanvas(); renderTimeline(); thumbs(); renderPanel(); updateMute(); syncTop(); }
+function openEditor(){ setTimeout(()=>{ const p=pbDecode(); if (p&&p.then) p.then(()=>renderVideoTrack()); },500); freeVideo($('setupPrev')); show('editor'); sizeCanvas(); renderTimeline(); thumbs(); renderPanel(); updateMute(); syncTop(); }
 $('closeBtn').onclick=async()=>{ vid.pause(); clearTimeout(saveT); show('home'); await saveProject(); renderProjects(); };
 
 // --- historie (zpět / znovu) ---
@@ -1268,6 +1268,60 @@ async function thumbs(){
 }
 // stopa videa: úseky (po střihu) s náhledy + značky přechodů mezi nimi
 let selClip=-1, selKf=-1;
+// ---------- MRTVÁ MÍSTA (kde se nemluví) – podle přepisu, zpřesněné podle zvuku ----------
+// Nic se nestříhá samo: na stopě videa se jen ukážou fialová místa, klepnutím se objeví koš a teprve ten místo vystřihne.
+let selDz=-1, dzCache={key:null,list:[]}, dzRms=null;
+const DZ_MIN=0.45, DZ_PAD=0.06;   // nejkratší pauza (s), kolik ticha nechat u slov (s)
+function dzLoud(){   // hlasitost zvuku po 20 ms (jednou na video) + práh ticha podle běžné hlasitosti řeči
+  const b=PB.buf; if (!b || b==='none') return null; if (dzRms && dzRms.buf===b) return dzRms;
+  const R=b.sampleRate, hop=Math.round(R*0.02), n=Math.floor(b.length/hop), r=new Float32Array(n), ch=[];
+  for (let c=0;c<Math.min(2,b.numberOfChannels);c++) ch.push(b.getChannelData(c));
+  for (let i=0;i<n;i++){ let acc=0; for (const d of ch){ for (let j=i*hop;j<(i+1)*hop;j+=2) acc+=d[j]*d[j]; } r[i]=Math.sqrt(acc/(hop/2*ch.length)); }
+  const sorted=Float32Array.from(r).sort(), p90=sorted[Math.floor(n*0.9)]||0, p10=sorted[Math.floor(n*0.1)]||0;
+  dzRms={buf:b, r, hop:0.02, thr:Math.max(p10*1.8, p90*0.1, 1e-4)}; return dzRms;
+}
+function deadZones(){
+  if (!E.words || !E.words.length) return [];
+  const key=E.words.length+'|'+E.words.map(w=>w.s.toFixed(2)+w.e.toFixed(2)).join(',')+'|'+JSON.stringify(E.clips)+'|'+(PB.buf&&PB.buf!=='none'?1:0);
+  if (dzCache.key===key) return dzCache.list;
+  const W=[...E.words].sort((a,b)=>a.s-b.s), D=E.outDur(), L=E.clipList(), st=E.clipStarts(), A=dzLoud();
+  // je zdrojový zvuk v čase t (výsledný čas) tichý? (vložené klipy nemají přepis → tam se nic nevyznačuje)
+  const quiet=t=>{ if (!A) return true; const k=E.clipAt(t), c=L[k]; if (c.a) return false; const ts=E.out2src(t), i=Math.floor(ts/A.hop); let m=0; for (let j=i-1;j<=i+1;j++) m=Math.max(m,A.r[j]||0); return m<A.thr; };
+  const gaps=[]; let prev=0;
+  for (const w of W){ if (w.s-prev>=DZ_MIN) gaps.push([prev,w.s,prev>0]); prev=Math.max(prev,w.e); }
+  if (D-prev>=DZ_MIN) gaps.push([prev,D,true]);
+  const out=[];
+  for (let [a,b,afterWord] of gaps){
+    // rozdělit podle úseků: ve vloženém klipu nic
+    for (let k=0;k<L.length;k++){ const o=st[k], e=o+E.clipDur(L[k]); if (L[k].a) continue; let x=Math.max(a,o), y=Math.min(b,e); if (y-x<DZ_MIN) continue;
+      if (A){
+        // konec slova často ve skutečnosti doznívá dál / končí dřív → začátek ticha najít podle zvuku
+        let t=x; if (afterWord||x>o){ while (t<y && !quiet(t)) t+=0.02; if (t-x<0.03){ while (t-0.02>Math.max(o,x-0.25) && quiet(t-0.02)) t-=0.02; } } x=t;
+        let u=y; while (u>x && !quiet(u-0.02)) u-=0.02; y=u;
+      }
+      x+= x>o+0.01 ? DZ_PAD : 0; y-= y<e-0.01 ? DZ_PAD : 0;
+      if (y-x>=DZ_MIN*0.7) out.push({a:x,b:y}); }
+  }
+  dzCache={key,list:out}; return out;
+}
+// vystřihnout výsledný úsek [a,b] (titulky a vše ostatní za ním se posune)
+function cutRange(a,b){
+  ensureClips(); const L=E.clips, st=E.clipStarts(), N=[];
+  L.forEach((c,k)=>{ const o=st[k], d=E.clipDur(c), sp=E.clipSp(c);
+    if (o+d<=a+1e-4 || o>=b-1e-4){ N.push(c); return; }
+    if (a>o+0.02) N.push({...c, e:c.s+(a-o)*sp});
+    if (b<o+d-0.02) N.push({...c, s:c.s+(b-o)*sp, tr:'none', trDur:0.12}); });
+  if (!N.length) return toast('Celé video smazat nejde');
+  E.clips=N; if (E.clips[0]) E.clips[0].tr='none';
+  removeOut(a,b);
+}
+function dzDelete(i){
+  const z=deadZones()[i]; if (!z) return;
+  if (PB.on) pbStop(); vid.pause();
+  cutRange(z.a,z.b); selDz=-1; selClip=-1;
+  changed(true); renderTimeline(); pbDecode(); PV.currentTime=Math.max(0,z.a-0.5);
+  toast(`Mrtvé místo vystřižené (${(z.b-z.a).toFixed(1).replace('.',',')} s)`);
+}
 function renderVideoTrack(){
   const tr=$('trV'); if (!tr) return; const pad=tlPad(), L=E.clipList(), st=E.clipStarts();
   tr.style.paddingLeft='0';
@@ -1275,6 +1329,7 @@ function renderVideoTrack(){
     if (c.a){ const th=extThumb[c.a]; if (th) for (let q=0; q*pps<w; q++) im+=`<img src="${th}" style="left:${q*pps}px;width:${pps}px">`; }
     else for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
     return `<div class="vb ${c.a?'ext':''} ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
+    + deadZones().map((z,i)=>`<div class="dz ${i===selDz?'cur':''}" data-dz="${i}" style="left:${pad+z.a*pps}px;width:${Math.max(4,(z.b-z.a)*pps)}px" title="Tady se nemluví">${i===selDz?`<span class="dzx" data-dzx="${i}">${I('trash')}</span>`:''}</div>`).join('')
     + (E.kf||[]).map((k,i)=>`<div class="vkf ${i===selKf?'cur':''} ${k.ease==='tok2'?'gold':''}" data-kf="${i}" style="left:${pad+k.t*pps}px"></div>`).join('')
     + L.map((c,k)=>k? `<div class="vtr ${c.tr&&c.tr!=='none'?'on':''}" data-tr="${k}" style="left:${pad+st[k]*pps}px" title="Přechod">${I(c.tr&&c.tr!=='none'?'sparkles':'plus')}</div>`:'').join('');
 }
@@ -1438,6 +1493,9 @@ $('tlZoom').oninput=e=>setZoom(+e.target.value);
 let tlDrag=null;
 $('tlIn').addEventListener('pointerdown',e=>{
   if (e.pointerType==='touch' && tlTouches>1) return;
+  const dzx=e.target.closest('[data-dzx]'); if (dzx){ e.preventDefault(); dzDelete(+dzx.dataset.dzx); return; }
+  const dz=e.target.closest('.dz'); if (dz){ e.preventDefault(); const i=+dz.dataset.dz; selDz=selDz===i?-1:i; const z=deadZones()[i]; if (selDz>=0 && z){ if (PB.on) pbStop(); vid.pause(); PV.currentTime=z.a+0.01; } renderVideoTrack(); if (selDz>=0) toast('Tady se nemluví – klepni na koš a místo se vystřihne'); return; }
+  if (selDz>=0){ selDz=-1; renderVideoTrack(); }
   const zx=e.target.closest('[data-zx]'); if (zx){ E.zones.splice(+zx.dataset.zx,1); changed(true); return; }
   const kfm=e.target.closest('.vkf'); if (kfm){ vid.pause(); selKf=+kfm.dataset.kf; PV.currentTime=E.kf[selKf].t; openKfPanel(); return; }
   const trm=e.target.closest('.vtr'); if (trm){ vid.pause(); selClip=+trm.dataset.tr; openClipPanel(); return; }

@@ -486,3 +486,10 @@ button.pro.on{background:var(--green)}
 .vb.ext:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#8b5cf6}
 .tl-add{position:absolute;top:6px;right:6px;width:34px;height:30px;border-radius:8px;border:none;background:var(--grad,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;z-index:6;box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer}
 .tl-add .ic{width:18px;height:18px;stroke:#fff}
+
+/* mrtvá místa (kde se nemluví) */
+.dz{position:absolute;bottom:0;height:9px;background:#a855f7;opacity:.9;border-radius:3px 3px 0 0;z-index:5;cursor:pointer;touch-action:none}
+.dz:before{content:"";position:absolute;left:0;right:0;bottom:0;top:-14px}
+.dz.cur{top:0;height:30px;background:rgba(168,85,247,.42);outline:2px solid #a855f7;border-radius:3px}
+.dzx{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#7e22ce;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.dzx .ic{width:15px;height:15px;stroke:#fff}
