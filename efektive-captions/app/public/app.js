@@ -1272,36 +1272,40 @@ let selClip=-1, selKf=-1;
 // Nic se nestříhá samo: na stopě videa se jen ukážou fialová místa, klepnutím se objeví koš a teprve ten místo vystřihne.
 let selDz=-1, dzCache={key:null,list:[]}, dzRms=null;
 const DZ_MIN=0.45, DZ_PAD=0.06;   // nejkratší pauza (s), kolik ticha nechat u slov (s)
-function dzLoud(){   // hlasitost zvuku po 20 ms (jednou na video) + práh ticha podle běžné hlasitosti řeči
+function dzLoud(){   // hlasitost zvuku po 20 ms v dB (jednou na video) + práh řeči podle šumu v pozadí a hlasitosti řeči
   const b=PB.buf; if (!b || b==='none') return null; if (dzRms && dzRms.buf===b) return dzRms;
   const R=b.sampleRate, hop=Math.round(R*0.02), n=Math.floor(b.length/hop), r=new Float32Array(n), ch=[];
   for (let c=0;c<Math.min(2,b.numberOfChannels);c++) ch.push(b.getChannelData(c));
-  for (let i=0;i<n;i++){ let acc=0; for (const d of ch){ for (let j=i*hop;j<(i+1)*hop;j+=2) acc+=d[j]*d[j]; } r[i]=Math.sqrt(acc/(hop/2*ch.length)); }
-  const sorted=Float32Array.from(r).sort(), p90=sorted[Math.floor(n*0.9)]||0, p10=sorted[Math.floor(n*0.1)]||0;
-  dzRms={buf:b, r, hop:0.02, thr:Math.max(p10*1.8, p90*0.1, 1e-4)}; return dzRms;
+  for (let i=0;i<n;i++){ let acc=0; for (const d of ch){ for (let j=i*hop;j<(i+1)*hop;j+=2) acc+=d[j]*d[j]; } r[i]=10*Math.log10(acc/(hop/2*ch.length)+1e-10); }
+  // vyhlazení (60 ms), aby krátké lupnutí nerozbilo pauzu
+  const sm=new Float32Array(n); for (let i=0;i<n;i++){ let m=-200; for (let j=i-1;j<=i+1;j++) if (j>=0&&j<n) m=Math.max(m,r[j]); sm[i]=m; }
+  const sorted=Float32Array.from(sm).sort(), floor=sorted[Math.floor(n*0.08)]||-90, speech=sorted[Math.floor(n*0.9)]||-20;
+  const thr = speech-floor<8 ? null : floor+0.38*(speech-floor);   // bez rozdílu (hudba přes celé video) zvuk nerozhodne
+  dzRms={buf:b, r:sm, hop:0.02, thr}; return dzRms;
 }
 function deadZones(){
-  if (!E.words || !E.words.length) return [];
-  const key=E.words.length+'|'+E.words.map(w=>w.s.toFixed(2)+w.e.toFixed(2)).join(',')+'|'+JSON.stringify(E.clips)+'|'+(PB.buf&&PB.buf!=='none'?1:0);
+  const D=E.outDur(); if (!(D>0)) return [];
+  const key=(E.words||[]).length+'|'+(E.words||[]).map(w=>w.s.toFixed(2)+w.e.toFixed(2)).join(',')+'|'+JSON.stringify(E.clips)+'|'+(PB.buf&&PB.buf!=='none'?1:0);
   if (dzCache.key===key) return dzCache.list;
-  const W=[...E.words].sort((a,b)=>a.s-b.s), D=E.outDur(), L=E.clipList(), st=E.clipStarts(), A=dzLoud();
-  // je zdrojový zvuk v čase t (výsledný čas) tichý? (vložené klipy nemají přepis → tam se nic nevyznačuje)
-  const quiet=t=>{ if (!A) return true; const k=E.clipAt(t), c=L[k]; if (c.a) return false; const ts=E.out2src(t), i=Math.floor(ts/A.hop); let m=0; for (let j=i-1;j<=i+1;j++) m=Math.max(m,A.r[j]||0); return m<A.thr; };
-  const gaps=[]; let prev=0;
-  for (const w of W){ if (w.s-prev>=DZ_MIN) gaps.push([prev,w.s,prev>0]); prev=Math.max(prev,w.e); }
-  if (D-prev>=DZ_MIN) gaps.push([prev,D,true]);
-  const out=[];
-  for (let [a,b,afterWord] of gaps){
-    // rozdělit podle úseků: ve vloženém klipu nic
-    for (let k=0;k<L.length;k++){ const o=st[k], e=o+E.clipDur(L[k]); if (L[k].a) continue; let x=Math.max(a,o), y=Math.min(b,e); if (y-x<DZ_MIN) continue;
-      if (A){
-        // konec slova často ve skutečnosti doznívá dál / končí dřív → začátek ticha najít podle zvuku
-        let t=x; if (afterWord||x>o){ while (t<y && !quiet(t)) t+=0.02; if (t-x<0.03){ while (t-0.02>Math.max(o,x-0.25) && quiet(t-0.02)) t-=0.02; } } x=t;
-        let u=y; while (u>x && !quiet(u-0.02)) u-=0.02; y=u;
-      }
-      x+= x>o+0.01 ? DZ_PAD : 0; y-= y<e-0.01 ? DZ_PAD : 0;
-      if (y-x>=DZ_MIN*0.7) out.push({a:x,b:y}); }
+  const L=E.clipList(), st=E.clipStarts(), A=dzLoud(), raw=[];
+  // 1) ticho přímo ve zvuku videa (přepis často natáhne slovo přes celou pauzu, proto hlavně zvuk)
+  if (A && A.thr!=null){
+    L.forEach((c,k)=>{ if (c.a) return; const o=st[k], sp=E.clipSp(c), i0=Math.max(0,Math.floor(c.s/A.hop)), i1=Math.min(A.r.length,Math.ceil(c.e/A.hop));
+      let run=-1;
+      for (let i=i0;i<=i1;i++){ const q=i<i1 && A.r[i]<A.thr;
+        if (q && run<0) run=i;
+        if (!q && run>=0){ const a=o+(Math.max(run*A.hop,c.s)-c.s)/sp, b=o+(Math.min(i*A.hop,c.e)-c.s)/sp; raw.push([a,b,a>o+0.01,b<o+E.clipDur(c)-0.01]); run=-1; } } });
   }
+  // 2) mezery v přepisu (když zvuk nerozhodne – třeba hudba pod celým videem)
+  if ((!A || A.thr==null) && E.words && E.words.length){
+    const W=[...E.words].sort((a,b)=>a.s-b.s); let prev=0;
+    for (const w of W){ if (w.s-prev>=DZ_MIN) raw.push([prev,w.s,prev>0,true]); prev=Math.max(prev,w.e); }
+    if (D-prev>=DZ_MIN) raw.push([prev,D,true,false]);
+  }
+  // u slov nechat kousek ticha (nádech), jen ve výsledném čase uvnitř úseků původního videa
+  const out=[];
+  for (const [a,b,pa,pb] of raw.sort((x,y)=>x[0]-y[0])){ const x=a+(pa?0.08:0), y=b-(pb?0.08:0); if (y-x<DZ_MIN*0.8) continue;
+    const last=out[out.length-1]; if (last && x-last.b<0.05) last.b=y; else out.push({a:x,b:y}); }
   dzCache={key,list:out}; return out;
 }
 // vystřihnout výsledný úsek [a,b] (titulky a vše ostatní za ním se posune)
