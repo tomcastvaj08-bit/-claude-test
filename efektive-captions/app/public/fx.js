@@ -14,6 +14,10 @@ uniform sampler2D tex; uniform vec2 res;
 uniform vec4 A; uniform vec4 B;          // stav na začátku a na konci závěrky: zoom, rotace (rad), posun x, y (podíl šířky/výšky)
 uniform vec2 K;                           // zkreslení čočky (začátek, konec)
 uniform float expo, chroma;
+uniform float rel;                       // 1: pružné plátno v elipse přes celou obrazovku (okraj plátna = okraj obrazovky)
+uniform vec2 SY;                          // svislé natažení obrazu (zahoupání) – začátek, konec závěrky
+uniform float cool;                       // studený nádech (blesk)
+float gsy=1.0;
 uniform vec2 TW;                          // vír (rad): střed se stočí víc než okraje – tunel / červí díra (začátek, konec závěrky)
 uniform float edk, stp, rnw;             // rnw = 1: přesný výpočet natažení (warp); 0: původní (propad plátna – vzhled, který sedí)                  // stp > 0: rozmazání z pevného počtu kopií (schodovité jako v AE)
                        // ztmavení okrajů mimo obraz (průlet: nový záběr přilétá z dálky)
@@ -26,7 +30,7 @@ float edge(vec2 u){ if (edk<0.001) return 1.0; vec2 o=max(-u,u-1.0); float d=max
 vec2 rub(vec2 q, vec2 ab){
   if (abs(ab.x-1.0)<1e-4 && abs(ab.y)<1e-4) return q;
   float h=0.5*res.y;
-  vec2 pc=vec2(q.x*res.x-0.5*res.x, (1.0-q.y)*res.y-rcy*res.y)/h;
+  vec2 pc= rel>0.5 ? vec2((q.x-0.5)*2.0, ((1.0-q.y)-rcy)*2.0) : vec2(q.x*res.x-0.5*res.x, (1.0-q.y)*res.y-rcy*res.y)/h;
   float rq=length(pc); if (rq<1e-5) return q;
   float rp;
   if (ab.y>0.0 && rnw>0.5){
@@ -35,6 +39,7 @@ vec2 rub(vec2 q, vec2 ab){
     for (int i=0;i<8;i++){ float f=rp*(ab.x+ab.y*rp*rp)-rq; rp-=f/max(1e-4,ab.x+3.0*ab.y*rp*rp); }
   } else { rp=rq/ab.x; for (int i=0;i<6;i++){ rp=rq/max(0.05,ab.x+ab.y*rp*rp); } }
   vec2 pp=pc*(rp/rq);
+  if (rel>0.5) return vec2(pp.x*0.5+0.5, 1.0-(pp.y*0.5+rcy));
   return vec2((pp.x*h+0.5*res.x)/res.x, 1.0-(pp.y*h+rcy*res.y)/res.y);
 }
 vec2 swirl(vec2 q, float a){
@@ -52,6 +57,7 @@ vec2 xf(vec2 q, vec4 s, float k){
   c-=vec2(s.z*ar,s.w);                           // posun
   float cs=cos(s.y), sn=sin(s.y); c=vec2(cs*c.x+sn*c.y, -sn*c.x+cs*c.y);   // natočení zpět
   c/=s.x;                                        // zoom zpět
+  c.y/=gsy;                                      // svislé natažení
   return c/vec2(ar,1.0)+0.5;
 }
 void main(){
@@ -61,7 +67,7 @@ void main(){
   for (int i=0;i<N;i++){
     float f=(float(i)+jit)/float(N);
     if (stp>0.5) f=floor(f*stp)/max(1.0,stp-1.0);
-    vec4 s=mix(A,B,f); float k=mix(K.x,K.y,f);
+    vec4 s=mix(A,B,f); float k=mix(K.x,K.y,f); gsy=mix(SY.x,SY.y,f);
     vec2 q=swirl(rub(v,vec2(mix(RA.x,RA.y,f),mix(RB.x,RB.y,f))),mix(TW.x,TW.y,f));
     if (chroma>0.001){
       // barevný rozklad na okrajích (jako u reálného objektivu při prudkém pohybu)
@@ -77,6 +83,7 @@ void main(){
     acc=1.0-pow(max(1.0-acc,0.0),vec3(1.0+7.0*expo));
     acc=mix(acc,vec3(1.0),smoothstep(0.55,1.0,expo));
   }
+  if (cool>0.001) acc=clamp(mix(acc,acc*vec3(0.84,0.93,1.1),cool),0.0,1.0);
   gl_FragColor=vec4(acc,1.0);
 }`;
 
@@ -92,7 +99,7 @@ function init() {
     gl.useProgram(prog);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy', 'edk', 'stp', 'TW', 'rnw']) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy', 'edk', 'stp', 'TW', 'rnw', 'rel', 'SY', 'cool']) U[n] = gl.getUniformLocation(prog, n);
     tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -122,10 +129,6 @@ function interp(K, t, j, strictOld) {
   const a = p0[j], b = p1[j], c = p2[j], d = p3[j];
   return 0.5 * ((2 * b) + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
 }
-// PRŮLET – změřeno z předlohy po snímcích (zoom proti snímku 11): ln(zoom) před střihem zrychleně roste až na ~5,7×,
-// po střihu nový záběr přilétá z dálky (začíná zmenšený, okraje tmavé a rozmazané) a během ~6 snímků dosedne.
-const FLY_PRE = [[-0.3, 0], [-0.267, 0], [-0.233, 0.005], [-0.2, 0.04], [-0.167, 0.113], [-0.133, 0.285], [-0.1, 0.577], [-0.067, 1.1], [-0.033, 1.7], [0, 2.1]];
-const FLY_POST = [[0, -0.2], [0.017, -0.14], [0.033, -0.035], [0.05, -0.01], [0.067, 0], [0.24, 0]];
 // WARP TUNEL – 4 fáze: 1) plátno se natáhne (střed couvne, okraje se roztáhnou – nátah jako prak),
 // 2) speedrampa: prudké zrychlení dovnitř, vznikne tunel (radiální rozmazání, světlo na konci),
 // 3) vyplivnutí: nový záběr vyletí z hloubky (střed se rozvine),
@@ -140,46 +143,42 @@ const WQ = {
   lz:  [[0, 0.16], [0.03, 0.12], [0.06, 0.09], [0.1, 0.065], [0.18, 0.035], [0.28, 0.013], [0.38, 0.003], [0.5, 0], [0.56, 0]],
   e:   [[0, 0.1], [0.03, 0.03], [0.06, 0], [0.56, 0]],
 };
+// blesk: jas po snímcích (lineárně – ostré záblesky, žádné vlnění)
+const FL_PRE = [[-0.22, 0], [-0.183, 0], [-0.167, 0.7], [-0.15, 0.1], [-0.133, 0.05], [-0.1, 0], [-0.083, 0], [-0.067, 0.9], [-0.05, 0.2], [-0.033, 0.55], [-0.017, 0.85], [0, 1]];
+const FL_POST = [[0, 1], [0.033, 0.9], [0.05, 0.45], [0.067, 0.8], [0.083, 0.35], [0.1, 0.3], [0.133, 0.15], [0.167, 0.08], [0.233, 0.025], [0.3, 0]];
+function lin(K, t) { if (t < K[0][0] || t > K[K.length - 1][0]) return 0; let i = 0; while (i < K.length - 2 && t > K[i + 1][0]) i++; const a = K[i], b = K[i + 1], u = (t - a[0]) / Math.max(1e-6, b[0] - a[0]); return a[1] + (b[1] - a[1]) * Math.max(0, Math.min(1, u)); }
 const CURVES = {
   warp(d, D) {
     const t = d * 0.8 / Math.max(0.1, D), K = t < 0 ? WP : WQ, g = n => interp(K[n], t, 1), u = g('u');
     // okraj plátna zůstává u kraje obrazovky (A + B ≈ 1): střed se propadne do hloubky, mezikruží se natáhne do stěn tunelu
     return { z: Math.exp(g('lz')), r: 0, x: 0, y: 0, k: 0, e: Math.max(0, g('e')), c: 0, ra: 1 - u, rb: 1.15 * u, rcy: 0.5, sw: 0 };   // bez víru – čistý plynulý tah do hloubky
   },
-  fly(d, D) {
-    const t = d * 0.4 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,4 s
-    const lz = interp(t < 0 ? FLY_PRE : FLY_POST, t, 1), a = Math.min(1, Math.abs(lz) / 2);
-    return { z: Math.exp(lz), r: 0, x: 0, y: 0, k: 0.05 * a, e: 0, c: 0.002 * a, edk: t >= 0 ? 0.35 : 0 };
-  },
   // vcucnutí: zrychlený zoom dovnitř se zkreslením čočky → nový záběr vyletí z hloubky, natočený, a dosedne (speedrampa)
   // PROPAD PLÁTNA – změřeno z předlohy po snímcích: střed obrazu se zrychleně propadá dozadu (zmenšuje), okraje se natahují ven,
   // po střihu nový záběr začne propadlý, pružně se přehoupne lehce dopředu a usadí se. (u = 1 − měřítko středu, b = natažení okrajů)
+  // PROPAD PLÁTNA – elastické plátno: někdo ho vzadu chytne a natáhne dozadu (střed couvá, okraj drží u kraje obrazovky),
+  // ve střihu ho pustí → vystřelí k tobě, přejede kousek dopředu a jednou zapruží. Bez rozmazání.
   push(d, D) {
-    const t = d * 0.5 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,5 s
-    const K = t < 0 ? RUB_PRE : RUB_POST;
-    // PŘESNĚ verze ze 16. 11. (schválená) – neměnit
-    const u = interp(K, t, 1, true), b = interp(K, t, 2, true);
-    return { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0, ra: 1 - u, rb: b, rcy: 0.45 };
+    const t = d * 0.8 / Math.max(0.1, D), U0 = 0.45;
+    let u;
+    if (t < 0) { const q = cl((t + 0.45) / 0.45); u = U0 * (q < 0.5 ? 2 * q * q : 1 - 2 * (1 - q) * (1 - q)); }   // natahování: rozjezd → dotažení
+    else { const z = 0.4, wd = 28.3, wn = wd / Math.sqrt(1 - z * z); u = U0 * Math.exp(-z * wn * t) * (Math.cos(wd * t) + z / Math.sqrt(1 - z * z) * Math.sin(wd * t)); if (t > 0.6) u = 0; }   // puštění: pružina
+    return { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0, ra: 1 - u, rb: u, rcy: 0.5, rel: 1 };
   },
-  // zahoupání: obraz se zhoupne do strany (natočení + posun), střih se schová v rozmazání, nový záběr se zhoupne zpátky a dosedne
-  swing(d, D, o) {
-    const h = D / 2, side = o.dir === 'l' ? -1 : 1;
-    if (d < 0) { const q = cl(1 + d / h), a = inC(q); return { z: 1 + 0.35 * a, r: side * 24 * DEG * a, x: side * 0.16 * a, y: 0.03 * a, k: 0.22 * a, e: 0, c: 0.006 * a }; }
-    const q = cl(d / h), a = 1 - outBack(q, 1.1), b = Math.abs(a);
-    return { z: 1 + 0.35 * b, r: -side * 24 * DEG * a, x: -side * 0.16 * a, y: 0.03 * b, k: 0.22 * b, e: 0, c: 0.006 * b };
+  // ZAHOUPÁNÍ – obraz vyletí nahoru (zrychluje, natáhne se), nový záběr přiletí zespodu a zapruží nahoru–dolů
+  swing(d, D) {
+    const yAt = t => {
+      if (t < 0) { const q = cl((t + 0.25) / 0.25); return 0.38 * q * q * q; }
+      const z = 0.3, wd = 26.2, wn = wd / Math.sqrt(1 - z * z); return t > 0.7 ? 0 : -0.38 * Math.exp(-z * wn * t) * Math.cos(wd * t);
+    };
+    const t = d * 0.6 / Math.max(0.1, D), y = yAt(t), h = 0.004, v = (yAt(t < 0 ? Math.min(t + h, -1e-6) : t + h) - yAt(t < 0 ? t - h : Math.max(t - h, 0))) / (2 * h);
+    return { z: 1 + 0.04 * Math.min(1, Math.abs(y) / 0.38), r: 0, x: 0, y, k: 0, e: 0, c: 0, sy: 1 + Math.min(0.22, 0.05 * Math.abs(v)) };
   },
-  // švihnutí (whip pan): rychlý posun do strany s rozmazáním, nový záběr přiletí z druhé strany
-  whip(d, D, o) {
-    const h = D / 2, side = o.dir === 'l' ? -1 : 1;
-    if (d < 0) { const q = cl(1 + d / h), a = inC(q); return { z: 1 + 0.06 * a, r: 0, x: side * 0.7 * a, y: 0, k: 0.12 * a, e: 0, c: 0.004 * a }; }
-    const q = cl(d / h), a = Math.pow(1 - q, 4);
-    return { z: 1 + 0.06 * a, r: 0, x: -side * 0.7 * a, y: 0, k: 0.12 * a, e: 0, c: 0.004 * a };
-  },
-  // bílý záblesk: obraz se přeexponuje do bílé (s malým „nádechem“ zoomu) a z bílé se vynoří nový záběr
+  // BLESK – problikne (dva krátké výboje), ve střihu bílý výboj, dozní s jedním doblikem; lehký otřes a studený nádech
   flashw(d, D) {
-    const h = D / 2;
-    if (d < 0) { const q = cl(1 + d / h), a = q * q; return { z: 1 + 0.06 * a, r: 0, x: 0, y: 0, k: 0.05 * a, e: a, c: 0 }; }
-    const q = cl(d / h), a = Math.pow(1 - q, 1.6); return { z: 1 + 0.05 * a, r: 0, x: 0, y: 0, k: 0.04 * a, e: a, c: 0 };
+    const t = d * 0.5 / Math.max(0.1, D), K = t < 0 ? FL_PRE : FL_POST;
+    const e = lin(K, t), w = Math.min(1, e);
+    return { z: 1 + 0.05 * w, r: 0.004 * w * Math.sin(t * 157), x: 0.012 * w * Math.sin(t * 173), y: 0.01 * w * Math.sin(t * 241 + 1.3), k: 0.03 * w, e, c: 0, cool: 0.35 * w };
   },
 };
 FX.TYPES = Object.keys(CURVES);
@@ -187,13 +186,13 @@ FX.state = (type, d, D, o) => { const f = CURVES[type]; return f ? f(d, D, o || 
 FX.has = type => !!CURVES[type];
 
 // závěrka: o kolik dřív začíná rozmazání (s) – odpovídá filmové závěrce ~180° při 24 fps, trochu víc pro „AE“ vzhled
-const SHUT = { warp: 0.045, fly: 0.04, push: 0.06, swing: 0.04, whip: 0.03, flashw: 0.02 };
+const SHUT = { warp: 0.045, push: 0, swing: 0.025, flashw: 0.015 };
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka: u propadu plátna dopředu (rozmazání v prvním snímku po střihu jako v předloze), jinak vystředěná
-  // průlet: závěrka se s rostoucí rychlostí zkracuje (délka rozmazání jako v předloze), nový záběr jen krátce
-  const sh = type === 'fly' ? (d >= 0 ? 0.02 : 0.04 - 0.022 * Math.min(1, Math.max(0, (d * 0.4 / Math.max(0.05, D) + 0.15) / 0.1))) : (SHUT[type] || 0.03),
-    fw = type === 'push' || type === 'fly', B = FX.state(type, type === 'fly' && d < 0 ? Math.min(d + sh, -1e-4) : type === 'warp' && d < 0 ? Math.min(d + sh / 2, -1e-4) : fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, type === 'warp' && d >= 0 ? Math.max(d - sh / 2, 0) : fw ? d : d - sh / 2, D, o);
+  // závěrka vystředěná kolem snímku, nikdy přes střih (stav před a po střihu se nemíchá)
+  const sh = SHUT[type] ?? 0.03, ta = d < 0 ? d - sh / 2 : Math.max(0, d - sh / 2), tb = d < 0 ? Math.min(d + sh / 2, -1e-4) : d + sh / 2;
+  const B = FX.state(type, tb, D, o), A = FX.state(type, ta, D, o);
   if (!B) return false;
   // mimo přechod nic nedělat
   const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3 && Math.abs((s.ra ?? 1) - 1) < 1e-4 && Math.abs(s.rb ?? 0) < 1e-4 && Math.abs(s.sw || 0) < 1e-4;
@@ -207,7 +206,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, W, H);
   gl.uniform4f(U.A, A.z, A.r, A.x, A.y); gl.uniform4f(U.B, B.z, B.r, B.x, B.y);
   gl.uniform2f(U.K, A.k, B.k); gl.uniform1f(U.expo, B.e); gl.uniform1f(U.chroma, B.c);
-  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42); gl.uniform1f(U.edk, Math.max(A.edk || 0, B.edk || 0)); gl.uniform2f(U.TW, A.sw || 0, B.sw || 0); gl.uniform1f(U.rnw, type === 'warp' ? 1 : 0); gl.uniform1f(U.stp, type === 'fly' && d < 0 ? 9 : 0);
+  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42); gl.uniform1f(U.edk, Math.max(A.edk || 0, B.edk || 0)); gl.uniform2f(U.TW, A.sw || 0, B.sw || 0); gl.uniform1f(U.rnw, type === 'warp' || type === 'push' ? 1 : 0); gl.uniform1f(U.rel, B.rel ? 1 : 0); gl.uniform2f(U.SY, A.sy || 1, B.sy || 1); gl.uniform1f(U.cool, B.cool || 0); gl.uniform1f(U.stp, type === 'fly' && d < 0 ? 9 : 0);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;

@@ -106,7 +106,7 @@ function dedupeWords(){
 function restore(json){
   const s=JSON.parse(json);
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
-  E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.filter(c=>!c.a||(ovAssets[c.a]&&ovAssets[c.a].el)).map(c=>({...c})):null;   // vložený klip bez souboru vynechat
+  E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.filter(c=>!c.a||(ovAssets[c.a]&&ovAssets[c.a].el)).map(c=>({...c, tr:E.TROLD[c.tr]||c.tr, ...(E.TROLD[c.tr]?{trDur:E.TRDEF[E.TROLD[c.tr]]}:{})})):null;   // vložený klip bez souboru vynechat
   E.audios=(s.audios||[]).filter(a=>ovAssets[a.asset]).map(a=>({...a}));
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease:'tok2'})):[];   // zatím jediný průběh: Tok 2
   E.G=Object.assign({},E.G0,E.COMMON,s.G); mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
