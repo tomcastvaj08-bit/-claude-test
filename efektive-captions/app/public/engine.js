@@ -879,8 +879,8 @@ E.drawCover=(c,src,sw,sh,W,H)=>{ if (!src || !sw || !sh) return; const k=Math.ma
 E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=E.clipDur(c); } return r; };
 E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
-E.TRANSITIONS=[['none','Žádný'],['fly','Průlet (vcucnutí dopředu)'],['push','Propad plátna (pružné)'],['swing','Zahoupání'],['whip','Švihnutí do strany'],['flashw','Bílý záblesk'],['flash2','2× negativní záblesk']];
-E.TRDEF={fly:0.4,push:0.5,swing:0.6,whip:0.45,flashw:0.4,flash2:0.12};   // výchozí délka přechodu (s)
+E.TRANSITIONS=[['none','Žádný'],['warp','Warp tunel (vcucnutí + vyplivnutí)'],['fly','Průlet (vcucnutí dopředu)'],['push','Propad plátna (pružné)'],['swing','Zahoupání'],['whip','Švihnutí do strany'],['flashw','Bílý záblesk'],['flash2','2× negativní záblesk']];
+E.TRDEF={warp:0.8,fly:0.4,push:0.5,swing:0.6,whip:0.45,flashw:0.4,flash2:0.12};   // výchozí délka přechodu (s)
 E.TRDIR=new Set(['swing','whip']);                          // přechody se směrem (doprava / doleva)
 E.drawTransition=(c,W,H,t)=>{
   const L=E.clipList(); if (L.length<2) return;
