@@ -161,7 +161,8 @@ const CURVES = {
   push(d, D) {
     const t = d * 0.5 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,5 s
     const K = t < 0 ? RUB_PRE : RUB_POST;
-    const u = interp(K, t, 1), b = interp(K, t, 2);
+    // HLOUBKA: střed se propadne o 40 % víc než v předloze, okraje se roztáhnou relativně méně (≈ hloubka, ne přiblížení)
+    const DEEP = 1.4, u = interp(K, t, 1) * DEEP, b = interp(K, t, 2) * DEEP * 0.86;
     return { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0, ra: 1 - u, rb: b, rcy: 0.45 };
   },
   // zahoupání: obraz se zhoupne do strany (natočení + posun), střih se schová v rozmazání, nový záběr se zhoupne zpátky a dosedne
@@ -196,7 +197,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka: u propadu plátna dopředu (rozmazání v prvním snímku po střihu jako v předloze), jinak vystředěná
   // průlet: závěrka se s rostoucí rychlostí zkracuje (délka rozmazání jako v předloze), nový záběr jen krátce
   const sh = type === 'fly' ? (d >= 0 ? 0.02 : 0.04 - 0.022 * Math.min(1, Math.max(0, (d * 0.4 / Math.max(0.05, D) + 0.15) / 0.1))) : (SHUT[type] || 0.03),
-    fw = type === 'push' || type === 'fly', B = FX.state(type, type === 'fly' && d < 0 ? Math.min(d + sh, -1e-4) : type === 'warp' && d < 0 ? Math.min(d + sh / 2, -1e-4) : fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, type === 'warp' && d >= 0 ? Math.max(d - sh / 2, 0) : fw ? d : d - sh / 2, D, o);
+    fw = type === 'push' || type === 'fly', B = FX.state(type, type === 'fly' && d < 0 ? Math.min(d + sh, -1e-4) : type === 'warp' && d < 0 ? Math.min(d + sh / 2, -1e-4) : type === 'push' && d < 0 ? Math.min(d + sh, -1e-4) : fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, type === 'warp' && d >= 0 ? Math.max(d - sh / 2, 0) : fw ? d : d - sh / 2, D, o);
   if (!B) return false;
   // mimo přechod nic nedělat
   const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3 && Math.abs((s.ra ?? 1) - 1) < 1e-4 && Math.abs(s.rb ?? 0) < 1e-4 && Math.abs(s.sw || 0) < 1e-4;
