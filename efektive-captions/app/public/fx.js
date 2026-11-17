@@ -143,7 +143,8 @@ const CURVES = {
     const t = d * 0.8 / Math.max(0.1, D), K = t < 0 ? WP : WQ, u = Math.max(0, mono(K.u, t));
     return S({ z: Math.exp(Math.max(0, mono(K.lz, t))), e: Math.max(0, mono(K.e, t)), ra: 1 - u, rb: 1.15 * u });
   },
-  // PROPAD PLÁTNA (0,8 s): elastické plátno chycené vzadu se natahuje dozadu (rozjezd → dotažení), ve střihu se pustí,
+  // SCHVÁLENO 17. 11. 2026 (propad plátna, zahoupání, blesk, warp) – neměnit bez výslovného přání; nové nápady jen jako další varianta
+// PROPAD PLÁTNA (0,8 s): elastické plátno chycené vzadu se natahuje dozadu (rozjezd → dotažení), ve střihu se pustí,
   // vystřelí k divákovi, přejede kousek dopředu a jednou zapruží. Bez rozmazání.
   push(d, D) {
     const t = d * 0.8 / Math.max(0.1, D), U0 = 0.45;
@@ -168,13 +169,18 @@ const CURVES = {
     return S({ z: 1 + 0.07 * w, r: 0.004 * w * Math.sin(t * 157), x: 0.012 * w * Math.sin(t * 173), y: 0.01 * w * Math.sin(t * 241 + 1.3), k: 0.03 * w, e, cool: 0.35 * w, glow: 0.07 * w });   // glow: světlo se při výboji rozprskne od středu
   },
 };
+// varianty: stejný pohyb, jiná závěrka (s rozmazáním / bez)
+CURVES.pushb = CURVES.push;     // propad plátna + motion blur
+CURVES.swingn = CURVES.swing;   // zahoupání bez motion bluru
+FX.CURVES = CURVES;
 FX.TYPES = Object.keys(CURVES);
 FX.state = (type, d, D, o) => { const f = CURVES[type]; return f ? f(d, D, o || {}) : null; };
 FX.has = type => !!CURVES[type];
 FX.debug = false;   // test: vzorky mimo obraz fialově
 
 // závěrka (s): délka rozmazání pohybu; 0 = ostrý obraz
-const SHUT = { warp: 0.045, push: 0, swing: 0.03, flashw: 0.015 };
+const SHUT = { warp: 0.045, push: 0, pushb: 0.035, swing: 0.03, swingn: 0, flashw: 0.015 };
+FX.SHUT = SHUT;
 const same = (a, b) => ['z', 'r', 'x', 'y', 'k', 'ra', 'rb', 'wv'].every(n => Math.abs(a[n] - b[n]) < 1e-6);
 const idle = s => Math.abs(s.z - 1) < 1e-4 && Math.abs(s.r) < 1e-5 && Math.abs(s.x) < 1e-5 && Math.abs(s.y) < 1e-5 && Math.abs(s.k) < 1e-4 && s.e < 1e-4 && Math.abs(s.ra - 1) < 1e-5 && Math.abs(s.rb) < 1e-5 && Math.abs(s.wv) < 1e-5;
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
