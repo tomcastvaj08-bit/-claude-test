@@ -7,7 +7,7 @@ Tyto přechody klient schválil. **Neměnit** jejich průběh – nový nápad p
 | Warp tunel (vcucnutí + vyplivnutí) | `warp` | 0,8 s | pružné plátno + zrychlený zoom, monotónní křivky | 0,045 s |
 | Propad plátna | `push` | 0,8 s | elastické plátno: natažení dozadu U0 = 0,45 (0,45 s), pružina ζ = 0,4, T = 0,222 s | žádné |
 | Propad plátna + motion blur | `pushb` | 0,8 s | stejné jako `push` | 0,035 s |
-| Zahoupání + motion blur | `swing` | 1,2 s | POMALÉ zavlnění (změna 17. 11. na přání): svislá vlna W0 = 0,4, nádech nahoru 0,5 s (sinus), pružina ζ = 0,28, T = 0,5 s, do 1,15 s v klidu | 0,03 s |
+| Zahoupání + motion blur | `swing` | 1,2 s | POMALÉ KÝVÁNÍ (17. 11. na přání, ne pružení): svislá vlna po sinusu, perioda 1 s, W0 = 0,3, plynule přes střih (nahoru → dolů → slaběji nahoru), nádech 0,3 s, doznění e^(−1,3 t), do 1,2 s v klidu | 0,03 s |
 | Zahoupání bez bluru | `swingn` | 1,2 s | stejné jako `swing` | žádné |
 | Blesk (bílý záblesk) | `flashw` | 0,5 s | 2 výboje, bílý výboj ve střihu, doblik, dozvuk; otřes, studený nádech, záře | 0,015 s |
 
