@@ -190,6 +190,11 @@ const CURVES = {
 };
 // varianty: stejný pohyb, jiná závěrka (s rozmazáním / bez)
 CURVES.pushb = CURVES.push;     // propad plátna + motion blur
+// PROPAD PLÁTNA – RYCHLÝ (0,4 s, podle předlohy 18. 11. – kuchyň): plátno se 0,2 s zrychleně propadá dozadu (střed na 64 %),
+// okraje se ohnou; nový záběr začne propadlý (81 %) a za ~5 snímků se bez pružení narovná. S rozmazáním.
+const PR_PRE = [[-0.233, 0], [-0.2, 0.006], [-0.167, 0.021], [-0.133, 0.052], [-0.1, 0.103], [-0.067, 0.177], [-0.033, 0.296], [0, 0.36]];
+const PR_POST = [[0, 0.19], [0.033, 0.11], [0.067, 0.057], [0.1, 0.027], [0.133, 0.01], [0.167, 0.003], [0.2, 0], [0.233, 0]];
+CURVES.pushr = (d, D) => { const t = d * 0.4 / Math.max(0.1, D), u = Math.max(0, mono(t < 0 ? PR_PRE : PR_POST, t)); return S({ ra: 1 - u, rb: u }); };
 CURVES.swingn = CURVES.swing;   // zahoupání bez motion bluru
 FX.CURVES = CURVES;
 FX.TYPES = Object.keys(CURVES);
@@ -198,7 +203,7 @@ FX.has = type => !!CURVES[type];
 FX.debug = false;   // test: vzorky mimo obraz fialově
 
 // závěrka (s): délka rozmazání pohybu; 0 = ostrý obraz
-const SHUT = { warp: 0.045, tunnel: 0.035, push: 0, pushb: 0.035, swing: 0.03, swingn: 0, flashw: 0.015 };
+const SHUT = { warp: 0.045, tunnel: 0.035, push: 0, pushb: 0.035, pushr: 0.035, swing: 0.03, swingn: 0, flashw: 0.015 };
 FX.SHUT = SHUT;
 const SHUT_POST = { tunnel: 0.06 };
 const same = (a, b) => ['z', 'r', 'x', 'y', 'k', 'ra', 'rb', 'wv'].every(n => Math.abs(a[n] - b[n]) < 1e-6);

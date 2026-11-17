@@ -84,14 +84,14 @@ E.G = {
   fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', faceAuto:true, faceDodgeX:false,
-  sfx:'none', sfxVol:70, sfxWord:false, style:'base',
+  sfx:'none', sfxVol:70, trSfxVol:80, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
   exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28
 };E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
 
 // klíče, které jsou vždy společné pro celé video
-E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','grade','gradeI','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
+E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','grade','gradeI','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','trSfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
 
 // ================= FONTY (kompletní seznam jako v SA Captions) =================
 // [rodina (CSS stack: Apple systémový font → webová náhrada), tloušťka, popisek, kurzíva]
@@ -879,8 +879,8 @@ E.drawCover=(c,src,sw,sh,W,H)=>{ if (!src || !sw || !sh) return; const k=Math.ma
 E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=E.clipDur(c); } return r; };
 E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
-E.TRANSITIONS=[['none','Žádný'],['warp','Warp tunel (vcucnutí + vyplivnutí)'],['tunnel','Tunel (dlouhé vcucnutí)'],['push','Propad plátna'],['pushb','Propad plátna + motion blur'],['swing','Zahoupání + motion blur'],['swingn','Zahoupání bez bluru'],['flashw','Blesk (bílý záblesk)'],['flash2','2× negativní záblesk']];
-E.TRDEF={warp:0.8,tunnel:0.8,push:0.8,pushb:0.8,swing:1.25,swingn:1.25,flashw:0.5,flash2:0.12};   // výchozí délka přechodu (s)
+E.TRANSITIONS=[['none','Žádný'],['warp','Warp tunel (vcucnutí + vyplivnutí)'],['tunnel','Tunel (dlouhé vcucnutí)'],['push','Propad plátna'],['pushb','Propad plátna + motion blur'],['pushr','Propad plátna – rychlý (bez pružení)'],['swing','Zahoupání + motion blur'],['swingn','Zahoupání bez bluru'],['flashw','Blesk (bílý záblesk)'],['flash2','2× negativní záblesk']];
+E.TRDEF={warp:0.8,tunnel:0.8,push:0.8,pushb:0.8,pushr:0.4,swing:1.25,swingn:1.25,flashw:0.5,flash2:0.12};   // výchozí délka přechodu (s)
 E.TRDIR=new Set();                                         // přechody se směrem (zatím žádný)
 E.TROLD={fly:'warp', whip:'none'};                         // zrušené přechody ve starých projektech
 E.drawTransition=(c,W,H,t)=>{
@@ -1118,9 +1118,10 @@ E.applyFacePositions = () => {
 
 // ================= ZVUKY (SFX) =================
 // vygeneruje zvuk do libovolného AudioContextu (živě i do offline exportu)
-E.sfxInto = (ac, dest, t0, type, vol) => {
+E.sfxInto = (ac, dest, t0, type, vol, dur) => {
   if (!type || type==='none') return;
   const g=ac.createGain(); g.connect(dest);
+  if (type.startsWith('tr_')){ trSound(ac,g,t0,type,vol,dur||0.4); return; }
   const osc=(tp,f0,f1,dur,v)=>{ const o=ac.createOscillator(); o.type=tp; o.frequency.setValueAtTime(f0,t0); o.frequency.exponentialRampToValueAtTime(f1,t0+dur); const gg=ac.createGain(); gg.gain.setValueAtTime(v*vol,t0); gg.gain.exponentialRampToValueAtTime(0.0001,t0+dur); o.connect(gg); gg.connect(g); o.start(t0); o.stop(t0+dur+0.02); };
   const noise=(dur,v,hp)=>{ const b=ac.createBuffer(1,Math.ceil(ac.sampleRate*dur),ac.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); const n=ac.createBufferSource(); n.buffer=b; const f=ac.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp; const gg=ac.createGain(); gg.gain.value=v*vol; n.connect(f); f.connect(gg); gg.connect(g); n.start(t0); };
   switch(type){
@@ -1137,11 +1138,75 @@ E.sfxInto = (ac, dest, t0, type, vol) => {
     case 'swoosh': { const b=ac.createBuffer(1,Math.ceil(ac.sampleRate*0.35),ac.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++){ const x=i/d.length; d[i]=(Math.random()*2-1)*Math.sin(Math.PI*x); } const n=ac.createBufferSource(); n.buffer=b; const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.setValueAtTime(400,t0); f.frequency.exponentialRampToValueAtTime(4000,t0+0.35); const gg=ac.createGain(); gg.gain.value=0.6*vol; n.connect(f); f.connect(gg); gg.connect(g); n.start(t0); break; }
   }
 };
-// seznam okamžiků, kdy má zaznít zvuk (podle titulků / slov)
+// ---------- ZVUKY PŘECHODŮ (vlastní, generované – časované přesně na pohyb přechodu) ----------
+function trSound(ac, out, t0, type, vol, dur){
+  const SR=ac.sampleRate;
+  const noise=d=>{ const b=ac.createBuffer(1,Math.max(1,Math.ceil(SR*d)),SR), x=b.getChannelData(0); for (let i=0;i<x.length;i++) x[i]=Math.random()*2-1; const n=ac.createBufferSource(); n.buffer=b; return n; };
+  const gain=(v)=>{ const q=ac.createGain(); q.gain.value=v; return q; };
+  const filt=(tp,f,Q)=>{ const f0=ac.createBiquadFilter(); f0.type=tp; f0.frequency.value=f; if (Q) f0.Q.value=Q; return f0; };
+  const env=(p,t,pts)=>{ p.setValueAtTime(0.0001,t); for (const [dt,v,lin] of pts) (lin?p.linearRampToValueAtTime:p.exponentialRampToValueAtTime).call(p,Math.max(0.0001,v),t+dt); };
+  const V=vol;
+  // svist: šum přes pásmový filtr, frekvence se posouvá f0 → f1, obálka nahoru a dolů
+  const sweep=(t,d,f0,f1,v,Q,shape)=>{ const n=noise(d+0.05), f=filt('bandpass',f0,Q||1.4), q=gain(0); f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+d);
+    if (shape==='rise') env(q.gain,t,[[d*0.92,v],[d,v*0.6,1],[d+0.04,0.0001]]);
+    else if (shape==='hit') env(q.gain,t,[[0.008,v],[d,0.0001]]);
+    else env(q.gain,t,[[d*0.35,v],[d,0.0001]]);
+    n.connect(f); f.connect(q); q.connect(out); n.start(t); n.stop(t+d+0.05); };
+  const tone=(t,d,tp,f0,f1,v,att,lp)=>{ const o=ac.createOscillator(); o.type=tp; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+d); const q=gain(0); env(q.gain,t,[[att||0.005,v],[d,0.0001]]);
+    if (lp){ const f=filt('lowpass',lp); o.connect(f); f.connect(q); } else o.connect(q); q.connect(out); o.start(t); o.stop(t+d+0.02); };
+  const crackle=(t,v)=>{ for (let i=0;i<7;i++){ const tt=t+Math.random()*0.045, d=0.002+Math.random()*0.005, n=noise(d), f=filt('highpass',2500), q=gain(v*(0.5+Math.random()*0.5)); n.connect(f); f.connect(q); q.connect(out); n.start(tt); n.stop(tt+d); } tone(t,0.02,'sine',3400,2600,v*0.25); };
+  switch(type){
+    case 'tr_riser': {   // nádech do střihu: šum stoupá 250 → 7000 Hz a sílí, pod ním stoupající tón
+      sweep(t0,dur,250,7000,0.4*V,1.1,'rise');
+      const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(70,t0); o.frequency.exponentialRampToValueAtTime(380,t0+dur); const f=filt('lowpass',900), q=gain(0); env(q.gain,t0,[[dur*0.95,0.12*V],[dur+0.03,0.0001]]); o.connect(f); f.connect(q); q.connect(out); o.start(t0); o.stop(t0+dur+0.05); break; }
+    case 'tr_boom':      // rána ve střihu: hluboký pokles 85 → 38 Hz + krátký úder
+      tone(t0,0.75,'sine',85,38,0.45*V,0.004); sweep(t0,0.14,400,120,0.3*V,0.7,'hit'); break;
+    case 'tr_out':       // výlet z tunelu: svist shora dolů, rychlý nástup a doznění
+      sweep(t0,dur,5200,280,0.3*V,1.0,'hit'); break;
+    case 'tr_stretch': { // natahování plátna: gumový tón pomalu stoupá s chvěním + jemné vrzání
+      const o=ac.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(70,t0); o.frequency.exponentialRampToValueAtTime(150,t0+dur);
+      const lfo=ac.createOscillator(), lg=gain(4); lfo.frequency.value=7; lfo.connect(lg); lg.connect(o.frequency);
+      const f=filt('lowpass',700), q=gain(0); env(q.gain,t0,[[dur*0.97,0.55*V],[dur+0.02,0.0001]]); o.connect(f); f.connect(q); q.connect(out); o.start(t0); o.stop(t0+dur+0.05); lfo.start(t0); lfo.stop(t0+dur+0.05);
+      sweep(t0,dur,700,1500,0.12*V,3,'rise'); break; }
+    case 'tr_thwip':     // puštění plátna: rychlý svist dolů + krátký tón
+      sweep(t0,0.15,3600,240,0.8*V,1.2,'hit'); tone(t0,0.13,'sine',230,85,0.4*V); break;
+    case 'tr_thump':     // dopad / přejetí dopředu
+      tone(t0,0.2,'sine',120,52,0.6*V,0.003); break;
+    case 'tr_swoosh_up': sweep(t0,dur,400,1800,0.6*V,1.6); break;
+    case 'tr_swoosh_down': sweep(t0,dur,2200,350,1.5*V,1.8); break;
+    case 'tr_swoosh_soft': sweep(t0,dur,1400,500,0.7*V,1.8); break;
+    case 'tr_crackle': crackle(t0,0.35*V); break;
+    case 'tr_crack':     // výboj blesku: ostrý praskot + bzučení
+      crackle(t0,0.45*V); sweep(t0,0.12,6000,1800,0.4*V,0.6,'hit'); tone(t0,0.06,'sawtooth',140,90,0.2*V,0.002,2500); break;
+    case 'tr_thunder': { // hrom: hluboké dunění s chvěním
+      const n=noise(dur+0.1), f=filt('lowpass',170), q=gain(0), am=gain(0.6), lfo=ac.createOscillator(), lg=gain(0.4);
+      env(q.gain,t0,[[0.03,0.5*V],[dur,0.0001]]); lfo.frequency.value=9; lfo.connect(lg); lg.connect(am.gain);
+      n.connect(f); f.connect(am); am.connect(q); q.connect(out); n.start(t0); n.stop(t0+dur+0.1); lfo.start(t0); lfo.stop(t0+dur+0.1); break; }
+  }
+}
+// které zvuky patří k přechodu: [posun od střihu (s), typ, délka (s)] – škálováno podle délky přechodu D
+E.TRSFX=(tr,D)=>{
+  const R={warp:0.8,tunnel:0.8,push:0.8,pushb:0.8,pushr:0.4,swing:1.25,swingn:1.25,flashw:0.5}[tr]; if (!R) return tr==='flash2'?[[0,'glitch',0.1]]:[];
+  const k=D/R, L={
+    warp:  [[-0.46,'tr_riser',0.46],[0,'tr_boom',0.75],[0,'tr_out',0.35]],
+    tunnel:[[-0.4,'tr_riser',0.4],[0,'tr_out',0.32],[0,'tr_boom',0.6]],
+    push:  [[-0.45,'tr_stretch',0.45],[0,'tr_thwip',0.15],[0.1,'tr_thump',0.2]],
+    pushb: [[-0.45,'tr_stretch',0.45],[0,'tr_thwip',0.15],[0.1,'tr_thump',0.2]],
+    pushr: [[-0.2,'tr_stretch',0.2],[0,'tr_thwip',0.15]],
+    swing: [[-0.2,'tr_swoosh_up',0.2],[0.1,'tr_swoosh_down',0.28],[0.42,'tr_swoosh_soft',0.25]],
+    swingn:[[-0.2,'tr_swoosh_up',0.2],[0.1,'tr_swoosh_down',0.28],[0.42,'tr_swoosh_soft',0.25]],
+    flashw:[[-0.2,'tr_crackle',0.05],[-0.11,'tr_crackle',0.05],[0,'tr_crack',0.12],[0,'tr_thunder',1.2],[0.08,'tr_crackle',0.05]],
+  }[tr];
+  return L.map(([dt,type,d])=>[dt*k,type,type==='tr_thunder'||type==='tr_boom'?d:d*k]);
+};
+// seznam okamžiků, kdy má zaznít zvuk (podle titulků / slov + zvuky přechodů)
 E.sfxEvents = () => {
   const ev=[];
+  if (E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
+    if (tv>0) for (let k=1;k<L.length;k++){ const c=L[k], tr=c.tr||'none'; if (tr==='none' || c.trSfx===false) continue;
+      const D=c.trDur||E.TRDEF[tr]||0.12; for (const [dt,type,d] of E.TRSFX(tr,D)) ev.push({t:Math.max(0,st[k]+dt), type, dur:d, vol:tv}); } }
   E.pages.forEach(p=>{ const S=E.styleOf(p); if (!S.sfx||S.sfx==='none') return;
     if (E.G.sfxWord){ for (let i=p.a;i<=p.b;i++) ev.push({t:E.words[i].s, type:S.sfx}); } else ev.push({t:p.s, type:S.sfx}); });
-  return ev;
+  return ev.sort((a,b)=>a.t-b.t);
 };
 })();

@@ -8,6 +8,7 @@ Tyto přechody klient schválil. **Neměnit** jejich průběh – nový nápad p
 | Tunel (dlouhé vcucnutí) | `tunnel` | 0,8 s | PODLE PŘEDLOHY 18. 11.: 0,4 s zrychlující zoom, náklon do 10°, širokoúhlé zakřivení, natažení plátna; nový záběr jako přes rybí oko (u = 0,42), narovná se za ~7 snímků | 0,035 s (po střihu 0,06 s dopředu) |
 | Propad plátna | `push` | 0,8 s | elastické plátno: natažení dozadu U0 = 0,45 (0,45 s), pružina ζ = 0,4, T = 0,222 s | žádné |
 | Propad plátna + motion blur | `pushb` | 0,8 s | stejné jako `push` | 0,035 s |
+| Propad plátna – rychlý (bez pružení) | `pushr` | 0,4 s | PODLE PŘEDLOHY 18. 11. (kuchyň): 0,2 s zrychlený propad dozadu (střed na 64 %), nový záběr začne na 81 % a za ~5 snímků se bez pružení narovná | 0,035 s |
 | Zahoupání + motion blur | `swing` | 1,25 s | PODLE PŘEDLOHY 18. 11. (tam do strany, tady shora dolů): před střihem couvání (plátno dozadu, 0,2 s), nový záběr začne na 140 % a dojíždí na 100 %, 0,1 s po střihu kopanec dolů, krajní poloha 5 % výšky za 0,13 s, tlumené houpání ζ = 0,3, T = 0,64 s; obraz se posouvá vcelku | 0,03 s |
 | Zahoupání bez bluru | `swingn` | 1,25 s | stejné jako `swing` | žádné |
 | Blesk (bílý záblesk) | `flashw` | 0,5 s | 2 výboje, bílý výboj ve střihu, doblik, dozvuk; otřes, studený nádech, záře | 0,015 s |
@@ -24,3 +25,19 @@ Zrušené (ve starých projektech se převedou): `fly` → `warp`, `whip` → ž
 - numerika: klid na okrajích okna, žádné NaN, žádné skoky (`tq/curves.js` ve scratchpadu – logika: vzorkovat FX.state po 1 ms)
 - pixely: FX.debug = true obarví vzorky mimo obraz fialově → 0 % na výšku i na šířku, 30/60 fps, délky 0,2 / výchozí / 1,5 s
 - appka: nabídka, staré projekty, náhled, export
+
+## Zvuky přechodů (18. 11. 2026)
+Vlastní generované zvuky (Web Audio, žádné cizí nahrávky – zvuky z předloh jsou smíchané s hudbou a hlasem a patří autorům videí).
+Hraje se v náhledu i v exportu, časované na pohyb přechodu (posuny se škálují s délkou přechodu). Vypínač u každého střihu, společná hlasitost `trSfxVol` (výchozí 80 %).
+
+| Přechod | Zvuky |
+|---|---|
+| Warp tunel | nádech 250 → 7000 Hz do střihu, rána 85 → 38 Hz, výlet 5200 → 280 Hz |
+| Tunel | nádech do střihu, výlet, rána |
+| Propad plátna (+ blur) | gumové natahování 70 → 150 Hz s chvěním, puštění (svist 3600 → 240 Hz), dopad +0,1 s |
+| Propad plátna – rychlý | natahování 0,2 s, puštění |
+| Zahoupání | svist nahoru při couvání, svist dolů při kopanci (+0,1 s), slabší svist při zpětném houpnutí (+0,42 s) |
+| Blesk | praskání při obou výbojích, výboj + hrom ve střihu, praskání při dobliku |
+| 2× negativní záblesk | glitch |
+
+Špičky při 80 %: 0,34–0,66 (bez přebuzení).

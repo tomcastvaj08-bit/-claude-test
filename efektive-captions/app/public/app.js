@@ -349,7 +349,7 @@ let AC=null, lastT=0;
 function audioSessionPlayback(){ try{ if (navigator.audioSession && navigator.audioSession.type!=='playback') navigator.audioSession.type='playback'; }catch(e){} }
 audioSessionPlayback();
 function ensureAC(){ audioSessionPlayback(); if (!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } if (AC.state==='suspended') AC.resume(); }
-function playSfx(type){ ensureAC(); E.sfxInto(AC,AC.destination,AC.currentTime,type,E.G.sfxVol/100); }
+function playSfx(x){ ensureAC(); const ev=typeof x==='string'?{type:x}:x; E.sfxInto(AC,AC.destination,AC.currentTime,ev.type,ev.vol??E.G.sfxVol/100,ev.dur); }
 
 // --- smyčka ---
 let dragging=null, guides=false, inlineOpen=false;
@@ -552,7 +552,7 @@ function loop(now){
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused || swap || PB.on){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
-      if (t>lastT && t-lastT<0.5) for (const ev of E.sfxEvents()) if (ev.t>lastT && ev.t<=t) playSfx(ev.type);
+      if (t>lastT && t-lastT<0.5) for (const ev of E.sfxEvents()) if (ev.t>lastT && ev.t<=t) playSfx(ev);
       followTimeline(t);
     }
     lastT=t;
@@ -697,7 +697,9 @@ function pClip(){
   ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||E.TRDEF[c.tr]||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="1.5" step="0.01" value="${c.trDur||E.TRDEF[c.tr]||0.12}"></label><div class="note">Vlevo = rychlejší, vpravo = pomalejší.</div>
   ${E.TRDIR.has(c.tr)?`<div class="clabel">Směr</div><div class="chips" id="clTrDir">${[['r','Doprava'],['l','Doleva']].map(([v,l])=>`<div class="chip ${(c.trDir||'r')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:''}`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
-  <div class="note">Vcucnutí, zahoupání a švihnutí mají skutečný motion blur a zkreslení čočky. Zvuky k přechodům brzy přibudou.</div>
+  ${k>0 && c.tr && c.tr!=='none'?`<div class="row"><span>Zvuk přechodu</span><input type="checkbox" class="sw" id="clTrSfx" ${c.trSfx===false?'':'checked'}></div>
+  <label class="ctl"><div class="lb"><span>Hlasitost zvuků přechodů (všech)</span><span id="clTrVv">${E.G.trSfxVol??80} %</span></div><input type="range" id="clTrV" min="0" max="150" value="${E.G.trSfxVol??80}"></label>
+  <button class="btn small" id="clTrHear">${I('volume')} Přehrát přechod se zvukem</button>`:''}
   <div class="clabel">Rychlost (slow motion)</div>
   <div class="chips" id="clSp">${[0.25,0.5,0.75,1,1.5,2].map(v=>`<div class="chip ${E.clipSp(c)===v?'on':''}" data-v="${v}">${v===1?'Normální':v<1?Math.round(v*100)+' %':v+'×'}</div>`).join('')}</div>
   ${E.clipSp(c)<1?`<div class="clabel">Plynulost zpomalení</div><div class="chips" id="clBl">${[['none','Opakovat snímky'],['blend','Prolínání snímků'],['flow','Optický tok']].map(([v,l])=>`<div class="chip ${(c.blend||'flow')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
@@ -738,6 +740,9 @@ binders.clip=()=>{
   const tr=$('clTr'); if (tr) tr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].tr=d.dataset.v; E.clips[selClip].trDur=E.TRDEF[d.dataset.v]||0.12; changed(); renderPanel(); renderVideoTrack(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.4); };
   const all=$('clTrAll'); if (all) all.onclick=()=>{ ensureClips(); const src=E.clips[Math.max(1,selClip)]; E.clips.forEach((c,i)=>{ if (i){ c.tr=src.tr||'none'; c.trDur=src.trDur||E.TRDEF[src.tr]||0.12; c.trDir=src.trDir; } }); changed(); renderVideoTrack(); toast('Přechod nastavený na všechny střihy'); };
   const dr=$('clTrDir'); if (dr) dr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].trDir=d.dataset.v; changed(); renderPanel(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.6); };
+  const ts=$('clTrSfx'); if (ts) ts.onchange=e=>{ ensureClips(); if (e.target.checked) delete E.clips[selClip].trSfx; else E.clips[selClip].trSfx=false; changed(); };
+  const tvv=$('clTrV'); if (tvv){ tvv.oninput=()=>{ E.G.trSfxVol=+tvv.value; $('clTrVv').textContent=tvv.value+' %'; }; tvv.onchange=()=>changed(); }
+  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, pre=Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
   const rd=$('clTrD'); if (rd){ rd.oninput=()=>{ ensureClips(); E.clips[selClip].trDur=+rd.value; $('clTrDv').textContent=(+rd.value).toFixed(2)+' s'; }; rd.onchange=()=>{ changed(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.5); }; }
 };
 
