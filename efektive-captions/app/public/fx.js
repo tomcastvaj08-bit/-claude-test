@@ -14,7 +14,8 @@ uniform sampler2D tex; uniform vec2 res;
 uniform vec4 A; uniform vec4 B;          // stav na začátku a na konci závěrky: zoom, rotace (rad), posun x, y (podíl šířky/výšky)
 uniform vec2 K;                           // zkreslení čočky (začátek, konec)
 uniform float expo, chroma;
-uniform float edk;                       // ztmavení okrajů mimo obraz (průlet: nový záběr přilétá z dálky)
+uniform float edk, stp;                  // stp > 0: rozmazání z pevného počtu kopií (schodovité jako v AE)
+                       // ztmavení okrajů mimo obraz (průlet: nový záběr přilétá z dálky)
 uniform vec2 RA, RB; uniform float rcy;   // „propad plátna“: střed × A, okraje + B·r² (začátek, konec závěrky), střed deformace (výška)
 varying vec2 v;
 vec2 mirror(vec2 u){ return 1.0-abs(1.0-mod(u,2.0)); }
@@ -47,6 +48,7 @@ void main(){
   float jit=fract(sin(dot(v*res,vec2(12.9898,78.233)))*43758.5453);   // náhodný posun vzorků v každém pixelu → hladké rozmazání bez pruhů
   for (int i=0;i<N;i++){
     float f=(float(i)+jit)/float(N);
+    if (stp>0.5) f=floor(f*stp)/max(1.0,stp-1.0);
     vec4 s=mix(A,B,f); float k=mix(K.x,K.y,f);
     vec2 q=rub(v,vec2(mix(RA.x,RA.y,f),mix(RB.x,RB.y,f)));
     if (chroma>0.001){
@@ -78,7 +80,7 @@ function init() {
     gl.useProgram(prog);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy', 'edk']) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy', 'edk', 'stp']) U[n] = gl.getUniformLocation(prog, n);
     tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -110,13 +112,13 @@ function interp(K, t, j) {
 }
 // PRŮLET – změřeno z předlohy po snímcích (zoom proti snímku 11): ln(zoom) před střihem zrychleně roste až na ~5,7×,
 // po střihu nový záběr přilétá z dálky (začíná zmenšený, okraje tmavé a rozmazané) a během ~6 snímků dosedne.
-const FLY_PRE = [[-0.28, 0], [-0.24, 0], [-0.2, 0.03], [-0.167, 0.12], [-0.133, 0.38], [-0.1, 0.95], [-0.067, 1.5], [-0.033, 1.85], [0, 2.05]];
-const FLY_POST = [[0, -0.22], [0.033, -0.08], [0.067, -0.03], [0.1, -0.008], [0.133, 0], [0.24, 0]];
+const FLY_PRE = [[-0.3, 0], [-0.267, 0], [-0.233, 0.005], [-0.2, 0.04], [-0.167, 0.113], [-0.133, 0.285], [-0.1, 0.577], [-0.067, 1.1], [-0.033, 1.7], [0, 2.1]];
+const FLY_POST = [[0, -0.2], [0.017, -0.14], [0.033, -0.035], [0.05, -0.01], [0.067, 0], [0.24, 0]];
 const CURVES = {
   fly(d, D) {
     const t = d * 0.4 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,4 s
     const lz = interp(t < 0 ? FLY_PRE : FLY_POST, t, 1), a = Math.min(1, Math.abs(lz) / 2);
-    return { z: Math.exp(lz), r: 0, x: 0, y: 0, k: 0.08 * a, e: 0, c: 0.004 * a, edk: t >= 0 ? 0.55 : 0 };
+    return { z: Math.exp(lz), r: 0, x: 0, y: 0, k: 0.05 * a, e: 0, c: 0.002 * a, edk: t >= 0 ? 0.35 : 0 };
   },
   // vcucnutí: zrychlený zoom dovnitř se zkreslením čočky → nový záběr vyletí z hloubky, natočený, a dosedne (speedrampa)
   // PROPAD PLÁTNA – změřeno z předlohy po snímcích: střed obrazu se zrychleně propadá dozadu (zmenšuje), okraje se natahují ven,
@@ -157,7 +159,9 @@ const SHUT = { fly: 0.04, push: 0.06, swing: 0.04, whip: 0.03, flashw: 0.02 };
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka: u propadu plátna dopředu (rozmazání v prvním snímku po střihu jako v předloze), jinak vystředěná
-  const sh = SHUT[type] || 0.03, fw = type === 'push' || type === 'fly', B = FX.state(type, fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, fw ? d : d - sh / 2, D, o);
+  // průlet: závěrka se s rostoucí rychlostí zkracuje (délka rozmazání jako v předloze), nový záběr jen krátce
+  const sh = type === 'fly' ? (d >= 0 ? 0.02 : 0.04 - 0.022 * Math.min(1, Math.max(0, (d * 0.4 / Math.max(0.05, D) + 0.15) / 0.1))) : (SHUT[type] || 0.03),
+    fw = type === 'push' || type === 'fly', B = FX.state(type, type === 'fly' && d < 0 ? Math.min(d + sh, -1e-4) : fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, fw ? d : d - sh / 2, D, o);
   if (!B) return false;
   // mimo přechod nic nedělat
   const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3 && Math.abs((s.ra ?? 1) - 1) < 1e-4 && Math.abs(s.rb ?? 0) < 1e-4;
@@ -171,7 +175,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, W, H);
   gl.uniform4f(U.A, A.z, A.r, A.x, A.y); gl.uniform4f(U.B, B.z, B.r, B.x, B.y);
   gl.uniform2f(U.K, A.k, B.k); gl.uniform1f(U.expo, B.e); gl.uniform1f(U.chroma, B.c);
-  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42); gl.uniform1f(U.edk, Math.max(A.edk || 0, B.edk || 0));
+  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42); gl.uniform1f(U.edk, Math.max(A.edk || 0, B.edk || 0)); gl.uniform1f(U.stp, type === 'fly' && d < 0 ? 9 : 0);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;
