@@ -15,7 +15,7 @@ uniform vec4 A; uniform vec4 B;          // stav na začátku a na konci závěr
 uniform vec2 K;                           // zkreslení čočky (začátek, konec)
 uniform float expo, chroma;
 uniform vec2 TW;                          // vír (rad): střed se stočí víc než okraje – tunel / červí díra (začátek, konec závěrky)
-uniform float edk, stp;                  // stp > 0: rozmazání z pevného počtu kopií (schodovité jako v AE)
+uniform float edk, stp, rnw;             // rnw = 1: přesný výpočet natažení (warp); 0: původní (propad plátna – vzhled, který sedí)                  // stp > 0: rozmazání z pevného počtu kopií (schodovité jako v AE)
                        // ztmavení okrajů mimo obraz (průlet: nový záběr přilétá z dálky)
 uniform vec2 RA, RB; uniform float rcy;   // „propad plátna“: střed × A, okraje + B·r² (začátek, konec závěrky), střed deformace (výška)
 varying vec2 v;
@@ -29,7 +29,7 @@ vec2 rub(vec2 q, vec2 ab){
   vec2 pc=vec2(q.x*res.x-0.5*res.x, (1.0-q.y)*res.y-rcy*res.y)/h;
   float rq=length(pc); if (rq<1e-5) return q;
   float rp;
-  if (ab.y>0.0){
+  if (ab.y>0.0 && rnw>0.5){
     // Newton: r·(A + B·r²) = rq je rostoucí a konvexní → shora konverguje vždy (i při silném natažení)
     rp=min(rq/max(ab.x,0.02), pow(rq/ab.y,1.0/3.0));
     for (int i=0;i<8;i++){ float f=rp*(ab.x+ab.y*rp*rp)-rq; rp-=f/max(1e-4,ab.x+3.0*ab.y*rp*rp); }
@@ -92,7 +92,7 @@ function init() {
     gl.useProgram(prog);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy', 'edk', 'stp', 'TW']) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['tex', 'res', 'A', 'B', 'K', 'expo', 'chroma', 'RA', 'RB', 'rcy', 'edk', 'stp', 'TW', 'rnw']) U[n] = gl.getUniformLocation(prog, n);
     tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -157,8 +157,8 @@ const CURVES = {
   push(d, D) {
     const t = d * 0.5 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,5 s
     const K = t < 0 ? RUB_PRE : RUB_POST;
-    // HLOUBKA: střed se propadne o 40 % víc než v předloze, okraje se roztáhnou relativně méně (≈ hloubka, ne přiblížení)
-    const DEEP = 1.4, u = interp(K, t, 1) * DEEP, b = interp(K, t, 2) * DEEP * 0.86;
+    // stejný průběh jako v předloze, jen hlouběji (u i b stejným poměrem → stejný charakter)
+    const DEEP = 1.3, u = interp(K, t, 1) * DEEP, b = interp(K, t, 2) * DEEP;
     return { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0, ra: 1 - u, rb: b, rcy: 0.45 };
   },
   // zahoupání: obraz se zhoupne do strany (natočení + posun), střih se schová v rozmazání, nový záběr se zhoupne zpátky a dosedne
@@ -193,7 +193,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka: u propadu plátna dopředu (rozmazání v prvním snímku po střihu jako v předloze), jinak vystředěná
   // průlet: závěrka se s rostoucí rychlostí zkracuje (délka rozmazání jako v předloze), nový záběr jen krátce
   const sh = type === 'fly' ? (d >= 0 ? 0.02 : 0.04 - 0.022 * Math.min(1, Math.max(0, (d * 0.4 / Math.max(0.05, D) + 0.15) / 0.1))) : (SHUT[type] || 0.03),
-    fw = type === 'push' || type === 'fly', B = FX.state(type, type === 'fly' && d < 0 ? Math.min(d + sh, -1e-4) : type === 'warp' && d < 0 ? Math.min(d + sh / 2, -1e-4) : type === 'push' && d < 0 ? Math.min(d + sh, -1e-4) : fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, type === 'warp' && d >= 0 ? Math.max(d - sh / 2, 0) : fw ? d : d - sh / 2, D, o);
+    fw = type === 'push' || type === 'fly', B = FX.state(type, type === 'fly' && d < 0 ? Math.min(d + sh, -1e-4) : type === 'warp' && d < 0 ? Math.min(d + sh / 2, -1e-4) : fw ? d + sh : d + sh / 2, D, o), A = FX.state(type, type === 'warp' && d >= 0 ? Math.max(d - sh / 2, 0) : fw ? d : d - sh / 2, D, o);
   if (!B) return false;
   // mimo přechod nic nedělat
   const idle = s => Math.abs(s.z - 1) < 1e-3 && Math.abs(s.r) < 1e-4 && Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && s.k < 1e-3 && s.e < 1e-3 && Math.abs((s.ra ?? 1) - 1) < 1e-4 && Math.abs(s.rb ?? 0) < 1e-4 && Math.abs(s.sw || 0) < 1e-4;
@@ -207,7 +207,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, W, H);
   gl.uniform4f(U.A, A.z, A.r, A.x, A.y); gl.uniform4f(U.B, B.z, B.r, B.x, B.y);
   gl.uniform2f(U.K, A.k, B.k); gl.uniform1f(U.expo, B.e); gl.uniform1f(U.chroma, B.c);
-  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42); gl.uniform1f(U.edk, Math.max(A.edk || 0, B.edk || 0)); gl.uniform2f(U.TW, A.sw || 0, B.sw || 0); gl.uniform1f(U.stp, type === 'fly' && d < 0 ? 9 : 0);
+  gl.uniform2f(U.RA, A.ra ?? 1, B.ra ?? 1); gl.uniform2f(U.RB, A.rb ?? 0, B.rb ?? 0); gl.uniform1f(U.rcy, B.rcy ?? 0.42); gl.uniform1f(U.edk, Math.max(A.edk || 0, B.edk || 0)); gl.uniform2f(U.TW, A.sw || 0, B.sw || 0); gl.uniform1f(U.rnw, type === 'warp' ? 1 : 0); gl.uniform1f(U.stp, type === 'fly' && d < 0 ? 9 : 0);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;
