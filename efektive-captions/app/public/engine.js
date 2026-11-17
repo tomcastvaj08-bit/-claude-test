@@ -880,7 +880,7 @@ E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L)
 E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
 E.TRANSITIONS=[['none','Žádný'],['warp','Warp tunel (vcucnutí + vyplivnutí)'],['push','Propad plátna'],['pushb','Propad plátna + motion blur'],['swing','Zahoupání + motion blur'],['swingn','Zahoupání bez bluru'],['flashw','Blesk (bílý záblesk)'],['flash2','2× negativní záblesk']];
-E.TRDEF={warp:0.8,push:0.8,pushb:0.8,swing:0.6,swingn:0.6,flashw:0.5,flash2:0.12};   // výchozí délka přechodu (s)
+E.TRDEF={warp:0.8,push:0.8,pushb:0.8,swing:1.2,swingn:1.2,flashw:0.5,flash2:0.12};   // výchozí délka přechodu (s)
 E.TRDIR=new Set();                                         // přechody se směrem (zatím žádný)
 E.TROLD={fly:'warp', whip:'none'};                         // zrušené přechody ve starých projektech
 E.drawTransition=(c,W,H,t)=>{

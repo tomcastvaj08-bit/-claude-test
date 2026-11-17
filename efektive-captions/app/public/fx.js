@@ -154,13 +154,16 @@ const CURVES = {
     // natažení (u > 0): drží okraj elipsy = kraje obrazovky; vyboulení (u < 0): drží rohy (jinak by rohy neměly odkud brát obraz)
     return S({ ra: 1 - u, rb: u >= 0 ? u : u / 2 });
   },
-  // ZAHOUPÁNÍ (0,6 s): obrazovka se jako pružná blána prohne – střed vyletí nahoru (okraje stojí),
-  // nový záběr přijde prohnutý dolů a zapruží nahoru–dolů, než se srovná
+  // ZAHOUPÁNÍ (1,2 s) – POMALÉ ZAVLNĚNÍ (na přání 17. 11.): obrazovka se jako pružná blána pomalu prohne – střed jde
+  // nahoru (okraje stojí), ve střihu je v krajní poloze, nový záběr začne prohnutý dolů a pomalu, stále slaběji se zavlní
   swing(d, D) {
-    const t = d * 0.6 / Math.max(0.1, D), W0 = 0.42;
+    const t = d * 1.2 / Math.max(0.1, D), W0 = 0.4, T = 0.5, zeta = 0.28;
     let a;
-    if (t < 0) { const q = cl((t + 0.25) / 0.25); a = W0 * q * q * q; }
-    else { const fade = 1 - cl((t - 0.4) / 0.15); a = t >= 0.55 ? 0 : -W0 * Math.exp(-0.3 * (2 * Math.PI / 0.24) / Math.sqrt(1 - 0.09) * t) * Math.cos(2 * Math.PI / 0.24 * t) * fade * fade * (3 - 2 * fade); }   // do 0,55 s úplně v klidu (okno přechodu)
+    if (t < 0) { const q = cl((t + 0.5) / 0.5); a = W0 * (1 - Math.cos(Math.PI * q)) / 2; }   // pomalý nádech nahoru, v krajní poloze se zastaví
+    else {
+      const wd = 2 * Math.PI / T, wn = wd / Math.sqrt(1 - zeta * zeta), f = 1 - cl((t - 0.85) / 0.3);
+      a = t >= 1.15 ? 0 : -W0 * Math.exp(-zeta * wn * t) * Math.cos(wd * t) * f * f * (3 - 2 * f);   // do 1,15 s úplně v klidu
+    }
     return S({ wv: a });
   },
   // BLESK (0,5 s): dva krátké výboje, ve střihu bílý výboj, doblik, dozvuk; otřes a studený nádech jen při záblesku
