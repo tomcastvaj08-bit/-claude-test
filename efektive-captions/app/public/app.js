@@ -381,8 +381,12 @@ function smoothTime(){
 // čas na timeline = výsledný čas (po střihu); video samo běží ve zdrojovém čase
 // ve vloženém klipu (jiné video) hlavní přehrávač stojí → poloha hlavy se drží zvlášť (vpos)
 let vpos=null;
-const PV={ get currentTime(){ return vpos!=null? vpos : E.src2out(vid.currentTime); },
-  set currentTime(t){ const x=E.extClipAt(t);
+const PV={ get currentTime(){ if (vpos!=null) return vpos;
+    // úseky se můžou ve zdroji překrývat → přednost má úsek, kam byla hlava naposledy postavená
+    const L=E.clipList(), k=PV._k, c=k!=null?L[k]:null, ts=vid.currentTime;
+    if (c && !c.a && ts>=c.s-0.05 && ts<=c.e+0.05) return E.clipStarts()[k]+Math.max(0,ts-c.s)/E.clipSp(c);
+    return E.src2out(ts); },
+  set currentTime(t){ PV._k=E.clipAt(Math.max(0,t)); const x=E.extClipAt(t);
     if (x){ vpos=t; for (const el of extEls()) if (el!==x.el && !el.paused) el.pause(); if (x.el){ if (!x.el.paused && !PB.on) x.el.pause(); if (Math.abs(x.el.currentTime-x.ts)>0.02 && !x.el.seeking) x.el.currentTime=x.ts; } }
     else { vpos=null; for (const el of extEls()) if (!el.paused) el.pause(); }
     vid.currentTime=E.out2src(t); },
@@ -541,7 +545,7 @@ let lastFrame=0;
 function loop(now){
   if (now && now-lastFrame<14){ requestAnimationFrame(loop); return; }
   lastFrame=now||performance.now();
-  const t= PB.on ? pbTick() : (vpos!=null && vid.paused && !swap) ? vpos : (( (!vid.paused || swap) && clipGuard()), E.src2out(swap? vidB.currentTime : smoothTime()));
+  const t= PB.on ? pbTick() : (vid.paused && !swap) ? PV.currentTime : (( (!vid.paused || swap) && clipGuard()), E.src2out(swap? vidB.currentTime : smoothTime()));
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused || swap || PB.on){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
@@ -1469,8 +1473,8 @@ function deleteClip(k){
 }
 function trimClip(k,side,dt){
   ensureClips(); const c=E.clips[k], st=E.clipStarts();
-  // sousední úseky STEJNÉHO videa (vložený klip má vlastní video → meze 0 až jeho délka)
-  const prev=c.a?null:E.clips.slice(0,k).reverse().find(x=>!x.a), next=c.a?null:E.clips.slice(k+1).find(x=>!x.a);
+  // úsek jde prodloužit až po začátek / konec svého videa – další úseky se odsunou (jako v CapCutu, může se i opakovat stejný kus)
+  const prev=null, next=null;
   const srcEnd=c.a?((E.assetEl(c.a)||{}).duration||c.e):(E.srcDur||vid.duration);
   const sp=E.clipSp(c);   // zdrojový posun d → na timeline d/sp
   if (side==='l'){ const ns=clamp(c.s+dt*sp, prev?prev.e:0, c.e-0.2), d=(ns-c.s)/sp; if (Math.abs(d)<0.01) return;
