@@ -127,28 +127,24 @@ function interp(K, t, j) {
 const FLY_PRE = [[-0.3, 0], [-0.267, 0], [-0.233, 0.005], [-0.2, 0.04], [-0.167, 0.113], [-0.133, 0.285], [-0.1, 0.577], [-0.067, 1.1], [-0.033, 1.7], [0, 2.1]];
 const FLY_POST = [[0, -0.2], [0.017, -0.14], [0.033, -0.035], [0.05, -0.01], [0.067, 0], [0.24, 0]];
 // WARP TUNEL – 4 fáze: 1) plátno se natáhne (střed couvne, okraje se roztáhnou – nátah jako prak),
-// 2) speedrampa: prudké zrychlení dovnitř, vznikne tunel (radiální rozmazání, vír, barevný rozklad, světlo na konci),
-// 3) vyplivnutí: nový záběr vyletí z tunelu (začne malý uprostřed, okraje roztažené, vír se odmotá),
-// 4) dojezd: lehké přejetí dopředu a pružné usazení. [čas (s) při délce 0,8 s, hodnota]; mimo rozsah 0.
+// 2) speedrampa: prudké zrychlení dovnitř, vznikne tunel (radiální rozmazání, světlo na konci),
+// 3) vyplivnutí: nový záběr vyletí z hloubky (střed se rozvine),
+// 4) dojezd: plynulé dosednutí bez kroucení. [čas (s) při délce 0,8 s, hodnota]; mimo rozsah 0.
 const WP = {
-  u:   [[-0.46, 0], [-0.40, 0], [-0.30, 0.14], [-0.20, 0.33], [-0.14, 0.37], [-0.10, 0.42], [-0.07, 0.6], [-0.04, 0.78], [-0.015, 0.88], [0, 0.92]],
-  lz:  [[-0.46, 0], [-0.14, 0], [-0.10, 0.03], [-0.07, 0.09], [-0.04, 0.18], [0, 0.3]],
-  sw:  [[-0.46, 0], [-0.25, 0], [-0.16, -3], [-0.10, 2], [-0.06, 12], [-0.03, 30], [0, 45]],
-  c:   [[-0.46, 0], [-0.12, 0], [-0.06, 0.006], [-0.02, 0.014], [0, 0.02]],
-  e:   [[-0.46, 0], [-0.06, 0], [-0.025, 0.05], [0, 0.12]],
+  u:   [[-0.46, 0], [-0.40, 0], [-0.30, 0.10], [-0.20, 0.20], [-0.14, 0.22], [-0.10, 0.27], [-0.07, 0.34], [-0.04, 0.42], [-0.015, 0.46], [0, 0.48]],
+  lz:  [[-0.46, 0], [-0.14, 0], [-0.10, 0.06], [-0.07, 0.2], [-0.04, 0.5], [-0.015, 0.9], [0, 1.2]],
+  e:   [[-0.46, 0], [-0.06, 0], [-0.03, 0.04], [0, 0.1]],
 };
 const WQ = {
-  u:   [[0, 0.92], [0.03, 0.7], [0.06, 0.4], [0.09, 0.16], [0.12, 0.045], [0.16, 0.008], [0.2, 0], [0.56, 0]],
-  lz:  [[0, 0.22], [0.03, 0.17], [0.06, 0.135], [0.1, 0.11], [0.15, 0.09], [0.21, 0.05], [0.28, 0.018], [0.35, 0.005], [0.42, 0.001], [0.5, 0], [0.56, 0]],
-  sw:  [[0, -40], [0.03, -20], [0.06, -7], [0.1, 0.5], [0.15, 2], [0.22, 0.5], [0.3, -0.4], [0.38, 0], [0.56, 0]],
-  c:   [[0, 0.02], [0.03, 0.01], [0.07, 0.003], [0.11, 0], [0.56, 0]],
-  e:   [[0, 0.12], [0.03, 0.04], [0.07, 0], [0.56, 0]],
+  u:   [[0, 0.34], [0.03, 0.22], [0.06, 0.12], [0.09, 0.055], [0.12, 0.02], [0.16, 0.005], [0.2, 0], [0.56, 0]],
+  lz:  [[0, 0.16], [0.03, 0.12], [0.06, 0.09], [0.1, 0.065], [0.18, 0.035], [0.28, 0.013], [0.38, 0.003], [0.5, 0], [0.56, 0]],
+  e:   [[0, 0.1], [0.03, 0.03], [0.06, 0], [0.56, 0]],
 };
 const CURVES = {
   warp(d, D) {
     const t = d * 0.8 / Math.max(0.1, D), K = t < 0 ? WP : WQ, g = n => interp(K[n], t, 1), u = g('u');
     // okraj plátna zůstává u kraje obrazovky (A + B ≈ 1): střed se propadne do hloubky, mezikruží se natáhne do stěn tunelu
-    return { z: Math.exp(g('lz')), r: 0, x: 0, y: 0, k: 0, e: Math.max(0, g('e')), c: Math.max(0, g('c')), ra: 1 - u, rb: 1.15 * u, rcy: 0.5, sw: g('sw') * DEG };
+    return { z: Math.exp(g('lz')), r: 0, x: 0, y: 0, k: 0, e: Math.max(0, g('e')), c: 0, ra: 1 - u, rb: 1.15 * u, rcy: 0.5, sw: 0 };   // bez víru – čistý plynulý tah do hloubky
   },
   fly(d, D) {
     const t = d * 0.4 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,4 s
@@ -191,7 +187,7 @@ FX.state = (type, d, D, o) => { const f = CURVES[type]; return f ? f(d, D, o || 
 FX.has = type => !!CURVES[type];
 
 // závěrka: o kolik dřív začíná rozmazání (s) – odpovídá filmové závěrce ~180° při 24 fps, trochu víc pro „AE“ vzhled
-const SHUT = { warp: 0.04, fly: 0.04, push: 0.06, swing: 0.04, whip: 0.03, flashw: 0.02 };
+const SHUT = { warp: 0.045, fly: 0.04, push: 0.06, swing: 0.04, whip: 0.03, flashw: 0.02 };
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka: u propadu plátna dopředu (rozmazání v prvním snímku po střihu jako v předloze), jinak vystředěná
