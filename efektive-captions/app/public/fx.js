@@ -138,6 +138,12 @@ const WQ = {
 const FL_PRE = [[-0.205, 0], [-0.2, 0.75], [-0.16, 0.75], [-0.155, 0.05], [-0.115, 0.05], [-0.11, 0.9], [-0.072, 0.9], [-0.067, 0.3], [-0.04, 0.45], [0, 1]];
 const FL_POST = [[0, 1], [0.04, 1], [0.045, 0.5], [0.075, 0.45], [0.08, 0.85], [0.115, 0.85], [0.12, 0.3], [0.16, 0.17], [0.22, 0.07], [0.3, 0.02], [0.36, 0]];
 
+// zahoupání: couvání před střihem (1 − měřítko středu, ze snímků 15–20 předlohy) a zoom nového záběru (ln, snímky 21–58)
+const SW_PRE = [[-0.2, 0], [-0.167, 0.011], [-0.133, 0.024], [-0.1, 0.039], [-0.067, 0.06], [-0.033, 0.09], [0, 0.137]];
+const SW_Z = [[0, 0.341], [0.033, 0.278], [0.067, 0.234], [0.1, 0.201], [0.133, 0.177], [0.167, 0.158], [0.2, 0.141], [0.233, 0.124], [0.267, 0.111], [0.3, 0.099], [0.333, 0.092], [0.367, 0.084], [0.4, 0.077], [0.433, 0.071], [0.467, 0.065], [0.5, 0.06], [0.567, 0.054], [0.633, 0.05], [0.733, 0.045], [0.867, 0.036], [0.967, 0.025], [1.067, 0.015], [1.233, 0], [1.25, 0]];
+// tunel: ln zoom před střihem (snímky 28–36 změřené, 37–40 dopočtené ze zrychlení) a stlačení středu nového záběru
+const TN_Z = [[-0.4, 0], [-0.367, 0.013], [-0.333, 0.027], [-0.3, 0.042], [-0.267, 0.061], [-0.233, 0.084], [-0.2, 0.12], [-0.167, 0.175], [-0.133, 0.268], [-0.1, 0.41], [-0.067, 0.62], [-0.033, 0.9], [0, 1.25]];
+const TN_U = [[0, 0.42], [0.033, 0.29], [0.067, 0.19], [0.1, 0.12], [0.133, 0.075], [0.167, 0.045], [0.2, 0.025], [0.267, 0.007], [0.333, 0], [0.4, 0]];
 const CURVES = {
   warp(d, D) {
     const t = d * 0.8 / Math.max(0.1, D), K = t < 0 ? WP : WQ, u = Math.max(0, mono(K.u, t));
@@ -154,15 +160,27 @@ const CURVES = {
     // natažení (u > 0): drží okraj elipsy = kraje obrazovky; vyboulení (u < 0): drží rohy (jinak by rohy neměly odkud brát obraz)
     return S({ ra: 1 - u, rb: u >= 0 ? u : u / 2 });
   },
-  // ZAHOUPÁNÍ (1,2 s) – POMALÉ KÝVÁNÍ (na přání 17. 11.: ne pružení, ale houpání): obrazovka se jako blána plynule
-  // kývá nahoru a dolů po sinusu (perioda 1 s) – pohyb běží přes střih bez skoku, nahoru → přes střih dolů → slaběji nahoru → klid.
-  // Žádné prudké rozjezdy ani odrazy: obálka se pomalu nadechne a pomalu dozní.
+  // ZAHOUPÁNÍ (1,25 s) – podle předlohy 18. 11. (měřeno po snímcích, tam do strany – tady shora dolů):
+  // před střihem obraz zrychleně couvá (plátno se natahuje dozadu), nový záběr začne přiblížený na 140 % a plynule
+  // dojíždí na 100 %; 0,1 s po střihu dostane „kopanec“ dolů, za 0,13 s je v krajní poloze (5 % výšky), houpne se zpět
+  // a dvakrát slaběji dokývne (perioda 0,64 s, tlumení 0,3). Obraz se posouvá vcelku – žádné prohýbání.
   swing(d, D) {
-    const t = d * 1.2 / Math.max(0.1, D), W0 = 0.3, T = 1.0;
-    if (t < -0.55 || t >= 1.2) return S({});
-    const up = t < -0.25 ? Math.pow(Math.sin(Math.PI / 2 * cl((t + 0.55) / 0.3)), 2) : 1;   // nádech
-    const down = t > 0 ? Math.exp(-1.3 * t) : 1, f = 1 - cl((t - 0.9) / 0.3), fade = f * f * (3 - 2 * f);   // doznění
-    return S({ wv: -W0 * up * down * fade * Math.sin(2 * Math.PI * t / T) });
+    const t = d * 1.25 / Math.max(0.1, D);
+    if (t < 0) { const u = Math.max(0, mono(SW_PRE, t)); return S({ ra: 1 - u, rb: u }); }
+    if (t > 1.25) return S({});
+    const z = Math.exp(Math.max(0, mono(SW_Z, t)));
+    let y = 0;
+    if (t > 0.1) { const tau = t - 0.1, wd = 2 * Math.PI / 0.64, wn = wd / Math.sqrt(1 - 0.09), f = 1 - cl((t - 0.9) / 0.3); y = -0.078 * Math.exp(-0.3 * wn * tau) * Math.sin(wd * tau) * f * f * (3 - 2 * f); }
+    return S({ z, y });
+  },
+  // TUNEL (0,8 s) – podle předlohy 18. 11.: dlouhé zrychlující vcucnutí (zoom ~1 %/snímek → ~35 %/snímek), roste rozmazání
+  // do paprsků, obraz se zakřiví jako širokoúhlý objektiv a mírně nakloní; nový záběr začne jako přes rybí oko
+  // (střed stlačený na 70 %), za ~7 snímků se narovná a náklon se vrátí.
+  tunnel(d, D) {
+    const t = d * 0.8 / Math.max(0.1, D);
+    if (t < 0) { const lz = Math.max(0, mono(TN_Z, t)), q = cl((t + 0.4) / 0.4); return S({ z: Math.exp(lz), r: -0.17 * Math.pow(q, 3), k: 0.35 * Math.pow(q, 2.5), ra: 1 - 0.3 * Math.pow(q, 3), rb: 0.3 * Math.pow(q, 3) }); }
+    const u = Math.max(0, mono(TN_U, t)), w = u / 0.42;
+    return S({ ra: 1 - u, rb: u, r: 0.06 * w, k: 0.16 * w, z: 1 + 0.14 * w });   // zoom kryje rohy při náklonu
   },
   // BLESK (0,5 s): dva krátké výboje, ve střihu bílý výboj, doblik, dozvuk; otřes a studený nádech jen při záblesku
   flashw(d, D) {
@@ -180,14 +198,17 @@ FX.has = type => !!CURVES[type];
 FX.debug = false;   // test: vzorky mimo obraz fialově
 
 // závěrka (s): délka rozmazání pohybu; 0 = ostrý obraz
-const SHUT = { warp: 0.045, push: 0, pushb: 0.035, swing: 0.03, swingn: 0, flashw: 0.015 };
+const SHUT = { warp: 0.045, tunnel: 0.035, push: 0, pushb: 0.035, swing: 0.03, swingn: 0, flashw: 0.015 };
 FX.SHUT = SHUT;
+const SHUT_POST = { tunnel: 0.06 };
 const same = (a, b) => ['z', 'r', 'x', 'y', 'k', 'ra', 'rb', 'wv'].every(n => Math.abs(a[n] - b[n]) < 1e-6);
 const idle = s => Math.abs(s.z - 1) < 1e-4 && Math.abs(s.r) < 1e-5 && Math.abs(s.x) < 1e-5 && Math.abs(s.y) < 1e-5 && Math.abs(s.k) < 1e-4 && s.e < 1e-4 && Math.abs(s.ra - 1) < 1e-5 && Math.abs(s.rb) < 1e-5 && Math.abs(s.wv) < 1e-5;
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka vystředěná kolem snímku, ale nikdy přes střih (stav před a po střihu se nemíchá)
-  const sh = SHUT[type] ?? 0.03, ta = d < 0 ? d - sh / 2 : Math.max(0, d - sh / 2), tb = d < 0 ? Math.min(d + sh / 2, -1e-6) : d + sh / 2;
+  const sh = SHUT[type] ?? 0.03, shp = SHUT_POST[type];
+  let ta = d < 0 ? d - sh / 2 : Math.max(0, d - sh / 2), tb = d < 0 ? Math.min(d + sh / 2, -1e-6) : d + sh / 2;
+  if (d >= 0 && shp) { ta = d; tb = d + shp; }   // po střihu delší rozmazání dopředu (tunel: nový záběr vyletí rozmazaný)
   const B = FX.state(type, tb, D, o), A = sh > 0 ? FX.state(type, ta, D, o) : B;
   if (!B) return false;
   if (idle(A) && idle(B)) return false;
