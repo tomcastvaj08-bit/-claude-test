@@ -162,7 +162,10 @@ function aacLcConfig(rate, ch) {
 }
 async function decodeVideoAudio(file) {
   const AC = global.AudioContext || global.webkitAudioContext;
-  const dec = async ab => { const ac = new AC(); try { return await new Promise((res, rej) => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); } finally { try { ac.close && ac.close(); } catch (e) {} } };
+  // dekódovat přes OfflineAudioContext (bez zvukového hardwaru): skutečný AudioContext otevřený a zavřený mimo klepnutí
+  // umí na iPhonu vypnout zvuk celé stránky
+  const OAC = global.OfflineAudioContext || global.webkitOfflineAudioContext;
+  const dec = async ab => { const ac = OAC ? new OAC(2, 48000, 48000) : new AC(); try { return await new Promise((res, rej) => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); } finally { try { if (!OAC && ac.close) ac.close(); } catch (e) {} } };
   try { return await dec(await file.arrayBuffer()); } catch (e) { console.warn('Přímé dekódování zvuku nejde, zkouším zvukovou stopu zvlášť', e); }
   const m4a = await audioOnlyM4A(file);
   if (!m4a) throw new Error('Ve videu jsem nenašel zvuk, který umím přečíst.');

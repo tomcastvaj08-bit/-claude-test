@@ -345,7 +345,10 @@ $('muteBtn').onclick=()=>{ E.flags.mute=!E.flags.mute; updateMute(); changed(); 
 
 // --- živé zvuky ---
 let AC=null, lastT=0;
-function ensureAC(){ if (!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } if (AC.state==='suspended') AC.resume(); }
+// iPhone: zvuk přes Web Audio (přehrávání se střihem, hudba) je jinak potichu, když je telefon přepnutý na tichý režim
+function audioSessionPlayback(){ try{ if (navigator.audioSession && navigator.audioSession.type!=='playback') navigator.audioSession.type='playback'; }catch(e){} }
+audioSessionPlayback();
+function ensureAC(){ audioSessionPlayback(); if (!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } if (AC.state==='suspended') AC.resume(); }
 function playSfx(type){ ensureAC(); E.sfxInto(AC,AC.destination,AC.currentTime,type,E.G.sfxVol/100); }
 
 // --- smyčka ---

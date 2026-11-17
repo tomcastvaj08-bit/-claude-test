@@ -115,8 +115,8 @@ const DEG = Math.PI / 180;
 const RUB_PRE = [[-0.3, 0.0, 0.0], [-0.25, 0.0, 0.0], [-0.217, 0.0045, 0.0095], [-0.183, 0.018, 0.0378], [-0.15, 0.0525, 0.1103], [-0.117, 0.105, 0.2205], [-0.083, 0.18, 0.378], [-0.05, 0.2325, 0.4883], [-0.017, 0.285, 0.5985], [0, 0.36, 0.756]];
 const RUB_POST = [[0, 0.375, 0.7875], [0.017, 0.225, 0.4725], [0.033, 0.09, 0.189], [0.05, 0.045, 0.0945], [0.083, 0.015, 0.0315], [0.117, 0.0045, 0.0095], [0.15, 0.0, 0.0], [0.3, 0.0, 0.0]];
 // plynulá křivka přes klíčové body (Catmull–Rom), mimo rozsah 0
-function interp(K, t, j) {
-  if (t < K[0][0] || t > K[K.length - 1][0]) return 0;
+function interp(K, t, j, strictOld) {
+  if (strictOld ? (t <= K[0][0] || t >= K[K.length - 1][0]) : (t < K[0][0] || t > K[K.length - 1][0])) return 0;
   let i = 0; while (i < K.length - 2 && t > K[i + 1][0]) i++;
   const p1 = K[i], p2 = K[i + 1], p0 = K[Math.max(0, i - 1)], p3 = K[Math.min(K.length - 1, i + 2)], u = (t - p1[0]) / (p2[0] - p1[0]);
   const a = p0[j], b = p1[j], c = p2[j], d = p3[j];
@@ -157,8 +157,8 @@ const CURVES = {
   push(d, D) {
     const t = d * 0.5 / Math.max(0.05, D);   // naměřené časy platí pro délku 0,5 s
     const K = t < 0 ? RUB_PRE : RUB_POST;
-    // stejný průběh jako v předloze, jen hlouběji (u i b stejným poměrem → stejný charakter)
-    const DEEP = 1.3, u = interp(K, t, 1) * DEEP, b = interp(K, t, 2) * DEEP;
+    // PŘESNĚ verze ze 16. 11. (schválená) – neměnit
+    const u = interp(K, t, 1, true), b = interp(K, t, 2, true);
     return { z: 1, r: 0, x: 0, y: 0, k: 0, e: 0, c: 0, ra: 1 - u, rb: b, rcy: 0.45 };
   },
   // zahoupání: obraz se zhoupne do strany (natočení + posun), střih se schová v rozmazání, nový záběr se zhoupne zpátky a dosedne
