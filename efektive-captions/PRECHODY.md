@@ -97,3 +97,6 @@ Blesk = cvak, negativ = mini glitch. Staré volby „Mini swoosh“ a „Krátk�
 ## 18. 11. – KRITICKÁ OPRAVA: projekty po otevření bez titulků
 Příčina: v commitu 0d4c62a se při vkládání řádku do `restore()` (app.js) dostal kód `mixDefaults(...); E.words=s.words; E.meta=...; E.zones=...` za `//` komentář → při otevření projektu se nenačetly titulky, úpravy titulků ani zóny; při zavření/úpravě se prázdný stav uložil přes projekt.
 Opraveno + pojistky: (1) ukládá se jen projekt, který se otevřel celý (`project.restoredOk`); (2) když by uložení smazalo ≥ polovinu titulků (min. 5), předchozí stav se uloží do `backup`; (3) při otevření projektu bez titulků se zálohou se titulky obnoví automaticky. Test: `tq/roundtrip.js` (uložit → znovu načíst stránku → otevřít 2× → porovnat; záloha).
+
+## 18. 11. – přepis jednoho klipu, koš v horní liště
+Panel klipu: „Nový přepis titulků tohoto klipu“ – AI přepíše jen zvuk vybraného úseku (i vloženého klipu), titulky v jeho čase se nahradí, ostatní zůstanou (časy přepočítané i při zrychlení). Horní lišta: místo oka koš = smaže vybrané (úsek, overlay, zvuk, shake, objekt, klíčový bod, jinak vybraný titulek; zpět jde šipkou). Oko (skrýt titulky) je malé vlevo nahoře vedle křížku. V panelu Titulky tlačítko „Smazat vybraný titulek“.
