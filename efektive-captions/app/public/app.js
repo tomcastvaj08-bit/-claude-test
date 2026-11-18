@@ -123,7 +123,8 @@ function restore(json){
   dedupeWords();
   { const fix=o=>{ if (o && o.gloss && o.gloss!=='off' && o.gloss!=='gloss') o.gloss='gloss'; }; fix(E.G); for (const k in E.meta) fix(E.meta[k].own); }   // 3D lesk má jen jeden styl
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
-  if (E.G.reMode && window.RE){ try{ reLegacyOff(); }catch(e){ console.warn(e); } }   // Reality (text za hlavou) zrušen → jen stabilizace
+  if (E.G.reMode && window.RE){ try{ reLegacyOff(); }catch(e){ console.warn(e); } }
+  if (E.G.behind==='head') E.G.behind='off'; for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o&&o.behind==='head') delete o.behind; }   // text za hlavou zrušen   // Reality (text za hlavou) zrušen → jen stabilizace
   E.face=Array.isArray(s.face)?s.face:null;
   E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
   E.stab=s.stab && s.stab.trk && E.tracks[s.stab.trk] ? {...s.stab} : null;
@@ -1409,9 +1410,9 @@ function pAI(){
   <div class="row"><span>Uhnout do strany, když je obličej mimo střed</span><input type="checkbox" class="sw" id="faceDodge" ${E.G.faceDodgeX?'checked':''}></div>
   <button class="btn" id="aiFace">${analysed.face?I('refresh')+' Znovu umístit pod obličej':'Umístit titulky pod obličej'}</button>
   <div class="clabel">${I('user','grad')} Text za postavou</div>
-  <div class="note">Za hlavou: hlava zakryje část písma, tělo ne. Chytře – když by hlava schovala moc velký kus slova, slovo se dá dopředu.</div>
-  <div class="chips" id="behindCh">${[['off','Vypnuto'],['head','Za hlavou (chytře)'],['on','Za celou postavou']].map(([v,l])=>`<div class="chip ${(cur().behind||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  ${cur().behind==='head'&&!(window.HEAD&&HEAD.data)?'<div class="note">Video se musí znovu projít – klepni na „Za hlavou“.</div>':''}
+  <div class="note">Titulek bude za člověkem (postava zakryje písmo).</div>
+  <div class="chips" id="behindCh">${[['off','Vypnuto'],['on','Za celou postavou']].map(([v,l])=>`<div class="chip ${(cur().behind||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+
   <div class="clabel">${I('palette','grad')} Barva z videa</div>
   <button class="btn" id="aiColor">Navrhnout barvy podle videa</button><div class="sugg" id="suggBox" style="margin-top:8px"></div>
   <div class="clabel">${I('ruler','grad')} Náklon podle scény</div>
