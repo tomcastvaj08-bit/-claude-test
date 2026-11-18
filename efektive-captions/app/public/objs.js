@@ -267,9 +267,43 @@ OBJ.draw = (c, W, H, t) => {
     // objevení / zmizení: krátké a plynulé (u začátku / konce záběru jen pár snímků, ať maska nebliká)
     const fin = clamp((t - o.s) / (o.fadeIn ?? 0.35)), fout = clamp((o.e - t) / (o.fadeOut ?? 0.3)), A = Math.min(fin, fout) * trkVis(o, t); if (A <= 0) continue;
     if (isH(o) || o.poly) { drawH(c, o, t, W, H, A); continue; }
-    const mc = maskCanvas(o), m = o._m, M = matrixFor(o, t, W, H);
+    let mc, m, MM;
+    if (isSeg(o)) {   // AI objekt: přesná maska z tohoto snímku (bez bodů)
+      const f = segFrame(o, t); if (!f) continue;
+      const ts = E.out2src ? E.out2src(t) : t, T = o.trk.t, v = clamp((ts - T[0] + 0.04) / 0.08) * clamp((T[T.length - 1] - ts + 0.04) / 0.08), A2 = A * v; if (A2 <= 0) continue;
+      const k = E.vxfAt ? (E.vxfAt(t) || { z: 100, x: 0, y: 0 }) : { z: 100, x: 0, y: 0 }, z = k.z / 100, b = f.b, R = o.trk.R, ar = o.trk.ar || W / H;
+      MM = new DOMMatrix(); MM.translateSelf(W / 2 + k.x / 100 * W, H / 2 + k.y / 100 * H); MM.scaleSelf(z, z); MM.translateSelf(-W / 2, -H / 2);
+      MM.scaleSelf(W, H); MM.translateSelf(b[0], b[1]); MM.scaleSelf(b[2] / R, b[2] * ar / R);
+      const q = Object.create(o); q._m = f.m; q._ct = f.ct; q._bb = f.bb;
+      drawMaskObj(c, q, t, W, H, f.mc, MM, A2); continue;
+    }
+    mc = maskCanvas(o); m = o._m; const M = matrixFor(o, t, W, H);
     const sm = new DOMMatrix().scaleSelf(1 / m.w, 1 / m.h);   // maskové px → normalizované
-    const MM = M.multiply(sm);
+    MM = M.multiply(sm);
+    drawMaskObj(c, o, t, W, H, mc, MM, A);
+  }
+};
+// AI objekt: snímek rozboru nejblíž času t (maska výřezu s měkkým okrajem a obrysem, uložené do mezipaměti)
+const isSeg = o => o.trk && o.trk.kind === 'seg' && o.trk.t && o.trk.t.length > 1;
+OBJ.isSeg = isSeg;
+function segFrame(o, t) {
+  const T = o.trk.t, ts = E.out2src ? E.out2src(t) : t; if (ts < T[0] - 0.05 || ts > T[T.length - 1] + 0.05) return null;
+  let lo = 0, hi = T.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (T[mid] < ts) lo = mid; else hi = mid; }
+  const i = Math.abs(T[lo] - ts) <= Math.abs(T[hi] - ts) ? lo : hi;
+  if (!o._sc || o._scK !== o.trk.m) { o._sc = new Map(); o._scK = o.trk.m; }
+  let f = o._sc.get(i);
+  if (!f) {
+    const m = OBJ.unrle(o.trk.m[i]), c = document.createElement('canvas'); c.width = m.w; c.height = m.h;
+    const x = c.getContext('2d'), id = x.createImageData(m.w, m.h), a = feather(m);
+    for (let k = 0; k < m.d.length; k++) { id.data[k * 4] = id.data[k * 4 + 1] = id.data[k * 4 + 2] = 255; id.data[k * 4 + 3] = a[k]; }
+    x.putImageData(id, 0, 0);
+    f = { m, mc: c, ct: OBJ.contours(m), bb: null, b: o.trk.b[i] };
+    o._sc.set(i, f); if (o._sc.size > 90) o._sc.delete(o._sc.keys().next().value);
+  }
+  return f;
+}
+function drawMaskObj(c, o, t, W, H, mc, MM, A) {
+  {
     // výplň (jemný barevný nádech)
     if ((o.fillA || 0) > 0) {
       if (!oc || oc.width !== W || oc.height !== H) { oc = document.createElement('canvas'); oc.width = W; oc.height = H; ox = oc.getContext('2d'); }
@@ -283,7 +317,7 @@ OBJ.draw = (c, W, H, t) => {
     // obrys
     if (o.line && o.line !== 'off') drawLine(c, o, t, W, H, MM, A);
   }
-};
+}
 // okno shine (blok na timeline); u starších objektů se doplní – jeden průjezd hned po začátku
 OBJ.shineWin = o => { o.shS = o.s; o.shE = o.e; };   // shine projede přes celý blok objektu na timeline (jeden blok = jeden průjezd)
 function screenBox(MM, m) { const P = [[0, 0], [m.w, 0], [m.w, m.h], [0, m.h]].map(([x, y]) => { const p = MM.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; }); return P; }
