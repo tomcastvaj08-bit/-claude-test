@@ -150,6 +150,7 @@ window.I18N_DICT.en={
 "Hotovo": "Done",
 "Hotovo – nová videa budou vypadat takhle": "Done – new videos will look like this",
 "Hotovo – objekt sledován": "Done – object tracked",
+"Hotovo – obličej sledován přesně podle AI": "Done – face tracked precisely with AI",
 "Hotovo – titulky se vyhnou obličeji": "Done – captions will avoid the face",
 "Houpavý shake": "Swaying shake",
 "Houpavý shake přidaný na místo hlavy": "Swaying shake added at playhead",

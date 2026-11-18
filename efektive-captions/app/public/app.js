@@ -2024,13 +2024,21 @@ async function trkRun(){
   try{
     v=await auxVideo();
     let last=0;
-    tr=await TRK.run({video:v, file:videoFile, t0, box, back:8, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; trkBarUpd(); } }, onFrame:(img,b)=>{ P.live={img,box:b}; }, cancel:()=>P.cancel});
+    const opt={video:v, file:videoFile, t0, box, back:8, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; trkBarUpd(); } }, onFrame:(img,b)=>{ P.live={img,box:b}; }, cancel:()=>P.cancel};
+    // obličej → přesné sledování podle AI bodů obličeje (bez ujíždění); když AI nejde načíst, běžné sledování
+    let fErr=false; try{ tr=await TRK.runFace(opt); }catch(e){ console.warn('obličej',e); tr=null; fErr=true; }
+    if (!tr && fErr && !P.cancel) tr=await TRK.run(opt);
+    // ne obličej: přesnější sledování v perspektivě (bez ujíždění) – použije se, když vydrží celý úsek
+    if (tr && tr.kind!=='face' && !P.cancel){ let B=null; try{ B=await TRK.runBox(opt); }catch(e){ console.warn(e); }
+      const n=tr.t.length; if (B && !P.cancel && B.t[0]<=tr.t[0]+0.1 && B.t[B.t.length-1]>=tr.t[n-1]-0.1) tr=B; }
   }catch(e){ console.warn(e); TRK.why='chyba: '+(e&&e.message||e); }
   if (v) freeVideo(v);
   trkEnd();
   if (!tr){ trkMsg(TRK.why==='prázdný obraz'?'Video se nepodařilo přečíst (prázdný obraz). Zkus video uložit znovu z Fotek a nahrát.':'Objekt se nepodařilo sledovat – zkus větší rámeček nebo výraznější místo'+(TRK.why?' ('+TRK.why+')':'')); return; }
   const id='k'+Date.now().toString(36);
-  E.tracks[id]={id, t0, smooth:55, scale:false, t:tr.t, x:tr.x, y:tr.y, s:tr.s, c:tr.c};
+  const face=tr.kind==='face';
+  // obličej: text drží těsně u hlavy a zvětšuje se s člověkem (jako v profi videích)
+  E.tracks[id]={id, t0, smooth:face?15:tr.precise?20:55, scale:face, face, t:tr.t, x:tr.x, y:tr.y, s:tr.s, c:tr.c};
   P.setId(id);
   // titulky: objekt sledují všechny titulky v úseku, kde se objekt sledoval
   let n=1;
@@ -2042,7 +2050,7 @@ async function trkRun(){
   const mx=Math.max(...tr.x)-Math.min(...tr.x), my=Math.max(...tr.y)-Math.min(...tr.y), mv=Math.round(Math.max(mx,my)*100);
   if (P.kind==='stab' && len>=1){ const inf=E.stabInfo(); trkMsg(`Stabilizace hotová (${L} s) – objekt stojí na místě, video je přiblížené na ${Math.round((inf?inf.zoom:1)*100)} %. Pusť video a uvidíš.`); return; }
   trkMsg(len<1 ? `Objekt se ztratil po ${L} s – zkus větší rámeček nebo výraznější místo${TRK.why?' ('+TRK.why+')':''}.`
-    : `Hotovo – objekt sledován ${L} s${P.kind==='page'?`, jede za ním ${n} ${n===1?'titulek':n<5?'titulky':'titulků'}`:''}. Objekt se na obrazovce posunul až o ${mv} %. Pusť video a uvidíš.`);
+    : `Hotovo – ${face?'obličej sledován přesně podle AI':'objekt sledován'} ${L} s${P.kind==='page'?`, jede za ním ${n} ${n===1?'titulek':n<5?'titulky':'titulků'}`:''}. Objekt se na obrazovce posunul až o ${mv} %. Pusť video a uvidíš.`);
 }
 // delší zpráva (déle vidět než běžný toast)
 function trkMsg(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),6000); }

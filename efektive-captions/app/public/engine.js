@@ -851,7 +851,7 @@ E.drawOverlay = (c, o, t) => {
   const q=clamp(since/0.5), eo=1-Math.pow(2,-10*q), fadeOut=clamp(left/0.25);
   let a=fadeOut, sx=1, sy=1, dx=0, dy=0, r=(o.rot||0)*Math.PI/180;
   let wpx=W*o.w/100;
-  const tro=o.trk?E.trkOffset(o.trk,t):null; if (tro && E.tracks[o.trk].scale) wpx*=tro.k;
+  const tro=o.trk?E.trkOffset(o.trk,t,o.x,o.y):null; if (tro && E.tracks[o.trk].scale) wpx*=tro.k;
   let h = wpx; if (o.src && (o.src.naturalWidth||o.src.videoWidth)) { const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; }
   const SRC=o._frame||o.src;   // při exportu předem přečtený snímek overlaye
   switch(o.anim){
@@ -926,7 +926,7 @@ E.capZ=0;
 E.ovZ=o=>o.z!=null? o.z : (o.above?1:-1)+E.overlays.indexOf(o)*0.001;
 E.ovAbove=o=>E.ovZ(o)>(E.capZ||0);
 E.ovOrder=()=>E.overlays.filter(o=>!o.full).sort((a,b)=>E.ovZ(a)-E.ovZ(b));
-E.overlayBox = (o) => { const W=cv.width,H=cv.height, tro=o.trk&&E._t!=null?E.trkOffset(o.trk,E._t):null; let wpx=W*o.w/100; if (tro && E.tracks[o.trk].scale) wpx*=tro.k; let h=wpx; if (o.src&&(o.src.naturalWidth||o.src.videoWidth)){ const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; } return {cx:W*(o.x+(tro?tro.dx:0))/100, cy:H*(o.y+(tro?tro.dy:0))/100, w:wpx, h}; };
+E.overlayBox = (o) => { const W=cv.width,H=cv.height, tro=o.trk&&E._t!=null?E.trkOffset(o.trk,E._t,o.x,o.y):null; let wpx=W*o.w/100; if (tro && E.tracks[o.trk].scale) wpx*=tro.k; let h=wpx; if (o.src&&(o.src.naturalWidth||o.src.videoWidth)){ const iw=o.src.naturalWidth||o.src.videoWidth, ih=o.src.naturalHeight||o.src.videoHeight; h=wpx*ih/iw; } return {cx:W*(o.x+(tro?tro.dx:0))/100, cy:H*(o.y+(tro?tro.dy:0))/100, w:wpx, h}; };
 
 // ---------- TEXT ZA POSTAVOU ----------
 // E.personMask(t) vrací canvas s maskou postavy (bílá = postava) nebo null; vyplňuje ai.js
@@ -1014,17 +1014,22 @@ E.tracks={};
 E.objs=[];   // zvýrazněné objekty – viz objs.js
 const KF0={z:100,x:0,y:0};
 E.trackSm=T=>{ if (!T._sm || T._smK!==T.smooth || T._smN!==T.t.length){ T._sm=window.TRK?TRK.smooth(T,T.smooth):null; T._smK=T.smooth; T._smN=T.t.length; } return T._sm; };
-E.trkOffset=(id,t)=>{
+// px, py = poloha titulku / overlaye (v % snímku): když se mění velikost s objektem, roste i jeho vzdálenost od bodu
+// (text nad hlavou zůstane nad hlavou, i když člověk přijde blíž)
+E.trkOffset=(id,t,px,py)=>{
   const T=E.tracks[id]; if (!T || !window.TRK || !T.t || T.t.length<2) return null;
   const S=E.trackSm(T); if (!S) return null;
   const ts=E.out2src?E.out2src(t):t, a=TRK.at(S,ts), b=TRK.at(S,T.t0);
   const k=E.vxfAt(t)||KF0, k0=E.vxfAt(E.src2out?E.src2out(T.t0):T.t0)||KF0;
   const X=(p,k)=>50+k.x+(p.x*100-50)*k.z/100, Y=(p,k)=>50+k.y+(p.y*100-50)*k.z/100;
-  return {dx:X(a,k)-X(b,k0), dy:Y(a,k)-Y(b,k0), k:(a.s/b.s)*(k.z/k0.z), x:X(a,k), y:Y(a,k)};
+  const K=(a.s/b.s)*(k.z/k0.z), ax=X(a,k), ay=Y(a,k), bx=X(b,k0), by=Y(b,k0);
+  let dx=ax-bx, dy=ay-by;
+  if (T.scale && px!=null){ dx+= (px-bx)*(K-1); dy+= (py-by)*(K-1); }
+  return {dx, dy, k:K, x:ax, y:ay};
 };
 // styl titulku v čase t (se sledováním objektu)
 E.styleAt=(p,t)=>{ const S=E.styleOf(p); const m=p&&E.meta[E.keyOf(p)];
-  if (m && m.trk && E.tracks[m.trk]){ const o=E.trkOffset(m.trk,t); if (o){ S.posX+=o.dx; S.posY+=o.dy; if (E.tracks[m.trk].scale) S.size*=o.k; } }
+  if (m && m.trk && E.tracks[m.trk]){ const o=E.trkOffset(m.trk,t,S.posX,S.posY); if (o){ S.posX+=o.dx; S.posY+=o.dy; if (E.tracks[m.trk].scale) S.size*=o.k; } }
   return S; };
 // ================= STABILIZACE NA OBJEKT =================
 // E.stab = {trk:id, smooth 0–100, scale:false}: video se v každém snímku posune (a jednou provždy přiblíží),

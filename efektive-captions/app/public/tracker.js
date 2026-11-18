@@ -866,4 +866,141 @@ TRK.affAt = (tr, ts, sm) => {
   const i = Math.min(S.n - 2, Math.floor(f)), u = f - i, i0 = Math.max(0, i - 1), i2 = Math.min(S.n - 1, i + 1), i3 = Math.min(S.n - 1, i + 2);
   return S.P.map(A => { const p0 = A[i0], p1 = A[i], p2 = A[i2], p3 = A[i3]; return 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (-p0 + 3 * p1 - 3 * p2 + p3) * u * u * u); });
 };
+// ================= SLEDOVÁNÍ OBLIČEJE (AI body obličeje v každém snímku) =================
+// Obličej se v každém snímku najde znovu (MediaPipe Face Landmarker – 478 bodů, běží přímo v zařízení, zdarma),
+// takže sledování nikdy „neujede“. Hledá se ve výřezu kolem místa, kde obličej byl (i malý obličej v dálce).
+// Z pevných bodů (čelo, oči, nos, spánky – ne pusa) se spočítá poloha, natočení a velikost hlavy;
+// sledovaný bod (kam uživatel klepl) se pak drží na stejném místě vůči hlavě.
+const MPV = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
+const FMODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+const RIGID = [10, 151, 9, 8, 168, 6, 197, 195, 5, 4, 1, 33, 133, 362, 263, 234, 454, 127, 356, 93, 323, 70, 300, 105, 334, 116, 345, 50, 280];
+let faceP = null;
+TRK.faceLoad = () => faceP || (faceP = (async () => {
+  const V = await import(MPV + '/vision_bundle.mjs');
+  const fs = await V.FilesetResolver.forVisionTasks(MPV + '/wasm');
+  const mk = d => V.FaceLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: FMODEL, delegate: d }, runningMode: 'IMAGE', numFaces: 4, minFaceDetectionConfidence: 0.3, minFacePresenceConfidence: 0.3, minTrackingConfidence: 0.3 });
+  try { return await mk('GPU'); } catch (e) { return await mk('CPU'); }
+})().catch(e => { faceP = null; throw e; }));
+// obličeje ve výřezu (x0, y0, strana) snímku → body v px snímku
+const cropC = document.createElement('canvas'), cropX = cropC.getContext('2d');
+function facesIn(fl, src, x0, y0, side) {
+  const cs = Math.round(Math.max(192, Math.min(512, side))); cropC.width = cs; cropC.height = cs;
+  cropX.fillStyle = '#000'; cropX.fillRect(0, 0, cs, cs);
+  cropX.drawImage(src, x0, y0, side, side, 0, 0, cs, cs);
+  const r = fl.detect(cropC); const out = [];
+  for (const L of (r.faceLandmarks || [])) {
+    const P = new Float32Array(L.length * 3);
+    for (let i = 0; i < L.length; i++) { P[i * 3] = x0 + L[i].x * side; P[i * 3 + 1] = y0 + L[i].y * side; P[i * 3 + 2] = L[i].z * side; }
+    out.push(P);
+  }
+  return out;
+}
+// poloha hlavy z pevných bodů: těžiště, velikost (3D – nemění se při otočení hlavy), natočení, rozměr obličeje
+function headPose(P) {
+  let cx = 0, cy = 0, cz = 0; const n = RIGID.length;
+  for (const i of RIGID) { cx += P[i * 3]; cy += P[i * 3 + 1]; cz += P[i * 3 + 2]; } cx /= n; cy /= n; cz /= n;
+  let ss = 0; for (const i of RIGID) ss += (P[i * 3] - cx) ** 2 + (P[i * 3 + 1] - cy) ** 2 + (P[i * 3 + 2] - cz) ** 2;
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (let i = 0; i < 468; i++) { const x = P[i * 3], y = P[i * 3 + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  return { cx, cy, s: Math.sqrt(ss / n), a: Math.atan2(P[263 * 3 + 1] - P[33 * 3 + 1], P[263 * 3] - P[33 * 3]), fw: Math.max(x1 - x0, y1 - y0), P };
+}
+// natočení mezi dvěma snímky z pevných bodů (2D Procrustes)
+function relAngle(A, B, pa, pb) {
+  let sc = 0, sn = 0;
+  for (const i of RIGID) { const ax = A[i * 3] - pa.cx, ay = A[i * 3 + 1] - pa.cy, bx = B[i * 3] - pb.cx, by = B[i * 3 + 1] - pb.cy; sc += ax * bx + ay * by; sn += ax * by - ay * bx; }
+  return Math.atan2(sn, sc);
+}
+// Postup: 1) běžné sledování rámečku (funguje i pro malý obličej v dálce) = vodítko,
+// 2) v každém snímku AI najde obličej ve výřezu kolem vodítka a dá přesnou polohu (bez ujíždění),
+// 3) kde obličej najít nejde (moc malý, otočený, zakrytý rukou), jede vodítko posunuté tak, aby navazovalo.
+// box = rámeček kolem obličeje (normalizovaný, jako u TRK.run); vrací stejný tvar dráhy jako TRK.run + kind:'face'
+TRK.runFace = async (o) => {
+  const { video, file, onP, cancel } = o;
+  const fl = await TRK.faceLoad();
+  // 1) vodítko
+  const L = await TRK.run({ ...o, onP: p => onP && onP(p * 0.3) });
+  if (!L) return null;
+  const whyL = TRK.why;
+  const vw = video.videoWidth || 1080, vh = video.videoHeight || 1920, ar = vw / vh;
+  const long = Math.min(o.long || 1280, Math.max(vw, vh)), W = Math.round(ar >= 1 ? long : long * ar) & ~1, H = Math.round(ar >= 1 ? long / ar : long) & ~1;
+  const fps = 30, n = L.t.length, ta = L.t[0], tb = L.t[n - 1];
+  const BW = o.box.w * W, BH = o.box.h * H, fw0 = Math.max(BW, BH);
+  const iOf = t => { let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (L.t[m] < t) lo = m; else hi = m; } return Math.abs(L.t[lo] - t) <= Math.abs(L.t[hi] - t) ? lo : hi; };
+  let lastYield = performance.now(); const breathe = async () => { if (performance.now() - lastYield > 40) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); } };
+  // je v rámečku vůbec obličej? (snímek, kde uživatel ukázal) – když ne, stačí běžné sledování
+  { let ok = false;
+    for await (const fr of TRK.frames({ file, video, t0: L.t0, t1: L.t0 + 0.04, fps, W, H })) {
+      const px = o.box.cx * W, py = o.box.cy * H;
+      for (const k of [2.8, 5]) { const side = Math.max(120, fw0 * k); if (facesIn(fl, fr.canvas, px - side / 2, py - side / 2, side).some(P => { const q = headPose(P); return Math.hypot(q.cx - px, q.cy - py) < Math.max(fw0, q.fw) * 0.8; })) { ok = true; break; } }
+      break;
+    }
+    if (!ok) { TRK.why = whyL; return { ...L, kind: 'box' }; } }
+  // 2) obličej v každém snímku (jen pozice hlavy; bod vůči hlavě se dopočítá až podle výchozího snímku)
+  const heads = new Array(n).fill(null);
+  let cur = null, miss = 99;
+  for await (const fr of TRK.frames({ file, video, t0: ta, t1: tb, fps, W, H })) {
+    if (cancel && cancel()) break;
+    const i = iOf(fr.t); if (Math.abs(L.t[i] - fr.t) > 0.5 / fps) continue;
+    onP && onP(0.3 + 0.7 * (fr.t - ta) / Math.max(1e-3, tb - ta));
+    const gx = L.x[i] * W, gy = L.y[i] * H, gfw = fw0 * L.s[i];
+    // předpověď: z obličeje v minulém snímku (pohyb podle vodítka), jinak vodítko
+    let px = gx, py = gy, fw = gfw;
+    if (cur && miss < 4) { const j = iOf(fr.t - (miss + 1) / fps); px = cur.cx + (gx - L.x[j] * W); py = cur.cy + (gy - L.y[j] * H); fw = cur.fw; }
+    let h = null;
+    for (const k of [2.8, 5]) {
+      const side = Math.max(120, fw * k);
+      h = null; let bd = 1e9;
+      for (const P of facesIn(fl, fr.canvas, px - side / 2, py - side / 2, side)) { const q = headPose(P), d = Math.hypot(q.cx - px, q.cy - py); if (d < Math.max(fw, q.fw) * 0.7 && d < bd) { bd = d; h = q; } }
+      if (h) break;
+    }
+    // velikost nesmí skočit (jiný obličej / chyba)
+    if (h && cur && miss < 8 && (h.s > cur.s * 1.3 || h.s < cur.s / 1.3)) h = null;
+    if (h) { heads[i] = h; cur = h; miss = 0; } else miss++;
+    if (o.onFrame && fr.canvas && i % 2 === 0) o.onFrame(fr.canvas, h ? { cx: h.cx / W, cy: h.cy / H, w: h.fw / W, h: h.fw / H } : { cx: gx / W, cy: gy / H, w: gfw / W, h: gfw / H });
+    await breathe();
+  }
+  // výchozí snímek s obličejem co nejblíž bodu, kam uživatel ukázal (t0)
+  let r0 = -1; for (let i = 0; i < n; i++) if (heads[i] && (r0 < 0 || Math.abs(L.t[i] - L.t0) < Math.abs(L.t[r0] - L.t0))) r0 = i;
+  const found = heads.filter(Boolean).length;
+  if (r0 < 0 || found < Math.max(3, n * 0.15)) { TRK.why = whyL; return { ...L, kind: 'box' }; }
+  const ref = heads[r0], ux = L.x[r0] * W - ref.cx, uy = L.y[r0] * H - ref.cy, s0 = L.s[r0];
+  // bod (kam uživatel ukázal) v každém snímku s obličejem: drží se na stejném místě vůči hlavě (posun, natočení, velikost)
+  const F = heads.map(h => { if (!h) return null; const da = relAngle(ref.P, h.P, ref, h), k = h.s / ref.s, c = Math.cos(da), sn = Math.sin(da);
+    return { x: (h.cx + k * (c * ux - sn * uy)) / W, y: (h.cy + k * (sn * ux + c * uy)) / H, s: k * s0 }; });
+  // osamělé chyby pryč: bod, který skočí mimo sousedy (vůči vodítku), se zahodí
+  for (let i = 0; i < n; i++) { if (!F[i]) continue; const ds = []; for (let j = Math.max(0, i - 4); j <= Math.min(n - 1, i + 4); j++) if (j !== i && F[j]) ds.push([F[j].x - L.x[j], F[j].y - L.y[j]]);
+    if (ds.length >= 3) { const mx = med(ds.map(d => d[0])), my = med(ds.map(d => d[1])); if (Math.hypot((F[i].x - L.x[i] - mx) * W, (F[i].y - L.y[i] - my) * H) > Math.max(3, heads[i].fw * 0.12)) F[i] = null; } }
+  // 3) spojení: obličej, kde je; mezi tím vodítko + plynule dopočítaný rozdíl (aby nic neskočilo)
+  const x = new Array(n), y = new Array(n), s = new Array(n), c = new Array(n);
+  const idx = []; for (let i = 0; i < n; i++) if (F[i]) idx.push(i);
+  let p = 0;
+  for (let i = 0; i < n; i++) {
+    if (F[i]) { x[i] = F[i].x; y[i] = F[i].y; s[i] = F[i].s; c[i] = 1; while (p < idx.length - 1 && idx[p + 1] <= i) p++; continue; }
+    while (p < idx.length - 1 && idx[p + 1] < i) p++;
+    const a = idx[p] < i ? idx[p] : null, b = idx.find(j => j > i);
+    const dOf = j => [F[j].x - L.x[j], F[j].y - L.y[j], Math.log(F[j].s / L.s[j])];
+    let d;
+    if (a != null && b != null) { const u = (L.t[i] - L.t[a]) / (L.t[b] - L.t[a]), da = dOf(a), db = dOf(b); d = da.map((v, k) => v + (db[k] - v) * u); }
+    else d = dOf(a != null ? a : b);
+    x[i] = L.x[i] + d[0]; y[i] = L.y[i] + d[1]; s[i] = L.s[i] * Math.exp(d[2]); c[i] = 0.5;
+  }
+  TRK.why = whyL;
+  return { kind: 'face', t: L.t.slice(), x, y, s, c, t0: L.t0, faces: found };
+};
+// ================= PŘESNÉ SLEDOVÁNÍ RÁMEČKU (bez ujíždění) =================
+// Rámeček se sleduje jako plocha v perspektivě (stejně jako maska): body se v každém snímku zpřesní proti výchozímu
+// snímku, takže se chyba nesčítá. Výsledek ve stejném tvaru jako TRK.run (bod + velikost).
+TRK.runBox = async (o) => {
+  const { box } = o, x0 = box.cx - box.w / 2, x1 = box.cx + box.w / 2, y0 = box.cy - box.h / 2, y1 = box.cy + box.h / 2;
+  const tr = await TRK.runPlanar({ ...o, poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], back: o.back != null ? o.back : 8,
+    onFrame: o.onFrame && ((cv, rec) => { const p = hApply(rec.H, box.cx, box.cy); o.onFrame(cv, { cx: p[0], cy: p[1], w: box.w, h: box.h }); }) });
+  if (!tr || tr.t.length < 2) return null;
+  const vw = o.video.videoWidth || 1080, vh = o.video.videoHeight || 1920, e = 0.002;
+  const x = [], y = [], sc = [];
+  for (const Hm of tr.H) {
+    const p = hApply(Hm, box.cx, box.cy), a = hApply(Hm, box.cx + e, box.cy), b = hApply(Hm, box.cx, box.cy + e * vw / vh);
+    const d1 = [(a[0] - p[0]) * vw, (a[1] - p[1]) * vh], d2 = [(b[0] - p[0]) * vw, (b[1] - p[1]) * vh];
+    x.push(p[0]); y.push(p[1]); sc.push(Math.sqrt(Math.abs(d1[0] * d2[1] - d1[1] * d2[0])) / (e * vw));
+  }
+  return { kind: 'box', precise: true, t: tr.t, x, y, s: sc, c: tr.c, t0: tr.t0 };
+};
 })(window);
