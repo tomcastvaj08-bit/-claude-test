@@ -838,13 +838,16 @@ function reLayout(){
     if (sg){
       // hlava po CELOU dobu titulku (ne jen na začátku): nejvyšší vršek hlavy a nejnižší brada → titulek nikdy nevleze do obličeje,
       // ani když se člověk přiblíží nebo kamera přiblíží
-      let top=1e9, chin=-1e9, cxs=0, nn=0, fw=0;
-      for (let j=0;j<sg.t.length;j++){ if (sg.t[j]<t1-0.04 || sg.t[j]>t2+0.04) continue; top=Math.min(top,sg.top[j]); chin=Math.max(chin,sg.y[j]+0.8*sg.f[j]); cxs+=sg.x[j]; nn++; fw=Math.max(fw,sg.f[j]); }
-      if (!nn){ let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=t1) i++; top=sg.top[i]; chin=sg.y[i]+0.8*sg.f[i]; cxs=sg.x[i]; nn=1; fw=sg.f[i]; }
-      const cx=cxs/nn;
+      let top=1e9, chin=-1e9, cxs=0, nn=0, fw=0, brow=1e9; const tops=[];
+      for (let j=0;j<sg.t.length;j++){ if (sg.t[j]<t1-0.04 || sg.t[j]>t2+0.04) continue; top=Math.min(top,sg.top[j]); tops.push(sg.top[j]); brow=Math.min(brow,sg.y[j]-0.42*sg.f[j]); chin=Math.max(chin,sg.y[j]+0.8*sg.f[j]); cxs+=sg.x[j]; nn++; fw=Math.max(fw,sg.f[j]); }
+      if (!nn){ let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=t1) i++; top=sg.top[i]; tops.push(top); brow=sg.y[i]-0.42*sg.f[i]; chin=sg.y[i]+0.8*sg.f[i]; cxs=sg.x[i]; nn=1; fw=sg.f[i]; }
+      const cx=cxs/nn, topMed=tops.sort((a,b)=>a-b)[tops.length>>1];
       let r=role; if (r==='top' && top<H*0.14) r='chest'; if (r==='chest' && chin+fw*1.4>H*0.92) r='top';
       // nahoře: spodní řádek (velké slovo) spodní částí za vlasy; dole: celý titulek pod bradou, před tělem
-      posY = r==='top' ? (top-(lb.em?0.04:-0.06)*lb.px-(lb.y-y0))/H*100 : (chin+0.3*fw-tb)/H*100;
+      // nahoře: velké slovo ZA HLAVOU – hlava překryje zhruba spodní polovinu písmen (jako v předloze),
+      // ale spodek písmen nikdy neklesne pod čelo (oči a obličej zůstanou vždy vidět)
+      let cyL = lb.em ? Math.min(topMed+0.1*lb.px, brow-0.38*lb.px) : top-0.05*lb.px;
+      posY = r==='top' ? (cyL-(lb.y-y0))/H*100 : (chin+0.3*fw-tb)/H*100;
       posX = cx/W*100; }
     // mix rozmístění: dvojice se střídavě lehce posunou doleva / doprava od hlavy
     const pair=Math.floor(k/2), jig=[0,-5,4,-2,6,-4][(pair+(E.G.reSeed||0))%6];
