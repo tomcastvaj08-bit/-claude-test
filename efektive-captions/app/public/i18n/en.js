@@ -956,5 +956,16 @@ window.I18N_DICT.en={
 "Barvy do mixu (klepnutím přidáš / ubereš)": "Colors in the mix (tap to add / remove)",
 "Stabilizovat na obličej (nos pořád uprostřed)": "Stabilize on the face (nose always centered)",
 "Přiblížení videa": "Video zoom",
-"Víc přiblížení = obličej víc drží uprostřed i když se člověk hýbe do stran.": "More zoom = the face stays centered even when the person moves sideways."
+"Víc přiblížení = obličej víc drží uprostřed i když se člověk hýbe do stran.": "More zoom = the face stays centered even when the person moves sideways.",
+"Stabilizace": "Stabilize",
+"Stabilizace na obličej": "Face stabilization",
+"Video se přiblíží a posouvá tak, aby obličej (nos) byl pořád uprostřed – jako v realitních reels. Titulky zůstanou, jak je máš.": "The video zooms in and moves so the face (nose) always stays centered – like in real estate reels. Your captions stay as they are.",
+"Zapnout stabilizaci": "Turn on stabilization",
+"Vypnout stabilizaci": "Turn off stabilization",
+"Výška obličeje": "Face height",
+"Víc přiblížení = obličej drží uprostřed i když se člověk hýbe víc do stran.": "More zoom = the face stays centered even when the person moves more sideways.",
+"Napoprvé appka projde video a najde obličej v každém snímku (chvíli to trvá).": "The first time, the app goes through the video and finds the face in every frame (takes a while).",
+"Hledám obličej v každém snímku… # %": "Finding the face in every frame… # %",
+"Stabilizace vypnutá": "Stabilization off",
+"Hotovo – obličej je pořád uprostřed": "Done – the face stays centered"
 };

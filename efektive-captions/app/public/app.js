@@ -123,6 +123,7 @@ function restore(json){
   dedupeWords();
   { const fix=o=>{ if (o && o.gloss && o.gloss!=='off' && o.gloss!=='gloss') o.gloss='gloss'; }; fix(E.G); for (const k in E.meta) fix(E.meta[k].own); }   // 3D lesk má jen jeden styl
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
+  if (E.G.reMode && window.RE){ try{ reLegacyOff(); }catch(e){ console.warn(e); } }   // Reality (text za hlavou) zrušen → jen stabilizace
   E.face=Array.isArray(s.face)?s.face:null;
   E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
   E.stab=s.stab && s.stab.trk && E.tracks[s.stab.trk] ? {...s.stab} : null;
@@ -469,7 +470,7 @@ function videoNow(now){ // nejlepší odhad skutečného času videa
 // (jinak se na iPhonu občas kreslí o snímek jiný obraz než posun → video se chvěje)
 const vcap=document.createElement('canvas'), vcx=vcap.getContext('2d');
 if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid._mt=md.mediaTime;
-    if (E.G.reMode && E.G.reStab!==false && !vid.paused && vid.videoWidth){ const sc=Math.min(1,1920/Math.max(vid.videoWidth,vid.videoHeight)), w=Math.round(vid.videoWidth*sc), h=Math.round(vid.videoHeight*sc); if (vcap.width!==w||vcap.height!==h){ vcap.width=w; vcap.height=h; } try{ vcx.drawImage(vid,0,0,w,h); vid._cap=vcap; vid._capT=md.mediaTime; }catch(e){ vid._cap=null; } } else vid._cap=null;
+    if (window.RE && RE.stabOn() && !vid.paused && vid.videoWidth){ const sc=Math.min(1,1920/Math.max(vid.videoWidth,vid.videoHeight)), w=Math.round(vid.videoWidth*sc), h=Math.round(vid.videoHeight*sc); if (vcap.width!==w||vcap.height!==h){ vcap.width=w; vcap.height=h; } try{ vcx.drawImage(vid,0,0,w,h); vid._cap=vcap; vid._capT=md.mediaTime; }catch(e){ vid._cap=null; } } else vid._cap=null;
     vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
 vid.addEventListener('playing',()=>{ if (swapQuiet) return; clkReset(); clk.run=true; });
 ['pause','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ if (swapQuiet) return; clk.run=false; clkReset(); }));
@@ -786,47 +787,39 @@ const binders={};
 // ---------- REAL ESTATE STYL (v2) ----------
 // Vše se počítá v reality.js při vykreslení – zapnout / vypnout, barvy a rozmístění; titulky se nijak nepřepisují.
 function pRe(){
-  const on=!!E.G.reMode, pl=E.G.rePlace||'alt', mix=RE.mix();
-  const cols=Object.entries(RE.COLORS).map(([n,[a,b]])=>`<div class="d3c ${mix.includes(n)?'on':''}" data-n="${n}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('');
-  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Jako v realitních reels: slova vystřelí po jednom ze stran, malá bílá + velká barevná. Titulky jdou po dvojicích – horní za hlavou (spodek písmen za vlasy), dolní na hrudi. Obličej se nikdy nezakryje.</small></div></div>
-  <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout Real estate styl':'Zapnout Real estate styl'}</button>
-  ${on?`<div class="clabel">Barvy do mixu (klepnutím přidáš / ubereš)</div><div class="d3cols" id="reCols">${cols}</div>
-  <div class="clabel">Kde jsou titulky</div>
-  <div class="chips" id="rePl">${[['alt','Dvojice: za hlavou + na hrudi'],['top','Vždy za hlavou'],['chest','Vždy na hrudi']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  <div class="row"><span>Stabilizovat na obličej (nos pořád uprostřed)</span><input type="checkbox" class="sw" id="reStab" ${E.G.reStab!==false?'checked':''}></div>
-  ${E.G.reStab!==false?`<label class="ctl"><div class="lb"><span>Přiblížení videa</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label><div class="note">Víc přiblížení = obličej víc drží uprostřed i když se člověk hýbe do stran.</div>`:''}
-  <button class="btn" id="reRedo">${I('refresh','grad')} Zamíchat barvy a rozmístění</button>
-  ${window.HEAD&&HEAD.data?'':`<button class="btn" id="reHead">${I('user','grad')} Najít hlavu ve videu (pro text za hlavou)</button>`}`:''}
-  <div class="note">Po zapnutí appka jednou projde video a najde hlavu (chvíli to trvá). Pak se titulky rozmístí samy – i po úpravě textu nebo času. Titulek můžeš posunout prstem, pak zůstane, kde ho dáš.</div>`;
+  const on=!!E.G.faceStab;
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-user"/></svg><div><b>Stabilizace na obličej</b><small>Video se přiblíží a posouvá tak, aby obličej (nos) byl pořád uprostřed – jako v realitních reels. Titulky zůstanou, jak je máš.</small></div></div>
+  <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout stabilizaci':'Zapnout stabilizaci'}</button>
+  ${on?`<label class="ctl"><div class="lb"><span>Přiblížení videa</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label>
+  <label class="ctl"><div class="lb"><span>Výška obličeje</span><span id="reNoseV">${E.G.reNoseY||39} %</span></div><input type="range" id="reNose" min="25" max="60" value="${E.G.reNoseY||39}"></label>
+  <div class="note">Víc přiblížení = obličej drží uprostřed i když se člověk hýbe víc do stran.</div>`:''}
+  <div class="note">Napoprvé appka projde video a najde obličej v každém snímku (chvíli to trvá).</div>`;
 }
 async function reHead(btn){
-  if (window.HEAD && HEAD.data) return true;
+  if (window.HEAD && HEAD.data && HEAD.data.nx) return true;
   const v=await auxVideo(); vid.pause(); if (btn) btn.disabled=true;
-  try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ if (btn) btn.textContent='Hledám hlavu v každém snímku… '+Math.round(pp*100)+' %'; }}); headSave(); }
-  catch(e){ console.warn(e); toast('Hlavu se nepodařilo najít: '+(e.message||e)); freeVideo(v); return false; }
+  try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ if (btn) btn.textContent='Hledám obličej v každém snímku… '+Math.round(pp*100)+' %'; }}); headSave(); }
+  catch(e){ console.warn(e); toast('Obličej se nepodařilo najít: '+(e.message||e)); freeVideo(v); return false; }
   freeVideo(v); RE.invalidate(); return true;
 }
-async function reToggle(btn){
-  // úklid po první verzi (zapsané polohy, velikosti, barvy a vrstvy v titulcích)
+// starý Reality mód (titulky za hlavou) → vypnout a vrátit vzhled titulků; zůstane jen stabilizace
+function reLegacyOff(){
+  if (!E.G.reMode) return; const stab=E.G.reStab!==false;
   for (const k in E.meta){ const m=E.meta[k]; if (!m) continue; if (m.reL){ delete m.layer; delete m.eo; delete m.reL; } if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk;
-    if (m.own && (E.G.reMode || m.own._manualPos)) for (const x of ['posX','posY','_manualPos','size','grad','gA','gB','gradDir','c1','c2','c3','c4','reMoved']) delete m.own[x]; }
+    if (m.own) for (const x of ['posX','posY','_manualPos','size','grad','gA','gB','gradDir','c1','c2','c3','c4','reMoved']) delete m.own[x]; }
   for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
-  if (E.G.reMode){
-    E.G.reMode=false; const B=E.TEMPLATES.base.set; for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]); E.G.noSlots=false; E.G.emEach=false; E.G.behind='off';
-    E.buildPages(); RE.invalidate(); changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
-  Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel();
-  toast('Real estate styl zapnutý – hledám hlavu ve videu…');
-  const ok=await reHead($('reHead')||btn); E.buildPages(); RE.invalidate(); changed(); renderPanel();
-  toast(ok?'Hotovo – titulky jsou rozmístěné podle hlavy':'Titulky jsou nahoře a dole (hlava se nenašla)');
+  const B=E.TEMPLATES.base.set; for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]);
+  E.G.reMode=false; E.G.noSlots=false; E.G.emEach=false; E.G.behind='off'; E.G.faceStab=stab; E.buildPages(); RE.invalidate();
+}
+async function reToggle(btn){
+  if (E.G.faceStab){ E.G.faceStab=false; RE.invalidate(); changed(); renderPanel(); toast('Stabilizace vypnutá'); return; }
+  const ok=await reHead(btn); if (!ok){ renderPanel(); return; }
+  E.G.faceStab=true; RE.invalidate(); changed(); renderPanel(); toast('Hotovo – obličej je pořád uprostřed');
 }
 binders.re=()=>{
   $('reOn').onclick=()=>reToggle($('reOn'));
-  if ($('reCols')) $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const n=c.dataset.n; let m=RE.mix().slice(); m=m.includes(n)?m.filter(x=>x!==n):m.concat(n); if (!m.length) return; E.G.reMix=m; RE.invalidate(); changed(); renderPanel(); };
-  if ($('rePl')) $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; E.buildPages(); RE.invalidate(); changed(); renderPanel(); };
-  if ($('reStab')) $('reStab').onchange=e=>{ E.G.reStab=e.target.checked; RE.invalidate(); changed(); renderPanel(); };
-  if ($('reZoom')){ $('reZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('reZoomV').textContent=E.G.reZoom+' %'; RE.invalidate(); }; $('reZoom').onchange=()=>changed(); }
-  if ($('reRedo')) $('reRedo').onclick=()=>{ E.G.reSeed=((E.G.reSeed||0)+1)%60; RE.invalidate(); changed(); toast('Zamícháno'); };
-  if ($('reHead')) $('reHead').onclick=async()=>{ await reHead($('reHead')); changed(); renderPanel(); };
+  if ($('reZoom')){ $('reZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('reZoomV').textContent=E.G.reZoom+' %'; }; $('reZoom').onchange=()=>changed(); }
+  if ($('reNose')){ $('reNose').oninput=e=>{ E.G.reNoseY=+e.target.value; $('reNoseV').textContent=E.G.reNoseY+' %'; }; $('reNose').onchange=()=>changed(); }
 };
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
 function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+E.clipDur(c); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }

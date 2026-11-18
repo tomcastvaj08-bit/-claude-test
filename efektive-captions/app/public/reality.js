@@ -21,6 +21,8 @@ RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', 
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
   shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'head', reStab: true, reZoom: 130 };
 RE.on = () => !!(E.G.reMode);
+// stabilizace na obličej: samostatně (E.G.faceStab) nebo jako součást starého Reality módu
+RE.stabOn = () => !!(E.G.faceStab || (E.G.reMode && E.G.reStab !== false));
 
 // ---------- hlava během titulku (z rozboru HEAD) ----------
 // vrací {top, topMed, brow, chin, fw, cx} v px plátna, nebo null (v tomhle úseku videa obličej není)
@@ -83,7 +85,7 @@ function headSmooth(sg, ts, sig) {
   return sw ? [sx / sw, sy / sw] : [sg.x[0], sg.y[0]];
 }
 RE.stab = t => {
-  if (!RE.on() || E.G.reStab === false || !(g.HEAD && HEAD.data)) return null;
+  if (!RE.stabOn() || !(g.HEAD && HEAD.data)) return null;
   const W = E._cvW(), H = E._cvH(), segs = segments(W, H); if (!segs.length) return null;
   const ts = E._fT != null ? E._fT : E.out2src(t), Z = Math.max(1, Math.min(2, (E.G.reZoom || 130) / 100));
   let sg = segs.find(q => ts >= q.t[0] - 0.02 && ts <= q.t[q.t.length - 1] + 0.02), w = 1;
