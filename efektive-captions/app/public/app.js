@@ -775,12 +775,12 @@ function renderPanel(){
 }
 const binders={};
 // ---------- REAL ESTATE STYL ----------
-// Samostatný mód: AI najde hlavu v každém snímku → titulky se k ní přilepí (tracking, mění velikost s člověkem),
+// Samostatný mód: AI najde hlavu v každém snímku → každý titulek se umístí podle hlavy a pak stojí na místě (titulky se netrackují),
 // velké slovo jde za hlavu (chytře – nikdy neschová celé slovo), menší řádek nad hlavou nebo titulek před tělem.
 function pRe(){
   const on=!!E.G.reMode, pl=E.G.rePlace||'alt';
   const cols=TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${E.G.grad&&E.G.gA===a&&E.G.gB===b?'on':''}" data-a="${a}" data-b="${b}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('');
-  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Titulky se přilepí k hlavě a jdou s člověkem, velké slovo je za hlavou, menší nad ní nebo před tělem. Chytře – hlava nikdy neschová celé slovo.</small></div></div>
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Titulky se rozmístí podle hlavy (nad hlavu, za hlavu nebo před tělo) a pak stojí na svém místě – nehýbou se a nemění velikost. Chytře – hlava nikdy neschová celé slovo.</small></div></div>
   <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout Real estate styl':'Zapnout Real estate styl'}</button>
   <div class="clabel">Barva hlavního slova</div><div class="d3cols" id="reCols">${cols}</div>
   <div class="clabel">Kde jsou titulky</div>
@@ -829,10 +829,7 @@ function reLayout(){
     else { const tb=Math.min(...lines.map(L=>L.y-L.px*0.55)); posY=(chin+0.3*fw-(tb-y0))/H*100; }   // celý titulek pod bradou, před tělem
     const half=Math.max(...lines.map(L=>L.total))/2/W*100;
     m.own.posX=Math.max(half+4,Math.min(96-half,cx/W*100)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
-    // vlastní dráha pro titulek: hlava od začátku do konce titulku (výchozí okamžik = začátek titulku)
-    const a=E.out2src(p.s)-0.5, b=E.out2src(p.e)+0.5, T={id:'re_'+k, t0:ts, smooth:25, scale:true, face:true, t:[], x:[], y:[], s:[], c:[]};
-    for (let j=0;j<sg.t.length;j++){ if (sg.t[j]<a||sg.t[j]>b) continue; T.t.push(sg.t[j]); T.x.push(sg.x[j]/W); T.y.push(sg.y[j]/H); T.s.push(sg.f[j]/fw); T.c.push(1); }
-    if (T.t.length>=3){ E.tracks[T.id]=T; m.trk=T.id; }
+    // titulek se NEhýbe s hlavou a nemění velikost – jen se na začátku umístí podle hlavy a pak stojí na svém místě
     n++;
   });
   return n;
@@ -850,7 +847,7 @@ async function reToggle(btn){
   const set={...E.TEMPLATES.base.set}; delete set.posX; delete set.posY;
   Object.assign(E.G, set, keep, {gloss:'gloss', glossOn:'main', behind:'head', reMode:true, style:'base'});
   const n=reLayout(); changed(); renderPanel();
-  toast(n?`Hotovo – ${n} ${n===1?'titulek jde':n<5?'titulky jdou':'titulků jde'} s hlavou`:'Ve videu jsem nenašel obličej – titulky zůstaly, kde byly');
+  toast(n?`Hotovo – ${n} ${n===1?'titulek umístěn':n<5?'titulky umístěny':'titulků umístěno'} podle hlavy`:'Ve videu jsem nenašel obličej – titulky zůstaly, kde byly');
 }
 binders.re=()=>{
   $('reOn').onclick=()=>reToggle($('reOn'));
@@ -2179,7 +2176,7 @@ async function trkRun(){
   const id='k'+Date.now().toString(36);
   const face=tr.kind==='face';
   // obličej: text drží těsně u hlavy a zvětšuje se s člověkem (jako v profi videích)
-  E.tracks[id]={id, t0, smooth:face?25:tr.precise?25:55, scale:face, face, t:tr.t, x:tr.x, y:tr.y, s:tr.s, c:tr.c};
+  E.tracks[id]={id, t0, smooth:face?25:tr.precise?35:55, scale:face&&P.kind!=='page', face, t:tr.t, x:tr.x, y:tr.y, s:tr.s, c:tr.c};
   P.setId(id);
   // titulky: objekt sledují všechny titulky v úseku, kde se objekt sledoval
   let n=1;

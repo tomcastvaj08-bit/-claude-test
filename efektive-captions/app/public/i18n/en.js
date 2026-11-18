@@ -887,7 +887,7 @@ window.I18N_DICT.en={
 "Real estate styl": "Real estate style",
 "Zapnout Real estate styl": "Turn on Real estate style",
 "Vypnout Real estate styl": "Turn off Real estate style",
-"Titulky se přilepí k hlavě a jdou s člověkem, velké slovo je za hlavou, menší nad ní nebo před tělem. Chytře – hlava nikdy neschová celé slovo.": "Captions stick to the head and move with the person, the big word sits behind the head, the smaller one above it or in front of the body. Smart – the head never hides a whole word.",
+"Titulky se rozmístí podle hlavy (nad hlavu, za hlavu nebo před tělo) a pak stojí na svém místě – nehýbou se a nemění velikost. Chytře – hlava nikdy neschová celé slovo.": "Captions are placed by the head (above it, behind it or in front of the body) and then stay in place – they don't move or resize. Smart – the head never hides a whole word.",
 "Barva hlavního slova": "Main word color",
 "Kde jsou titulky": "Where the captions go",
 "Střídat: nad hlavou / před tělem": "Alternate: above the head / in front of the body",
@@ -899,7 +899,7 @@ window.I18N_DICT.en={
 "Real estate styl vypnutý": "Real estate style off",
 "Ve videu jsem nenašel obličej – titulky zůstaly, kde byly": "No face found in the video – captions stayed where they were",
 "Rozmístěno znovu (#)": "Placed again (#)",
-"Hotovo – # titulek jde s hlavou": "Done – # caption follows the head",
-"Hotovo – # titulky jdou s hlavou": "Done – # captions follow the head",
-"Hotovo – # titulků jde s hlavou": "Done – # captions follow the head"
+"Hotovo – # titulek umístěn podle hlavy": "Done – # caption placed by the head",
+"Hotovo – # titulky umístěny podle hlavy": "Done – # captions placed by the head",
+"Hotovo – # titulků umístěno podle hlavy": "Done – # captions placed by the head"
 };
