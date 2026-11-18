@@ -349,7 +349,18 @@ let AC=null, lastT=0;
 function audioSessionPlayback(){ try{ if (navigator.audioSession && navigator.audioSession.type!=='playback') navigator.audioSession.type='playback'; }catch(e){} }
 audioSessionPlayback();
 function ensureAC(){ audioSessionPlayback(); if (!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } if (AC.state==='suspended') AC.resume(); }
-function playSfx(x){ ensureAC(); const ev=typeof x==='string'?{type:x}:x; E.sfxInto(AC,AC.destination,AC.currentTime,ev.type,ev.vol??E.G.sfxVol/100,ev.dur); }
+function playSfx(x,late){ ensureAC(); const ev=typeof x==='string'?{type:x}:x; E.sfxInto(AC,AC.destination,ev.type==='custom'?AC.currentTime-(late||0):AC.currentTime,ev.type,ev.vol??E.G.sfxVol/100,ev.dur,ev.buf); }
+// ---------- VLASTNÍ ZVUKY PŘECHODŮ: uloží se jednou v zařízení a platí pro všechny projekty ----------
+async function trSfxLoadAll(){ try{ const all=await dbDo('readonly',st=>st.getAll(),'files'); for (const r of all||[]) if (r && typeof r.id==='string' && r.id.startsWith('trsfx|') && r.file) await trSfxSet(r.id.slice(6), r.file, false); }catch(e){ console.warn('Zvuky přechodů',e); } }
+async function trSfxSet(tr, blob, save){
+  const ab=await decodeVideoAudio(blob);   // dekódování bez skutečného AudioContextu
+  // nejsilnější místo (průměr přes 10 ms) = okamžik střihu
+  const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0;
+  for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
+  E.trCustom[tr]={buf:ab, peak:bi/ab.sampleRate, name:blob.name||'zvuk'};
+  if (save) await dbDo('readwrite',st=>st.put({id:'trsfx|'+tr, file:blob, fileName:blob.name||'zvuk'}),'files');
+}
+trSfxLoadAll();
 
 // --- smyčka ---
 let dragging=null, guides=false, inlineOpen=false;
@@ -552,7 +563,7 @@ function loop(now){
   if (videoURL && $('editor').classList.contains('on')){
     if (!vid.paused || swap || PB.on){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
-      if (t>lastT && t-lastT<0.5) for (const ev of E.sfxEvents()) if (ev.t>lastT && ev.t<=t) playSfx(ev);
+      if (t>lastT && t-lastT<0.5) for (const ev of E.sfxEvents()) if (ev.t>lastT && ev.t<=t) playSfx(ev, t-ev.t);
       followTimeline(t);
     }
     lastT=t;
@@ -699,6 +710,8 @@ function pClip(){
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
   ${k>0 && c.tr && c.tr!=='none'?`<div class="row"><span>Zvuk přechodu</span><input type="checkbox" class="sw" id="clTrSfx" ${c.trSfx===false?'':'checked'}></div>
   <label class="ctl"><div class="lb"><span>Hlasitost zvuků přechodů (všech)</span><span id="clTrVv">${E.G.trSfxVol??80} %</span></div><input type="range" id="clTrV" min="0" max="150" value="${E.G.trSfxVol??80}"></label>
+  <div class="note">${E.trCustom[c.tr]?`Vlastní zvuk: <b>${esc(E.trCustom[c.tr].name)}</b> – jeho nejsilnější místo je přesně na střihu. Platí pro všechny přechody tohoto typu ve všech projektech.`:'Nahraj zvuk (svist, rána, nádech…) – appka ho zarovná tak, aby nejsilnější místo padlo přesně na střih. Uloží se do zařízení a platí pro tento typ přechodu ve všech projektech.'}</div>
+  <div class="btnrow"><button class="btn" id="clTrUp">${I('music')} ${E.trCustom[c.tr]?'Vyměnit zvuk':'Nahrát zvuk přechodu'}</button>${E.trCustom[c.tr]?`<button class="btn" id="clTrDelS">${I('trash')} Odebrat zvuk</button>`:''}</div>
   <button class="btn small" id="clTrHear">${I('volume')} Přehrát přechod se zvukem</button>`:''}
   <div class="clabel">Rychlost (slow motion)</div>
   <div class="chips" id="clSp">${[0.25,0.5,0.75,1,1.5,2].map(v=>`<div class="chip ${E.clipSp(c)===v?'on':''}" data-v="${v}">${v===1?'Normální':v<1?Math.round(v*100)+' %':v+'×'}</div>`).join('')}</div>
@@ -742,7 +755,9 @@ binders.clip=()=>{
   const dr=$('clTrDir'); if (dr) dr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].trDir=d.dataset.v; changed(); renderPanel(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.6); };
   const ts=$('clTrSfx'); if (ts) ts.onchange=e=>{ ensureClips(); if (e.target.checked) delete E.clips[selClip].trSfx; else E.clips[selClip].trSfx=false; changed(); };
   const tvv=$('clTrV'); if (tvv){ tvv.oninput=()=>{ E.G.trSfxVol=+tvv.value; $('clTrVv').textContent=tvv.value+' %'; }; tvv.onchange=()=>changed(); }
-  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, pre=Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
+  const tu=$('clTrUp'); if (tu) tu.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='audio/*,.mp3,.m4a,.wav,.aac'; inp.onchange=async()=>{ const f=inp.files[0]; if (!f) return; try{ ensureClips(); await trSfxSet(E.clips[selClip].tr, f, true); renderPanel(); toast('Zvuk přechodu uložený – zarovnaný na střih'); }catch(e){ toast('Tenhle zvuk neumím přečíst (zkus MP3 nebo WAV)'); } }; inp.click(); };
+  const tdl=$('clTrDelS'); if (tdl) tdl.onclick=async()=>{ ensureClips(); const tr=E.clips[selClip].tr; delete E.trCustom[tr]; try{ await dbDo('readwrite',st=>st.delete('trsfx|'+tr),'files'); }catch(e){} renderPanel(); toast('Vlastní zvuk odebraný'); };
+  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, cu=E.trCustom[c.tr], pre=cu?-cu.peak:Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
   const rd=$('clTrD'); if (rd){ rd.oninput=()=>{ ensureClips(); E.clips[selClip].trDur=+rd.value; $('clTrDv').textContent=(+rd.value).toFixed(2)+' s'; }; rd.onchange=()=>{ changed(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.5); }; }
 };
 

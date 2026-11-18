@@ -48,7 +48,7 @@ X.buildAudio = async (file, duration, mute, ovAudio, blobs) => {
     g.gain.setValueAtTime(fi>0?0:v,a.s); if (fi>0) g.gain.linearRampToValueAtTime(v,a.s+fi); if (fo>0){ g.gain.setValueAtTime(v,a.s+len-fo); g.gain.linearRampToValueAtTime(0,a.s+len); }
     g.connect(off.destination); const s=off.createBufferSource(); s.buffer=b; s.connect(g); s.start(a.s, a.off||0, len); }
   const vol=E.G.sfxVol/100;
-  for (const ev of E.sfxEvents()) if (ev.t<duration) E.sfxInto(off, off.destination, Math.max(0,ev.t), ev.type, ev.vol??vol, ev.dur);   // ev.vol: zvuky přechodů mají vlastní hlasitost
+  for (const ev of E.sfxEvents()) if (ev.t<duration) E.sfxInto(off, off.destination, ev.type==='custom'?ev.t:Math.max(0,ev.t), ev.type, ev.vol??vol, ev.dur, ev.buf);   // ev.vol: zvuky přechodů mají vlastní hlasitost
   return await off.startRendering();
 };
 
@@ -120,7 +120,8 @@ X.exportVideo = async (opts) => {
     const sfxOn=E.sfxEvents().some(ev=>ev.t<dur) || (opts.ovAudio&&opts.ovAudio.length>0) || music || (ext && !opts.mute);
     let raw=null, audio=null, ac=null, audioNote='';
     if (!opts.mute && (!sfxOn || !window.AudioEncoder)){ try{ raw=window.rawAudioTrack?await rawAudioTrack(opts.file):null; }catch(e){ console.warn('Původní zvuk nejde převzít',e); } }
-    if (!raw && window.AudioEncoder && (!opts.mute || music)){
+    const fxOnly=E.sfxEvents().some(ev=>ev.t<dur);   // zvukové efekty i u ztlumeného videa
+    if (!raw && window.AudioEncoder && (!opts.mute || music || fxOnly)){
       audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio, opts.blobs);
       ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate);
     }
@@ -274,7 +275,7 @@ X.recordRealtime = async (opts) => {
   const events=E.sfxEvents().sort((a,b)=>a.t-b.t); let ei=0;
   await new Promise(res=>{
     rec.onstop=res; rec.start(500); v.currentTime=0; v.play();
-    const tick=()=>{ const t=v.currentTime; E.render(t); while(ei<events.length&&events[ei].t<=t){ E.sfxInto(ac,dest,ac.currentTime,events[ei].type,events[ei].vol??E.G.sfxVol/100,events[ei].dur); ei++; } onP(t/v.duration,'Nahrávám…'); if (!v.ended) requestAnimationFrame(tick); else if (E.wantOutro()){ const t0=performance.now(), c2=cv.getContext('2d'); const ot=()=>{ const tt=(performance.now()-t0)/1000; E.drawOutro(c2,w,h,tt); if (tt<E.OUTRO_SEC) requestAnimationFrame(ot); else rec.stop(); }; ot(); } else rec.stop(); };
+    const tick=()=>{ const t=v.currentTime; E.render(t); while(ei<events.length&&events[ei].t<=t){ E.sfxInto(ac,dest,ac.currentTime,events[ei].type,events[ei].vol??E.G.sfxVol/100,events[ei].dur,events[ei].buf); ei++; } onP(t/v.duration,'Nahrávám…'); if (!v.ended) requestAnimationFrame(tick); else if (E.wantOutro()){ const t0=performance.now(), c2=cv.getContext('2d'); const ot=()=>{ const tt=(performance.now()-t0)/1000; E.drawOutro(c2,w,h,tt); if (tt<E.OUTRO_SEC) requestAnimationFrame(ot); else rec.stop(); }; ot(); } else rec.stop(); };
     requestAnimationFrame(tick);
   });
   E.flags.exporting=false;

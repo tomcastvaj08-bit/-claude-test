@@ -1118,9 +1118,11 @@ E.applyFacePositions = () => {
 
 // ================= ZVUKY (SFX) =================
 // vygeneruje zvuk do libovolného AudioContextu (živě i do offline exportu)
-E.sfxInto = (ac, dest, t0, type, vol, dur) => {
+E.trCustom = {};   // vlastní zvuky přechodů: typ přechodu → {buf (AudioBuffer), peak (s – nejsilnější místo)}
+E.sfxInto = (ac, dest, t0, type, vol, dur, buf) => {
   if (!type || type==='none') return;
   const g=ac.createGain(); g.connect(dest);
+  if (type==='custom'){ if (!buf) return; const n=ac.createBufferSource(); n.buffer=buf; g.gain.value=vol; n.connect(g); const now=ac.currentTime||0; n.start(Math.max(now,t0), Math.max(0,now-t0)); return; }   // začátek v minulosti → hrát od správného místa
   if (type.startsWith('tr_')){ trSound(ac,g,t0,type,vol,dur||0.4); return; }
   const osc=(tp,f0,f1,dur,v)=>{ const o=ac.createOscillator(); o.type=tp; o.frequency.setValueAtTime(f0,t0); o.frequency.exponentialRampToValueAtTime(f1,t0+dur); const gg=ac.createGain(); gg.gain.setValueAtTime(v*vol,t0); gg.gain.exponentialRampToValueAtTime(0.0001,t0+dur); o.connect(gg); gg.connect(g); o.start(t0); o.stop(t0+dur+0.02); };
   const noise=(dur,v,hp)=>{ const b=ac.createBuffer(1,Math.ceil(ac.sampleRate*dur),ac.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); const n=ac.createBufferSource(); n.buffer=b; const f=ac.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp; const gg=ac.createGain(); gg.gain.value=v*vol; n.connect(f); f.connect(gg); gg.connect(g); n.start(t0); };
@@ -1204,7 +1206,9 @@ E.sfxEvents = () => {
   const ev=[];
   if (E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
     if (tv>0) for (let k=1;k<L.length;k++){ const c=L[k], tr=c.tr||'none'; if (tr==='none' || c.trSfx===false) continue;
-      const D=c.trDur||E.TRDEF[tr]||0.12; for (const [dt,type,d] of E.TRSFX(tr,D)) ev.push({t:Math.max(0,st[k]+dt), type, dur:d, vol:tv}); } }
+      const cu=E.trCustom[tr];
+      if (cu) ev.push({t:st[k]-cu.peak, type:'custom', buf:cu.buf, vol:tv});   // nejsilnější místo zvuku přesně na střih
+      else if (E.G.trSfxGen) { const D=c.trDur||E.TRDEF[tr]||0.12; for (const [dt,type,d] of E.TRSFX(tr,D)) ev.push({t:Math.max(0,st[k]+dt), type, dur:d, vol:tv}); } } }
   E.pages.forEach(p=>{ const S=E.styleOf(p); if (!S.sfx||S.sfx==='none') return;
     if (E.G.sfxWord){ for (let i=p.a;i<=p.b;i++) ev.push({t:E.words[i].s, type:S.sfx}); } else ev.push({t:p.s, type:S.sfx}); });
   return ev.sort((a,b)=>a.t-b.t);

@@ -27,6 +27,10 @@ Zrušené (ve starých projektech se převedou): `fly` → `warp`, `whip` → ž
 - appka: nabídka, staré projekty, náhled, export
 
 ## Zvuky přechodů (18. 11. 2026)
+
+**STAV 18. 11.: generované zvuky klient zamítl („katastrofa“) → vypnuté (`E.G.trSfxGen` není nastavené). Hraje jen VLASTNÍ zvuk nahraný k typu přechodu** (panel přechodu → Nahrát zvuk přechodu; uloží se do IndexedDB `files` pod `trsfx|<typ>`, platí pro všechny projekty, nejsilnější místo zvuku se zarovná na střih).
+
+Původní generované zvuky (zůstávají v kódu, vypnuté):
 Vlastní generované zvuky (Web Audio, žádné cizí nahrávky – zvuky z předloh jsou smíchané s hudbou a hlasem a patří autorům videí).
 Hraje se v náhledu i v exportu, časované na pohyb přechodu (posuny se škálují s délkou přechodu). Vypínač u každého střihu, společná hlasitost `trSfxVol` (výchozí 80 %).
 
