@@ -17,9 +17,9 @@ RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? 
 // vzhled, který Real estate styl zapne (a co při vypnutí vrátí ze Stylu 1)
 // jako v předloze: geometrické písmo (Poppins) – malá slova tenká bílá, velká tlustá barevná (~2× větší), těsně přes sebe,
 // jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
-RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 300, wEm: 700, mainItalic: false, emItalic: false, size: 96, emScale: 190, track: -3, trackEm: -5, gap: 64, wordGap: 120,
+RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 400, wEm: 700, mainItalic: false, emItalic: false, size: 104, emScale: 160, track: -3, trackEm: -5, gap: 70, wordGap: 115,
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
-  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: true, shineEvery: '2', caseMain: 'none', caseSec: 'none', behind: 'head' };
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'head' };
 RE.on = () => !!(E.G.reMode);
 
 // ---------- hlava během titulku (z rozboru HEAD) ----------
@@ -98,7 +98,7 @@ function build(W, H) {
       for (const k2 of ks) {
         let c;   // střed spodního řádku: spodek písmen za vlasy, nikdy pod obočí
         if (hd) c = M.lbEm ? Math.min(hd.rTop + 0.22 * M.lbPx * k2, hd.rBrow - 0.05 * M.lbPx * k2) : hd.rTop + 0.08 * M.lbPx * k2;
-        else c = H * 0.05 - M.tb * k2 + M.lbOff * k2;
+        else c = H * 0.07 - M.tb * k2 + M.lbOff * k2;
         const yy = c - M.lbOff * k2;
         if (yy + M.tb * k2 >= H * 0.012) { y = yy; kk = k2; break; }
       }
@@ -131,7 +131,11 @@ RE.apply = (p, S, t) => {
     // zamčeno na video: titulek jede s hlavou (velikost se nemění), vždy celý v obraze
     let sc = 1;
     // zamčeno na video: titulek jede s hlavou a zvětšuje se s ní (člověk jde blíž = větší text), vždy celý v obraze
-    if (o.hd && t != null) { const hp = headAt(o.hd.sg, E.out2src(t)); sc = Math.max(0.6, Math.min(1.8, hp[2] / o.hd.rf));
+    if (o.hd && t != null) {
+      // po střihu (jiný záběr) se titulek přichytí na hlavu v novém záběru
+      const ts = E.out2src(t), sg0 = o.hd.sg; let sg = sg0;
+      if (ts < sg0.t[0] - 0.05 || ts > sg0.t[sg0.t.length - 1] + 0.05) { const L = segments(W, H); const s2 = L.find(q => ts >= q.t[0] - 0.05 && ts <= q.t[q.t.length - 1] + 0.05); if (s2) sg = s2; }
+      const hp = headAt(sg, ts); sc = Math.max(0.6, Math.min(1.8, hp[2] / o.hd.rf));
       x = hp[0] + (x - o.hd.rx) * sc; y = hp[1] + (y - o.hd.ry) * sc;
       x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.01 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
     S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }

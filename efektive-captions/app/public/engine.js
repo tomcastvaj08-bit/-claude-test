@@ -553,7 +553,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   const since=age;
   if (since<0 && S.anim!=='block' && S.anim!=='base') return;
   const exA = exit;
-  let a=clamp(since/0.07)*exA, sc=1, sy=1, dx=0, dy=0, blur=0, er=0;
+  let a=clamp(since/0.07)*exA, sc=1, sy=1, dx=0, dy=0, blur=0, er=0, trail=0;
   const kk=clamp(since/0.25);
   if (S.anim==='squish'){ const e=easeBack(kk); sc=0.6+0.4*e; sy=kk<0.5?0.5+kk:1+0.25*(1-e); }
   else if (S.anim==='pop'){ sc=L.em?1+0.5*(1-easeBack(kk)):0.5+0.5*easeBack(kk); }
@@ -565,9 +565,10 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     // odchod: švihnutí do strany s rozmazáním
     if (since<0) return;
     const dir=(((L._i||0)+(j||0))%2)?1:-1, Wm=Math.min(cv.width,cv.height), big=!!L.em;
-    if (big && ((L._i||0)+(k||0))%2===0){ const q=clamp(since/0.3), e=1-Math.pow(1-q,3); a=e*exA; sc=0.8+0.2*e; blur=(1-e)*L.px*0.07; }
-    else { const q=clamp(since/(big?0.24:0.18)), e=q>=1?1:(1-Math.pow(2,-9*q))/(1-Math.pow(2,-9)); dx+=dir*(1-e)*Wm*(big?0.36:0.16); blur=(1-e)*L.px*0.15; a=clamp(since/0.05)*exA; }
-    const xo=1-exit; if (xo>0){ dx+=-dir*xo*xo*Wm*0.55; blur=Math.max(blur,xo*L.px*0.2); a=clamp(since/0.05)*Math.max(0,1-xo*0.7); }
+    // rozmazání pohybu = stopa za písmem (rychlé i na iPhonu, bez filtru)
+    if (big && ((L._i||0)+(k||0))%2===0){ const q=clamp(since/0.3), e=1-Math.pow(1-q,3); a=e*exA; sc=0.8+0.2*e; }
+    else { const q=clamp(since/(big?0.24:0.18)), e=q>=1?1:(1-Math.pow(2,-9*q))/(1-Math.pow(2,-9)), d0=dir*(1-e)*Wm*(big?0.36:0.16); dx+=d0; trail=d0*0.35; a=clamp(since/0.05)*exA; }
+    const xo=1-exit; if (xo>0){ const d1=-dir*xo*xo*Wm*0.55; dx+=d1; trail=-d1*0.4; a=clamp(since/0.05)*Math.max(0,1-xo*0.7); }
   }
   else if (S.anim==='whip'){
     // jako v realitních reels: slovo vystřelí ze strany (řádky střídavě zleva / zprava), prudce dobrzdí, s rozmazáním pohybu
@@ -648,7 +649,9 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       }
     }
     const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
-    c.shadowColor='transparent'; c.drawImage(sp.cv,sp.x,sp.y);
+    c.shadowColor='transparent';
+    if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc); for (let i=4;i>=1;i--){ c.globalAlpha=a0*0.16*(5-i)/4; c.drawImage(sp.cv,sp.x+tx*i/4,sp.y); } c.globalAlpha=a0; }   // stopa pohybu
+    c.drawImage(sp.cv,sp.x,sp.y);
   } else {
   if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
@@ -1162,7 +1165,7 @@ E.render = (t, opts={}) => {
   // text za hlavou (chytře): snímek bez titulků si zapamatovat, po titulcích přes ně znovu nakreslit hlavu
   const headOn = !F.transparent && window.HEAD && HEAD.data && ks.some(kk=>E.styleOf(E.pages[kk]).behind==='head') && HEAD.has(E.out2src?E.out2src(t):t);
   if (headOn){ if (!hbase||hbase.width!==cv.width||hbase.height!==cv.height){ hbase=document.createElement('canvas'); hbase.width=cv.width; hbase.height=cv.height; hcap=document.createElement('canvas'); hcap.width=cv.width; hcap.height=cv.height; }
-    const x=hbase.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); x.drawImage(cv,0,0); }
+    var hR=HEAD.rect(t,cv.width,cv.height,E.vxfAt(t)); if (hR){ const x=hbase.getContext('2d'); x.clearRect(hR.x,hR.y,hR.w,hR.h); x.drawImage(cv,hR.x,hR.y,hR.w,hR.h,hR.x,hR.y,hR.w,hR.h); } }
   const wbox=[];
   for (const kk of ks){
     const r=drawPage(kk,t);
@@ -1170,7 +1173,7 @@ E.render = (t, opts={}) => {
     if (r.S.behind==='on') behind=true;
     if (headOn && r.lines && r.S.behind==='head') wbox.push(...wordBoxes(r.lines,r.S));
   }
-  if (headOn){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); const x=hcap.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); x.drawImage(cv,0,0); ctx.restore(); HEAD.compose(ctx,cv.width,cv.height,t,hbase,hcap,E.vxfAt(t),{words:wbox}); }
+  if (headOn && hR){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); const x=hcap.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); if (!E.G.reMode) x.drawImage(cv,0,0); ctx.restore(); HEAD.compose(ctx,cv.width,cv.height,t,hbase,hcap,E.vxfAt(t),{words:wbox}); }
   E.lastLines=mainLines;
   // text za postavou: přes titulky se znovu nakreslí jen postava z videa
   if (behind && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }

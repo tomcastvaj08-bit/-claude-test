@@ -113,17 +113,23 @@ function maskCanvas(i) {
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 let tmp = null, tmx = null, fm = null, fmx = null, sA = null, sAx = null, sB = null, sBx = null, sM = null, sMx = null; const wmem = new Map();
 // ctx = hotový snímek s titulky (capC = jeho kopie), baseC = snímek bez titulků; t = výsledný čas, xf = zoom videa
+// výřez hlavy na plátně v čase t (px) – kopíruje se jen tenhle kousek, ne celý snímek (plynulé přehrávání)
+HEAD.rect = (t, W, H, xf) => { const ts = E.out2src ? E.out2src(t) : t, i = at(ts); if (i < 0) return null; const d = HEAD.data, z = xf ? xf.z / 100 : 1, kx = xf ? xf.x / 100 * W : 0, ky = xf ? xf.y / 100 * H : 0;
+  const s = d.side[i] * W * z, X = W / 2 + kx + (d.x[i] * W - W / 2) * z, Y = H / 2 + ky + (d.y[i] * H - H / 2) * z;
+  const x0 = Math.max(0, Math.floor(X - s / 2) - 2), y0 = Math.max(0, Math.floor(Y - s / 2) - 2), x1 = Math.min(W, Math.ceil(X + s / 2) + 2), y1 = Math.min(H, Math.ceil(Y + s / 2) + 2);
+  return x1 > x0 && y1 > y0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null; };
 HEAD.compose = (ctx, W, H, t, baseC, capC, xf, opt) => {
   const ts = E.out2src ? E.out2src(t) : t, i = at(ts); if (i < 0) return false;
   const d = HEAD.data, z = xf ? xf.z / 100 : 1, kx = xf ? xf.x / 100 * W : 0, ky = xf ? xf.y / 100 * H : 0;
   const s = d.side[i] * W * z, X = W / 2 + kx + (d.x[i] * W - W / 2) * z, Y = H / 2 + ky + (d.y[i] * H - H / 2) * z;
   if (!tmp || tmp.width !== W || tmp.height !== H) { tmp = mk(W, H); tmx = tmp.getContext('2d'); fm = mk(W, H); fmx = fm.getContext('2d'); }
   // hlava ze snímku bez titulků přes maskou
-  tmx.globalCompositeOperation = 'source-over'; tmx.clearRect(0, 0, W, H); tmx.imageSmoothingEnabled = true; tmx.imageSmoothingQuality = 'high';
+  const R = HEAD.rect(t, W, H, xf); if (!R) return false;
+  tmx.globalCompositeOperation = 'source-over'; tmx.clearRect(R.x, R.y, R.w, R.h); tmx.imageSmoothingEnabled = true; tmx.imageSmoothingQuality = 'high';
   tmx.drawImage(maskCanvas(i), X - s / 2, Y - s / 2, s, s);
-  tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, 0, 0); tmx.globalCompositeOperation = 'source-over';
+  tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, R.x, R.y, R.w, R.h, R.x, R.y, R.w, R.h); tmx.globalCompositeOperation = 'source-over';
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.shadowColor = 'transparent';
-  ctx.drawImage(tmp, 0, 0);
+  ctx.drawImage(tmp, R.x, R.y, R.w, R.h, R.x, R.y, R.w, R.h);
   if ((opt && opt.smart === false) || E.G.reMode) { ctx.restore(); return true; }   // Real estate styl: jako v předloze – slovo zůstane za hlavou (žádné přesouvání dopředu)
   // žádné slovo nezasahuje do hlavy → není co řešit (žádné čtení pixelů – přehrávání zůstane plynulé)
   const hx0 = X - s / 2, hy0 = Y - s / 2, hx1 = X + s / 2, hy1 = Y + s / 2;
