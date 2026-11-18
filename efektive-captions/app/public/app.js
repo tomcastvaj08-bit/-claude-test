@@ -2293,7 +2293,7 @@ function objFinish(save){
   if (OBJ.area(E2.m)<30){ toast('Nic není vybrané – klepni na objekt'); objEdit=E2; renderPanel(); return; }
   OBJ.tidy(E2.m);
   // AI objekt: žádné body – přesný tvar z AI v každém snímku
-  const fresh=!E2.obj, o=E2.obj||{id:'o'+Date.now().toString(36), t0:E2.t0, _mk:1, shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shRep:false, line:'solid', lineC:'#ffffff', lineW:45, fillA:0, fillC:'#000000', dots:false, trk:null};
+  const fresh=!E2.obj, o=E2.obj||{id:'o'+Date.now().toString(36), t0:E2.t0, _mk:1, shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shRep:false, line:'off', lineC:'#ffffff', lineW:45, fillA:0, fillC:'#000000', dots:false, trk:null};   // AI objekt: bez čáry (jen shine), čáru jde zapnout
   o.mode='ai'; o.mask=OBJ.rle(E2.m); o.pts=[]; o.poly=false; o.dots=false; o.seeds=(E2.seeds||[]).map(z=>({...z})); if (!fresh){ o.t0=E2.t0; delete o.fix; o.trk=null; } objInvalidate(o);
   if (fresh){ const s=E.src2out(E2.t0); o.s=s; o.e=Math.min(PV.duration||s+1.5,s+1.5); o.shS=s+0.1; o.shE=s+1.2; E.objs.push(o); }
   selObj=o.id;

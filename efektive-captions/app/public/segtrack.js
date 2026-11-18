@@ -85,38 +85,43 @@ SEG.run = async (o) => {
       const bw = (pb.x1 - pb.x0) * LS, bh = (pb.y1 - pb.y0) * LS, side = Math.max(64, Math.max(bw, bh) * 1.45), x0 = (pb.x0 + pb.x1) / 2 * LS - side / 2, y0 = (pb.y0 + pb.y1) / 2 * LS - side / 2;
       cropX.fillStyle = '#000'; cropX.fillRect(0, 0, IN, IN); cropX.drawImage(fr.src, x0, y0, side, side, 0, 0, IN, IN);
       const toC = ([x, y]) => [(x * LS - x0) / side, (y * LS - y0) / side];
-      // body uvnitř předpovědi: bod klepnutí (když je pořád na objektu) + nejhlubší místa objektu
-      const deep = deepPts(pred, lw, lh, 3);
+      // body uvnitř předpovědi: bod klepnutí (když je pořád na objektu) + nejhlubší místo objektu
+      const deep = deepPts(pred, lw, lh, 1);
       const inside = p => { const x = Math.round(p[0]), y = Math.round(p[1]); return x >= 0 && y >= 0 && x < lw && y < lh && pred[y * lw + x]; };
-      const pts = S.filter(inside).concat(deep.map(([x, y]) => [x + 0.5, y + 0.5])).slice(0, 5).map(toC);
-      let prob = null; try { prob = pts.length ? segCrop(seg, pts) : null; } catch (e) { console.warn('AI výběr', e); }
-      if (prob && N.length) for (const p of N) { const q = segCrop(seg, [toC(p)]); if (q) for (let k = 0; k < prob.length; k++) if (q[k] > 0.5) prob[k] = Math.min(prob[k], 1 - q[k]); }
-      // 3) kontrola s předpovědí (v malé mapě) – jen části, které na předpověď navazují
-      let next = null;
-      if (prob) {
-        const cand = new Uint8Array(lw * lh);
+      const sIn = S.filter(inside);
+      // 3) AI smí měnit jen pás kolem okraje předpovědi (okraje přesně podle obrazu), vnitřek a okolí drží tvar
+      //    → objekt nikdy nepřeskočí na „jen obličej“ nebo „celý kus obrazu“, ani když AI v jednom snímku vybere jinak
+      const pa = pb.n, r = Math.max(2, Math.round(Math.sqrt(pa) * 0.07));
+      const dil = (m0, it) => { let m = m0; for (let k = 0; k < it; k++) { const o2 = new Uint8Array(lw * lh); for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) { const q = y * lw + x; if (m[q] || (x > 0 && m[q - 1]) || (x < lw - 1 && m[q + 1]) || (y > 0 && m[q - lw]) || (y < lh - 1 && m[q + lw])) o2[q] = 1; } m = o2; } return m; };
+      const ero = (m0, it) => { let m = m0; for (let k = 0; k < it; k++) { const o2 = new Uint8Array(lw * lh); for (let y = 1; y < lh - 1; y++) for (let x = 1; x < lw - 1; x++) { const q = y * lw + x; if (m[q] && m[q - 1] && m[q + 1] && m[q - lw] && m[q + lw]) o2[q] = 1; } m = o2; } return m; };
+      const outer = dil(pred, r), inner = ero(pred, r), band = new Uint8Array(lw * lh); for (let k = 0; k < band.length; k++) band[k] = outer[k] && !inner[k] ? 1 : 0;
+      const toLow = prob => { const cand = new Uint8Array(lw * lh);
         for (let y = Math.max(0, Math.floor(y0 / LS)); y < Math.min(lh, Math.ceil((y0 + side) / LS)); y++) for (let x = Math.max(0, Math.floor(x0 / LS)); x < Math.min(lw, Math.ceil((x0 + side) / LS)); x++) {
           const cx = Math.floor(((x + 0.5) * LS - x0) / side * IN), cy = Math.floor(((y + 0.5) * LS - y0) / side * IN);
           if (cx >= 0 && cy >= 0 && cx < IN && cy < IN && prob[cy * IN + cx] > 0.5) cand[y * lw + x] = 1; }
-        // souvislé části, které s předpovědí sdílí aspoň kus
-        const lab = new Int32Array(lw * lh), keep = new Uint8Array(lw * lh); let id = 0;
-        for (let k = 0; k < cand.length; k++) { if (!cand[k] || lab[k]) continue; id++; const stck = [k], comp = []; lab[k] = id; let ov = 0;
-          while (stck.length) { const q = stck.pop(); comp.push(q); if (pred[q]) ov++; const x = q % lw; for (const nb of [q - 1, q + 1, q - lw, q + lw]) { if (nb < 0 || nb >= cand.length || lab[nb] || !cand[nb]) continue; if ((nb === q - 1 && x === 0) || (nb === q + 1 && x === lw - 1)) continue; lab[nb] = id; stck.push(nb); } }
-          if (ov >= Math.max(2, comp.length * 0.15)) for (const q of comp) keep[q] = 1; }
-        let inter = 0, uni = 0; for (let k = 0; k < keep.length; k++) { if (keep[k] && pred[k]) inter++; if (keep[k] || pred[k]) uni++; }
-        if (uni && inter / uni > 0.4) next = keep;
-      }
-      if (next) { coast = 0; map = next; } else { if (++coast > 8) { SEG.why = 'objekt ztracen ' + fr.t.toFixed(2); break; } map = pred; }
+        return cand; };
+      // shoda AI s předpovědí v pásu kolem okraje (IoU)
+      const bandIoU = cand => { let i2 = 0, u2 = 0; for (let k = 0; k < band.length; k++) if (band[k]) { const a2 = cand[k], b2 = pred[k]; if (a2 && b2) i2++; if (a2 || b2) u2++; } return u2 ? i2 / u2 : 0; };
+      let prob = null, cand = null, score = 0;
+      const tryPts = list => { if (!list.length) return; let pr = null; try { pr = segCrop(seg, list.map(toC)); } catch (e) { console.warn('AI výběr', e); return; }
+        if (!pr) return; if (N.length) for (const p of N) { const q = segCrop(seg, [toC(p)]); if (q) for (let k = 0; k < pr.length; k++) if (q[k] > 0.5) pr[k] = Math.min(pr[k], 1 - q[k]); }
+        const c2 = toLow(pr), sc2 = bandIoU(c2); if (sc2 > score) { score = sc2; prob = pr; cand = c2; } };
+      tryPts(sIn.concat(deep.map(([x, y]) => [x + 0.5, y + 0.5])).slice(0, 4));
+      if (score < 0.72 && sIn.length) tryPts(sIn.slice(0, 1));                       // jen bod klepnutí
+      if (score < 0.72 && deep.length) tryPts([[deep[0][0] + 0.5, deep[0][1] + 0.5]]); // jen střed objektu
+      let next = null;
+      if (cand && score >= 0.6) { next = new Uint8Array(lw * lh); for (let k = 0; k < next.length; k++) next[k] = band[k] ? cand[k] : inner[k]; }
+      if (next) { coast = 0; map = next; } else { if (++coast > 12) { SEG.why = 'objekt ztracen ' + fr.t.toFixed(2); break; } map = pred; }
       const nb = bboxOf(map, lw, lh); if (!nb || nb.n < bb0.n * 0.08) { SEG.why = 'objekt zmizel ' + fr.t.toFixed(2); break; }
       // rámeček pro předpověď příště = skutečný objekt
       const nbox = { cx: (nb.x0 + nb.x1) / 2 * LS, cy: (nb.y0 + nb.y1) / 2 * LS, w: Math.max(16, (nb.x1 - nb.x0) * LS), h: Math.max(16, (nb.y1 - nb.y0) * LS) };
       if (!st) st = TRK.init(nbox, Q); else Object.assign(st, nbox);
-      // 4) uložit masku výřezu (ostrá z AI, omezená na navazující části)
+      // 4) maska výřezu: v pásu ostrý okraj z AI, jinde tvar z předpovědi
       const m = new Uint8Array(R * R);
-      if (prob && next) for (let j = 0; j < R; j++) for (let i = 0; i < R; i++) { const px = x0 + (i + 0.5) / R * side, py = y0 + (j + 0.5) / R * side, mx = Math.floor(px / LS), my = Math.floor(py / LS);
-        if (mx < 0 || my < 0 || mx >= lw || my >= lh) continue; let near = 0; for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = mx + dx, yy = my + dy; if (xx >= 0 && yy >= 0 && xx < lw && yy < lh && next[yy * lw + xx]) { near = 1; break; } }
-        if (near && prob[Math.min(IN - 1, Math.floor((j + 0.5) / R * IN)) * IN + Math.min(IN - 1, Math.floor((i + 0.5) / R * IN))] > 0.5) m[j * R + i] = 1; }
-      else for (let j = 0; j < R; j++) for (let i = 0; i < R; i++) { const mx = Math.floor((x0 + (i + 0.5) / R * side) / LS), my = Math.floor((y0 + (j + 0.5) / R * side) / LS); if (mx >= 0 && my >= 0 && mx < lw && my < lh && map[my * lw + mx]) m[j * R + i] = 1; }
+      for (let j = 0; j < R; j++) for (let i = 0; i < R; i++) { const px = x0 + (i + 0.5) / R * side, py = y0 + (j + 0.5) / R * side, mx = Math.floor(px / LS), my = Math.floor(py / LS);
+        if (mx < 0 || my < 0 || mx >= lw || my >= lh) continue; const q = my * lw + mx;
+        if (next && band[q]) { if (map[q] || (mx > 0 && map[q - 1]) || (mx < lw - 1 && map[q + 1]) || (my > 0 && map[q - lw]) || (my < lh - 1 && map[q + lw])) m[j * R + i] = prob[Math.min(IN - 1, Math.floor((j + 0.5) / R * IN)) * IN + Math.min(IN - 1, Math.floor((i + 0.5) / R * IN))] > 0.5 ? 1 : 0; }
+        else if (map[q]) m[j * R + i] = 1; }
       dst.push({ t: fr.t, x0, y0, side, m });
       if (o.onFrame && fr.canvas && dst.length % 2 === 0) o.onFrame(fr.canvas, { cx: nbox.cx / W, cy: nbox.cy / H, w: nbox.w / W, h: nbox.h / H });
       prevP = Q; await breathe();
@@ -144,8 +149,8 @@ SEG.run = async (o) => {
   if (all.length < 2) { if (!SEG.why) SEG.why = 'objekt se nepodařilo sledovat'; return null; }
   // klidné okraje: každá maska se zprůměruje se sousedními snímky (přepočtenými do jejího výřezu)
   const sample = (f, px, py) => { const i = Math.floor((px - f.x0) / f.side * R), j = Math.floor((py - f.y0) / f.side * R); return i >= 0 && j >= 0 && i < R && j < R ? f.m[j * R + i] : 0; };
-  const sm = all.map((f, k) => { const a = all[k - 1], b = all[k + 1]; if (!a || !b || Math.abs(a.t - f.t) > 0.05 || Math.abs(b.t - f.t) > 0.05) return f.m;
-    const r = new Uint8Array(R * R); for (let j = 0; j < R; j++) for (let i = 0; i < R; i++) { const px = f.x0 + (i + 0.5) / R * f.side, py = f.y0 + (j + 0.5) / R * f.side; r[j * R + i] = (2 * f.m[j * R + i] + sample(a, px, py) + sample(b, px, py)) >= 2 ? 1 : 0; } return r; });
+  const sm = all.map((f, k) => { const nb2 = [all[k - 2], all[k - 1], all[k + 1], all[k + 2]].filter(a => a && Math.abs(a.t - f.t) < 0.1); if (nb2.length < 2) return f.m;
+    const r = new Uint8Array(R * R), wt = 2 + nb2.length; for (let j = 0; j < R; j++) for (let i = 0; i < R; i++) { const px = f.x0 + (i + 0.5) / R * f.side, py = f.y0 + (j + 0.5) / R * f.side; let v = 2 * f.m[j * R + i]; for (const a of nb2) v += sample(a, px, py); r[j * R + i] = v * 2 >= wt ? 1 : 0; } return r; });
   return { kind: 'seg', R, t: all.map(f => Math.round(f.t * 1e4) / 1e4), b: all.map(f => [f.x0 / W, f.y0 / H, f.side / W].map(v => Math.round(v * 1e5) / 1e5)), m: sm.map(m => OBJ.rle({ w: R, h: R, d: m })), ar: W / H };
 };
 })(window);
