@@ -465,7 +465,12 @@ function videoNow(now){ // nejlepší odhad skutečného času videa
   if (clk.ref) return clk.ref.media+(now-clk.ref.at)/1000*(vid.playbackRate||1);
   return vid.currentTime;
 }
-if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid._mt=md.mediaTime; vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
+// stabilizace (Real estate): snímek se zkopíruje přesně v okamžiku, kdy je hotový, a vykreslí se s posunem pro TENHLE snímek
+// (jinak se na iPhonu občas kreslí o snímek jiný obraz než posun → video se chvěje)
+const vcap=document.createElement('canvas'), vcx=vcap.getContext('2d');
+if (vid.requestVideoFrameCallback){ const cb=(n,md)=>{ clk.ref={media:md.mediaTime, at:(md.expectedDisplayTime||n)}; vid._mt=md.mediaTime;
+    if (E.G.reMode && E.G.reStab!==false && !vid.paused && vid.videoWidth){ const sc=Math.min(1,1920/Math.max(vid.videoWidth,vid.videoHeight)), w=Math.round(vid.videoWidth*sc), h=Math.round(vid.videoHeight*sc); if (vcap.width!==w||vcap.height!==h){ vcap.width=w; vcap.height=h; } try{ vcx.drawImage(vid,0,0,w,h); vid._cap=vcap; vid._capT=md.mediaTime; }catch(e){ vid._cap=null; } } else vid._cap=null;
+    vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
 vid.addEventListener('playing',()=>{ if (swapQuiet) return; clkReset(); clk.run=true; });
 ['pause','waiting','emptied'].forEach(ev=>vid.addEventListener(ev,()=>{ if (swapQuiet) return; clk.run=false; clkReset(); }));
 vid.addEventListener('seeked',()=>{ if (swapQuiet) return; clkReset(); clk.run=!vid.paused; });

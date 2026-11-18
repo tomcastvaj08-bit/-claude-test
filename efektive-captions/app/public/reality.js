@@ -75,6 +75,7 @@ function headFor(p, W, H) {
   return { sg, rx: mx(hp[0]), ry: my(hp[1]), rTop: my(hp[1] + relTop[relTop.length >> 1]), rBrow: my(hp[1] + relBrow), rChin: my(hp[1] + relChin), rFw: fw * kz, rf: hp[2] * kz };
 }
 // ---------- STABILIZACE NA OBLIČEJ (nos uprostřed obrazovky) ----------
+const STAB_SIG = 0.12;   // jak klidně jede kamera (s), stejné pro titulky – titulky na obrazovce pak stojí úplně klidně
 // video se v každém snímku posune (a jednou provždy přiblíží), aby nos byl uprostřed; vyhlazeno, bez skoků (střihy zvlášť)
 function headSmooth(sg, ts, sig) {
   const T = sg.t, tc = Math.max(T[0], Math.min(T[T.length - 1], ts)); let sx = 0, sy = 0, sw = 0;
@@ -87,7 +88,7 @@ RE.stab = t => {
   const ts = E._fT != null ? E._fT : E.out2src(t), Z = Math.max(1, Math.min(2, (E.G.reZoom || 130) / 100));
   let sg = segs.find(q => ts >= q.t[0] - 0.02 && ts <= q.t[q.t.length - 1] + 0.02), w = 1;
   if (!sg) { let bd = 0.8; for (const q of segs) { const d = Math.max(0, q.t[0] - ts, ts - q.t[q.t.length - 1]); if (d < bd) { bd = d; sg = q; } } if (!sg) return { z: Z, x: 0, y: 0 }; w = 1 - bd / 0.8; w = w * w * (3 - 2 * w); }
-  const p = headSmooth(sg, ts, 0.06), lim = (Z - 1) / 2;
+  const p = headSmooth(sg, ts, STAB_SIG), lim = (Z - 1) / 2;
   const NY = (E.G.reNoseY || 39) / 100;   // nos jako v předloze: uprostřed na šířku, ve 39 % výšky
   const tx = Math.max(-lim, Math.min(lim, -Z * (p[0] / W - 0.5))) * w, ty = Math.max(-lim, Math.min(lim, (NY - 0.5) - Z * (p[1] / H - 0.5))) * w;
   return { z: Z, x: tx * 100, y: ty * 100 };
@@ -169,6 +170,7 @@ RE.apply = (p, S, t) => {
       const ts = E._fT != null ? E._fT : E.out2src(t), sg0 = o.hd.sg; let sg = sg0;   // stejný čas snímku jako stabilizace (bez cukání)
       if (ts < sg0.t[0] - 0.05 || ts > sg0.t[sg0.t.length - 1] + 0.05) { const L = segments(W, H); const s2 = L.find(q => ts >= q.t[0] - 0.05 && ts <= q.t[q.t.length - 1] + 0.05); if (s2) sg = s2; }
       const hp = headAt(sg, ts), k = E.vxfAt(t) || { z: 100, x: 0, y: 0 }, kz = k.z / 100;
+      if (E.G.reStab !== false) { const q = headSmooth(sg, ts, STAB_SIG); hp[0] = q[0]; hp[1] = q[1]; }   // titulky přesně se stabilizací (žádné cukání vůči videu)
       const hx = W / 2 + k.x / 100 * W + kz * (hp[0] - W / 2), hy = H / 2 + k.y / 100 * H + kz * (hp[1] - H / 2);
       sc = Math.max(0.6, Math.min(1.8, hp[2] * kz / o.hd.rf));
       x = hx + (x - o.hd.rx) * sc; y = hy + (y - o.hd.ry) * sc;

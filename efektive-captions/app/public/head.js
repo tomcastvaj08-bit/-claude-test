@@ -58,9 +58,8 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
     segX.fillStyle = '#000'; segX.fillRect(0, 0, 256, 256);
     segX.drawImage(fr.canvas, cx - side / 2, cy - side / 2, side, side, 0, 0, 256, 256);
     let m = null;
-    // maska stačí každý druhý snímek (je ve výřezu kolem hlavy, posun hlavy dorovná poloha obličeje z tohoto snímku)
-    if ((segN++ & 1) && lastM) m = lastM;
-    else try {
+    // maska v KAŽDÉM snímku (přesný okraj vlasů, žádné poskakování po 2 snímcích)
+    try {
       const r = seg.segment(segC), cm = r.confidenceMasks;
       if (cm && cm.length >= 4) {
         const hair = cm[1].getAsFloat32Array(), face = cm[3].getAsFloat32Array(), acc = cm[5] ? cm[5].getAsFloat32Array() : null, mw = cm[1].width, mh = cm[1].height;
@@ -74,12 +73,20 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
     out.x.push(cx / W); out.y.push(cy / H); out.side.push(side / W); out.m.push(m); out.nx.push(h.cx / W); out.ny.push(h.cy / H); out.ns.push(h.s / W);
     if (performance.now() - lastYield > 40) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); }
   }
-  // klidné okraje: maska se zprůměruje se sousedními snímky (ve výřezu kolem hlavy, takže bez zpoždění za pohybem)
+  // klidné okraje: maska se zprůměruje se sousedními snímky (±2), každý soused se PŘEPOČÍTÁ do výřezu tohoto snímku
+  // (výřezy se snímek od snímku nepatrně liší – bez přepočtu by se okraj vlasů chvěl)
   const sm = out.m.map((m, i) => {
-    if (!m) return m; const a = out.m[i - 1], b = out.m[i + 1];
-    const ok = j => out.m[j] && Math.abs(out.side[j] / out.side[i] - 1) < 0.08 && Math.hypot(out.x[j] - out.x[i], (out.y[j] - out.y[i]) * H / W) < out.side[i] * 0.06;
-    if (!(a && ok(i - 1)) || !(b && ok(i + 1))) return m;
-    const r = new Uint8Array(m.length); for (let k = 0; k < m.length; k++) r[k] = (a[k] + 2 * m[k] + b[k] + 2) >> 2; return r;
+    if (!m) return m;
+    const X0 = out.x[i] * W - out.side[i] * W / 2, Y0 = out.y[i] * H - out.side[i] * W / 2, S0 = out.side[i] * W;
+    const nb = [i - 2, i - 1, i + 1, i + 2].filter(j => out.m[j] && Math.abs(out.t[j] - out.t[i]) < 0.1 && Math.abs(out.side[j] / out.side[i] - 1) < 0.15 && Math.hypot(out.x[j] - out.x[i], (out.y[j] - out.y[i]) * H / W) < out.side[i] * 0.15);
+    if (!nb.length) return m;
+    const r = new Uint8Array(m.length), wt = [3, ...nb.map(j => Math.abs(j - i) === 1 ? 2 : 1)], tot = wt.reduce((a, b) => a + b, 0);
+    const P = nb.map(j => ({ m: out.m[j], x0: out.x[j] * W - out.side[j] * W / 2, y0: out.y[j] * H - out.side[j] * W / 2, s: out.side[j] * W }));
+    for (let yy = 0; yy < MS; yy++) for (let xx = 0; xx < MS; xx++) {
+      const wx = X0 + (xx + 0.5) / MS * S0, wy = Y0 + (yy + 0.5) / MS * S0; let v = 3 * m[yy * MS + xx];
+      for (let q = 0; q < P.length; q++) { const p2 = P[q], u = Math.floor((wx - p2.x0) / p2.s * MS), w2 = Math.floor((wy - p2.y0) / p2.s * MS); v += wt[q + 1] * (u >= 0 && w2 >= 0 && u < MS && w2 < MS ? p2.m[w2 * MS + u] : 0); }
+      r[yy * MS + xx] = Math.round(v / tot); }
+    return r;
   });
   out.m = sm;
   HEAD.data = out; HEAD._mc = null;

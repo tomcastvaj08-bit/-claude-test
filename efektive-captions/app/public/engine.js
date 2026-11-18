@@ -1141,8 +1141,8 @@ E.render = (t, opts={}) => {
       const W=cv.width, H=cv.height, sc=Math.max(1,k.z/100), Tx=k.x/100*W, Ty=k.y/100*H;
       const qx0=W/2+(-W/2-Tx)/sc, qy0=H/2+(-H/2-Ty)/sc, qw=W/sc, qh=H/sc;
       ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,k.op/100)); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-      const src=vid.readyState>=2?vid:(vfOk?vframe:null);
-      if (src){ const sw=src===vid?vid.videoWidth:W, sh=src===vid?vid.videoHeight:H, fx=sw/W, fy=sh/H;
+      const src=(vid._cap && E._fT!=null && vid._capT===E._fT && !vid.paused) ? vid._cap : vid.readyState>=2?vid:(vfOk?vframe:null);   // přesně ten snímek, pro který je spočítaná stabilizace
+      if (src){ const sw=src===vid?vid.videoWidth:src.width, sh=src===vid?vid.videoHeight:src.height, fx=sw/W, fy=sh/H;
         try{ ctx.drawImage(src, qx0*fx, qy0*fy, qw*fx, qh*fy, 0,0,W,H); }catch(e){ if (vfOk) ctx.drawImage(vframe, qx0, qy0, qw, qh, 0,0,W,H); } }
       ctx.restore();
     } else if (vfOk) ctx.drawImage(vframe,0,0);
