@@ -183,11 +183,15 @@ RE.apply = (p, S, t) => {
 };
 // dvojice titulků (volá E.buildPages): druhý jde do spodní vrstvy, oba zmizí spolu, když začne další dvojice
 RE.pair = (pages) => {
-  if (!RE.on() || (E.G.rePlace || 'alt') !== 'alt') return;
+  if (!RE.on()) return;
+  for (const p of pages) p.e = Math.min(p.e, Math.max(p.s + 0.3, E.words[p.b].e + 0.35));
+  if ((E.G.rePlace || 'alt') !== 'alt') return;
   for (let k = 0; k < pages.length; k += 2) {
     const A = pages[k], B = pages[k + 1], C = pages[k + 2]; if (!B) break;
     if (B.s - A.s > 4) { k--; continue; }   // daleko od sebe → nová dvojice od B
-    B.layer = 1; const end = C ? Math.max(B.s + 0.3, C.s) : Math.max(A.e, B.e); A.e = Math.max(A.e, end); B.e = end; if (C && A.e > C.s) A.e = C.s;
+    // konec dvojice: hned jak domluví (poslední slovo + 0,35 s), nejpozději se začátkem další dvojice – titulky nezůstávají, když už nemluví
+    const W = E.words, spoke = Math.max(W[A.b].e, W[B.b].e) + 0.35;
+    B.layer = 1; const end = Math.max(B.s + 0.3, C ? Math.min(C.s, spoke) : spoke); A.e = end; B.e = end;
   }
 };
 })(window);

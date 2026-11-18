@@ -525,8 +525,13 @@ button.pro.on{background:var(--green)}
 .d3c i{width:40px;height:40px;border-radius:12px;border:2px solid transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
 .d3c.on{color:var(--text)}.d3c.on i{border-color:var(--acc)}
 .tpl.is3d .pv{font-size:21px}
-.bnav{overflow-x:auto;scrollbar-width:none}.bnav::-webkit-scrollbar{display:none}
-.bnav button{flex:1 0 auto;min-width:46px}
+/* spodní lišta: posouvá se prstem do strany, každé tlačítko má dost místa (nic se nemačká) */
+.bnav{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent)}
+.bnav.end{-webkit-mask-image:none;mask-image:none}
+.bnav::-webkit-scrollbar{display:none}
+.bnav button{flex:0 0 auto;min-width:68px;padding:8px 6px 9px;font-size:11px;white-space:nowrap;scroll-snap-align:start}
+@media (min-width:900px){ .bnav button{flex:1 0 auto;min-width:56px} }
 
 /* Pozemek: ruční body ve zvětšeném snímku */
 .plotEd{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column}

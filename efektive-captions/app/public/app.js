@@ -752,6 +752,9 @@ function setEd(st){ if (st===edState) return; edState=st; edT=performance.now();
   // počítač: kolečko myši nad lištou
   pn.addEventListener('wheel',e=>{ if (e.deltaY>30 && edState!=='exp' && pn.scrollHeight>pn.clientHeight) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30 && pn.scrollTop<=0) setEd(edState==='exp'?'normal':'col'); },{passive:true});
 })();
+// spodní lišta: zmizí ztmavení na konci, když je dojeto; vybrané tlačítko se vždy posune do záběru
+{ const bn=$('bnav'), upd=()=>bn.classList.toggle('end', bn.scrollLeft+bn.clientWidth>=bn.scrollWidth-4); bn.addEventListener('scroll',upd,{passive:true}); setTimeout(upd,300); window.addEventListener('resize',upd); }
+$('bnav').addEventListener('click',e=>{ const b=e.target.closest('button'); if (b) b.scrollIntoView({behavior:'smooth',inline:'nearest',block:'nearest'}); });
 $('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (b.dataset.p==='trk'){ $('trkBtn').click(); return; }   /* Tracking = sledovat obličej / objekt (titulek, overlay nebo stabilizace) */ if (b.dataset.p==='obj'){ $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); $('objBtn').click(); return; }  /* Maska = označit objekt */ if (selClip>=0){ selClip=-1; renderVideoTrack(); } if (edState==='col') setEd('normal'); panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
 function subHTML(name,opts,extra=''){ return `<div class="sub" data-sub="${name}">${opts.map(([v,l])=>`<div data-v="${v}" class="${sub[name]===v?'on':''}">${l}</div>`).join('')}${extra}</div>`; }
 function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s=>{ s.onclick=e=>{ const d=e.target.closest('[data-v]'); if (d){ sub[s.dataset.sub]=d.dataset.v; renderPanel(); } }; }); }
