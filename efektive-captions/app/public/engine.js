@@ -84,14 +84,14 @@ E.G = {
   fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', faceAuto:true, faceDodgeX:false,
-  sfx:'none', sfxVol:70, trSfxVol:80, sfxWord:false, style:'base',
+  sfx:'none', sfxVol:70, trSfxVol:45, shineSfxVol:50, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
   exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28
 };E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
 
 // klíče, které jsou vždy společné pro celé video
-E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','grade','gradeI','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','trSfxVol','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
+E.GLOBAL_ONLY = new Set(['mixFx','mixShine','mixExtrude','mixSpeed','mix3d','mixSeed','mixSize','mixY','mixX','mixAutoHi','grade','gradeI','mixA','mixB','wpp','maxLines','maxChars','punct','sfxVol','trSfxVol','shineSfxVol','sfxAll','sfxWordsOn','sfxShineOn','sfxTrOn','sfxWord','wordByWord','faceAuto','altEvery','altOn','capMain3']);
 
 // ================= FONTY (kompletní seznam jako v SA Captions) =================
 // [rodina (CSS stack: Apple systémový font → webová náhrada), tloušťka, popisek, kurzíva]
@@ -1119,9 +1119,13 @@ E.applyFacePositions = () => {
 // ================= ZVUKY (SFX) =================
 // vygeneruje zvuk do libovolného AudioContextu (živě i do offline exportu)
 E.trCustom = {};   // vlastní zvuky přechodů: typ přechodu → {buf (AudioBuffer), peak (s – nejsilnější místo)}
+E.bank = {};       // zvuková sada appky (public/sfx): jméno → {buf, peak}
+E.BANK_WORD = { mtick:['tick',0.22], mswoosh:['swoosh',0.25] };   // mini zvuky na slova (velmi tiché)
+E.BANK_TR = { warp:'warp', tunnel:'tunnel', push:'push', pushb:'push', pushr:'pushr', swing:'swing', swingn:'swing', flashw:'flash', flash2:'flash2' };
 E.sfxInto = (ac, dest, t0, type, vol, dur, buf) => {
   if (!type || type==='none') return;
   const g=ac.createGain(); g.connect(dest);
+  if (E.BANK_WORD[type]){ const [nm,gm]=E.BANK_WORD[type], b=E.bank[nm]; if (!b) return; buf=b.buf; vol*=gm; type='custom'; }
   if (type==='custom'){ if (!buf) return; const n=ac.createBufferSource(); n.buffer=buf; g.gain.value=vol; n.connect(g); const now=ac.currentTime||0; n.start(Math.max(now,t0), Math.max(0,now-t0)); return; }   // začátek v minulosti → hrát od správného místa
   if (type.startsWith('tr_')){ trSound(ac,g,t0,type,vol,dur||0.4); return; }
   const osc=(tp,f0,f1,dur,v)=>{ const o=ac.createOscillator(); o.type=tp; o.frequency.setValueAtTime(f0,t0); o.frequency.exponentialRampToValueAtTime(f1,t0+dur); const gg=ac.createGain(); gg.gain.setValueAtTime(v*vol,t0); gg.gain.exponentialRampToValueAtTime(0.0001,t0+dur); o.connect(gg); gg.connect(g); o.start(t0); o.stop(t0+dur+0.02); };
@@ -1203,13 +1207,27 @@ E.TRSFX=(tr,D)=>{
 };
 // seznam okamžiků, kdy má zaznít zvuk (podle titulků / slov + zvuky přechodů)
 E.sfxEvents = () => {
-  const ev=[];
-  if (E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
+  const ev=[], G=E.G;
+  if (G.sfxAll===false) return ev;   // hlavní vypínač všech zvukových efektů
+  // SHINE: zvuk ve chvíli, kdy lesk přejede (běžné titulky, 3D mix, zvýrazněné objekty)
+  const sh=E.bank.shine, sv=(G.shineSfxVol??50)/100;
+  if (sh && G.sfxShineOn!==false && sv>0){
+    const at=t=>ev.push({t:t-sh.peak, type:'custom', buf:sh.buf, vol:sv, kind:'shine'});
+    if (G.mix3d && E.mixPlan){
+      if (G.mixShine && G.mixShine!=='off'){ let plan=null; try{ plan=E.mixPlan(); }catch(e){}
+        if (plan) for (const L of plan.lines){ if (!(G.mixShine==='all' || L.kind==='hi')) continue; const w=E.words[L.ids[0]]; if (w) at(w.s+0.02); } }
+    } else E.pages.forEach((p,k)=>{ const S=E.styleOf(p); if (!S.fxShine || S.negativ) return;
+      const ok = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0); if (!ok) return;
+      let g=null; try{ g=E.groupsOf(p,S).find(x=>x.em); }catch(e){} if (!g) return;
+      const by=S.enterBy || (S.wordByWord ? 'word' : 'page'); at((by==='page'?p.s:E.words[g.ids[0]].s)+0.06); });
+    for (const o of E.objs||[]){ if (!o.shine || o.shSfx===false) continue; if (window.OBJ && OBJ.shineWin) OBJ.shineWin(o); if (o.shS!=null) at(o.shS+0.05); }
+  }
+  if (G.sfxTrOn!==false && E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
     if (tv>0) for (let k=1;k<L.length;k++){ const c=L[k], tr=c.tr||'none'; if (tr==='none' || c.trSfx===false) continue;
-      const cu=E.trCustom[tr];
+      const cu=E.trCustom[tr] || E.bank[E.BANK_TR[tr]];   // vlastní zvuk, jinak zvuk ze sady appky
       if (cu) ev.push({t:st[k]-cu.peak, type:'custom', buf:cu.buf, vol:tv});   // nejsilnější místo zvuku přesně na střih
       else if (E.G.trSfxGen) { const D=c.trDur||E.TRDEF[tr]||0.12; for (const [dt,type,d] of E.TRSFX(tr,D)) ev.push({t:Math.max(0,st[k]+dt), type, dur:d, vol:tv}); } } }
-  E.pages.forEach(p=>{ const S=E.styleOf(p); if (!S.sfx||S.sfx==='none') return;
+  if (G.sfxWordsOn!==false) E.pages.forEach(p=>{ const S=E.styleOf(p); if (!S.sfx||S.sfx==='none') return;
     if (E.G.sfxWord){ for (let i=p.a;i<=p.b;i++) ev.push({t:E.words[i].s, type:S.sfx}); } else ev.push({t:p.s, type:S.sfx}); });
   return ev.sort((a,b)=>a.t-b.t);
 };

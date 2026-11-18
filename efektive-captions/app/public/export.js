@@ -49,7 +49,13 @@ X.buildAudio = async (file, duration, mute, ovAudio, blobs) => {
     g.connect(off.destination); const s=off.createBufferSource(); s.buffer=b; s.connect(g); s.start(a.s, a.off||0, len); }
   const vol=E.G.sfxVol/100;
   for (const ev of E.sfxEvents()) if (ev.t<duration) E.sfxInto(off, off.destination, ev.type==='custom'?ev.t:Math.max(0,ev.t), ev.type, ev.vol??vol, ev.dur, ev.buf);   // ev.vol: zvuky přechodů mají vlastní hlasitost
-  return await off.startRendering();
+  const out=await off.startRendering();
+  // limiter: zvuky navrch hlasitého videa nesmí přebudit (zesílení se hned stáhne a pomalu vrátí, ~60 ms)
+  const CH=out.numberOfChannels, n=out.length, lim=0.89, rel=Math.exp(-1/(0.06*RATE)); let g=1;
+  const data=[...Array(CH)].map((_,c)=>out.getChannelData(c));
+  for (let i=0;i<n;i++){ let pk=0; for (let c=0;c<CH;c++){ const v=Math.abs(data[c][i]); if (v>pk) pk=v; }
+    const need = pk>lim ? lim/pk : 1; g = need<g ? need : 1-(1-g)*rel; if (g<1) for (let c=0;c<CH;c++) data[c][i]*=g; }
+  return out;
 };
 
 async function pickVideoCodec(w,h,fps,br){

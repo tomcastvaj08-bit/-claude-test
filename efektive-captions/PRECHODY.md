@@ -45,3 +45,11 @@ Hraje se v náhledu i v exportu, časované na pohyb přechodu (posuny se škál
 | 2× negativní záblesk | glitch |
 
 Špičky při 80 %: 0,34–0,66 (bez přebuzení).
+
+## Zvuková sada (18. 11. 2026 – ze SFX videa od klienta, čisté zvuky bez hudby)
+Soubory `app/public/sfx/*.m4a` (špička −1 dB, AAC 128k). Nejsilnější místo každého zvuku se zarovná na okamžik efektu.
+- **shine** = zvuk č. 2 z videa (na přání klienta) – hraje při lesku: běžné titulky (příjezd hlavního slova + 0,06 s, jen titulky se shine), 3D mix (první slovo zvýrazněného řádku + 0,02 s), objekty (začátek shine bloku). Výchozí hlasitost 50 %.
+- **tick** (č. 15) a **swoosh** (č. 8) = mini zvuky na slova („Tik klávesy (mini)“, „Swoosh (mini)“), interní zeslabení 0,22 / 0,25.
+- přechody: warp č. 35, tunel č. 20, propad plátna (+blur) č. 30, rychlý propad č. 13, zahoupání č. 23, blesk č. 29, 2× negativ č. 31. Výchozí hlasitost 45 % („ne moc nahlas“). Vlastní nahraný zvuk má přednost.
+- vypínače: hlavní (`sfxAll`), skupiny (`sfxShineOn`, `sfxTrOn`, `sfxWordsOn`), jednotlivě: přechod (`clip.trSfx`), objekt (`o.shSfx`), titulek (zvuk „Jen tento titulek“).
+- export: limiter na 0,89 (zvuky navrch hlasitého videa nepřebudí).

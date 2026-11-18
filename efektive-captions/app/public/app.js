@@ -109,7 +109,7 @@ function restore(json){
   E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.filter(c=>!c.a||(ovAssets[c.a]&&ovAssets[c.a].el)).map(c=>({...c, tr:E.TROLD[c.tr]||c.tr, ...(E.TROLD[c.tr]?{trDur:E.TRDEF[E.TROLD[c.tr]]}:{})})):null;   // vložený klip bez souboru vynechat
   E.audios=(s.audios||[]).filter(a=>ovAssets[a.asset]).map(a=>({...a}));
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease:'tok2'})):[];   // zatím jediný průběh: Tok 2
-  E.G=Object.assign({},E.G0,E.COMMON,s.G); mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && s.G.trSfxVol===80) E.G.trSfxVol=45; mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.face=Array.isArray(s.face)?s.face:null;
@@ -361,6 +361,12 @@ async function trSfxSet(tr, blob, save){
   if (save) await dbDo('readwrite',st=>st.put({id:'trsfx|'+tr, file:blob, fileName:blob.name||'zvuk'}),'files');
 }
 trSfxLoadAll();
+// zvuková sada appky (shine, mini zvuky na slova, výchozí zvuky přechodů) – nejsilnější místo se zarovnává na okamžik efektu
+async function bankLoad(){ for (const nm of ['shine','tick','swoosh','warp','tunnel','push','pushr','swing','flash','flash2']){ try{
+  const r=await fetch('sfx/'+nm+'.m4a'); if (!r.ok) continue; const ab=await decodeVideoAudio(await r.blob());
+  const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0; for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
+  E.bank[nm]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',nm,e); } } }
+bankLoad();
 
 // --- smyčka ---
 let dragging=null, guides=false, inlineOpen=false;
@@ -710,7 +716,7 @@ function pClip(){
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
   ${k>0 && c.tr && c.tr!=='none'?`<div class="row"><span>Zvuk přechodu</span><input type="checkbox" class="sw" id="clTrSfx" ${c.trSfx===false?'':'checked'}></div>
   <label class="ctl"><div class="lb"><span>Hlasitost zvuků přechodů (všech)</span><span id="clTrVv">${E.G.trSfxVol??80} %</span></div><input type="range" id="clTrV" min="0" max="150" value="${E.G.trSfxVol??80}"></label>
-  <div class="note">${E.trCustom[c.tr]?`Vlastní zvuk: <b>${esc(E.trCustom[c.tr].name)}</b> – jeho nejsilnější místo je přesně na střihu. Platí pro všechny přechody tohoto typu ve všech projektech.`:'Nahraj zvuk (svist, rána, nádech…) – appka ho zarovná tak, aby nejsilnější místo padlo přesně na střih. Uloží se do zařízení a platí pro tento typ přechodu ve všech projektech.'}</div>
+  <div class="note">${E.trCustom[c.tr]?`Vlastní zvuk: <b>${esc(E.trCustom[c.tr].name)}</b> – jeho nejsilnější místo je přesně na střihu. Platí pro všechny přechody tohoto typu ve všech projektech.`:'Hraje výchozí zvuk přechodu (nejsilnější místo přesně na střihu). Můžeš nahrát vlastní – uloží se do zařízení a platí pro tento typ přechodu ve všech projektech.'}</div>
   <div class="btnrow"><button class="btn" id="clTrUp">${I('music')} ${E.trCustom[c.tr]?'Vyměnit zvuk':'Nahrát zvuk přechodu'}</button>${E.trCustom[c.tr]?`<button class="btn" id="clTrDelS">${I('trash')} Odebrat zvuk</button>`:''}</div>
   <button class="btn small" id="clTrHear">${I('volume')} Přehrát přechod se zvukem</button>`:''}
   <div class="clabel">Rychlost (slow motion)</div>
@@ -757,7 +763,7 @@ binders.clip=()=>{
   const tvv=$('clTrV'); if (tvv){ tvv.oninput=()=>{ E.G.trSfxVol=+tvv.value; $('clTrVv').textContent=tvv.value+' %'; }; tvv.onchange=()=>changed(); }
   const tu=$('clTrUp'); if (tu) tu.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='audio/*,.mp3,.m4a,.wav,.aac'; inp.onchange=async()=>{ const f=inp.files[0]; if (!f) return; try{ ensureClips(); await trSfxSet(E.clips[selClip].tr, f, true); renderPanel(); toast('Zvuk přechodu uložený – zarovnaný na střih'); }catch(e){ toast('Tenhle zvuk neumím přečíst (zkus MP3 nebo WAV)'); } }; inp.click(); };
   const tdl=$('clTrDelS'); if (tdl) tdl.onclick=async()=>{ ensureClips(); const tr=E.clips[selClip].tr; delete E.trCustom[tr]; try{ await dbDo('readwrite',st=>st.delete('trsfx|'+tr),'files'); }catch(e){} renderPanel(); toast('Vlastní zvuk odebraný'); };
-  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, cu=E.trCustom[c.tr], pre=cu?-cu.peak:Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
+  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, cu=E.trCustom[c.tr]||E.bank[E.BANK_TR[c.tr]], pre=cu?-cu.peak:Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
   const rd=$('clTrD'); if (rd){ rd.oninput=()=>{ ensureClips(); E.clips[selClip].trDur=+rd.value; $('clTrDv').textContent=(+rd.value).toFixed(2)+' s'; }; rd.onchange=()=>{ changed(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.5); }; }
 };
 
@@ -1062,16 +1068,32 @@ function pMotion(){
 }
 
 // ---------- SFX ----------
-const SFX=[['none','Žádný'],['light','Lehké kliknutí'],['heavy','Těžké kliknutí'],['mouse','Klik myši'],['tick','Tick'],['type','Psaní na klávesnici'],['pop','Pop'],['whoosh','Whoosh'],['swoosh','Swoosh'],['shutter','Spoušť foťáku'],['glitch','Glitch'],['ding','Ding']];
+const SFX=[['none','Žádný'],['mtick','Tik klávesy (mini)'],['mswoosh','Swoosh (mini)'],['light','Lehké kliknutí'],['heavy','Těžké kliknutí'],['mouse','Klik myši'],['tick','Tick'],['type','Psaní na klávesnici'],['pop','Pop'],['whoosh','Whoosh'],['swoosh','Swoosh'],['shutter','Spoušť foťáku'],['glitch','Glitch'],['ding','Ding']];
 function pSfx(){
   const S=cur();
-  return `${scopeHTML()}${slider('Hlasitost','sfxVol',0,100,1,'%')}
-  ${toggle('Zvuk na každé slovo (jinak na každý titulek)','sfxWord')}
-  <div class="clabel">Zvuk</div><div class="sfxlist chips" id="sfxList">${SFX.map(([v,l])=>`<div class="chip ${S.sfx===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  <div class="note">Klepnutí zvuk přehraje a nastaví. „Jen tento titulek“ = každý titulek může mít jiný zvuk.</div>`;
+  const sw=(id,lb,on)=>`<div class="row"><span>${lb}</span><input type="checkbox" class="sw" id="${id}" ${on?'checked':''}></div>`;
+  return `<div class="clabel">Zvukové efekty</div>
+  ${sw('sxAll','<b>Všechny zvukové efekty</b>',E.G.sfxAll!==false)}
+  <div class="note">Hlavní vypínač – vypne / zapne najednou zvuky slov, shine i přechodů. Jednotlivé skupiny níž.</div>
+  ${E.G.sfxAll!==false?`
+  ${sw('sxShine','Shine (zvuk při lesku – titulky, 3D mix, objekty)',E.G.sfxShineOn!==false)}
+  ${E.G.sfxShineOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost shine</span><span id="sxShVv">${E.G.shineSfxVol??50} %</span></div><input type="range" id="sxShV" min="0" max="150" value="${E.G.shineSfxVol??50}"></label><button class="btn small" id="sxShPlay">${I('volume')} Poslechnout shine</button>`:''}
+  ${sw('sxTr','Přechody mezi záběry',E.G.sfxTrOn!==false)}
+  ${E.G.sfxTrOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost přechodů</span><span id="sxTrVv">${E.G.trSfxVol??45} %</span></div><input type="range" id="sxTrV" min="0" max="150" value="${E.G.trSfxVol??45}"></label><div class="note">Každý přechod jde vypnout zvlášť (klepni na značku přechodu na stopě videa).</div>`:''}
+  ${sw('sxWords','Zvuky na slova / titulky',E.G.sfxWordsOn!==false)}`:''}
+  ${E.G.sfxAll!==false && E.G.sfxWordsOn!==false?`<div class="clabel">Zvuk na slova</div>${scopeHTML()}${slider('Hlasitost','sfxVol',0,100,1,'%')}
+  ${toggle('Zvuk na každé slovo (jinak na každý titulek)','sfxWord')}`:''}
+  ${E.G.sfxAll!==false && E.G.sfxWordsOn!==false?`<div class="clabel">Zvuk</div><div class="sfxlist chips" id="sfxList">${SFX.map(([v,l])=>`<div class="chip ${S.sfx===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="note">Klepnutí zvuk přehraje a nastaví. „Tik klávesy“ a „Swoosh“ jsou úplně jemné – na běžná slova. „Jen tento titulek“ = každý titulek může mít jiný zvuk (nebo žádný).</div>`:''}`;
 }
 binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1}); else setMany({exitScale:null,exitDur:0.3}); renderPanel(); }; }; })(binders.motion);
-binders.sfx=()=>{ $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; playSfx(c.dataset.v); setVal('sfx',c.dataset.v); $('sfxList').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); }; };
+binders.sfx=()=>{
+  const bind=(id,key)=>{ const el=$(id); if (el) el.onchange=e=>{ E.G[key]=e.target.checked; changed(); renderPanel(); }; };
+  bind('sxAll','sfxAll'); bind('sxShine','sfxShineOn'); bind('sxTr','sfxTrOn'); bind('sxWords','sfxWordsOn');
+  for (const [id,key,lab] of [['sxShV','shineSfxVol','sxShVv'],['sxTrV','trSfxVol','sxTrVv']]){ const el=$(id); if (el){ el.oninput=()=>{ E.G[key]=+el.value; $(lab).textContent=el.value+' %'; }; el.onchange=()=>changed(); } }
+  const sp=$('sxShPlay'); if (sp) sp.onclick=()=>{ const b=E.bank.shine; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.shineSfxVol??50)/100}); };
+  if (!$('sfxList')) return;
+  $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; playSfx(c.dataset.v); setVal('sfx',c.dataset.v); $('sfxList').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); }; };
 
 // ---------- OVERLAY ----------
 const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide doprava'],['slideL','Slide doleva'],['slideU','Slide nahoru'],['slideD','Slide dolů']];
@@ -1975,6 +1997,7 @@ function pObj(){
   <div class="row"><span>Shine přes objekt</span><input type="checkbox" class="sw" id="objShine" ${o.shine?'checked':''}></div>
   ${o.shine?`<div class="note">Na timeline je jeden zlatý blok – shine projede přes celý blok. Posuň ho na moment, kdy má projet, a za okraje ho zkrať / prodluž (delší blok = pomalejší průjezd).</div>
   <div class="row"><span>Opakovat shine v bloku</span><input type="checkbox" class="sw" id="objRep" ${o.shRep?'checked':''}></div>
+  <div class="row"><span>Zvuk shine</span><input type="checkbox" class="sw" id="objShSfx" ${o.shSfx===false?'':'checked'}></div>
   ${colorRow('Barva shine','shineC',o)}${o.shRep?oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)+oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s'):''}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}${oslider('Záře kolem objektu','objSG',0,150,o.shGlow??80)}`:''}
   <div class="clabel">Obrys</div><div class="chips" id="objLine">${[['off','Žádný'],['solid','Plná čára'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${(o.line||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   ${o.line&&o.line!=='off'?`${colorRow('Barva čáry','lineC',o)}${oslider('Tloušťka čáry','objLW',10,200,o.lineW??50)}`:''}
@@ -2005,6 +2028,7 @@ binders.obj=()=>{
   $('objHere').onclick=()=>{ const d=o.e-o.s; o.s=PV.currentTime; o.e=Math.min(PV.duration,o.s+d); changed(); renderPanel(); renderTimeline(); };
   num('objDur',v=>{ o.e=Math.min(PV.duration,o.s+v); });
   $('objShine').onchange=e=>{ o.shine=e.target.checked; changed(); renderPanel(); };
+  if ($('objShSfx')) $('objShSfx').onchange=e=>{ if (e.target.checked) delete o.shSfx; else o.shSfx=false; changed(); };
   if ($('objRep')) $('objRep').onchange=e=>{ o.shRep=e.target.checked; changed(); renderPanel(); };
   num('objSS',v=>o.shineSpd=v); num('objSE',v=>o.shineEvery=v); num('objSW',v=>o.shineW=v); num('objSI',v=>o.shineI=v); num('objSG',v=>o.shGlow=v); num('objLW',v=>o.lineW=v);
   num('objFA',v=>o.fillA=v); if ($('objFA')) $('objFA').onchange=()=>{ changed(); renderPanel(); };
