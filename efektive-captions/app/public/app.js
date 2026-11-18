@@ -786,7 +786,7 @@ function pRe(){
   <div class="clabel">Barva hlavního slova</div><div class="d3cols" id="reCols">${cols}</div>
   <div class="clabel">Druhá barva (střídá se každý druhý titulek)</div><div class="d3cols" id="reAlt"><div class="d3c ${!E.G.altOn?'on':''}" data-off="1"><i style="background:#333"></i>Nestřídat</div>${TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${E.G.altOn&&E.G.altA===a&&E.G.altB===b?'on':''}" data-a="${a}" data-b="${b}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('')}</div>
   <div class="clabel">Kde jsou titulky</div>
-  <div class="chips" id="rePl">${[['alt','Chytře (za hlavou / před tělem)'],['top','Vždy za hlavou'],['chest','Vždy před tělem']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="chips" id="rePl">${[['alt','Střílet nahoru i dolů (jako v předloze)'],['top','Vždy nahoře u hlavy'],['chest','Vždy před tělem']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="chips" id="reFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div><div class="chip ${E.G.extrude>0?'on':''}" data-k="extrude">3D hloubka</div></div>
   ${on?`<button class="btn" id="reRedo">${I('refresh','grad')} Znovu rozmístit titulky</button>`:''}
   <div class="note">Funguje, když je ve videu vidět obličej. Napoprvé appka projde celé video snímek po snímku (chvíli to trvá, pak už je to okamžité). Titulek jde pořád posunout prstem.</div>`;
@@ -808,41 +808,47 @@ function reSegments(){
   return segs.filter(s=>s.t.length>=6);
 }
 function reLayout(){
-  const W=cv.width, H=cv.height, segs=reSegments(), pl=E.G.rePlace||'alt'; let n=0, k2=0;
+  const W=cv.width, H=cv.height, segs=HEAD.data?reSegments():[], pl=E.G.rePlace||'alt'; let n=0;
   for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
+  // 1) dvojice titulků jako v předloze: první nahoře u hlavy, druhý před tělem – oba jsou vidět naráz,
+  //    zmizí spolu, když začne další dvojice („střílí“ se střídavě nahoru a dolů)
+  for (const p of E.pages){ const m=pageMeta(p); if (m.reL){ delete m.layer; delete m.eo; delete m.reL; } }
+  E.buildPages();
+  if (pl==='alt'){
+    const P=E.pages.slice();
+    for (let k=0;k<P.length;k+=2){ const A=P[k], B=P[k+1], C=P[k+2]; if (!B) break;
+      if (B.s-A.s>4) continue;   // daleko od sebe → samostatně
+      const mb=pageMeta(B); mb.layer=1; mb.reL=1;
+      if (C){ const ma=pageMeta(A); ma.eo=C.s; ma.reL=1; mb.eo=C.s; } }
+    E.buildPages();
+  }
   E.pages.forEach((p,k)=>{
-    const m=pageMeta(p); m.own=m.own||{}; delete m.trk;
-    const t1=E.out2src(p.s+0.05), t2=E.out2src(p.e);
-    // úsek s obličejem, který s titulkem nejvíc překrývá (obličej se může najít až chvilku po začátku titulku)
-    let sg=null, best=0.15; for (const s2 of segs){ const ov=Math.min(t2,s2.t[s2.t.length-1])-Math.max(t1,s2.t[0]); if (ov>best){ best=ov; sg=s2; } }
-    if (!sg) return;
-    const ts=Math.max(t1,sg.t[0]);
-    let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=ts) i++;
-    const fw=sg.f[i], cx=sg.x[i], fy=sg.y[i], top=sg.top[i], chin=fy+0.8*fw;   // vršek hlavy přesně z masky (vlasy)
-    // chytře: titulek, který končí velkým slovem → velké slovo za hlavu; jinak (slova i pod velkým) celý před tělo
-    const S0=E.styleOf(p), L0=E.layoutPage(p,S0), last=L0.length?L0.reduce((a,L)=>L.y>a.y?L:a,L0[0]):null;
-    let place=pl==='alt'?(last&&(last.em||!L0.some(L=>L.em))?'top':'chest'):pl;
-    if (place==='top' && top<H*0.14) place='chest';
-    if (place==='chest' && chin+fw*1.4>H*0.9) place='top';
-    // široký titulek se zmenší, ať se vejde (max. 90 % šířky videu)
-    delete m.own.size; let S=E.styleOf(p), lines=E.layoutPage(p,S);
-    if (!lines.length) return;
+    const m=pageMeta(p); m.own=m.own||{}; delete m.trk; delete m.own.size;
+    const role=pl==='alt'?((p.layer|0)?'chest':'top'):pl;
+    let S=E.styleOf(p), lines=E.layoutPage(p,S); if (!lines.length) return;
+    // široký titulek se zmenší, ať se vejde (max. 90 % šířky videa)
     const bw=Math.max(...lines.map(L=>L.total)); if (bw>W*0.9){ m.own.size=Math.round(S.size*W*0.9/bw); S=E.styleOf(p); lines=E.layoutPage(p,S); }
-    const y0=H*S.posY/100;
-    let posY;
-    // nad hlavou: spodní řádek titulku jen spodním okrajem písmen za vlasy (zbytek nad hlavou, obličej volný)
-    if (place==='top'){ const lb=lines.reduce((a,L)=>L.y>a.y?L:a,lines[0]); posY=(top-(lb.em?0.04:-0.06)*lb.px-(lb.y-y0))/H*100; }   // spodní část velkého slova za vlasy
-    else { const tb=Math.min(...lines.map(L=>L.y-L.px*0.55)); posY=(chin+0.3*fw-(tb-y0))/H*100; }   // celý titulek pod bradou, před tělem
-    const half=Math.max(...lines.map(L=>L.total))/2/W*100;
-    m.own.posX=Math.max(half+4,Math.min(96-half,cx/W*100)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
-    // titulek se NEhýbe s hlavou a nemění velikost – jen se na začátku umístí podle hlavy a pak stojí na svém místě
+    const y0=H*S.posY/100, half=Math.max(...lines.map(L=>L.total))/2/W*100;
+    const tb=Math.min(...lines.map(L=>L.y-L.px*0.55))-y0, lb=lines.reduce((a,L)=>L.y>a.y?L:a,lines[0]);
+    // hlava v okamžiku, kdy titulek začíná (když ve videu je)
+    const t1=E.out2src(p.s+0.05), t2=E.out2src(p.e);
+    let sg=null, best=0.15; for (const s2 of segs){ const ov=Math.min(t2,s2.t[s2.t.length-1])-Math.max(t1,s2.t[0]); if (ov>best){ best=ov; sg=s2; } }
+    let posX=50, posY=role==='top'?26:64;
+    if (sg){ const ts=Math.max(t1,sg.t[0]); let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=ts) i++;
+      const fw=sg.f[i], cx=sg.x[i], fy=sg.y[i], top=sg.top[i], chin=fy+0.8*fw;
+      let r=role; if (r==='top' && top<H*0.14) r='chest'; if (r==='chest' && chin+fw*1.4>H*0.92) r='top';
+      // nahoře: spodní řádek (velké slovo) spodní částí za vlasy; dole: celý titulek pod bradou, před tělem
+      posY = r==='top' ? (top-(lb.em?0.04:-0.06)*lb.px-(lb.y-y0))/H*100 : (chin+0.3*fw-tb)/H*100;
+      posX = cx/W*100; }
+    m.own.posX=Math.max(half+4,Math.min(96-half,posX)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
     n++;
   });
   return n;
 }
 async function reToggle(btn){
   if (E.G.reMode){ E.G.reMode=false; for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
-    for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (!m) continue; if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk; if (m.own){ delete m.own.posX; delete m.own.posY; delete m.own._manualPos; delete m.own.size; } }
+    for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (!m) continue; if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk; if (m.reL){ delete m.layer; delete m.eo; delete m.reL; } if (m.own){ delete m.own.posX; delete m.own.posY; delete m.own._manualPos; delete m.own.size; } }
+    E.buildPages();
     E.G.behind='off'; E.G.noSlots=false; E.G.altOn=false; Object.assign(E.G,{layout:E.TEMPLATES.base.set.layout, rowDy1:E.TEMPLATES.base.set.rowDy1, rowDy3:E.TEMPLATES.base.set.rowDy3, gap:E.TEMPLATES.base.set.gap}); changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
   if (!HEAD.data){ const v=await auxVideo(); vid.pause(); btn.disabled=true;
     try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ btn.textContent='Hledám hlavu v každém snímku… '+Math.round(pp*100)+' %'; }}); headSave(); }
@@ -861,7 +867,7 @@ binders.re=()=>{
   if ($('reRedo')) $('reRedo').onclick=()=>{ const n=reLayout(); changed(); toast(`Rozmístěno znovu (${n})`); };
   $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const a=c.dataset.a, b=c.dataset.b; Object.assign(E.G,{grad:true,gA:a,gB:b,gradDir:'v',c1:a,c2:a,c3:a,c4:a}); if (E.G.reMode && !E.G.reAltSet){ const al=reAlt(a); E.G.altA=al[0]; E.G.altB=al[1]; } for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) for (const k of ['grad','gA','gB','c1','c2','c3','c4']) delete m.own[k]; } changed(); renderPanel(); };
   $('reAlt').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; if (c.dataset.off){ E.G.altOn=false; } else { E.G.altOn=true; E.G.altEvery=2; E.G.altA=c.dataset.a; E.G.altB=c.dataset.b; E.G.reAltSet=true; } for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) delete m.own.altOn; } changed(); renderPanel(); };
-  $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; if (E.G.reMode && HEAD.data) reLayout(); changed(); renderPanel(); };
+  $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; if (E.G.reMode) reLayout(); changed(); renderPanel(); };
   $('reFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; else { E.G.extrude=E.G.extrude>0?0:45; E.G.extrudeStyle='light'; } changed(); renderPanel(); };
 };
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
@@ -2385,7 +2391,7 @@ function pObj(){
   const o=curObj();
   let h=`<div class="mixhead"><svg class="ic grad"><use href="#i-sparkles"/></svg><div><b>Zvýraznění objektu</b><small>Vyber objekt ve videu – přes něj projede shine, může mít obrys (plný / přerušovaný) a výplň. Se sledováním drží tvar i při pohybu kamery (např. pozemek z dronu).</small></div></div>
   <div class="btnrow"><button class="btn ${o?'':'primary'}" id="objNew">${I('sparkles')} AI objekt (klepni)</button><button class="btn ${o?'':'primary'}" id="objPlot">${I('pin')} Pozemek (body ručně)</button></div>
-  <div class="note">AI objekt: člověk, auto, míč… – přesný tvar v každém snímku, bez bodů. Pozemek: body naklikáš sám ve zvětšeném snímku.</div>
+  <div class="note"><b>Jak na to:</b> 1) zastav video na klipu, kde je objekt dobře vidět · 2) vyber <b>AI objekt</b> (člověk, auto, míč… – klepneš na něj, AI vybere přesný tvar) nebo <b>Pozemek</b> (body naklikáš sám ve zvětšeném snímku) · 3) Hotovo → appka objekt sleduje přes <b>celý ten klip</b> a maska (shine, výplň) na něm drží.</div>
   ${E.objs.length?`<div class="chips" id="objList">${E.objs.map((x,i)=>`<div class="chip ${x.id===selObj?'on':''}" data-v="${x.id}">Maska ${i+1}</div>`).join('')}</div>`:''}`;
   if (!o) return h;
   const tr=o.trk;
@@ -2453,18 +2459,20 @@ async function objTrack(o){
   trkPick={box:{cx:W/2,cy:H/2,w:W,h:H}, kind:'obj', obj:o, running:true, cancel:false, prog:0};
   $('trkBar').classList.remove('hidden'); trkBarUpd(); $('trkHint').textContent='Sleduji objekt snímek po snímku… 0 %';
   const P=trkPick; let v=null, tr=null, last=0;
-  try{ v=await auxVideo(); tr=await TRK.runPlanar({video:v, file:videoFile, t0:o.t0, poly:o.pts, mask:o.mode==='plot'?null:o._m, back:20, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; $('trkHint').textContent=`Sleduji objekt snímek po snímku… ${Math.round(p*100)} %`; } }, onFrame:(img,rec)=>{ P.live={img,rec}; }, cancel:()=>P.cancel}); }
+  try{ v=await auxVideo(); const cl=clipOfSrc(o.t0); tr=await TRK.runPlanar({video:v, file:videoFile, t0:o.t0, poly:o.pts, mask:o.mode==='plot'?null:o._m, back:Math.max(0,o.t0-cl.s), t1:cl.e, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; $('trkHint').textContent=`Sleduji objekt snímek po snímku… ${Math.round(p*100)} %`; } }, onFrame:(img,rec)=>{ P.live={img,rec}; }, cancel:()=>P.cancel}); }
   catch(e){ console.warn(e); TRK.why='chyba: '+(e&&e.message||e); }
   if (v) freeVideo(v); trkEnd();
   if (!tr){ trkMsg('Objekt se nepodařilo sledovat'+(TRK.why?' ('+TRK.why+')':'')+'. Zkus body na výraznější místa (rohy, okna, hrany).'); return; }
   const r5=v=>Math.round(v*1e5)/1e5;
   o.trk={kind:'h', t:tr.t.map(t=>Math.round(t*1e4)/1e4), H:tr.H.map(h=>h.map(r5)), C:tr.C.map(c=>c.map(r5)), c:tr.c.map(v=>Math.round(v*100)/100), q:(tr.q||[]).map(v=>Math.round(v*100)/100), smooth:6}; delete o.fix;
   // vrstva na timeline = celý sledovaný záběr (začátek a konec se dá zkrátit, objeví / zmizí plynule)
-  { const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=a; o.e=Math.max(a+0.3,b); o.fadeIn=0.15; o.fadeOut=0.12; o.shS=Math.max(o.s,E.src2out(o.t0)); o.shE=Math.min(o.e,o.shS+1.1); }
+  { const cl=clipOfSrc(o.t0), a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=Math.min(a,cl.os); o.e=Math.max(b,cl.oe,o.s+0.3); o.fadeIn=0.15; o.fadeOut=0.12; o.shS=Math.max(o.s,E.src2out(o.t0)); o.shE=Math.min(o.e,o.shS+1.1); }
   changed(); renderPanel(); renderTimeline(); PV.currentTime=Math.max(o.s+0.05,Math.min(o.e-0.05,E.src2out(o.t0)));
   trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s (${tr.t.length} snímků). Body v rozích můžeš kdekoli posunout a opravit.`);
 }
 
+// úsek videa (klip na timeline), ve kterém je zdrojový čas ts → maska platí pro celý tenhle klip
+function clipOfSrc(ts){ const L=E.clipList(), st=E.clipStarts(); for (let i=0;i<L.length;i++){ const c=L[i]; if (!c.a && ts>=c.s-0.01 && ts<=c.e+0.01) return {s:c.s, e:c.e, os:st[i], oe:st[i]+E.clipDur(c)}; } return {s:0, e:E.srcDur||vid.duration||0, os:0, oe:PV.duration||0}; }
 // AI objekt: přesný tvar v každém snímku (bez bodů)
 async function objTrackAI(o){
   if (!o._m) o._m=OBJ.unrle(o.mask);
@@ -2472,12 +2480,13 @@ async function objTrackAI(o){
   trkPick={box:{cx:W/2,cy:H/2,w:W,h:H}, kind:'obj', obj:o, running:true, cancel:false, prog:0};
   $('trkBar').classList.remove('hidden'); trkBarUpd(); $('trkHint').textContent='AI vybírá objekt v každém snímku… 0 %';
   const P=trkPick; let v=null, tr=null, last=0;
-  try{ v=await auxVideo(); tr=await SEG.run({video:v, file:videoFile, t0:o.t0, mask:o._m, seeds:o.seeds||[], back:20, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; $('trkHint').textContent=`AI vybírá objekt v každém snímku… ${Math.round(p*100)} %`; } }, onFrame:(img,b)=>{ P.live={img,box:b}; }, cancel:()=>P.cancel}); }
+  try{ v=await auxVideo(); const cl=clipOfSrc(o.t0); tr=await SEG.run({video:v, file:videoFile, t0:o.t0, mask:o._m, seeds:o.seeds||[], back:Math.max(0,o.t0-cl.s), t1:cl.e, onP:p=>{ P.prog=p; const n=performance.now(); if (n-last>150){ last=n; $('trkHint').textContent=`AI vybírá objekt v každém snímku… ${Math.round(p*100)} %`; } }, onFrame:(img,b)=>{ P.live={img,box:b}; }, cancel:()=>P.cancel}); }
   catch(e){ console.warn(e); SEG.why='chyba: '+(e&&e.message||e); }
   if (v) freeVideo(v); trkEnd();
   if (!tr){ trkMsg('Objekt se nepodařilo sledovat'+(SEG.why?' ('+SEG.why+')':'')+'. Zkus klepnout na objekt víc uprostřed.'); return; }
   o.trk=tr; o._sc=null;
-  { const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=a; o.e=Math.max(a+0.3,b); o.fadeIn=0.15; o.fadeOut=0.12; }
+  // vrstva masky = celý klip, na kterém byl objekt označen
+  { const cl=clipOfSrc(o.t0), a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=Math.min(a,cl.os); o.e=Math.max(b,cl.oe,o.s+0.3); o.fadeIn=0.15; o.fadeOut=0.12; }
   changed(); renderPanel(); renderTimeline(); PV.currentTime=Math.max(o.s+0.05,Math.min(o.e-0.05,E.src2out(o.t0)));
   trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s (${tr.t.length} snímků), přesný tvar v každém snímku.`);
 }
