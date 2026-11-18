@@ -171,7 +171,7 @@ E.TEMPLATES = {
       pv:pv('začněte mě','Sledovat',gr('#ff3b30','#c00000')) },
     negativ3d:{ name:'', set:{...B, grad:false,c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',c4:'#ffffff',negativ:true,tilt:-37,tiltAlt:false,tiltX:0,persp:60,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat','background:#fff;color:#111;padding:0 4px;font-weight:800;letter-spacing:-.07em') },
-    base3d:{ name:'', set:{...B, extrude:22,extrudeStyle:'light',negativ:false,...tilt3d},
+    base3d:{ name:'', set:{...B, extrude:45,extrudeStyle:'light',negativ:false,...tilt3d},
       pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 2px 0 #b86a00') },
     snell:{ name:'', set:{...B, fontEm:SCRIPT,wEm:400,trackEm:0,emScale:165,glow:35,glowMode:'always',...tilt3d,...col('#ff2d9a','#a845ff','#ff2d9a'),negativ:false,extrude:0,extrudeStyle:'light'},
       pv:`<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="font-family:'Pinyon Script','Dancing Script',cursive;${gr('#ff2d9a','#a845ff','400')};letter-spacing:0;font-size:1.25em">Sledovat</b>` },
