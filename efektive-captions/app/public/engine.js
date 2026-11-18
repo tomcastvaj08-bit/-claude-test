@@ -180,6 +180,11 @@ E.TEMPLATES = {
       pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
     modra_lesk:{ name:'', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),...tilt3d,gloss:'gloss',glossAmt:70,glossOn:'main',negativ:false,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat',gr('#14d6ff','#0040ff')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
+    // jeden styl 3D lesku na žluté (base_lesk), modré a červené – rovně, bez náklonu (schválené)
+    modra_lesk_r:{ name:'', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),gloss:'gloss',glossAmt:70,glossOn:'main',negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#14d6ff','#0040ff')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
+    cervena_lesk:{ name:'', set:{...B, ...col('#ff3b30','#c00000','#e00a00'),gloss:'gloss',glossAmt:70,glossOn:'main',negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#ff3b30','#c00000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
   };
   const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',d3:k2!=='krem',...v2}; }
   E.TEMPLATES=T;

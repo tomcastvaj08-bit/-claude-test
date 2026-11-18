@@ -1110,7 +1110,7 @@ function customTemplates(){ return lsGet('efk_custom',{}); }
 function pTemplates(){
   const cat=sub.templates; let list;
   if (cat==='custom') list=Object.entries(customTemplates());
-  else if (cat==='d3') list=Object.entries(E.TEMPLATES).filter(([k,t])=>t.d3);
+  else if (cat==='d3') list=Object.entries(E.TEMPLATES).filter(([k,t])=>t.d3).sort((a,b)=>(b[1].set.gloss==='gloss')-(a[1].set.gloss==='gloss'));   // 3D lesk (žlutá, modrá, červená) první
   else list=Object.entries(E.TEMPLATES).filter(([k,t])=>cat==='all'||t.cat==='trending');
   const S=cur();
   const quick=`<div class="clabel">Rychlé efekty</div>
