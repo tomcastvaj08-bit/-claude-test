@@ -162,8 +162,8 @@ E.TEMPLATES = {
   const pv=(sec,main,css)=>`<span style="font-weight:600;letter-spacing:-.06em">${sec}</span><br><b style="${css}">${main}</b>`;
   const gr=(a,b,w='800')=>`background:linear-gradient(${a},${b});-webkit-background-clip:text;color:transparent;font-weight:${w};letter-spacing:-.07em`;
   const add={
-    krem:{ name:'Metalická (Neulis)', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#e2d3bf','#6e5a4a','#a69888'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light'},
-      pv:`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#e2d3bf','#6e5a4a','700')};text-shadow:none">Sledovat</b>` },
+    krem:{ name:'Metalická (Neulis)',   /* barvy Lerdee: Begie #E9E0D6 → Brown #363029 */ set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#e9e0d6','#363029','#e9e0d6'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#e9e0d6','#363029','700')};text-shadow:none">Sledovat</b>` },
     modra3d:{ name:'Modrá 3D', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat',gr('#14d6ff','#0040ff')) },
     cervena3d:{ name:'Červená 3D', set:{...B, ...col('#ff3b30','#c00000','#e00a00'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
