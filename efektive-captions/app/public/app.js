@@ -2257,7 +2257,7 @@ function objFinish(save){
   if (OBJ.area(E2.m)<30){ toast('Nic není vybrané – klepni na objekt'); objEdit=E2; renderPanel(); return; }
   OBJ.tidy(E2.m);
   // AI objekt: žádné body – přesný tvar z AI v každém snímku
-  const fresh=!E2.obj, o=E2.obj||{id:'o'+Date.now().toString(36), t0:E2.t0, _mk:1, shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shRep:false, line:'off', lineC:'#ffffff', lineW:45, fillA:0, fillC:'#000000', dots:false, trk:null};   // AI objekt: bez čáry (jen shine), čáru jde zapnout
+  const fresh=!E2.obj, o=E2.obj||{id:'o'+Date.now().toString(36), t0:E2.t0, _mk:1, shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shRep:false, line:'off', lineC:'#ffffff', lineW:45, fillA:0, fillC:'#27e1c1', dim:45, dots:false, trk:null};   // AI objekt: bez čáry – okolí ztmavené + shine (hned je vidět)
   o.mode='ai'; o.mask=OBJ.rle(E2.m); o.pts=[]; o.poly=false; o.dots=false; o.seeds=(E2.seeds||[]).map(z=>({...z})); if (!fresh){ o.t0=E2.t0; delete o.fix; o.trk=null; } objInvalidate(o);
   if (fresh){ const s=E.src2out(E2.t0); o.s=s; o.e=Math.min(PV.duration||s+1.5,s+1.5); o.shS=s+0.1; o.shE=s+1.2; E.objs.push(o); }
   selObj=o.id;
@@ -2337,28 +2337,24 @@ function pObj(){
     <div class="btnrow"><button class="btn" id="objCancel">Zrušit</button><button class="btn primary" id="objDone">${I('check')} Hotovo</button></div>`;
   }
   const o=curObj();
-  let h=`<div class="mixhead"><svg class="ic grad"><use href="#i-sparkles"/></svg><div><b>Zvýraznění objektu</b><small>Vyber objekt ve videu – přes něj projede shine, může mít obrys (plný / přerušovaný) a výplň. Se sledováním drží tvar i při pohybu kamery (např. pozemek z dronu).</small></div></div>
-  <div class="btnrow"><button class="btn ${o?'':'primary'}" id="objNew">${I('sparkles')} AI objekt (klepni)</button><button class="btn ${o?'':'primary'}" id="objPlot">${I('pin')} Pozemek (body ručně)</button></div>
-  <div class="note"><b>Jak na to:</b> 1) zastav video na klipu, kde je objekt dobře vidět · 2) vyber <b>AI objekt</b> (člověk, auto, míč… – klepneš na něj, AI vybere přesný tvar) nebo <b>Pozemek</b> (body naklikáš sám ve zvětšeném snímku) · 3) Hotovo → appka objekt sleduje přes <b>celý ten klip</b> a maska (shine, výplň) na něm drží.</div>
-  ${E.objs.length?`<div class="chips" id="objList">${E.objs.map((x,i)=>`<div class="chip ${x.id===selObj?'on':''}" data-v="${x.id}">Maska ${i+1}</div>`).join('')}</div>`:''}`;
+  // 1) volba: AI objekt / Pozemek (dvě velké karty)
+  let h=`<div class="mk2">
+    <button class="mkc ${o&&o.mode==='ai'?'':''}" id="objNew"><svg class="ic grad"><use href="#i-sparkles"/></svg><b>AI objekt</b><small>Klepneš na člověka, auto, míč… AI vybere přesný tvar.</small></button>
+    <button class="mkc" id="objPlot"><svg class="ic grad"><use href="#i-pin"/></svg><b>Pozemek</b><small>Body naklikáš sám ve zvětšeném snímku.</small></button></div>
+  <div class="note">Nejdřív zastav video na klipu, kde je objekt dobře vidět. Maska pak platí pro <b>celý ten klip</b>.</div>
+  ${E.objs.length?`<div class="clabel">Tvoje masky</div><div class="chips" id="objList">${E.objs.map((x,i)=>`<div class="chip ${x.id===selObj?'on':''}" data-v="${x.id}">${x.mode==='plot'?'Pozemek':'Objekt'} ${i+1}</div>`).join('')}</div>`:''}`;
   if (!o) return h;
-  const tr=o.trk;
-  h+=`<div class="clabel">Čas · ${fmt(o.s)}–${fmt(o.e)}</div>
-  <div class="btnrow"><button class="btn small" id="objHere">${I('pin')} Začít v místě hlavy</button></div>
-  ${oslider('Délka zobrazení','objDur',0.5,30,+(o.e-o.s).toFixed(1),' s')}
-  <div class="row"><span>Shine přes objekt</span><input type="checkbox" class="sw" id="objShine" ${o.shine?'checked':''}></div>
-  ${o.shine?`<div class="note">Na timeline je jeden zlatý blok – shine projede přes celý blok. Posuň ho na moment, kdy má projet, a za okraje ho zkrať / prodluž (delší blok = pomalejší průjezd).</div>
-  <div class="row"><span>Opakovat shine v bloku</span><input type="checkbox" class="sw" id="objRep" ${o.shRep?'checked':''}></div>
-  <div class="row"><span>Zvuk shine</span><input type="checkbox" class="sw" id="objShSfx" ${o.shSfx===false?'':'checked'}></div>
-  ${colorRow('Barva shine','shineC',o)}${o.shRep?oslider('Rychlost průjezdu','objSS',0,100,o.shineSpd??50)+oslider('Opakovat každých','objSE',1,8,o.shineEvery??2.6,' s'):''}${oslider('Šířka pruhu','objSW',0,100,o.shineW??50)}${oslider('Síla','objSI',10,150,o.shineI??80)}${oslider('Záře kolem objektu','objSG',0,150,o.shGlow??80)}`:''}
-  ${o.mode==='ai'?'':`<div class="row"><span>Body v rozích</span><input type="checkbox" class="sw" id="objDots" ${o.dots?'checked':''}></div>`}
-  <div class="clabel">Obrys</div><div class="chips" id="objLine">${[['off','Žádný'],['solid','Plná čára'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${(o.line||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  ${o.line&&o.line!=='off'?`${colorRow('Barva čáry','lineC',o)}${oslider('Tloušťka čáry','objLW',10,200,o.lineW??50)}`:''}
-  ${oslider('Výplň (barevný nádech)','objFA',0,70,o.fillA||0,' %')}
-  ${(o.fillA||0)>0?colorRow('Barva výplně','fillC',o):''}
-  <div class="clabel">Pohyb kamery</div>
-  <button class="btn" id="objTrk">${I('target','grad')} ${tr?'Sledovat znovu':'Sledovat pohyb objektu'}</button>
-  ${tr?`<div class="note">Sledováno ${fmt(E.src2out(tr.t[0]))}–${fmt(E.src2out(tr.t[tr.t.length-1]))}${tr.kind==='h'?` (${tr.t.length} snímků, perspektiva + rohy). Když roh někde ujede, zastav video a bod přetáhni – oprava se plynule propíše do okolních snímků.`:tr.kind==='seg'?` (${tr.t.length} snímků). AI vybrala přesný tvar objektu v každém snímku.`:'. Tvar drží posun, natočení, zvětšení i zkosení.'}</div>${tr.kind==='seg'?'':oslider('Plynulost sledování','objTS',0,60,tr.smooth??(tr.kind==='h'?6:8))}${(o.fix||[]).length?`<button class="btn small" id="objFixClr">${I('reset')} Zrušit ruční opravy bodů (${o.fix.length})</button>`:''}<button class="btn small" id="objTrkOff">Zrušit sledování</button>`:'<div class="note">Bez sledování zůstane zvýraznění na místě (statický záběr). Při pohybu kamery dej „Sledovat“.</div>'}
+  const tr=o.trk, fx=[['dim','Ztmavit okolí',(o.dim||0)>0],['shine','Shine',!!o.shine],['fill','Barva',(o.fillA||0)>0],['line','Obrys',o.line&&o.line!=='off']];
+  // 2) vybraná maska: stav sledování + efekty jedním klepnutím
+  h+=`<div class="clabel">${o.mode==='plot'?'Pozemek':'Objekt'} ${E.objs.indexOf(o)+1} · ${fmt(o.s)}–${fmt(o.e)}</div>
+  ${tr?`<div class="note">${I('check')} Sleduje se přes celý klip${tr.kind==='seg'?' – přesný tvar v každém snímku':''}.</div>`:`<div class="note">Zatím se nesleduje. <button class="btn small" id="objTrk">${I('target','grad')} Sledovat přes celý klip</button></div>`}
+  <div class="clabel">Efekt (klepnutím zapneš / vypneš)</div>
+  <div class="mkfx" id="objFx">${fx.map(([k,l,on])=>`<div class="chip ${on?'on':''}" data-k="${k}">${l}</div>`).join('')}</div>
+  ${(o.dim||0)>0?oslider('Ztmavení okolí','objDim',10,85,o.dim,' %'):''}
+  ${(o.fillA||0)>0?colorRow('Barva objektu','fillC',o)+oslider('Síla barvy','objFA',5,70,o.fillA,' %'):''}
+  ${o.line&&o.line!=='off'?`<div class="chips" id="objLine">${[['solid','Plná'],['dash','Přerušovaná']].map(([v,l])=>`<div class="chip ${o.line===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>${colorRow('Barva čáry','lineC',o)}${oslider('Tloušťka čáry','objLW',10,200,o.lineW??50)}`:''}
+  ${o.shine?`${colorRow('Barva shine','shineC',o)}${oslider('Síla shine','objSI',10,150,o.shineI??80)}<div class="row"><span>Opakovat shine</span><input type="checkbox" class="sw" id="objRep" ${o.shRep?'checked':''}></div>`:''}
+  ${o.mode==='plot'?`<div class="row"><span>Body v rozích</span><input type="checkbox" class="sw" id="objDots" ${o.dots?'checked':''}></div>`:''}
   <div class="btnrow"><button class="btn" id="objEditBtn">${I('pencil')} Upravit výběr</button><button class="btn" id="objDel">${I('trash')} Smazat</button></div>`;
   return h;
 }
@@ -2366,12 +2362,9 @@ binders.obj=()=>{
   const E2=objEdit;
   if (E2){
     $('objTool').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; E2.tool=d.dataset.v; renderPanel(); };
-    if ($('objSize')) $('objSize').oninput=e=>{ E2.size=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=E2.size; };
-    if ($('objTol')) $('objTol').oninput=e=>{ E2.tol=+e.target.value; e.target.previousElementSibling.lastElementChild.textContent=E2.tol; };
     $('objClear').onclick=()=>{ E2.m.d.fill(0); E2.seeds=[]; E2.dirty=true; };
     $('objCancel').onclick=()=>objFinish(false); $('objDone').onclick=()=>objFinish(true);
-    // AI model načíst hned na pozadí, ať je první klepnutí rychlé
-    OBJ.aiLoad().catch(()=>{});
+    OBJ.aiLoad().catch(()=>{});   // AI model načíst hned na pozadí, ať je první klepnutí rychlé
     return;
   }
   $('objNew').onclick=()=>objBegin(null);
@@ -2379,20 +2372,15 @@ binders.obj=()=>{
   if ($('objList')) $('objList').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; selObj=d.dataset.v; const o=curObj(); if (o && (PV.currentTime<o.s||PV.currentTime>o.e)) PV.currentTime=o.s+0.05; renderPanel(); };
   const o=curObj(); if (!o) return;
   const num=(id,fn)=>{ const el=$(id); if (!el) return; el.oninput=e=>{ fn(+e.target.value); e.target.previousElementSibling.lastElementChild.textContent=e.target.value+(e.target.previousElementSibling.lastElementChild.textContent.replace(/^[\d.,-]+/,'')); }; el.onchange=()=>changed(); };
-  $('objHere').onclick=()=>{ const d=o.e-o.s; o.s=PV.currentTime; o.e=Math.min(PV.duration,o.s+d); changed(); renderPanel(); renderTimeline(); };
-  num('objDur',v=>{ o.e=Math.min(PV.duration,o.s+v); });
-  $('objShine').onchange=e=>{ o.shine=e.target.checked; changed(); renderPanel(); };
-  if ($('objShSfx')) $('objShSfx').onchange=e=>{ if (e.target.checked) delete o.shSfx; else o.shSfx=false; changed(); };
-  if ($('objRep')) $('objRep').onchange=e=>{ o.shRep=e.target.checked; changed(); renderPanel(); };
-  num('objSS',v=>o.shineSpd=v); num('objSE',v=>o.shineEvery=v); num('objSW',v=>o.shineW=v); num('objSI',v=>o.shineI=v); num('objSG',v=>o.shGlow=v); num('objLW',v=>o.lineW=v);
-  num('objFA',v=>o.fillA=v); if ($('objFA')) $('objFA').onchange=()=>{ changed(); renderPanel(); };
-  num('objTS',v=>{ if (o.trk){ o.trk.smooth=v; o.trk._S=null; } });
-  $('objLine').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; o.line=d.dataset.v; changed(); renderPanel(); };
-  document.querySelectorAll('#panel .objcols').forEach(row=>{ row.onclick=e=>{ const d=e.target.closest('[data-c]'); if(!d) return; o[row.dataset.k]=d.dataset.c; changed(); renderPanel(); }; const inp=row.querySelector('input[type=color]'); if (inp){ inp.oninput=e=>{ o[inp.dataset.k]=e.target.value; inp.parentElement.style.background=e.target.value; }; inp.onchange=()=>{ changed(); renderPanel(); }; } });
-  $('objTrk').onclick=()=>objTrack(o);
+  $('objFx').onclick=e=>{ const c=e.target.closest('[data-k]'); if(!c) return; const k=c.dataset.k;
+    if (k==='dim') o.dim=(o.dim||0)>0?0:45; else if (k==='shine') o.shine=!o.shine; else if (k==='fill'){ o.fillA=(o.fillA||0)>0?0:22; if (!o.fillC||o.fillC==='#000000') o.fillC='#27e1c1'; } else if (k==='line') o.line=o.line&&o.line!=='off'?'off':'solid';
+    changed(); renderPanel(); };
+  num('objDim',v=>o.dim=v); num('objFA',v=>o.fillA=v); num('objLW',v=>o.lineW=v); num('objSI',v=>o.shineI=v);
+  if ($('objLine')) $('objLine').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; o.line=d.dataset.v; changed(); renderPanel(); };
+  if ($('objRep')) $('objRep').onchange=e=>{ o.shRep=e.target.checked; changed(); };
   if ($('objDots')) $('objDots').onchange=e=>{ o.dots=e.target.checked; changed(); };
-  if ($('objFixClr')) $('objFixClr').onclick=()=>{ delete o.fix; changed(); renderPanel(); };
-  if ($('objTrkOff')) $('objTrkOff').onclick=()=>{ o.trk=null; changed(); renderPanel(); };
+  document.querySelectorAll('#panel .objcols').forEach(row=>{ row.onclick=e=>{ const d=e.target.closest('[data-c]'); if(!d) return; o[row.dataset.k]=d.dataset.c; changed(); renderPanel(); }; const inp=row.querySelector('input[type=color]'); if (inp){ inp.oninput=e=>{ o[inp.dataset.k]=e.target.value; inp.parentElement.style.background=e.target.value; }; inp.onchange=()=>{ changed(); renderPanel(); }; } });
+  if ($('objTrk')) $('objTrk').onclick=()=>objTrack(o);
   $('objEditBtn').onclick=()=>o.mode==='plot'?plotEditor(o):objBegin(o);
   $('objDel').onclick=()=>{ E.objs=E.objs.filter(x=>x!==o); selObj=null; changed(); renderPanel(); renderTimeline(); };
 };

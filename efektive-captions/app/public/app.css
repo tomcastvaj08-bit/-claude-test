@@ -535,3 +535,9 @@ button.pro.on{background:var(--green)}
 .plotEd .pe-top b{display:block;font-size:14px}.plotEd .pe-top small{font-size:11.5px;opacity:.85}
 .plotEd .pe-bar{display:flex;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);background:#0b0b0d}
 .plotEd .pe-bar .btn{flex:1;padding:10px 4px;font-size:13px}
+
+/* Maska v2: dvě velké karty + efekty */
+.mk2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.mkc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;text-align:left;border:2px solid var(--line);background:var(--card);border-radius:14px;cursor:pointer;font:inherit;color:inherit}
+.mkc .ic{width:26px;height:26px}.mkc b{font-size:15px}.mkc small{font-size:11.5px;color:var(--muted);line-height:1.3}
+.mkfx{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mkfx .chip{text-align:center}

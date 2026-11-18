@@ -206,6 +206,9 @@ function drawH(c, o, t, W, H, A) {
   if (!oc || oc.width !== W || oc.height !== H) { oc = document.createElement('canvas'); oc.width = W; oc.height = H; ox = oc.getContext('2d'); }
   const maskTo = (x, feather) => { x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#fff'; pathN(x, o, mp); x.fill('evenodd');
     if (feather) { const OFF = W * 4; x.shadowColor = '#fff'; x.shadowBlur = feather; x.shadowOffsetX = OFF; x.translate(-OFF, 0); pathN(x, o, (a, b) => { const q = mp(a, b); return q; }); x.fill('evenodd'); } x.restore(); };
+  if ((o.dim || 0) > 0) {   // ztmavit okolí pozemku
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = A * o.dim / 100; c.fillStyle = '#000'; pathN(c, o, mp); c.rect(0, 0, W, H); c.fill('evenodd'); c.restore();
+  }
   if ((o.fillA || 0) > 0) {
     ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, W, H); maskTo(ox, 0);
     ox.globalCompositeOperation = 'source-in'; ox.fillStyle = o.fillC || '#27e1c1'; ox.fillRect(0, 0, W, H); ox.globalCompositeOperation = 'source-over';
@@ -302,13 +305,23 @@ function segFrame(o, t) {
   }
   // jedno sdílené plátno: maska se do něj přepíše jen při změně snímku
   if (!segC || segC.width !== f.m.w || segC.height !== f.m.h) { segC = document.createElement('canvas'); segC.width = f.m.w; segC.height = f.m.h; segX = segC.getContext('2d'); segId = segX.createImageData(f.m.w, f.m.h); segFor = null; }
-  if (segFor !== f) { const d = segId.data, m = f.m.d; for (let k = 0, j = 0; k < m.length; k++, j += 4) { const v = m[k] ? 255 : 0; d[j] = d[j + 1] = d[j + 2] = 255; d[j + 3] = v; } segX.putImageData(segId, 0, 0); segFor = f; }
+  if (segFor !== f) {   // měkký okraj (průměr 3×3) – hrana bez schodů i po zvětšení
+    const d = segId.data, m = f.m.d, w = f.m.w, h = f.m.h;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let v = 0; for (let dy = -1; dy <= 1; dy++) { const yy = Math.min(h - 1, Math.max(0, y + dy)) * w; for (let dx = -1; dx <= 1; dx++) v += m[yy + Math.min(w - 1, Math.max(0, x + dx))]; }
+      const j = (y * w + x) * 4; d[j] = d[j + 1] = d[j + 2] = 255; d[j + 3] = Math.round(v * 255 / 9); }
+    segX.putImageData(segId, 0, 0); segFor = f; }
   f.mc = segC;
   return f;
 }
 let segC = null, segX = null, segId = null, segFor = null;
 function drawMaskObj(c, o, t, W, H, mc, MM, A) {
   {
+    // ztmavit okolí: všechno kromě objektu tmavší → objekt vynikne (jako reflektor)
+    if ((o.dim || 0) > 0) {
+      const d = small(4, W, H), x = d.x; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, W, H); x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
+      x.globalCompositeOperation = 'destination-out'; x.setTransform(MM); x.imageSmoothingEnabled = true; x.drawImage(mc, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over';
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = A * o.dim / 100; c.drawImage(d.c, 0, 0); c.restore();
+    }
     // výplň (jemný barevný nádech)
     if ((o.fillA || 0) > 0) {   // výplň v rozlišení masky (malé plátno) a zvětšená na místo objektu
       const sm = small(0, mc.width, mc.height), x = sm.x; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, mc.width, mc.height); x.drawImage(mc, 0, 0);
