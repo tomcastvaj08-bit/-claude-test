@@ -2075,7 +2075,7 @@ function trkMsgShort(m){ toast(m); }
 function polyToMask(P,m){ const c=document.createElement('canvas'); c.width=m.w; c.height=m.h; const x=c.getContext('2d',{willReadFrequently:true}); x.fillStyle='#fff'; x.beginPath(); P.forEach(([a,b],i)=>i?x.lineTo(a*m.w,b*m.h):x.moveTo(a*m.w,b*m.h)); x.closePath(); x.fill();
   const d=x.getImageData(0,0,m.w,m.h).data; for (let i=0;i<m.d.length;i++) m.d[i]=d[i*4+3]>127?1:0; }
 // rohy z masky: hlavní obrys → pár vrcholů → přichycení na rohy v obraze
-function autoCorners(E2){ try{ const ct=OBJ.contours(E2.m,true); if (!ct.length) return []; const g=TRK.gray(E2.img.data); const C=TRK.cornersFrom(g,E2.m.w,E2.m.h,ct[0],16); return C.map(([x,y])=>[x/E2.m.w,y/E2.m.h]); }catch(e){ console.warn(e); return []; } }
+function autoCorners(E2){ try{ const ct=OBJ.contours(E2.m,true); if (!ct.length) return []; const g=TRK.gray(E2.img.data); const C=TRK.cornersFrom(g,E2.m.w,E2.m.h,ct[0],16); const r=C.map(([x,y])=>[x/E2.m.w,y/E2.m.h]); r.straight=C.straight||0; return r; }catch(e){ console.warn(e); return []; } }
 // plátno → maskové pixely (zpětně přes zoom / stabilizaci videa)
 function objPt(x,y){ const W=cv.width,H=cv.height,k=E.vxfAt(PV.currentTime)||{z:100,x:0,y:0},z=k.z/100, m=objEdit.m;
   const nx=((x-(W/2+k.x/100*W))/z+W/2)/W, ny=((y-(H/2+k.y/100*H))/z+H/2)/H; return [nx*m.w, ny*m.h]; }
@@ -2141,8 +2141,10 @@ function objFinish(save){
   if (poly) polyToMask(E2.pts,E2.m); else OBJ.tidy(E2.m);
   // trackovací body: ruční, jinak rohy objektu automaticky (obrys → rohy přichycené na skutečné rohy v obraze)
   let pts=E2.pts.length>=3?E2.pts.map(p=>p.slice()):autoCorners(E2);
+  // AI výběr hranatého objektu (dům, okno, pozemek – většina obrysu rovné hrany): obrys povede rovně od rohu k rohu (skutečný tvar, ne okraj stromu před ním)
+  let polyMode=poly; if (!poly && E2.pts.length<3 && pts.length>=3 && (pts.straight||0)>0.55){ polyMode=true; polyToMask(pts,E2.m); }
   const fresh=!E2.obj, o=E2.obj||{id:'o'+Date.now().toString(36), t0:E2.t0, _mk:1, shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shRep:false, line:'solid', lineC:'#ffffff', lineW:45, fillA:0, fillC:'#000000', dots:true, trk:null};
-  o.mask=OBJ.rle(E2.m); o.pts=pts; o.poly=poly; if (!fresh){ o.t0=E2.t0; delete o.fix; } objInvalidate(o);
+  o.mask=OBJ.rle(E2.m); o.pts=pts.map(p=>p.slice()); o.poly=polyMode; if (!fresh){ o.t0=E2.t0; delete o.fix; } objInvalidate(o);
   if (fresh){ const s=E.src2out(E2.t0); o.s=s; o.e=Math.min(PV.duration||s+1.5,s+1.5); o.shS=s+0.1; o.shE=s+1.2; E.objs.push(o); }
   selObj=o.id;
   changed(); renderPanel(); renderTimeline();
@@ -2238,7 +2240,7 @@ async function objTrack(o){
   if (v) freeVideo(v); trkEnd();
   if (!tr){ trkMsg('Objekt se nepodařilo sledovat'+(TRK.why?' ('+TRK.why+')':'')+'. Zkus body na výraznější místa (rohy, okna, hrany).'); return; }
   const r5=v=>Math.round(v*1e5)/1e5;
-  o.trk={kind:'h', t:tr.t.map(t=>Math.round(t*1e4)/1e4), H:tr.H.map(h=>h.map(r5)), C:tr.C.map(c=>c.map(r5)), c:tr.c.map(v=>Math.round(v*100)/100), smooth:6}; delete o.fix;
+  o.trk={kind:'h', t:tr.t.map(t=>Math.round(t*1e4)/1e4), H:tr.H.map(h=>h.map(r5)), C:tr.C.map(c=>c.map(r5)), c:tr.c.map(v=>Math.round(v*100)/100), q:(tr.q||[]).map(v=>Math.round(v*100)/100), smooth:6}; delete o.fix;
   // vrstva na timeline = celý sledovaný záběr (začátek a konec se dá zkrátit, objeví / zmizí plynule)
   { const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=a; o.e=Math.max(a+0.3,b); o.shS=Math.max(o.s,E.src2out(o.t0)); o.shE=Math.min(o.e,o.shS+1.1); }
   changed(); renderPanel(); renderTimeline(); PV.currentTime=Math.max(o.s+0.05,Math.min(o.e-0.05,E.src2out(o.t0)));

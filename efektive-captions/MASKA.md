@@ -22,3 +22,10 @@ Vzhled: obrys (plný / přerušovaný, kreslí se), výplň, trackovací body v 
 Testy: scratchpad `ptk/` (gen.py = generátor videí se známým pohybem, run.js = měření, app_flow*.js = celý postup v appce vč. exportu).
 
 Maska z AI výběru (3D objekt, např. dům): obrys = tvar z AI, body se automaticky dají do všech rohů obrysu (až 16), sledovací body jen v objektu a těsně u okraje (ne pozadí – jiná paralaxa), oprava rohů jen z bodů objektu. Pozemek: ruční body.
+
+## Oprava 18. 11. (klient: body mimo dům, kličkování, jen 4 body)
+- Rohy z AI výběru: jen průsečíky dlouhých ROVNÝCH hran (okraj stromu / křoví není roh), hrana přerušená výstupkem (schody) zůstane jedna, u stromu před domem bod na konec hrany domu. Hranatý objekt (≥ 55 % obrysu rovné hrany) → obrys rovně od rohu k rohu (tvar domu, ne okraj stromu).
+- Kličkování: perspektiva se počítá plynule od předchozího snímku (Huberovo IRLS místo přeskakování RANSAC mezi plochami 3D domu); opravy rohů plynulé bez prahu. Medián kličkování na skutečném dronovém záběru 1,7 → 0,4 px.
+- Ochrana proti skoku: když se výsledek utrhne od plynulé dráhy (odlesk, zakrytí – např. bílý shine přes dům v původním videu), snímek se dopočítá z pohybu předtím (skoky 74–93 px → 0–1 px).
+- Přechod / rozmazání na konci záběru: kvalita klesá → maska plynule zeslábne, sledování skončí.
+Test: záběr domu z realitního videa (727e, 7,55–9,75 s) – 6 rohů (štít, hřeben vlevo/vpravo, pravý roh střechy, spodní roh, levý okap), kličkování medián 1,1 px (1080p; video má zdvojené snímky 25→30 fps).

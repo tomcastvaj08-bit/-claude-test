@@ -515,6 +515,13 @@ function ransacH(P, Q, th) {
   }
   return { H, inl: new Set(inl) };
 }
+function irlsH(P, Q, H0, k, iters) {   // vážené zpřesnění od výchozího odhadu (Huber): všechny body, odlehlé slabě, velmi vzdálené vůbec
+  let H = H0; for (let it = 0; it < (iters || 5); it++) {
+    const ia = [], wts = []; for (let m = 0; m < P.length; m++) { const r = hApply(H, P[m][0], P[m][1]), e = Math.hypot(r[0] - Q[m][0], r[1] - Q[m][1]); if (e > k * 5) continue; ia.push(m); wts.push(e < k ? 1 : k / e); }
+    if (ia.length < 8) return null; const H2 = fitH(ia.map(m => P[m]), ia.map(m => Q[m]), wts); if (!H2) return null; H = H2; }
+  const inl = new Set(); for (let m = 0; m < P.length; m++) { const r = hApply(H, P[m][0], P[m][1]); if (Math.hypot(r[0] - Q[m][0], r[1] - Q[m][1]) < k * 2) inl.add(m); }
+  return inl.size >= Math.max(8, P.length * 0.3) ? { H, inl } : null;
+}
 TRK.hApply = hApply; TRK.hInv = hInv; TRK.hMul = hMul; TRK.fitH = fitH;
 // bod v mnohoúhelníku
 const inPoly = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if (((a[1] > y) !== (b[1] > y)) && (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1] + 1e-12) + a[0])) c = !c; } return c; };
@@ -534,24 +541,44 @@ TRK.cornersFrom = (gray, W, H, contour, maxN) => {
     const core = seg.length > 6 ? seg.slice(Math.round(seg.length * 0.15), Math.round(seg.length * 0.85) + 1) : seg;   // konce hrany jsou zakulacené – nepoužít
     let mx = 0, my = 0; for (const p of core) { mx += p[0]; my += p[1]; } mx /= core.length; my /= core.length;
     let sxx = 0, sxy = 0, syy = 0; for (const p of core) { const dx = p[0] - mx, dy = p[1] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
-    const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy); lines.push({ mx, my, dx: Math.cos(ang), dy: Math.sin(ang) }); }
+    const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), dx = Math.cos(ang), dy = Math.sin(ang);
+    // rovná hrana? (odchylka bodů od přímky malá vůči délce) – okraj stromu / křoví rovný není
+    let e2 = 0; for (const p of seg) { const q = (p[0] - mx) * -dy + (p[1] - my) * dx; e2 += q * q; } const rms = Math.sqrt(e2 / seg.length), len = Math.hypot(contour[b][0] - contour[a][0], contour[b][1] - contour[a][1]);
+    lines.push({ mx, my, dx, dy, straight: rms < Math.max(0.9, len * 0.025) && len > D * 0.04, len }); }
   const out = [];
-  for (let k = 0; k < n; k++) {
-    const A = lines[(k - 1 + n) % n], B = lines[k], det = A.dx * B.dy - A.dy * B.dx, raw = contour[idx[k]];
-    let v = raw;
-    if (Math.abs(det) > Math.sin(12 * Math.PI / 180)) { const t = ((B.mx - A.mx) * B.dy - (B.my - A.my) * B.dx) / det; const q = [A.mx + A.dx * t, A.my + A.dy * t]; if (Math.hypot(q[0] - raw[0], q[1] - raw[1]) < D * 0.08) v = q; }
-    else continue;   // skoro rovná hrana → vrchol není roh
-    out.push(v);
+  let sl = 0, tl = 0; for (const L of lines) { tl += L.len; if (L.straight) sl += L.len; }
+  // rohy z dlouhých rovných hran: krátké / křivé úseky mezi nimi se přeskočí; malá mezera = průsečík hran (ostrý roh),
+  // velká křivá mezera (strom před domem) = konce hran (dům tam končí)
+  const proj = (L, p) => { const t = (p[0] - L.mx) * L.dx + (p[1] - L.my) * L.dy; return [L.mx + L.dx * t, L.my + L.dy * t]; };
+  const S = []; for (let k = 0; k < n; k++) if (lines[k].straight) S.push(k);
+  if (S.length >= 2) {
+    for (let a = 0; a < S.length; a++) {
+      const i = S[a], j = S[(a + 1) % S.length], A = lines[i], B = lines[j];
+      let gap = 0; for (let k = (i + 1) % n; k !== j; k = (k + 1) % n) gap += lines[k].len;
+      const endA = proj(A, contour[idx[(i + 1) % n]]), startB = proj(B, contour[idx[j]]);
+      const det = A.dx * B.dy - A.dy * B.dx;
+      if (gap < D * 0.3 && Math.abs(det) > Math.sin(15 * Math.PI / 180)) {
+        // průsečík hran: hrana přerušená výstupkem (schody) nebo zakulacený roh → jeden ostrý roh
+        const t = ((B.mx - A.mx) * B.dy - (B.my - A.my) * B.dx) / det, q = [A.mx + A.dx * t, A.my + A.dy * t];
+        const dA = Math.hypot(q[0] - endA[0], q[1] - endA[1]), dB = Math.hypot(q[0] - startB[0], q[1] - startB[1]);
+        if ((gap < D * 0.12 && dA < D * 0.12) || Math.min(dA, dB) < D * 0.06) { out.push(q); continue; }
+      }
+      const off = Math.abs((startB[0] - A.mx) * -A.dy + (startB[1] - A.my) * A.dx);   // jak daleko je další hrana od přímky této hrany
+      if (Math.abs(det) <= Math.sin(15 * Math.PI / 180) && gap < D * 0.35 && off < D * 0.03) continue;   // jedna hrana přerušená výstupkem (schody, okap) – bez rohu
+      out.push(endA); out.push(startB);
+    }
   }
-  if (out.length < 3) return idx.map(i => contour[i]);
+  if (out.length < 3) { const r = idx.map(i => contour[i]); r.straight = 0; return r; }
   // 3) jemné přichycení na skutečný roh v obraze (jen blízko a jen výrazný roh)
   const R0 = Math.max(2, Math.hypot(W, H) * 0.006);
-  return out.map(([x0, y0]) => { let best = -1, bx = x0, by = y0;
+  const res = out.map(([x0, y0]) => { let best = -1, bx = x0, by = y0;
     for (let y = Math.max(3, Math.round(y0 - R0)); y <= Math.min(H - 4, Math.round(y0 + R0)); y++) for (let x = Math.max(3, Math.round(x0 - R0)); x <= Math.min(W - 4, Math.round(x0 + R0)); x++) {
       let a = 0, b = 0, c = 0; for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const q = (y + j) * W + x + i, X = P.gx[q], Y = P.gy[q]; a += X * X; b += X * Y; c += Y * Y; }
       const tr = a + c, ev = tr / 2 - Math.sqrt(Math.max(0, tr * tr / 4 - (a * c - b * b))), sc = ev * (1 - 0.7 * Math.hypot(x - x0, y - y0) / R0);
       if (sc > best) { best = sc; bx = x; by = y; } }
     return best > 400 ? [bx, by] : [x0, y0]; });
+  res.straight = tl ? sl / tl : 0;   // podíl rovných hran (dům, okno, pozemek ≈ 1; gauč, strom ≈ 0)
+  return res;
 };
 function rdpIdx(P, eps) {   // uzavřený obrys → indexy vrcholů
   const N = P.length; let i1 = 0, md = -1; for (let i = 0; i < N; i++) { const d = Math.hypot(P[i][0] - P[0][0], P[i][1] - P[0][1]); if (d > md) { md = d; i1 = i; } }
@@ -644,7 +671,7 @@ TRK.runPlanar = async (o) => {
   const track = async (P0, frames, out) => {
     let pts = featuresGrid(P0[0], inRegion, NMAX, MIND, 8).map(p => ({ a: p, k: p, c: p }));
     if (pts.length < 8) { TRK.why = 'málo kresby v objektu'; return false; }
-    const n0 = pts.length; let prev = P0, K = P0, HK = [1, 0, 0, 0, 1, 0, 0, 0, 1], Hc = HK.slice(), lost = 0, sinceK = 0;
+    const n0 = pts.length; let prev = P0, K = P0, HK = [1, 0, 0, 0, 1, 0, 0, 0, 1], Hc = HK.slice(), lost = 0, sinceK = 0, prevH = HK.slice(), lastMove = 0, blurQ = 0, typ0 = null, hard = 0, prev2H = null, coast = 0; const movHist = [], devHist = [];
     let vk = PX.map(p => p.slice());   // rohy v klíčovém snímku
     for await (const fr of frames) {
       if (cancel && cancel()) break; if (fr.cut) break;
@@ -657,14 +684,31 @@ TRK.runPlanar = async (o) => {
         if (p.k && lkG(K, Q, p.k[0], p.k[1], c[0], c[1], q, 1) && Math.hypot(q[0] - c[0], q[1] - c[1]) < 2.5 && lkG(Q, K, q[0], q[1], p.k[0], p.k[1], b, 1) && Math.hypot(b[0] - p.k[0], b[1] - p.k[1]) < 0.6) c = [q[0], q[1]];
         keep.push({ a: p.a, k: p.k, c });
       }
-      const r = ransacH(keep.map(p => p.a), keep.map(p => p.c), 1.6);
+      const KA = keep.map(p => p.a), KC = keep.map(p => p.c);
+      const r = (prevH && irlsH(KA, KC, prevH, 1.5, 5)) || ransacH(KA, KC, 1.6);
+      // přechod / rozmazání / prudká změna (konec záběru): pohyb bodů najednou skočí → konec sledování
+      const surv = keep.length / Math.max(1, pts.length);
+      if (r && prevH) { let mm = 0; for (const p of [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]]) { const a = hApply(prevH, p[0], p[1]), b2 = hApply(r.H, p[0], p[1]); mm = Math.max(mm, Math.hypot(a[0] - b2[0], a[1] - b2[1])); }
+        const acc = Math.abs(mm - lastMove); lastMove = mm; movHist.push(mm); if (movHist.length > 12) movHist.shift();
+        const typ = movHist.slice().sort((x, y) => x - y)[movHist.length >> 1] || 0;
+        if ((surv < 0.55 && mm > Math.max(4, typ * 2.5)) || (movHist.length > 6 && acc > Math.max(5, typ * 3))) { TRK.why = 'konec záběru ' + fr.t.toFixed(2); break; }
+        // rychlý pohyb / rozmazání (přechod, švih kamery): kvalita klesá → maska tam plynule zeslábne; když je to moc, konec
+        const ratio = mm / Math.max(0.8, typ0 || typ); blurQ = Math.max(0, Math.min(1, (ratio - 2.5) / 3)); if (typ0 == null && movHist.length >= 8) typ0 = typ;
+        if (ratio > 7) { if (++hard > 1) { TRK.why = 'konec záběru (přechod) ' + fr.t.toFixed(2); break; } } else hard = 0; }
       if (!r) { if (++lost > 5) { TRK.why = 'ztraceno ' + fr.t.toFixed(2); break; } prev = Q; await breathe(); continue; }
       lost = 0; Hc = r.H; pts = keep.filter((_, i) => r.inl.has(i));
       // přesnost bez ujíždění: všechny body ještě jednou proti výchozímu snímku (v aktuální perspektivě)
       { const iH = hInv(Hc); if (iH) { const A2 = [], C2 = [], idx = [];
           for (let i = 0; i < pts.length; i++) { const p = pts[i], pr = hApply(Hc, p.a[0], p.a[1]); if (p.a[0] < R + 2 || p.a[1] < R + 2 || p.a[0] > W - R - 3 || p.a[1] > H - R - 3) continue;
             if (warpLK(P0, Q, iH, pr[0], pr[1], q, 0.82) && Math.hypot(q[0] - p.c[0], q[1] - p.c[1]) < 4) { A2.push(p.a); C2.push([q[0], q[1]]); idx.push(i); } }
-          if (A2.length >= Math.max(12, pts.length * 0.35)) { const r2 = ransacH(A2, C2, 1.0); if (r2 && r2.inl.size >= A2.length * 0.5) { Hc = r2.H; for (let m = 0; m < idx.length; m++) if (r2.inl.has(m)) pts[idx[m]].c = C2[m]; } } } }
+          if (A2.length >= Math.max(12, pts.length * 0.35)) { const r2 = irlsH(A2, C2, Hc, 1.0, 4) || ransacH(A2, C2, 1.0); if (r2 && r2.inl.size >= A2.length * 0.5) { Hc = r2.H; for (let m = 0; m < idx.length; m++) if (r2.inl.has(m)) pts[idx[m]].c = C2[m]; } } } }
+      // ochrana proti skoku: odhad se utrhl od plynulé dráhy (odlesk, zakrytí, rozmazání) → snímek se dopočítá z pohybu předtím
+      if (prev2H) { const Hp = hMul(prevH, hMul(hInv(prev2H) || prevH, prevH)); let dev = 0;
+        for (const p of [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]]) { const a = hApply(Hp, p[0], p[1]), b2 = hApply(Hc, p[0], p[1]); dev = Math.max(dev, Math.hypot(a[0] - b2[0], a[1] - b2[1])); }
+        const tdev = devHist.length ? devHist.slice().sort((x, y) => x - y)[devHist.length >> 1] : 1;
+        if (devHist.length >= 4 && dev > Math.max(3, tdev * 5)) { coast++; Hc = Hp; blurQ = Math.max(blurQ, coast > 4 ? 0.7 : 0.3); for (const p of pts) p.c = hApply(Hc, p.a[0], p.a[1]); if (coast > 10) { TRK.why = 'ztraceno ' + fr.t.toFixed(2); break; } }
+        else { coast = 0; devHist.push(dev); if (devHist.length > 15) devHist.shift(); } }
+      prev2H = prevH; prevH = Hc;
       // rohy: model + body v okolí rohu (3D objekty) + vlastní sledování rohu
       const C = [];
       for (let vi = 0; vi < PX.length; vi++) {
@@ -675,7 +719,7 @@ TRK.runPlanar = async (o) => {
           let sx = 0, sy = 0, sw = 0; const rs = [];
           for (const p of near) { const pr = hApply(Hc, p.a[0], p.a[1]), d = Math.hypot(p.a[0] - va[0], p.a[1] - va[1]) / (diag * 0.2), w = (1 - d * d) ** 2 + 0.05; const ex = p.c[0] - pr[0], ey = p.c[1] - pr[1]; rs.push([ex, ey, w]); sx += w * ex; sy += w * ey; sw += w; }
           const mx = sx / sw, my = sy / sw; let vv = 0; for (const [ex, ey, w] of rs) vv += w * ((ex - mx) ** 2 + (ey - my) ** 2); const sd = Math.sqrt(vv / sw), m = Math.hypot(mx, my);
-          if (m > 0.9 && m > 2.5 * sd / Math.sqrt(near.length)) { const k = Math.min(1, (m - 0.9) / 1.5); vc = [vc[0] + mx * k, vc[1] + my * k]; }
+          const k = Math.min(1, near.length / 18) * (m * m / (m * m + (sd * sd) / near.length + 0.25)); vc = [vc[0] + mx * k, vc[1] + my * k];
         }
         C.push(vc);
       }
@@ -690,7 +734,7 @@ TRK.runPlanar = async (o) => {
         if (iH) { const nw = featuresGrid(Q[0], (x, y) => { const z = hApply(iH, x, y); return inRegion(z[0], z[1]); }, NMAX, MIND, 8);
           for (const p of nw) { if (pts.length >= NMAX) break; if (pts.some(s => (s.c[0] - p[0]) ** 2 + (s.c[1] - p[1]) ** 2 < MIND * MIND)) continue; pts.push({ a: hApply(iH, p[0], p[1]), k: K === Q ? p : null, c: p }); } }
       }
-      out.push({ t: fr.t, H: toN(Hc), C: C.flatMap(([x, y]) => [x / W, y / H]), c: Math.min(1, pts.length / n0) });
+      out.push({ t: fr.t, H: toN(Hc), C: C.flatMap(([x, y]) => [x / W, y / H]), c: Math.min(1, pts.length / n0) * (1 - 0.8 * blurQ), q: 1 - blurQ });
       if (o.onFrame && fr.canvas) o.onFrame(fr.canvas, out[out.length - 1]);
       prev = Q; await breathe();
     }
@@ -726,7 +770,7 @@ TRK.runPlanar = async (o) => {
   }
   const all = bk.reverse().concat(fwd);
   if (all.length < 2) return null;
-  return { t: all.map(r => r.t), H: all.map(r => r.H), C: all.map(r => r.C), c: all.map(r => r.c), t0, W, Hh: H };
+  return { t: all.map(r => r.t), H: all.map(r => r.H), C: all.map(r => r.C), c: all.map(r => r.c), q: all.map(r => r.q ?? 1), t0, W, Hh: H };
 };
 function fitAffineW(P, Q, Wt) {   // vážené nejmenší čtverce (afinní)
   let M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], ux = [0, 0, 0], uy = [0, 0, 0];
