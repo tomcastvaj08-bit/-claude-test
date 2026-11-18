@@ -830,5 +830,6 @@ window.I18N_DICT.en={
 "Negativ 3D": "Negative 3D",
 "Styl 1 + 3D hloubka": "Style 1 + 3D depth",
 "Růžová Snell": "Pink Snell",
-"Pinyon Script (jako Snell, s háčky)": "Pinyon Script (like Snell, full accents)"
+"Pinyon Script (jako Snell, s háčky)": "Pinyon Script (like Snell, full accents)",
+"Metalická (Neulis)": "Metallic (Neulis)"
 };

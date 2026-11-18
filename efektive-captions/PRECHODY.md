@@ -110,8 +110,9 @@ Pohyb → Odchod → „Flicker (zabliká a zmizí)“ (`exitFlick`): posledníc
 
 ## 18. 11. – hotové šablony na základu Styl 1 (Base)
 Rozložení přesně jako Styl 1, mění se barvy / písmo / 3D (engine.js, blok „HOTOVÉ VARIANTY ZÁKLADU“), v nabídce hned za Stylem 1; původní šablony zůstávají:
-Krémová (Neulis Bold + Light, krémový přechod, hnědý stín) · Modrá 3D (#a5e6ff → #1f5fff, náklon −37°, střídá L/P) · Červená 3D (#ff8f8f → #d0001f, −37°, střídá) · Negativ 3D (negativ hlavního řádku, −37° stále na jednu stranu) · Styl 1 + 3D hloubka (extrude 22) · Růžová Snell (hlavní řádek Snell Roundhand, růžová #ff7cc8 → fialová #b98cff).
+Metalická (Neulis Bold + Light, #cfc7be → #6f655d, hnědý stín) · Modrá 3D (#46d1ef → #0b53fa, náklon −37°, střídá L/P) · Červená 3D (#e53633 → #b90400, −37°, střídá) · Negativ 3D (negativ hlavního řádku, −37° stále na jednu stranu) · Styl 1 + 3D hloubka (extrude 22) · Růžová Snell (hlavní řádek Snell Roundhand, růžová #ff7cc8 → fialová #b98cff).
 
 ## 18. 11. – čeština ve všech písmech
 Systémové písmo z iPhonu, které nemá všechna česká písmena (např. Snell Roundhand), se automaticky nahradí celé náhradním písmem ze stacku (`E.czFam`, test šířek znaků) – nikdy se nemíchají dvě písma v jednom slově. Všechna přibalená písma mají všechna česká písmena (ověřeno fontTools). Část písma s háčky se načte hned (`document.fonts.load` s českými znaky), předkreslená slova se po dočtení písma překreslí, export počká na písma.
 Růžová Snell: hlavní řádek písmem Pinyon Script (jako Snell, se všemi znaky), sytější #ff2d9a → #a845ff, jemná záře. Pinyon Script je i v nabídce písem.
+Odstíny změřené z klientových předloh (bestaccount, vinotéka, kadeřnictví) a o ~20 % syceji; žlutý Styl 1 předloze už odpovídá (#ff9a00 → #e8f200), beze změny.

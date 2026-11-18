@@ -162,12 +162,12 @@ E.TEMPLATES = {
   const pv=(sec,main,css)=>`<span style="font-weight:600;letter-spacing:-.06em">${sec}</span><br><b style="${css}">${main}</b>`;
   const gr=(a,b,w='800')=>`background:linear-gradient(${a},${b});-webkit-background-clip:text;color:transparent;font-weight:${w};letter-spacing:-.07em`;
   const add={
-    krem:{ name:'Krémová (Neulis)', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#f6efe6','#d8c3a6','#e9e0d6'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light'},
-      pv:`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#f6efe6','#d8c3a6','700')};text-shadow:none">Sledovat</b>` },
-    modra3d:{ name:'Modrá 3D', set:{...B, ...col('#a5e6ff','#1f5fff','#3a8bff'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
-      pv:pv('začněte mě','Sledovat',gr('#a5e6ff','#1f5fff'))+'' },
-    cervena3d:{ name:'Červená 3D', set:{...B, ...col('#ff8f8f','#d0001f','#ff3b3b'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
-      pv:pv('začněte mě','Sledovat',gr('#ff8f8f','#d0001f')) },
+    krem:{ name:'Metalická (Neulis)', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#cfc7be','#6f655d','#9b9186'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#cfc7be','#6f655d','700')};text-shadow:none">Sledovat</b>` },
+    modra3d:{ name:'Modrá 3D', set:{...B, ...col('#46d1ef','#0b53fa','#2a94f5'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#46d1ef','#0b53fa')) },
+    cervena3d:{ name:'Červená 3D', set:{...B, ...col('#e53633','#b90400','#d01e16'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#e53633','#b90400')) },
     negativ3d:{ name:'Negativ 3D', set:{...B, grad:false,c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',c4:'#ffffff',negativ:true,tilt:-37,tiltAlt:false,tiltX:0,persp:60,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat','background:#fff;color:#111;padding:0 4px;font-weight:800;letter-spacing:-.07em') },
     base3d:{ name:'Styl 1 + 3D hloubka', set:{...B, extrude:22,extrudeStyle:'light',negativ:false},
