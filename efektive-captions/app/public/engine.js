@@ -285,6 +285,7 @@ E.buildPages = () => {
     if (m && m.eo!=null) p.e = nxt ? Math.min(m.eo, nxt.s) : m.eo;
     p.kin=[0,1,2,3].map(j=>({dx:hash(k*4+j)*2-1, dy:hash(k*4+j+100)*2-1, rot:hash(k*4+j+200)*2-1}));
   });
+  if (window.RE) RE.pair(pages);   // Real estate styl: titulky po dvojicích
   E.pages=pages;
 };
 E.layerOf = p => { const m=E.meta[E.words[p.a]?.id]; return (m && m.layer)|0; };
@@ -1052,9 +1053,11 @@ E.trkOffset=(id,t,px,py)=>{
   return {dx, dy, k:K, x:ax, y:ay};
 };
 // styl titulku v čase t (se sledováním objektu)
-E.styleAt=(p,t)=>{ const S=E.styleOf(p); const m=p&&E.meta[E.keyOf(p)];
+E.styleAt=(p,t)=>{ let S=E.styleOf(p); const m=p&&E.meta[E.keyOf(p)];
+  if (window.RE && E.G.reMode) S=RE.apply(p,S);   // Real estate styl: poloha, velikost a barva podle hlavy
   if (m && m.trk && E.tracks[m.trk]){ const o=E.trkOffset(m.trk,t,S.posX,S.posY); if (o){ S.posX+=o.dx; S.posY+=o.dy; if (E.tracks[m.trk].scale) S.size*=o.k; } }
   return S; };
+E._cvW=()=>cv.width; E._cvH=()=>cv.height;
 // ================= STABILIZACE NA OBJEKT =================
 // E.stab = {trk:id, smooth 0–100, scale:false}: video se v každém snímku posune (a jednou provždy přiblíží),
 // aby sledovaný objekt (obličej…) stál na obrazovce pořád na stejném místě; s „scale“ i ve stejné velikosti.
