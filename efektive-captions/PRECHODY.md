@@ -116,3 +116,5 @@ Metalická (Neulis Bold + Light, barvy Lerdee Begie #E9E0D6 → Brown #363029, h
 Systémové písmo z iPhonu, které nemá všechna česká písmena (např. Snell Roundhand), se automaticky nahradí celé náhradním písmem ze stacku (`E.czFam`, test šířek znaků) – nikdy se nemíchají dvě písma v jednom slově. Všechna přibalená písma mají všechna česká písmena (ověřeno fontTools). Část písma s háčky se načte hned (`document.fonts.load` s českými znaky), předkreslená slova se po dočtení písma překreslí, export počká na písma.
 Růžová Snell: hlavní řádek písmem Pinyon Script (jako Snell, se všemi znaky), sytější #ff2d9a → #a845ff, jemná záře. Pinyon Script je i v nabídce písem.
 Odstíny změřené z klientových předloh (bestaccount, vinotéka, kadeřnictví) a o ~20 % syceji; žlutý Styl 1 předloze už odpovídá (#ff9a00 → #e8f200), beze změny.
+
+Lerdee (dřív Metalická): podle brand manuálu – vedlejší řádky NEULIS SANS LIGHT velkými s prostrkáním (track 6, větší mezery mezi slovy), hlavní Neulis Sans Bold, Begie #E9E0D6 bez přechodu, stín Brown #363029; rozložení jako Styl 1.

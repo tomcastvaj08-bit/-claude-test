@@ -162,8 +162,9 @@ E.TEMPLATES = {
   const pv=(sec,main,css)=>`<span style="font-weight:600;letter-spacing:-.06em">${sec}</span><br><b style="${css}">${main}</b>`;
   const gr=(a,b,w='800')=>`background:linear-gradient(${a},${b});-webkit-background-clip:text;color:transparent;font-weight:${w};letter-spacing:-.07em`;
   const add={
-    krem:{ name:'Metalická (Neulis)',   /* barvy Lerdee: Begie #E9E0D6 → Brown #363029 */ set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#e9e0d6','#363029','#e9e0d6'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light'},
-      pv:`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#e9e0d6','#363029','700')};text-shadow:none">Sledovat</b>` },
+    // LERDEE – podle brand manuálu: podnadpis NEULIS SANS LIGHT velkými s prostrkáním, nadpis Neulis Sans Bold, Begie #E9E0D6 + Brown #363029
+    krem:{ name:'Lerdee', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,size:84,emScale:180,track:6,trackEm:-1.5,wordGap:165,gap:70,rowMax:52,caseSec:'upper',caseMain:'title',grad:false,textGrad:false,gA:'#e9e0d6',gB:'#e9e0d6',c1:'#e9e0d6',c2:'#e9e0d6',c3:'#e9e0d6',c4:'#e9e0d6',cText:'#e9e0d6',cText2:'#e9e0d6',cShadow:'#363029',shadowSize:45,shadowA:85,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:`<span style="font-family:Outfit;font-weight:300;letter-spacing:.14em;font-size:.62em;color:#e9e0d6">ZAČNĚTE MĚ</span><br><b style="font-family:Outfit;font-weight:700;color:#e9e0d6;letter-spacing:-.02em;text-shadow:0 2px 8px #363029">Sledovat</b>` },
     modra3d:{ name:'Modrá 3D', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat',gr('#14d6ff','#0040ff')) },
     cervena3d:{ name:'Červená 3D', set:{...B, ...col('#ff3b30','#c00000','#e00a00'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
