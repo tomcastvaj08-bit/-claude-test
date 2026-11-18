@@ -93,3 +93,7 @@ Blesk = cvak, negativ = mini glitch. Staré volby „Mini swoosh“ a „Krátk�
 
 ## 18. 11. – brand Lerdee (Lukáš Lederer Kosmetika)
 Šablona **Lerdee** (první v Šablonách): hlavní řádek Neulis Sans Bold, vedlejší Neulis Sans Light VELKÝMI s prostrkáním, barvy Begie #E9E0D6 a Brown #363029 (stín). Fonty: „Neulis Sans Bold/Light“ (placený font – když je v zařízení, použije se; jinak vizuálně skoro stejný Outfit, OFL) a „Open Sans Light“. V Barvách řádek „Barvy značky Lerdee“ (Begie text / Brown text), barvy přidané i do stínu a objektů.
+
+## 18. 11. – KRITICKÁ OPRAVA: projekty po otevření bez titulků
+Příčina: v commitu 0d4c62a se při vkládání řádku do `restore()` (app.js) dostal kód `mixDefaults(...); E.words=s.words; E.meta=...; E.zones=...` za `//` komentář → při otevření projektu se nenačetly titulky, úpravy titulků ani zóny; při zavření/úpravě se prázdný stav uložil přes projekt.
+Opraveno + pojistky: (1) ukládá se jen projekt, který se otevřel celý (`project.restoredOk`); (2) když by uložení smazalo ≥ polovinu titulků (min. 5), předchozí stav se uloží do `backup`; (3) při otevření projektu bez titulků se zálohou se titulky obnoví automaticky. Test: `tq/roundtrip.js` (uložit → znovu načíst stránku → otevřít 2× → porovnat; záloha).

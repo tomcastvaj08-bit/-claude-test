@@ -111,7 +111,9 @@ function restore(json){
   E.fxMarks=(s.fxMarks||[]).map(m=>({...m}));
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease:'tok2'})):[];   // zatím jediný průběh: Tok 2
   E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && (s.G.trSfxVol===80||s.G.trSfxVol===45)) E.G.trSfxVol=30; if (s.G && s.G.shineSfxVol===50) E.G.shineSfxVol=20;
-  for (const c of E.clips||[]) if (c.trSnd && !E.TRSND.some(([v])=>v===c.trSnd)) delete c.trSnd;   // cinkavé zvuky už nejsou   // staré výchozí hlasitosti byly moc hlasité mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  for (const c of E.clips||[]) if (c.trSnd && !E.TRSND.some(([v])=>v===c.trSnd)) delete c.trSnd;   // cinkavé zvuky už nejsou
+  // staré výchozí hlasitosti byly moc hlasité
+  mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.face=Array.isArray(s.face)?s.face:null;
@@ -140,7 +142,10 @@ async function saveProject0(){
     const assets=Object.entries(ovAssets).map(([id,a])=>({id,type:a.type,inFiles:true}));
     // video jen jednou (je velké); pak se ukládají jen úpravy
     if (!project.fileSaved){ await dbDo('readwrite',st=>st.put({id:project.id,file:videoFile,fileName:videoFile.name}),'files'); project.fileSaved=true; }
-    const rec={id:project.id,name:project.name,created:project.created,updated:Date.now(),thumb:th.toDataURL('image/jpeg',0.7),fileName:videoFile.name,state:snapshot(),assets,analysed};
+    if (!project.restoredOk) return;   // projekt se neotevřel celý → nic nepřepisovat
+    const state=snapshot(), nNew=E.words.length;
+    let backup=null; try{ const old=await dbDo('readonly',st=>st.get(project.id)); if (old){ backup=old.backup||null; const nOld=old.state?(JSON.parse(old.state).words||[]).length:0; if (nOld>=5 && nNew<nOld*0.5) backup=old.state; } }catch(e){}   // pojistka: titulky by zmizely → starý stav schovat
+    const rec={id:project.id,name:project.name,created:project.created,updated:Date.now(),thumb:th.toDataURL('image/jpeg',0.7),fileName:videoFile.name,state,assets,analysed,backup};
     await dbDo('readwrite',st=>st.put(rec));
   }catch(e){ console.warn('Uložení projektu selhalo',e); }
 }
@@ -165,7 +170,11 @@ async function openProject(id){
   if (missing) setTimeout(()=>toast(`${missing===1?'Jeden overlay':'Některé overlaye'} se nepodařilo načíst – vlož ho prosím znovu (Overlay → Přidat)`),1200);
   busy('Otevírám projekt…','Načítám video',0.5);
   await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
-  restore(rec.state); analysed={...(rec.analysed||analysed)}; analysed.face=!!E.face;
+  restore(rec.state);
+  // titulky zmizely (chyba starší verze) a je záloha → vrátit ji
+  if (!E.words.length && rec.backup){ try{ const b=JSON.parse(rec.backup); if ((b.words||[]).length){ restore(rec.backup); setTimeout(()=>toast('Titulky obnoveny ze zálohy'),800); } }catch(e){} }
+  project.restoredOk=true;
+  analysed={...(rec.analysed||analysed)}; analysed.face=!!E.face;
   hist=[snapshot()]; hi=0;
   openEditor();
   if (E.G.mix3d && !E.face) mixFaces();   // starší projekt bez uložené polohy obličeje → AI ji najde znovu
@@ -206,7 +215,7 @@ $('fileIn').onchange=async e=>{
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
   if (E.G.fontMain===E.SF) E.G.wMain=500;   // vedlejší řádky vždy začínají SF Pro Medium
-  project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now()};
+  project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now(), restoredOk:true};
   // hned dát najevo, že se něco děje
   show('busy'); busy('Načítám video…','Chvilku strpení, video se nahrává do appky. U delšího videa to může trvat i pár desítek sekund.',0);
   const t0=Date.now(), tick=setInterval(()=>{ const s=(Date.now()-t0)/1000; busy('Načítám video…','Chvilku strpení, video se nahrává do appky. U delšího videa to může trvat i pár desítek sekund.',Math.min(0.95,1-Math.exp(-s/6))); },200);
