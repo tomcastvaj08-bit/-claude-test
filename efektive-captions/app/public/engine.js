@@ -87,7 +87,7 @@ E.G = {
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:20, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
-  exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28
+  exitScale:null, exitDur:0.3, exitFlick:false, wordLead:0.08, wordFade:0.28
 };E.G0 = Object.assign({}, E.G);   // neutrální výchozí nastavení (pro starší projekty bez nových voleb)
 
 // klíče, které jsou vždy společné pro celé video
@@ -129,7 +129,7 @@ E.FONTS = [
 // ================= ŠABLONY =================
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
 const common = {mix3d:false,mixShine:'hi',mixExtrude:'hi',mixFx:2,mixSpeed:100,mixSeed:1,mixSize:100,mixY:60,mixX:50,mixA:'#ffa21e',mixB:'#f38b00',rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
-  wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
+  wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, exitFlick:false, wordLead:0.08, wordFade:0.28};
 E.COMMON = common;
 E.TEMPLATES = {
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
@@ -451,23 +451,29 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   SPR.set(key,sp); if (SPR.size>64){ SPR.delete(SPR.keys().next().value); }
   return sp;
 }
+// odchod FLICKER: posledních ~0,33 s titulek bliká (zap / skoro vyp) s čím dál delší tmou a zhasne – po krocích 1/30 s, stejně v náhledu i exportu
+const FLICK_DUR=0.33, FLICK=[1,0.12,1,0.9,0.06,0.75,0,0.5,0,0.22,0];
+function flickA(left){ if (left>=FLICK_DUR) return 1; if (left<=0) return 0; const i=Math.min(FLICK.length-1,Math.floor((FLICK_DUR-left)*30)); return FLICK[i]; }
 function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // dvouprůchodové kreslení negativu s 3D náklonem: v každém průchodu jen „jeho“ slova
   if (E._negPass){ const neg=!!(L.em && S.negativ); if ((E._negPass==='skip' && neg) || (E._negPass==='only' && !neg)) return; }
-  const exitDur = S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
+  const flick = S.fadeOut && S.exitFlick;
+  const exitDur = flick ? FLICK_DUR : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
   const st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
-  const age=t-st0, exit=clamp((p.e-t)/exitDur); const exitE = S.fadeOut ? (exit*exit*(3-2*exit)) : exit;
+  const age=t-st0; let exit=clamp((p.e-t)/exitDur); let exitE = S.fadeOut ? (exit*exit*(3-2*exit)) : exit;
+  if (flick){ exit=exitE=flickA(p.e-t); }   // odchod flickerem: titulek párkrát zabliká a zhasne
   const since=age;
   if (since<0 && S.anim!=='block' && S.anim!=='base') return;
-  let a=clamp(since/0.07)*exit, sc=1, sy=1, dx=0, dy=0, blur=0, er=0;
+  const exA = exit;
+  let a=clamp(since/0.07)*exA, sc=1, sy=1, dx=0, dy=0, blur=0, er=0;
   const kk=clamp(since/0.25);
   if (S.anim==='squish'){ const e=easeBack(kk); sc=0.6+0.4*e; sy=kk<0.5?0.5+kk:1+0.25*(1-e); }
   else if (S.anim==='pop'){ sc=L.em?1+0.5*(1-easeBack(kk)):0.5+0.5*easeBack(kk); }
   else if (S.anim==='blur'){ blur=(1-kk)*L.px*0.25; sc=0.9+0.1*kk; }
-  else if (S.anim==='smooth'){ const q=clamp(since/0.5), e=1-Math.pow(1-q,3); a=e*exit; sc=0.94+0.06*e; }
-  else if (S.anim==='fade'){ const q=clamp(since/0.35); a=(q*q*(3-2*q))*exit; }
+  else if (S.anim==='smooth'){ const q=clamp(since/0.5), e=1-Math.pow(1-q,3); a=e*exA; sc=0.94+0.06*e; }
+  else if (S.anim==='fade'){ const q=clamp(since/0.35); a=(q*q*(3-2*q))*exA; }
   else if (S.anim==='base'){
     // Base: titulek stojí, slova se jen prolnou (0,2 s, začne 0,05 s před vyslovením); odchod řeší celý blok v E.render
     const qa=clamp((since+(S.wordLead??0.05))/(S.wordFade??0.2)); a=(qa*qa*(3-2*qa))*exitE;
@@ -478,7 +484,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     const tp=t-p.s, q=clamp(tp/0.55), e=1-Math.pow(2,-10*q);
     sc=0.82+0.18*e; dy+= (1-e)*L.px*0.35;
     const qa=clamp((t-st0+0.08)/0.28); a=(qa*qa*(3-2*qa))*exit;
-    if (S.fadeOut) sc*=(0.94+0.06*exitE);
+    if (S.fadeOut && !flick) sc*=(0.94+0.06*exitE);
     if (a<=0) return;
   }
   if (S.enter!=='none'){
@@ -1057,7 +1063,7 @@ function drawPage(k,t){
   const twoPass = !direct && S.negativ;
   // odchod celého bloku: rychlé zmenšení kolem středu titulku (Base: na 60 % za 0,1 s)
   let bs=1;
-  if (S.exitScale!=null && S.fadeOut){ const ex=clamp((p.e-t)/(S.exitDur||0.1)), exs=ex*ex*(3-2*ex); bs=S.exitScale+(1-S.exitScale)*exs; }
+  if (S.exitScale!=null && S.fadeOut && !S.exitFlick){ const ex=clamp((p.e-t)/(S.exitDur||0.1)), exs=ex*ex*(3-2*ex); bs=S.exitScale+(1-S.exitScale)*exs; }
   const pass=(mode)=>{
     E._negPass=mode;
     const c = direct ? ctx : layerCtx();

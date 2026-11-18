@@ -104,3 +104,6 @@ Panel klipu: „Nový přepis titulků tohoto klipu“ – AI přepíše jen zvu
 ## 18. 11. – Lerdee jen fonty; shine po titulcích
 Šablona Lerdee, řádek „Barvy značky Lerdee“ a brand barvy ve stínech/objektech ODSTRANĚNY (klient chtěl jen fonty) – zůstávají fonty Neulis Sans Bold/Light (Outfit) a Open Sans Light.
 Shine (a vše ve Šablonách/Stylu/Pohybu/3D mixu/AI) ukazuje nastavení titulku pod hlavou: při posunu hlavy (i tažením timeline) nebo klepnutí na titulek se panel překreslí. Shine zapnutý „jen u tohoto titulku“ svítí vždy (nezávisle na „každý N-tý“).
+
+## 18. 11. – odchod titulku: Flicker
+Pohyb → Odchod → „Flicker (zabliká a zmizí)“ (`exitFlick`): posledních 0,33 s titulek bliká po krocích 1/30 s (1, 0.12, 1, 0.9, 0.06, 0.75, 0, 0.5, 0, 0.22, 0) a zhasne. Platí pro všechny animace nástupu, náhled i export; jde nastavit i jen pro jeden titulek.

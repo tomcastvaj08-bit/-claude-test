@@ -1150,7 +1150,7 @@ function pMotion(){
     ${chips('Animace nástupu','anim',[['base','Prolnutí slov'],['block','Plynulý blok'],['squish','Squish'],['pop','Pop'],['blur','Rozostření'],['smooth','Jemně'],['fade','Prolnutí'],['none','Žádná']])}`;
   } else if (st==='out'){
     h+=`${toggle('Plynulý odchod','fadeOut')}
-    ${S.fadeOut?`<div class="clabel">Jak titulek zmizí</div><div class="chips" id="exitSt"><div class="chip ${S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div></div>`:'<div class="note">Titulek zmizí okamžitě.</div>'}`;
+    ${S.fadeOut?`<div class="clabel">Jak titulek zmizí</div><div class="chips" id="exitSt"><div class="chip ${!S.exitFlick&&S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${!S.exitFlick&&S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div><div class="chip ${S.exitFlick?'on':''}" data-v="flick">Flicker (zabliká a zmizí)</div></div>`:'<div class="note">Titulek zmizí okamžitě.</div>'}`;
   } else {
     h+=`${toggle('Shine – světlo přejede přes hlavní slovo','fxShine')}
     ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100):''}
@@ -1183,7 +1183,7 @@ function pSfx(){
   ${E.G.sfxAll!==false && E.G.sfxWordsOn!==false?`<div class="clabel">Zvuk</div><div class="sfxlist chips" id="sfxList">${SFX.map(([v,l])=>`<div class="chip ${S.sfx===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="note">Klepnutí zvuk přehraje a nastaví. „Tik klávesy“ a „Swoosh“ jsou úplně jemné – na běžná slova. „Jen tento titulek“ = každý titulek může mít jiný zvuk (nebo žádný).</div>`:''}`;
 }
-binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1}); else setMany({exitScale:null,exitDur:0.3}); renderPanel(); }; }; })(binders.motion);
+binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1,exitFlick:false}); else if (c.dataset.v==='flick') setMany({exitFlick:true}); else setMany({exitScale:null,exitDur:0.3,exitFlick:false}); renderPanel(); }; }; })(binders.motion);
 binders.sfx=()=>{
   const bind=(id,key)=>{ const el=$(id); if (el) el.onchange=e=>{ E.G[key]=e.target.checked; changed(); renderPanel(); }; };
   bind('sxAll','sfxAll'); bind('sxShine','sfxShineOn'); bind('sxTr','sfxTrOn'); bind('sxWords','sfxWordsOn'); bind('sxMove','sfxMoveOn');
