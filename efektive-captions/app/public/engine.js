@@ -175,6 +175,11 @@ E.TEMPLATES = {
       pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 2px 0 #b86a00') },
     snell:{ name:'', set:{...B, fontEm:SCRIPT,wEm:400,trackEm:0,emScale:165,glow:35,glowMode:'always',...tilt3d,...col('#ff2d9a','#a845ff','#ff2d9a'),negativ:false,extrude:0,extrudeStyle:'light'},
       pv:`<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="font-family:'Pinyon Script','Dancing Script',cursive;${gr('#ff2d9a','#a845ff','400')};letter-spacing:0;font-size:1.25em">Sledovat</b>` },
+    // s 3D leskem (schválené na žluté a modré)
+    base_lesk:{ name:'', set:{...B, gloss:'gloss',glossAmt:70,glossOn:'main',negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
+    modra_lesk:{ name:'', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),...tilt3d,gloss:'gloss',glossAmt:70,glossOn:'main',negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#14d6ff','#0040ff')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
   };
   const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',...v2}; }
   E.TEMPLATES=T;

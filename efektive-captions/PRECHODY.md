@@ -134,3 +134,5 @@ Ovládání: Šablony → Rychlé efekty → „3D lesk“ (převede aktuální 
 3D lesk v2 (podle detailu předloh): bez záře a bez tlusté hloubky. Ostrá tenká světlá hrana nahoře, jemný vnitřní stín dole, plynulé ztmavení ke spodku, těsný tmavý stín pod písmem; Lesklý + měkký odlesk vlevo nahoře; Světlá hrana = tenký světlý lem po obvodu (jako Whooshes, bez záře). Volba řádku `glossOn` main | sec | both (výchozí Hlavní).
 
 3D lesk v3: jen JEDEN styl (ten „lesklý“, schválený na žluté a modré) – volby Matný / Světlá hrana zrušené, staré hodnoty se převedou na lesklý. Ovládání: Vypnuto / Zapnuto, řádek, síla.
+
+Nové pořadí: Styl 8 = Styl 1 + 3D lesk (hlavní řádek), Styl 9 = modrá 3D + 3D lesk; původní Styl 2–10 jsou teď Styl 10–18 (negativ s kurzívou = Styl 12).
