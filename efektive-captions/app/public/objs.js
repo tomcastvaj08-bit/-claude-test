@@ -71,7 +71,7 @@ OBJ.aiSelect = async (canvas, m, x, y, add = true) => {
 };
 
 // ---------- obrys (hranice největších oblastí) ----------
-OBJ.contours = m => {
+OBJ.contours = (m, raw) => {
   const { w, h, d } = m, lab = new Int32Array(w * h), comps = [];
   let L = 0;
   for (let p = 0; p < w * h; p++) {
@@ -90,19 +90,23 @@ OBJ.contours = m => {
   const out = [];
   for (const c of big) {
     // Moore – obchod po hranici
+    // Moore – obchod po hranici; konec až při návratu na start se stejným dalším krokem (Jacobovo kritérium – i u špiček)
     const sx = c.start % w, sy = (c.start / w) | 0; const pts = [[sx, sy]];
-    let x = sx, y = sy, dir = 6, guard = 0;
-    do {
-      let found = false;
-      for (let k = 0; k < 8; k++) { const nd = (dir + 6 + k) % 8, nx = x + D8[nd][0], ny = y + D8[nd][1]; if (inC(nx, ny, c.L)) { x = nx; y = ny; dir = nd; found = true; break; } }
-      if (!found) break; pts.push([x, y]);
-    } while ((x !== sx || y !== sy) && ++guard < w * h);
-    out.push(simplify(chaikin(rdp(pts, 1.2)), 0.6));
+    let x = sx, y = sy, dir = 6, guard = 0, second = null;
+    while (guard++ < w * h * 2) {
+      let nx = -1, ny = -1, nd = -1;
+      for (let k = 0; k < 8; k++) { const d = (dir + 6 + k) % 8, ax = x + D8[d][0], ay = y + D8[d][1]; if (inC(ax, ay, c.L)) { nx = ax; ny = ay; nd = d; break; } }
+      if (nd < 0) break;
+      if (x === sx && y === sy && second && nx === second[0] && ny === second[1]) break;
+      x = nx; y = ny; dir = nd; pts.push([x, y]); if (!second) second = [x, y];
+    }
+    out.push(raw ? pts : simplify(chaikin(rdp(pts, 1.2)), 0.6));
   }
   return out;
 };
-function rdp(P, eps) { if (P.length < 3) return P; const a = P[0], b = P[P.length - 1]; let mi = 0, md = 0; const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
-  for (let i = 1; i < P.length - 1; i++) { const d = Math.abs(dy * P[i][0] - dx * P[i][1] + b[0] * a[1] - b[1] * a[0]) / L; if (d > md) { md = d; mi = i; } }
+function rdp(P, eps) { if (P.length < 3) return P; const a = P[0], b = P[P.length - 1]; let mi = 0, md = 0; const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+  // uzavřený obrys (začátek = konec): vzdálenost od bodu, jinak od přímky
+  for (let i = 1; i < P.length - 1; i++) { const d = L < 1e-9 ? Math.hypot(P[i][0] - a[0], P[i][1] - a[1]) : Math.abs(dy * P[i][0] - dx * P[i][1] + b[0] * a[1] - b[1] * a[0]) / L; if (d > md) { md = d; mi = i; } }
   if (md > eps) { const l = rdp(P.slice(0, mi + 1), eps), r = rdp(P.slice(mi), eps); return l.slice(0, -1).concat(r); } return [a, b]; }
 function chaikin(P) { if (P.length < 4) return P; const o = []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; o.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]); } return o; }
 function simplify(P, eps) { return P.length > 400 ? rdp(P, eps * 2) : P; }
@@ -150,11 +154,115 @@ function matrixFor(o, t, W, H) {
   return m;
 }
 OBJ.matrixFor = matrixFor;
+// ================= PERSPEKTIVNÍ MASKA (sledování rohů – homografie) =================
+// zobrazení: normalizované souřadnice výchozího snímku → px plátna v čase t (perspektiva + dorovnání rohů + ruční opravy + zoom videa)
+const isH = o => o.trk && o.trk.kind === 'h' && g.TRK && o.trk.t && o.trk.t.length > 1;
+OBJ.isH = isH;
+// ruční oprava rohu v čase (posun mezi opravami plynule, mimo ně za 1,5 s doběhne k nule)
+function fixAt(o, i, ts) {
+  const F = (o.fix || []).filter(f => f.i === i).sort((a, b) => a.t - b.t); if (!F.length) return [0, 0];
+  if (ts <= F[0].t) { const k = clamp(1 - (F[0].t - ts) / 1.5); return [F[0].dx * k, F[0].dy * k]; }
+  const L = F[F.length - 1]; if (ts >= L.t) { const k = clamp(1 - (ts - L.t) / 1.5); return [L.dx * k, L.dy * k]; }
+  for (let j = 0; j < F.length - 1; j++) if (ts <= F[j + 1].t) { const u = (ts - F[j].t) / Math.max(1e-6, F[j + 1].t - F[j].t), e = u * u * (3 - 2 * u); return [F[j].dx + (F[j + 1].dx - F[j].dx) * e, F[j].dy + (F[j + 1].dy - F[j].dy) * e]; }
+  return [0, 0];
+}
+OBJ.fixAt = fixAt;
+OBJ.cornersAt = (o, t) => {   // rohy v normalizovaných souřadnicích snímku (bez zoomu videa)
+  const ts = E.out2src ? E.out2src(t) : t, P = o.pts || [];
+  if (isH(o)) { const S = TRK.planarAt(o.trk, ts, o.trk.smooth ?? 6), C = []; for (let i = 0; i < P.length; i++) { const f = fixAt(o, i, ts); C.push([(S.C[2 * i] ?? 0) + f[0], (S.C[2 * i + 1] ?? 0) + f[1]]); } return { C, H: S.H }; }
+  const A = OBJ.affAt(o, t); return { C: P.map(([x, y]) => [A[0] * x + A[2] * y + A[4], A[1] * x + A[3] * y + A[5]]), A };
+};
+OBJ.mapper = (o, t, W, H) => {
+  const k = E.vxfAt ? (E.vxfAt(t) || { z: 100, x: 0, y: 0 }) : { z: 100, x: 0, y: 0 }, z = k.z / 100, ox0 = W / 2 + k.x / 100 * W, oy0 = H / 2 + k.y / 100 * H;
+  const cv = (nx, ny) => [ox0 + z * (nx * W - W / 2), oy0 + z * (ny * H - H / 2)];
+  const S = OBJ.cornersAt(o, t), P = o.pts || [];
+  if (S.H) {
+    const Hm = S.H, ap = (x, y) => { const w = Hm[6] * x + Hm[7] * y + Hm[8]; return [(Hm[0] * x + Hm[1] * y + Hm[2]) / w, (Hm[3] * x + Hm[4] * y + Hm[5]) / w]; };
+    const res = P.map((p, i) => { const q = ap(p[0], p[1]); return [S.C[i][0] - q[0], S.C[i][1] - q[1]]; });
+    const any = res.some(r => Math.abs(r[0]) + Math.abs(r[1]) > 1e-5);
+    return (nx, ny) => { let [x, y] = ap(nx, ny);
+      if (any) { let sx = 0, sy = 0, sw = 0, hit = -1; for (let i = 0; i < P.length; i++) { const d2 = (nx - P[i][0]) ** 2 + (ny - P[i][1]) ** 2; if (d2 < 1e-10) { hit = i; break; } const w = 1 / (d2 * d2); sx += w * res[i][0]; sy += w * res[i][1]; sw += w; }
+        if (hit >= 0) { x += res[hit][0]; y += res[hit][1]; } else { x += sx / sw; y += sy / sw; } }
+      return cv(x, y); };
+  }
+  const A = S.A; return (nx, ny) => cv(A[0] * nx + A[2] * ny + A[4], A[1] * nx + A[3] * ny + A[5]);
+};
+// obrys v normalizovaných souřadnicích výchozího snímku (rohy přesně, rovné hrany jemně rozdělené – kvůli perspektivě)
+function outlineN(o) {
+  if (o._on) return o._on;
+  if (o.poly && o.pts && o.pts.length > 2) { const P = o.pts, out = []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; for (let k = 0; k < 10; k++) out.push([a[0] + (b[0] - a[0]) * k / 10, a[1] + (b[1] - a[1]) * k / 10]); } return (o._on = [out]); }
+  const m = o._m || (o._m = OBJ.unrle(o.mask)); if (!o._ct) o._ct = OBJ.contours(m);
+  return (o._on = o._ct.map(P => P.map(([x, y]) => [x / m.w, y / m.h])));
+}
+OBJ.outlineN = outlineN;
+function pathN(c, o, mp) { c.beginPath(); for (const P of outlineN(o)) { P.forEach(([x, y], i) => { const q = mp(x, y); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); }); c.closePath(); } }
+// viditelnost: jen tam, kde je objekt sledovaný (u střihu / mimo záběr plynule zmizí)
+function trkVis(o, t) { if (!isH(o)) return 1; const ts = E.out2src ? E.out2src(t) : t, T = o.trk.t; return clamp((ts - T[0] + 0.03) / 0.2) * clamp((T[T.length - 1] - ts + 0.03) / 0.2); }
+function drawH(c, o, t, W, H, A) {
+  const mp = OBJ.mapper(o, t, W, H), soft = Math.max(2, Math.min(W, H) * 0.012);
+  if (!oc || oc.width !== W || oc.height !== H) { oc = document.createElement('canvas'); oc.width = W; oc.height = H; ox = oc.getContext('2d'); }
+  const maskTo = (x, feather) => { x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#fff'; pathN(x, o, mp); x.fill('evenodd');
+    if (feather) { const OFF = W * 4; x.shadowColor = '#fff'; x.shadowBlur = feather; x.shadowOffsetX = OFF; x.translate(-OFF, 0); pathN(x, o, (a, b) => { const q = mp(a, b); return q; }); x.fill('evenodd'); } x.restore(); };
+  if ((o.fillA || 0) > 0) {
+    ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, W, H); maskTo(ox, 0);
+    ox.globalCompositeOperation = 'source-in'; ox.fillStyle = o.fillC || '#27e1c1'; ox.fillRect(0, 0, W, H); ox.globalCompositeOperation = 'source-over';
+    // výplň se „rozlije“ spolu s kreslením obrysu (jako na realitních videích)
+    const k = o.line && o.line !== 'off' ? clamp((t - o.s - 0.35) / 0.45) : 1;
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = A * o.fillA / 100 * k; c.drawImage(oc, 0, 0); c.restore();
+  }
+  if (o.shine) drawShineH(c, o, t, W, H, mp, A, maskTo, soft);
+  if (o.line && o.line !== 'off') drawLineH(c, o, t, W, H, mp, A);
+  if (o.dots) drawDots(c, o, t, W, H, mp, A);
+}
+function drawShineH(c, o, t, W, H, mp, A, maskTo, soft) {
+  OBJ.shineWin(o); if (t < o.shS || t > o.shE) return;
+  let ph; if (!o.shRep) ph = (t - o.shS) / Math.max(0.1, o.shE - o.shS);
+  else { const dur = 1.6 - 1.1 * clamp((o.shineSpd ?? 50) / 100), every = Math.max(dur + 0.2, o.shineEvery ?? 2.6); ph = ((t - o.shS) % every) / dur; if (ph > 1) return; }
+  const e = ph < 0.5 ? 2 * ph * ph : 1 - 2 * (1 - ph) * (1 - ph);
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const P of outlineN(o)) for (const [x, y] of P) { const q = mp(x, y); x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); }
+  const bw = x1 - x0, bh = y1 - y0; if (bw < 2 || bh < 2) return;
+  ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, W, H); maskTo(ox, soft);
+  ox.globalCompositeOperation = 'source-in';
+  const ang = -25 * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang), span = bw + bh * Math.abs(Math.tan(ang)), band = Math.max(bw, bh) * (0.05 + 0.14 * clamp((o.shineW ?? 50) / 100));
+  const cx = x0 - band - bh * Math.abs(Math.tan(ang)) / 2 + (span + band * 2) * e, cy = (y0 + y1) / 2;
+  const gr = ox.createLinearGradient(cx - band * ca, cy - band * sa, cx + band * ca, cy + band * sa), col = o.shineC || '#ffffff';
+  gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.3, hexA(col, 0.22)); gr.addColorStop(0.5, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.7, hexA(col, 0.22)); gr.addColorStop(1, hexA(col, 0));
+  ox.fillStyle = gr; ox.fillRect(0, 0, W, H); ox.globalCompositeOperation = 'source-over';
+  const I = A * clamp((o.shineI ?? 80) / 100, 0, 1.5), G = clamp((o.shGlow ?? 80) / 100, 0, 1.5), L = glowLevels(oc, W, H);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen'; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.6); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.45); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.25); c.drawImage(L[2], 0, 0, W, H); }
+  c.globalAlpha = I; c.drawImage(oc, 0, 0); c.restore();
+}
+function drawLineH(c, o, t, W, H, mp, A) {
+  const lw = Math.max(1.5, Math.min(W, H) * 0.004 * (o.lineW ?? 50) / 50), col = o.lineC || '#ffffff';
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = A; c.lineJoin = o.poly ? 'miter' : 'round'; c.lineCap = 'round'; c.miterLimit = 6;
+  c.strokeStyle = col; c.lineWidth = lw; c.shadowColor = hexA(col, 0.6); c.shadowBlur = lw * 2.5;
+  const since = t - o.s, draw = clamp(since / 0.7);
+  for (const P of outlineN(o)) {
+    if (P.length < 3) continue; const S = P.map(([x, y]) => mp(x, y));
+    let len = 0; for (let i = 0; i < S.length; i++) { const a = S[i], b = S[(i + 1) % S.length]; len += Math.hypot(b[0] - a[0], b[1] - a[1]); }
+    c.beginPath(); S.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
+    if (o.line === 'dash') { const dl = lw * 3.2; c.setLineDash([dl, dl * 0.9]); c.lineDashOffset = -since * lw * 10; c.globalAlpha = A * draw; } else c.setLineDash([len * draw, len]);
+    c.stroke();
+  }
+  c.restore();
+}
+// trackovací body v rozích (jako u sledování obličeje): bílá tečka s tmavým lemem a jemným prstencem
+function drawDots(c, o, t, W, H, mp, A) {
+  const P = o.pts || []; if (!P.length) return; const r = Math.max(3, Math.min(W, H) * 0.0065 * (o.dotS ?? 100) / 100), since = t - o.s;
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+  P.forEach((p, i) => { const q = mp(p[0], p[1]), k = clamp((since - i * 0.06) / 0.25), e = 1 - (1 - k) ** 3; if (k <= 0) return;
+    c.globalAlpha = A * k; c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(q[0], q[1], r * 1.9 * e, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = hexA(o.dotC || '#ffffff', 0.85); c.lineWidth = Math.max(1, r * 0.28); c.beginPath(); c.arc(q[0], q[1], r * 1.9 * e, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = o.dotC || '#ffffff'; c.beginPath(); c.arc(q[0], q[1], r * e, 0, Math.PI * 2); c.fill(); });
+  c.restore();
+}
 OBJ.draw = (c, W, H, t) => {
   const L = E.objs; if (!L || !L.length) return;
   for (const o of L) {
-    if (t < o.s || t > o.e || !o.mask) continue;
-    const fin = clamp((t - o.s) / 0.35), fout = clamp((o.e - t) / 0.3), A = Math.min(fin, fout); if (A <= 0) continue;
+    if (t < o.s || t > o.e || (!o.mask && !(o.poly && o.pts))) continue;
+    const fin = clamp((t - o.s) / 0.35), fout = clamp((o.e - t) / 0.3), A = Math.min(fin, fout) * trkVis(o, t); if (A <= 0) continue;
+    if (isH(o) || o.poly) { drawH(c, o, t, W, H, A); continue; }
     const mc = maskCanvas(o), m = o._m, M = matrixFor(o, t, W, H);
     const sm = new DOMMatrix().scaleSelf(1 / m.w, 1 / m.h);   // maskové px → normalizované
     const MM = M.multiply(sm);
