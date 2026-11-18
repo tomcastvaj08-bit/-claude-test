@@ -966,12 +966,13 @@ binders.templates=()=>{
 };
 
 // ---------- STYL ----------
-const SHADOWS=[['none',null],['#000000','#000'],['#2f7bff','#2f7bff'],['#ffc531','#ffc531'],['#4df0ff','#4df0ff'],['#21d07a','#21d07a'],['#ff3ad7','#ff3ad7']];
+const SHADOWS=[['none',null],['#000000','#000'],['#363029','#363029'],['#e9e0d6','#e9e0d6'],['#2f7bff','#2f7bff'],['#ffc531','#ffc531'],['#4df0ff','#4df0ff'],['#21d07a','#21d07a'],['#ff3ad7','#ff3ad7']];
 function pStyle(){
   const S=cur(), st=sub.style;
   let h=`${scopeHTML()}${subHTML('style',[['color','Barva'],['font','Font'],['text','Text'],['shadow','Stín'],['transform','3D a tvar']],'<div class="sp"></div><div class="hrt" id="saveTpl" title="Uložit jako vlastní šablonu">'+I('heart','grad')+'</div>')}`;
   if (st==='color'){
     h+=`<div class="colors">${color('Text','cText')}${color('Zvýraznění 1','c1')}${color('2.','c2')}${color('3.','c3')}${color('4.','c4')}</div>
+    <div class="clabel">Barvy značky Lerdee</div><div class="chips" id="brandCol"><div class="chip" data-t="#e9e0d6" data-s="#363029"><i class="bsw" style="background:#e9e0d6"></i>Begie text</div><div class="chip" data-t="#363029" data-s="#e9e0d6"><i class="bsw" style="background:#363029"></i>Brown text</div></div>
     <div class="note">Zvýraznění 1–4 se střídá po titulcích (1. titulek = 1. barva…), když je přechod vypnutý.</div>
     ${toggle('Vedlejší řádky s jemným přelivem do šeda','textGrad')}
     ${S.textGrad?`<div class="colors">${color('Vedlejší nahoře','cText')}${color('Vedlejší dole','cText2')}</div>`:''}
@@ -1049,6 +1050,8 @@ binders.style=()=>{
   const sc=$('shCustom'); if (sc){ sc.oninput=()=>setVal('cShadow',sc.value,true); sc.onchange=()=>{ if(!cur().shadowSize) setVal('shadowSize',25); changed(); renderPanel(); }; }
   const ss=$('shSize'); if (ss) ss.onclick=e=>{ const d=e.target.closest('.chip'); if(!d) return; setVal('shadowSize',+d.dataset.v); renderPanel(); };
   const sg=$('suggestCol'); if (sg) sg.onclick=suggestColors;
+  const bc=$('brandCol'); if (bc) bc.onclick=e=>{ const d=e.target.closest('[data-t]'); if(!d) return; const t=d.dataset.t, sh=d.dataset.s;
+    setMany({cText:t,cText2:t,c1:t,c2:t,c3:t,c4:t,gA:t,gB:t,grad:false,textGrad:false,altOn:false,cShadow:sh,shadowSize:Math.max(cur().shadowSize||0,30),shadowA:Math.max(cur().shadowA||0,70)}); renderPanel(); };
 };
 async function suggestColors(){
   const box=$('suggBox'); box.innerHTML='<div class="muted">Analyzuju barvy ve videu…</div>';
@@ -1962,7 +1965,7 @@ $('trkCancel').onclick=()=>{ if (!trkPick) return; if (trkPick.running) trkPick.
 // ================= ZVÝRAZNĚNÍ OBJEKTU (shine, obrys, výplň, sledování tvaru) =================
 // výběr: AI klepnutím / kouzelná hůlka / štětec + / guma; vykreslení a sledování: objs.js + tracker.js
 let objEdit=null, selObj=null;
-const OBJ_COLORS=['#ffffff','#ffd27a','#ff9c00','#9fdcff','#27e1c1','#ff9ad5'];
+const OBJ_COLORS=['#ffffff','#e9e0d6','#363029','#ffd27a','#ff9c00','#9fdcff','#27e1c1','#ff9ad5'];
 function objSave(o){ const r={}; for (const k in o) if (k[0]!=='_') r[k]=o[k]; return r; }
 function objInvalidate(o){ o._m=null; o._mk=Math.random(); o._bb=null; o._ct=null; if (o.trk) o.trk._S=null; }
 const curObj=()=>E.objs.find(o=>o.id===selObj);
@@ -2314,6 +2317,7 @@ $('proLogout').onclick=()=>{ if (!confirm('Odhlásit PRO z tohoto zařízení? K
 })();
 
 // přibalené písmo titulků (stejné na iPhonu i v počítači) – načíst hned
+if (document.fonts && document.fonts.load) for (const [w,f] of [[300,'Outfit'],[700,'Outfit'],[300,'Open Sans']]) document.fonts.load(`${w} 60px "${f}"`,'AaŽžŠšČčŘřĚěŮůÝýÁáÍíÉéÚúŇňŤťĎď').catch(()=>{});
 if (document.fonts && document.fonts.load) for (const w of [400,500,600,700,800,900]) document.fonts.load(`${w} 60px "Inter Tight"`,'AaŽžŠšČčŘřĚěŮůÝýÁáÍíÉéÚúŇňŤťĎď').catch(()=>{});
 
 // ---------- automatická aktualizace: telefon drží starou verzi stránky v paměti ----------

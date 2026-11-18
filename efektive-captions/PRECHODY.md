@@ -90,3 +90,6 @@ Vše jde u každého přechodu přepnout v nabídce zvuků. Pokladní/cinkavé z
 Zjištěno: `swoosh.m4a` (#8) a `pushr.m4a` (#13) ze sady nejsou swooshe, ale řada cvaknutí. Nahrazeno vlastními čistými woosh zvuky (šum s pásmovým filtrem, plynulý náběh a dozvuk, výška podle předloh):
 `woosh` 0,5 s (propad plátna 1/2/3, zahoupání, shake), `wooshk` 0,32 s (rychlý propad), `wooshh` 0,75 s hluboký (tunel, warp, průlet), `wooshm` 0,2 s velmi tichý (slova ve 3D mixu, „Swoosh (mini)“).
 Blesk = cvak, negativ = mini glitch. Staré volby „Mini swoosh“ a „Krátký nádech“ z nabídky pryč (uložené projekty se přepnou na výchozí).
+
+## 18. 11. – brand Lerdee (Lukáš Lederer Kosmetika)
+Šablona **Lerdee** (první v Šablonách): hlavní řádek Neulis Sans Bold, vedlejší Neulis Sans Light VELKÝMI s prostrkáním, barvy Begie #E9E0D6 a Brown #363029 (stín). Fonty: „Neulis Sans Bold/Light“ (placený font – když je v zařízení, použije se; jinak vizuálně skoro stejný Outfit, OFL) a „Open Sans Light“. V Barvách řádek „Barvy značky Lerdee“ (Begie text / Brown text), barvy přidané i do stínu a objektů.
