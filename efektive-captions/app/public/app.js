@@ -762,6 +762,7 @@ function renderPanel(){
     case 'overlay': h=pOverlay(); break;
     case 'ai': h=pAI(); break;
     case 'mix': h=pMix(); break;
+    case 're': h=pRe(); break;
     case 'clip': h=pClip(); break;
     case 'audio': h=pAudio(); break;
     case 'fxm': h=pFxm(); break;
@@ -773,6 +774,91 @@ function renderPanel(){
   const fn=binders[panel]; fn&&fn();
 }
 const binders={};
+// ---------- REAL ESTATE STYL ----------
+// Samostatný mód: AI najde hlavu v každém snímku → titulky se k ní přilepí (tracking, mění velikost s člověkem),
+// velké slovo jde za hlavu (chytře – nikdy neschová celé slovo), menší řádek nad hlavou nebo titulek před tělem.
+function pRe(){
+  const on=!!E.G.reMode, pl=E.G.rePlace||'alt';
+  const cols=TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${E.G.grad&&E.G.gA===a&&E.G.gB===b?'on':''}" data-a="${a}" data-b="${b}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('');
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Titulky se přilepí k hlavě a jdou s člověkem, velké slovo je za hlavou, menší nad ní nebo před tělem. Chytře – hlava nikdy neschová celé slovo.</small></div></div>
+  <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout Real estate styl':'Zapnout Real estate styl'}</button>
+  <div class="clabel">Barva hlavního slova</div><div class="d3cols" id="reCols">${cols}</div>
+  <div class="clabel">Kde jsou titulky</div>
+  <div class="chips" id="rePl">${[['alt','Střídat: nad hlavou / před tělem'],['top','Vždy za hlavou'],['chest','Vždy před tělem']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="chips" id="reFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div><div class="chip ${E.G.extrude>0?'on':''}" data-k="extrude">3D hloubka</div></div>
+  ${on?`<button class="btn" id="reRedo">${I('refresh','grad')} Znovu rozmístit titulky</button>`:''}
+  <div class="note">Funguje, když je ve videu vidět obličej. Napoprvé appka projde celé video snímek po snímku (chvíli to trvá, pak už je to okamžité). Titulek jde pořád posunout prstem.</div>`;
+}
+// souvislé úseky s obličejem (mezi střihy) z rozboru hlavy: poloha obličeje a jeho velikost v px plátna
+function reSegments(){
+  const d=HEAD.data, W=cv.width, H=cv.height, segs=[]; let cur=null;
+  for (let i=0;i<d.t.length;i++){
+    if (!d.m[i]){ continue; }
+    const fw=d.side[i]*W/2.7, cx=d.x[i]*W, cy=d.y[i]*H+0.2*fw;
+    if (cur){ const j=cur.t.length-1, gap=d.t[i]-cur.t[j], jump=Math.hypot(cx-cur.x[j],cy-cur.y[j])>0.6*fw||fw/cur.f[j]>1.4||cur.f[j]/fw>1.4; if (gap>0.35||jump){ segs.push(cur); cur=null; } }
+    if (!cur) cur={t:[],x:[],y:[],f:[],top:[]};
+    const tp=HEAD.topAt(i);
+    cur.t.push(d.t[i]); cur.x.push(cx); cur.y.push(cy); cur.f.push(fw); cur.top.push(tp!=null?tp*H:cy-0.95*fw);
+  }
+  if (cur) segs.push(cur);
+  return segs.filter(s=>s.t.length>=6);
+}
+function reLayout(){
+  const W=cv.width, H=cv.height, segs=reSegments(), pl=E.G.rePlace||'alt'; let n=0, k2=0;
+  for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
+  E.pages.forEach((p,k)=>{
+    const m=pageMeta(p); m.own=m.own||{}; delete m.trk;
+    const t1=E.out2src(p.s+0.05), t2=E.out2src(p.e);
+    // úsek s obličejem, který s titulkem nejvíc překrývá (obličej se může najít až chvilku po začátku titulku)
+    let sg=null, best=0.15; for (const s2 of segs){ const ov=Math.min(t2,s2.t[s2.t.length-1])-Math.max(t1,s2.t[0]); if (ov>best){ best=ov; sg=s2; } }
+    if (!sg) return;
+    const ts=Math.max(t1,sg.t[0]);
+    let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=ts) i++;
+    const fw=sg.f[i], cx=sg.x[i], fy=sg.y[i], top=sg.top[i], chin=fy+0.8*fw;   // vršek hlavy přesně z masky (vlasy)
+    let place=pl==='alt'?(k2++%2?'chest':'top'):pl;
+    if (place==='top' && top<H*0.14) place='chest';
+    if (place==='chest' && chin+fw*1.4>H*0.9) place='top';
+    // široký titulek se zmenší, ať se vejde (max. 90 % šířky videu)
+    delete m.own.size; let S=E.styleOf(p), lines=E.layoutPage(p,S);
+    if (!lines.length) return;
+    const bw=Math.max(...lines.map(L=>L.total)); if (bw>W*0.9){ m.own.size=Math.round(S.size*W*0.9/bw); S=E.styleOf(p); lines=E.layoutPage(p,S); }
+    const y0=H*S.posY/100;
+    let posY;
+    // nad hlavou: spodní řádek titulku jen spodním okrajem písmen za vlasy (zbytek nad hlavou, obličej volný)
+    if (place==='top'){ const lb=lines.reduce((a,L)=>L.y>a.y?L:a,lines[0]); posY=(top+lb.px*0.06-(lb.y-y0))/H*100; }
+    else { const tb=Math.min(...lines.map(L=>L.y-L.px*0.55)); posY=(chin+0.3*fw-(tb-y0))/H*100; }   // celý titulek pod bradou, před tělem
+    const half=Math.max(...lines.map(L=>L.total))/2/W*100;
+    m.own.posX=Math.max(half+4,Math.min(96-half,cx/W*100)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
+    // vlastní dráha pro titulek: hlava od začátku do konce titulku (výchozí okamžik = začátek titulku)
+    const a=E.out2src(p.s)-0.5, b=E.out2src(p.e)+0.5, T={id:'re_'+k, t0:ts, smooth:25, scale:true, face:true, t:[], x:[], y:[], s:[], c:[]};
+    for (let j=0;j<sg.t.length;j++){ if (sg.t[j]<a||sg.t[j]>b) continue; T.t.push(sg.t[j]); T.x.push(sg.x[j]/W); T.y.push(sg.y[j]/H); T.s.push(sg.f[j]/fw); T.c.push(1); }
+    if (T.t.length>=3){ E.tracks[T.id]=T; m.trk=T.id; }
+    n++;
+  });
+  return n;
+}
+async function reToggle(btn){
+  if (E.G.reMode){ E.G.reMode=false; for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
+    for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (!m) continue; if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk; if (m.own){ delete m.own.posX; delete m.own.posY; delete m.own._manualPos; delete m.own.size; } }
+    E.G.behind='off'; changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
+  if (!HEAD.data){ const v=await auxVideo(); vid.pause(); btn.disabled=true;
+    try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ btn.textContent='Hledám hlavu v každém snímku… '+Math.round(pp*100)+' %'; }}); }
+    catch(e){ console.warn(e); toast('Nepovedlo se: '+(e.message||e)); freeVideo(v); renderPanel(); return; }
+    freeVideo(v); }
+  // vzhled: Styl 1 (bílý menší řádek + velké barevné slovo) s 3D leskem, barva zůstane, pokud už je vybraná
+  const keep={gA:E.G.gA,gB:E.G.gB,grad:E.G.grad,c1:E.G.c1,c2:E.G.c2,c3:E.G.c3,c4:E.G.c4};
+  const set={...E.TEMPLATES.base.set}; delete set.posX; delete set.posY;
+  Object.assign(E.G, set, keep, {gloss:'gloss', glossOn:'main', behind:'head', reMode:true, style:'base'});
+  const n=reLayout(); changed(); renderPanel();
+  toast(n?`Hotovo – ${n} ${n===1?'titulek jde':n<5?'titulky jdou':'titulků jde'} s hlavou`:'Ve videu jsem nenašel obličej – titulky zůstaly, kde byly');
+}
+binders.re=()=>{
+  $('reOn').onclick=()=>reToggle($('reOn'));
+  if ($('reRedo')) $('reRedo').onclick=()=>{ const n=reLayout(); changed(); toast(`Rozmístěno znovu (${n})`); };
+  $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const a=c.dataset.a, b=c.dataset.b; Object.assign(E.G,{grad:true,gA:a,gB:b,gradDir:'v',c1:a,c2:a,c3:a,c4:a}); for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) for (const k of ['grad','gA','gB','c1','c2','c3','c4']) delete m.own[k]; } changed(); renderPanel(); };
+  $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; if (E.G.reMode && HEAD.data) reLayout(); changed(); renderPanel(); };
+  $('reFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; else { E.G.extrude=E.G.extrude>0?0:45; E.G.extrudeStyle='light'; } changed(); renderPanel(); };
+};
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
 function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+E.clipDur(c); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
 function kfHere(){ const t=PV.currentTime; return E.kf.findIndex(k=>Math.abs(k.t-t)<0.05); }

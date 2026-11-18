@@ -7,6 +7,9 @@
 "use strict";
 (function (g) {
 const HEAD = g.HEAD = { data: null };
+const MS0 = 160;
+// horní okraj hlavy (vlasy) ve snímku i: 0..1 výšky snímku, nebo null
+HEAD.topAt = i => { const d = HEAD.data, m = d && d.m[i]; if (!m) return null; for (let r = 0; r < MS0; r++) { let c = 0; for (let x = 0; x < MS0; x++) if (m[r * MS0 + x] > 140) c++; if (c >= 3) { const side = d.side[i] * d.W; return (d.y[i] * d.H - side / 2 + (r + 0.5) / MS0 * side) / d.H; } } return null; };
 const MPV = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
 const SEG = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite';
 const MS = 160;            // rozlišení uložené masky hlavy (výřez kolem hlavy)
