@@ -823,44 +823,48 @@ function reLayout(){
       if (C){ const ma=pageMeta(A); ma.eo=C.s; ma.reL=1; mb.eo=C.s; } }
     E.buildPages();
   }
+  // hlava během titulku (jen když je opravdu v tomhle úseku videa; nejbližší do 1 s)
+  const headFor=p=>{ const t1=E.out2src(p.s+0.05), t2=E.out2src(p.e);
+    let sg=null, best=0.15; for (const s2 of segs){ const ov=Math.min(t2,s2.t[s2.t.length-1])-Math.max(t1,s2.t[0]); if (ov>best){ best=ov; sg=s2; } }
+    if (!sg){ let bd=1; for (const s2 of segs){ const d=Math.max(0,s2.t[0]-t2,t1-s2.t[s2.t.length-1]); if (d<bd){ bd=d; sg=s2; } } }
+    if (!sg) return null;
+    let top=1e9, chin=-1e9, cxs=0, nn=0, fw=0, brow=1e9; const tops=[];
+    const use=j=>{ top=Math.min(top,sg.top[j]); tops.push(sg.top[j]); brow=Math.min(brow,sg.y[j]-0.42*sg.f[j]); chin=Math.max(chin,sg.y[j]+0.8*sg.f[j]); cxs+=sg.x[j]; nn++; fw=Math.max(fw,sg.f[j]); };
+    for (let j=0;j<sg.t.length;j++) if (sg.t[j]>=t1-0.04 && sg.t[j]<=t2+0.04) use(j);
+    if (!nn){ let i=0, bd=1e9; sg.t.forEach((t,j)=>{ const d=Math.abs(t-t1); if (d<bd){ bd=d; i=j; } }); use(i); }
+    return {top, topMed:tops.sort((x,y)=>x-y)[tops.length>>1], brow, chin, fw, cx:cxs/nn}; };
+  let lastTop=null;
   E.pages.forEach((p,k)=>{
     const m=pageMeta(p); m.own=m.own||{}; delete m.trk; delete m.own.size;
-    const role=pl==='alt'?((p.layer|0)?'chest':'top'):pl;
+    let role=pl==='alt'?((p.layer|0)?'chest':'top'):pl;
     let S=E.styleOf(p), lines=E.layoutPage(p,S); if (!lines.length) return;
     // široký titulek se zmenší, ať se vejde (max. 90 % šířky videa)
     const bw=Math.max(...lines.map(L=>L.total)); if (bw>W*0.9){ m.own.size=Math.round(S.size*W*0.9/bw); S=E.styleOf(p); lines=E.layoutPage(p,S); }
-    const y0=H*S.posY/100, half=Math.max(...lines.map(L=>L.total))/2/W*100;
-    const tb=Math.min(...lines.map(L=>L.y-L.px*0.55))-y0, lb=lines.reduce((a,L)=>L.y>a.y?L:a,lines[0]);
-    // hlava v okamžiku, kdy titulek začíná (když ve videu je)
-    const t1=E.out2src(p.s+0.05), t2=E.out2src(p.e);
-    let sg=null, best=0.15; for (const s2 of segs){ const ov=Math.min(t2,s2.t[s2.t.length-1])-Math.max(t1,s2.t[0]); if (ov>best){ best=ov; sg=s2; } }
-    // obličej v titulku nenalezen → nejbližší úsek s obličejem do 3 s (ať appka ví, kde obličej je)
-    if (!sg){ let bd=3; for (const s2 of segs){ const d=Math.max(0,s2.t[0]-t2,t1-s2.t[s2.t.length-1]); if (d<bd){ bd=d; sg=s2; } } }
-    let posX=50, posY=role==='top'?26:64;
-    if (sg){
-      // hlava po CELOU dobu titulku: nejvyšší vršek hlavy, nejvyšší obočí, nejnižší brada → titulek nikdy nevleze do obličeje
-      let top=1e9, chin=-1e9, cxs=0, nn=0, fw=0, brow=1e9; const tops=[];
-      const use=j=>{ top=Math.min(top,sg.top[j]); tops.push(sg.top[j]); brow=Math.min(brow,sg.y[j]-0.42*sg.f[j]); chin=Math.max(chin,sg.y[j]+0.8*sg.f[j]); cxs+=sg.x[j]; nn++; fw=Math.max(fw,sg.f[j]); };
-      for (let j=0;j<sg.t.length;j++) if (sg.t[j]>=t1-0.04 && sg.t[j]<=t2+0.04) use(j);
-      if (!nn){ let i=0, bd=1e9; sg.t.forEach((t,j)=>{ const d=Math.abs(t-t1); if (d<bd){ bd=d; i=j; } }); use(i); }
-      const cx=cxs/nn, topMed=tops.sort((a,b)=>a-b)[tops.length>>1];
-      // poloha pro danou velikost: nahoře = velké slovo spodkem za vlasy (nikdy pod obočí), dole = celý titulek pod bradou
-      const place=(r,L)=>{ const lb2=L.reduce((a,x)=>x.y>a.y?x:a,L[0]), tb2=Math.min(...L.map(x=>x.y-x.px*0.55))-y0, bb2=Math.max(...L.map(x=>x.y+x.px*0.55))-y0;
-        const yy = r==='top' ? (lb2.em ? Math.min(topMed+0.1*lb2.px, brow-0.38*lb2.px) : top-0.05*lb2.px)-(lb2.y-y0) : chin+0.3*fw-tb2;
-        return { y:yy, top:yy+tb2, bot:yy+bb2 }; };
-      // kde se celý titulek vejde (zkusí i zmenšit); obličej se nikdy nepřekryje
-      let r=role, sz=S.size, got=null; const own0=m.own.size;
-      for (const rr of (r==='top'?['top','chest']:['chest','top'])){
-        for (let k2=0;k2<5 && !got;k2++){ const f=[1,0.85,0.72,0.62,0.54][k2];
-          if (f!==1){ m.own.size=Math.round(sz*f); S=E.styleOf(p); lines=E.layoutPage(p,S); }
-          const q=place(rr,lines); if (q.top>=H*0.02 && q.bot<=H*0.98){ got=q; r=rr; } }
-        if (got) break; if (own0!=null) m.own.size=own0; else delete m.own.size; S=E.styleOf(p); lines=E.layoutPage(p,S); }
-      if (!got){ m.own.size=Math.round(sz*0.54); S=E.styleOf(p); lines=E.layoutPage(p,S); const q=place('chest',lines); got={y:Math.min(q.y, H*0.98-(q.bot-q.y))}; }
-      posY=got.y/H*100; posX=cx/W*100; }
+    const sz0=S.size, own0=m.own.size, y0=H*S.posY/100;
+    const setF=f=>{ if (f===1){ if (own0!=null) m.own.size=own0; else delete m.own.size; } else m.own.size=Math.round(sz0*f); S=E.styleOf(p); lines=E.layoutPage(p,S); };
+    const ext=()=>({ lb:lines.reduce((x,L)=>L.y>x.y?L:x,lines[0]), tb:Math.min(...lines.map(L=>L.y-L.px*0.55))-y0, bb:Math.max(...lines.map(L=>L.y+L.px*0.55))-y0 });
+    const hd=headFor(p); let posY=null; const posX=hd?hd.cx/W*100:50;
+    if (role==='top'){
+      // NAHOŘE = ZA HLAVOU: spodní řádek titulku jde spodní částí za vlasy, zbytek nad hlavu (až k hornímu okraji).
+      // Spodek písmen nikdy pod obočí → oči a obličej vždy vidět. Když se nevejde, zmenší se; když ani tak, jde dolů před tělo.
+      for (const f of [1,0.88,0.76]){ setF(f); const e=ext();
+        const c = hd ? Math.min(hd.topMed+0.12*e.lb.px, hd.brow-0.4*e.lb.px) : H*0.04-e.tb+(e.lb.y-y0);
+        const yy=c-(e.lb.y-y0); if (yy+e.tb>=H*0.012){ posY=yy; break; } }
+      if (posY==null && hd){ setF(0.76); const e=ext(), yy=H*0.012-e.tb; if (yy+(e.lb.y-y0)+0.36*e.lb.px<=hd.brow) posY=yy; }
+      if (posY==null) role='chest'; else { const e=ext(); lastTop={e:p.e, bot:posY+e.bb}; }
+    }
+    if (role==='chest'){
+      // DOLE = PŘED TĚLEM: pod bradou (na hrudi), vždy pod horním titulkem, který je zrovna vidět – nikdy přes sebe
+      for (const f of [1,0.88,0.76,0.66]){ setF(f); const e=ext();
+        let yTop = hd ? hd.chin+0.55*hd.fw : H*0.6;
+        if (lastTop && p.s<lastTop.e) yTop=Math.max(yTop,lastTop.bot+H*0.012);
+        const yy=yTop-e.tb; if (yy+e.bb<=H*0.97){ posY=yy; break; } }
+      if (posY==null){ setF(0.66); const e=ext(); posY=H*0.97-e.bb; }
+    }
     // mix rozmístění: dvojice se střídavě lehce posunou doleva / doprava od hlavy
     const pair=Math.floor(k/2), jig=[0,-5,4,-2,6,-4][(pair+(E.G.reSeed||0))%6];
     const half2=Math.max(...lines.map(L=>L.total))/2/W*100;
-    m.own.posX=Math.max(half2+3,Math.min(97-half2,posX+jig)); m.own.posY=posY; m.own._manualPos=true;
+    m.own.posX=Math.max(half2+3,Math.min(97-half2,posX+jig)); m.own.posY=posY/H*100; m.own._manualPos=true;
     // mix barev: velké slovo každého titulku jinou barvou z palety (sousední nikdy stejné)
     const pal=reMix().map(nm=>TXT_COLORS.find(c=>c[0]===nm)).filter(Boolean);
     if (pal.length){ const c=pal[(k+(E.G.reSeed||0))%pal.length]; Object.assign(m.own,{grad:true,gA:c[1],gB:c[2],gradDir:'v',c1:c[1],c2:c[1],c3:c[1],c4:c[1]}); }
