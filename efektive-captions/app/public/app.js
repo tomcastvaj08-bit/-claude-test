@@ -1749,8 +1749,8 @@ $('tlIn').addEventListener('pointerup',e=>{
       else PV.currentTime=o.shS+0.02;
     } else if (moved){
       if (mode==='m'){ const d2=clamp(dt,-o.s,D-o.e); o.s+=d2; o.e+=d2; o.shS+=d2; o.shE+=d2; }
-      else if (mode==='l'){ o.s=clamp(o.s+dt,0,o.e-0.2); if (o.shS<o.s){ const len=o.shE-o.shS; o.shS=o.s; o.shE=Math.min(o.e,o.s+len); } }
-      else { o.e=clamp(o.e+dt,o.s+0.2,D); if (o.shE>o.e){ o.shE=o.e; if (o.shS>o.shE-0.2) o.shS=Math.max(o.s,o.shE-0.2); } }
+      else if (mode==='l'){ o.fadeIn=0.35; o.s=clamp(o.s+dt,0,o.e-0.2); if (o.shS<o.s){ const len=o.shE-o.shS; o.shS=o.s; o.shE=Math.min(o.e,o.s+len); } }
+      else { o.fadeOut=0.3; o.e=clamp(o.e+dt,o.s+0.2,D); if (o.shE>o.e){ o.shE=o.e; if (o.shS>o.shE-0.2) o.shS=Math.max(o.s,o.shE-0.2); } }
     } else PV.currentTime=o.s+0.05;
     if (panel!=='obj') openObjPanel(); else renderPanel();
     changed();
@@ -2242,7 +2242,7 @@ async function objTrack(o){
   const r5=v=>Math.round(v*1e5)/1e5;
   o.trk={kind:'h', t:tr.t.map(t=>Math.round(t*1e4)/1e4), H:tr.H.map(h=>h.map(r5)), C:tr.C.map(c=>c.map(r5)), c:tr.c.map(v=>Math.round(v*100)/100), q:(tr.q||[]).map(v=>Math.round(v*100)/100), smooth:6}; delete o.fix;
   // vrstva na timeline = celý sledovaný záběr (začátek a konec se dá zkrátit, objeví / zmizí plynule)
-  { const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=a; o.e=Math.max(a+0.3,b); o.shS=Math.max(o.s,E.src2out(o.t0)); o.shE=Math.min(o.e,o.shS+1.1); }
+  { const a=E.src2out(tr.t[0]), b=E.src2out(tr.t[tr.t.length-1]); o.trS=a; o.trE=b; o.s=a; o.e=Math.max(a+0.3,b); o.fadeIn=0.15; o.fadeOut=0.12; o.shS=Math.max(o.s,E.src2out(o.t0)); o.shE=Math.min(o.e,o.shS+1.1); }
   changed(); renderPanel(); renderTimeline(); PV.currentTime=Math.max(o.s+0.05,Math.min(o.e-0.05,E.src2out(o.t0)));
   trkMsg(`Hotovo – objekt sledován ${(tr.t[tr.t.length-1]-tr.t[0]).toFixed(1).replace('.',',')} s (${tr.t.length} snímků). Body v rozích můžeš kdekoli posunout a opravit.`);
 }

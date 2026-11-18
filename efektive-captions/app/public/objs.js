@@ -197,7 +197,7 @@ function outlineN(o) {
 OBJ.outlineN = outlineN;
 function pathN(c, o, mp) { c.beginPath(); for (const P of outlineN(o)) { P.forEach(([x, y], i) => { const q = mp(x, y); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); }); c.closePath(); } }
 // viditelnost: jen tam, kde je objekt sledovaný (u střihu / mimo záběr plynule zmizí)
-function trkVis(o, t) { if (!isH(o)) return 1; const ts = E.out2src ? E.out2src(t) : t, T = o.trk.t; let v = clamp((ts - T[0] + 0.03) / 0.2) * clamp((T[T.length - 1] - ts + 0.03) / 0.2);
+function trkVis(o, t) { if (!isH(o)) return 1; const ts = E.out2src ? E.out2src(t) : t, T = o.trk.t; let v = clamp((ts - T[0] + 0.04) / 0.08) * clamp((T[T.length - 1] - ts + 0.04) / 0.08);
   // rozmazané / rychlé snímky (přechod): maska plynule zeslábne (kvalita vyhlazená přes ~0,15 s)
   const Q = o.trk.q; if (Q && Q.length === T.length) { let s = 0, w = 0; for (let i = 0; i < T.length; i++) { const d = (T[i] - ts) / 0.08; if (d < -3) continue; if (d > 3) break; const k = Math.exp(-0.5 * d * d); s += k * Q[i]; w += k; } if (w > 0) v *= clamp((s / w - 0.15) / 0.6); }
   return v; }
@@ -264,7 +264,8 @@ OBJ.draw = (c, W, H, t) => {
   const L = E.objs; if (!L || !L.length) return;
   for (const o of L) {
     if (t < o.s || t > o.e || (!o.mask && !(o.poly && o.pts))) continue;
-    const fin = clamp((t - o.s) / 0.35), fout = clamp((o.e - t) / 0.3), A = Math.min(fin, fout) * trkVis(o, t); if (A <= 0) continue;
+    // objevení / zmizení: krátké a plynulé (u začátku / konce záběru jen pár snímků, ať maska nebliká)
+    const fin = clamp((t - o.s) / (o.fadeIn ?? 0.35)), fout = clamp((o.e - t) / (o.fadeOut ?? 0.3)), A = Math.min(fin, fout) * trkVis(o, t); if (A <= 0) continue;
     if (isH(o) || o.poly) { drawH(c, o, t, W, H, A); continue; }
     const mc = maskCanvas(o), m = o._m, M = matrixFor(o, t, W, H);
     const sm = new DOMMatrix().scaleSelf(1 / m.w, 1 / m.h);   // maskové px → normalizované
