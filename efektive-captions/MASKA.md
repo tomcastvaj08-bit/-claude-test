@@ -20,3 +20,5 @@ Vzhled: obrys (plný / přerušovaný, kreslí se), výplň, trackovací body v 
 - V appce (body naklikané rukou): medián 0,35 px, max 1,1 px. Automatické rohy z masky: 0,7–5 px od skutečných rohů.
 - Skutečný záběr z dronu (realitní video): obrys drží dům až do přechodu.
 Testy: scratchpad `ptk/` (gen.py = generátor videí se známým pohybem, run.js = měření, app_flow*.js = celý postup v appce vč. exportu).
+
+Maska z AI výběru (3D objekt, např. dům): obrys = tvar z AI, body se automaticky dají do všech rohů obrysu (až 16), sledovací body jen v objektu a těsně u okraje (ne pozadí – jiná paralaxa), oprava rohů jen z bodů objektu. Pozemek: ruční body.

@@ -2075,7 +2075,7 @@ function trkMsgShort(m){ toast(m); }
 function polyToMask(P,m){ const c=document.createElement('canvas'); c.width=m.w; c.height=m.h; const x=c.getContext('2d',{willReadFrequently:true}); x.fillStyle='#fff'; x.beginPath(); P.forEach(([a,b],i)=>i?x.lineTo(a*m.w,b*m.h):x.moveTo(a*m.w,b*m.h)); x.closePath(); x.fill();
   const d=x.getImageData(0,0,m.w,m.h).data; for (let i=0;i<m.d.length;i++) m.d[i]=d[i*4+3]>127?1:0; }
 // rohy z masky: hlavní obrys → pár vrcholů → přichycení na rohy v obraze
-function autoCorners(E2){ try{ const ct=OBJ.contours(E2.m,true); if (!ct.length) return []; const g=TRK.gray(E2.img.data); const C=TRK.cornersFrom(g,E2.m.w,E2.m.h,ct[0],10); return C.map(([x,y])=>[x/E2.m.w,y/E2.m.h]); }catch(e){ console.warn(e); return []; } }
+function autoCorners(E2){ try{ const ct=OBJ.contours(E2.m,true); if (!ct.length) return []; const g=TRK.gray(E2.img.data); const C=TRK.cornersFrom(g,E2.m.w,E2.m.h,ct[0],16); return C.map(([x,y])=>[x/E2.m.w,y/E2.m.h]); }catch(e){ console.warn(e); return []; } }
 // plátno → maskové pixely (zpětně přes zoom / stabilizaci videa)
 function objPt(x,y){ const W=cv.width,H=cv.height,k=E.vxfAt(PV.currentTime)||{z:100,x:0,y:0},z=k.z/100, m=objEdit.m;
   const nx=((x-(W/2+k.x/100*W))/z+W/2)/W, ny=((y-(H/2+k.y/100*H))/z+H/2)/H; return [nx*m.w, ny*m.h]; }

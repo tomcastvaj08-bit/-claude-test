@@ -634,7 +634,9 @@ TRK.runPlanar = async (o) => {
   const diag = Math.hypot(bx1 - bx0, by1 - by0) || 1, ring = Math.max(6, diag * 0.07);
   // oblast pro body: objekt + pás kolem jeho hran (hrany a rohy jsou nejlepší body), z masky nebo mnohoúhelníku
   const inMask = mask ? (x, y) => { const mx = Math.round(x / W * mask.w), my = Math.round(y / H * mask.h); return mx >= 0 && my >= 0 && mx < mask.w && my < mask.h && mask.d[my * mask.w + mx]; } : null;
-  const inRegion = (x, y) => (inMask ? inMask(x, y) : inPoly(PX, x, y)) || polyDist(PX, x, y) < ring;
+  // maska z AI (3D objekt na pozadí): body jen v objektu a těsně u jeho okraje – pozadí se při průletu hýbe jinak (paralaxa)
+  const dm = Math.max(2, diag * 0.015), inMaskD = inMask ? (x, y) => inMask(x, y) || inMask(x + dm, y) || inMask(x - dm, y) || inMask(x, y + dm) || inMask(x, y - dm) : null;
+  const inRegion = inMask ? inMaskD : (x, y) => inPoly(PX, x, y) || polyDist(PX, x, y) < ring;
   const NMAX = 400, MIND = Math.max(5, Math.min(11, diag / 30));
   const toN = Hp => hNorm([Hp[0], Hp[1] * H / W, Hp[2] / W, Hp[3] * W / H, Hp[4], Hp[5] / H, Hp[6] * W, Hp[7] * H, Hp[8]]);   // px → normalizované
   let lastYield = performance.now(); const breathe = async () => { if (performance.now() - lastYield > 40) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); } };
@@ -668,7 +670,7 @@ TRK.runPlanar = async (o) => {
       for (let vi = 0; vi < PX.length; vi++) {
         const va = PX[vi]; let vc = hApply(Hc, va[0], va[1]);
         // 3D objekt (roh mimo hlavní rovinu): body v okolí rohu mají soustavnou odchylku od modelu → roh se o ni posune
-        const near = pts.filter(p => Math.hypot(p.a[0] - va[0], p.a[1] - va[1]) < diag * 0.2);
+        const near = pts.filter(p => Math.hypot(p.a[0] - va[0], p.a[1] - va[1]) < diag * 0.2 && (!inMask || inMask(p.a[0], p.a[1])));
         if (near.length >= 10) {
           let sx = 0, sy = 0, sw = 0; const rs = [];
           for (const p of near) { const pr = hApply(Hc, p.a[0], p.a[1]), d = Math.hypot(p.a[0] - va[0], p.a[1] - va[1]) / (diag * 0.2), w = (1 - d * d) ** 2 + 0.05; const ex = p.c[0] - pr[0], ey = p.c[1] - pr[1]; rs.push([ex, ey, w]); sx += w * ex; sy += w * ey; sw += w; }
