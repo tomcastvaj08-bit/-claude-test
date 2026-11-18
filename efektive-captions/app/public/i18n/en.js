@@ -840,5 +840,10 @@ window.I18N_DICT.en={
 "Lesklý": "Glossy",
 "Matný": "Matte",
 "Neon": "Neon",
-"Síla 3D lesku": "3D gloss strength"
+"Síla 3D lesku": "3D gloss strength",
+"Světlá hrana": "Light rim",
+"Na kterém řádku": "On which line",
+"Hlavní": "Main",
+"Vedlejší": "Secondary",
+"Oba": "Both"
 };

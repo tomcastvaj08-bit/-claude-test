@@ -1084,8 +1084,8 @@ function pStyle(){
     ${slider('Průhlednost','shadowA',0,100,1,'%')}
     ${slider('Vzdálenost stínu','shadowDist',0,40)}
     <div class="clabel">3D lesk (jako z After Effects)</div>
-    ${chips('','gloss',[['off','Vypnuto'],['gloss','Lesklý'],['matte','Matný'],['neon','Neon']])}
-    ${S.gloss&&S.gloss!=='off'?slider('Síla 3D lesku','glossAmt',10,100,1,'%'):''}
+    ${chips('','gloss',[['off','Vypnuto'],['gloss','Lesklý'],['matte','Matný'],['rim','Světlá hrana']])}
+    ${S.gloss&&S.gloss!=='off'?chips('Na kterém řádku','glossOn',[['main','Hlavní'],['sec','Vedlejší'],['both','Oba']])+slider('Síla 3D lesku','glossAmt',10,100,1,'%'):''}
     ${slider('3D hloubka písma (extrude)','extrude',0,100)}
     ${chips('Styl 3D hloubky','extrudeStyle',[['light','Světlá'],['dark','Tmavá']])}`;
   } else if (st==='transform'){
