@@ -84,7 +84,7 @@ async function dbDo(mode,fn,store='projects'){ const db=await DB; return new Pro
 async function renderProjects(){
   let list=[]; try{ list=await dbDo('readonly',st=>st.getAll()); }catch(e){}
   list.sort((a,b)=>b.updated-a.updated);
-  $('projects').innerHTML = list.length ? list.map(p=>`<div class="proj" data-id="${p.id}"><img src="${p.thumb||'icon.png'}" alt=""><div class="pn">${esc(p.name)}<small>${new Date(p.updated).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div><button class="del" data-del="${p.id}">${I('x')}</button></div>`).join('') : '<div class="muted">Zatím žádné projekty.</div>';
+  $('projects').innerHTML = list.length ? list.map(p=>`<div class="proj" data-id="${p.id}"><img src="${p.thumb||'icon.png'}" alt=""><div class="pn">${esc(p.name)}<small>${new Date(p.updated).toLocaleString((window.I18N&&I18N.locale)||'cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div><button class="del" data-del="${p.id}">${I('x')}</button></div>`).join('') : '<div class="muted">Zatím žádné projekty.</div>';
 }
 $('projects').onclick=async e=>{
   const d=e.target.closest('[data-del]');
@@ -2406,6 +2406,16 @@ setInterval(checkUpdate, 5*60*1000);
 
 // nový výchozí Styl 1 (verze 2) – starý uložený „výchozí vzhled“ by ho přebil, proto ho jednou zahodit
 try{ if (localStorage.getItem('efk_default_v')!=='2'){ localStorage.removeItem('efk_default'); localStorage.setItem('efk_default_v','2'); } }catch(e){}
+
+// ---------- jazyk aplikace (zeměkoule na úvodu) ----------
+function renderUiLangs(){
+  const L=window.I18N; if (!L) return;
+  const cur=L.langs.find(l=>l[0]===L.lang); $('uiLangCode').textContent=(cur?cur[2]+' ':'')+L.lang.toUpperCase();
+  $('uiLangList').innerHTML=L.langs.map(([c,n,f,ok])=>`<button class="uil ${c===L.lang?'on':''} ${ok?'':'off'}" data-c="${c}" ${ok?'':'disabled'}><span class="fl">${f}</span><span class="nm" data-notr>${n}</span>${ok?(c===L.lang?I('check'):''):'<small>Brzy</small>'}</button>`).join('');
+}
+$('uiLangBtn').onclick=()=>openSheet('sheetUiLang');
+$('uiLangList').onclick=e=>{ const b=e.target.closest('.uil'); if (!b || b.disabled) return; if (b.dataset.c===I18N.lang){ $('sheetUiLang').classList.remove('on'); return; } I18N.set(b.dataset.c); };
+renderUiLangs();
 
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();

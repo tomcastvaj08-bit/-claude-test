@@ -56,7 +56,7 @@ E.drawOutro=(c,W,H,t)=>{
   c.font=`800 ${fs}px "Inter Tight","Schibsted Grotesk",Arial,sans-serif`; try{ c.letterSpacing=Math.round(fs*0.02)+'px'; }catch(e){}
   c.fillText('EFEKTIVE',W/2,cy+m*0.02);
   c.globalAlpha=a2*0.7; c.font=`600 ${Math.round(fs*0.32)}px "Inter Tight",Arial,sans-serif`; try{ c.letterSpacing=Math.round(fs*0.06)+'px'; }catch(e){}
-  c.fillText('TITULKY · EFEKTIVE CAPTIONS',W/2,cy+m*0.02+fs*1.15);
+  c.fillText((window.I18N&&I18N.lang!=='cs')?'CAPTIONS · EFEKTIVE':'TITULKY · EFEKTIVE CAPTIONS',W/2,cy+m*0.02+fs*1.15);
   c.restore();
 };
 E.drawWatermark=(c,W,H)=>{
