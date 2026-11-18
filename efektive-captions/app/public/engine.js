@@ -162,22 +162,24 @@ E.TEMPLATES = {
   const pv=(sec,main,css)=>`<span style="font-weight:600;letter-spacing:-.06em">${sec}</span><br><b style="${css}">${main}</b>`;
   const gr=(a,b,w='800')=>`background:linear-gradient(${a},${b});-webkit-background-clip:text;color:transparent;font-weight:${w};letter-spacing:-.07em`;
   const add={
-    // LERDEE – podle brand manuálu: podnadpis NEULIS SANS LIGHT velkými s prostrkáním, nadpis Neulis Sans Bold, Begie #E9E0D6 + Brown #363029
-    krem:{ name:'Lerdee', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,size:84,emScale:180,track:6,trackEm:-1.5,wordGap:165,gap:70,rowMax:52,caseSec:'upper',caseMain:'title',grad:false,textGrad:false,gA:'#e9e0d6',gB:'#e9e0d6',c1:'#e9e0d6',c2:'#e9e0d6',c3:'#e9e0d6',c4:'#e9e0d6',cText:'#e9e0d6',cText2:'#e9e0d6',cShadow:'#363029',shadowSize:45,shadowA:85,negativ:false,extrude:0,extrudeStyle:'light'},
+    // (klientský styl) podle brand manuálu: podnadpis NEULIS SANS LIGHT velkými s prostrkáním, nadpis Neulis Sans Bold, Begie #E9E0D6 + Brown #363029
+    krem:{ name:'', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,size:84,emScale:180,track:6,trackEm:-1.5,wordGap:165,gap:70,rowMax:52,caseSec:'upper',caseMain:'title',grad:false,textGrad:false,gA:'#e9e0d6',gB:'#e9e0d6',c1:'#e9e0d6',c2:'#e9e0d6',c3:'#e9e0d6',c4:'#e9e0d6',cText:'#e9e0d6',cText2:'#e9e0d6',cShadow:'#363029',shadowSize:45,shadowA:85,negativ:false,extrude:0,extrudeStyle:'light'},
       pv:`<span style="font-family:Outfit;font-weight:300;letter-spacing:.14em;font-size:.62em;color:#e9e0d6">ZAČNĚTE MĚ</span><br><b style="font-family:Outfit;font-weight:700;color:#e9e0d6;letter-spacing:-.02em;text-shadow:0 2px 8px #363029">Sledovat</b>` },
-    modra3d:{ name:'Modrá 3D', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
+    modra3d:{ name:'', set:{...B, ...col('#14d6ff','#0040ff','#0086ff'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat',gr('#14d6ff','#0040ff')) },
-    cervena3d:{ name:'Červená 3D', set:{...B, ...col('#ff3b30','#c00000','#e00a00'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
+    cervena3d:{ name:'', set:{...B, ...col('#ff3b30','#c00000','#e00a00'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat',gr('#ff3b30','#c00000')) },
-    negativ3d:{ name:'Negativ 3D', set:{...B, grad:false,c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',c4:'#ffffff',negativ:true,tilt:-37,tiltAlt:false,tiltX:0,persp:60,extrude:0,extrudeStyle:'light'},
+    negativ3d:{ name:'', set:{...B, grad:false,c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',c4:'#ffffff',negativ:true,tilt:-37,tiltAlt:false,tiltX:0,persp:60,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat','background:#fff;color:#111;padding:0 4px;font-weight:800;letter-spacing:-.07em') },
-    base3d:{ name:'Styl 1 + 3D hloubka', set:{...B, extrude:22,extrudeStyle:'light',negativ:false},
+    base3d:{ name:'', set:{...B, extrude:22,extrudeStyle:'light',negativ:false},
       pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 2px 0 #b86a00') },
-    snell:{ name:'Růžová Snell', set:{...B, fontEm:SCRIPT,wEm:400,trackEm:0,emScale:165,glow:35,glowMode:'always',...col('#ff2d9a','#a845ff','#ff2d9a'),negativ:false,extrude:0,extrudeStyle:'light'},
+    snell:{ name:'', set:{...B, fontEm:SCRIPT,wEm:400,trackEm:0,emScale:165,glow:35,glowMode:'always',...col('#ff2d9a','#a845ff','#ff2d9a'),negativ:false,extrude:0,extrudeStyle:'light'},
       pv:`<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="font-family:'Pinyon Script','Dancing Script',cursive;${gr('#ff2d9a','#a845ff','400')};letter-spacing:0;font-size:1.25em">Sledovat</b>` },
   };
   const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',...v2}; }
   E.TEMPLATES=T;
+  // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
+  let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
 })();
 Object.assign(E.G, E.TEMPLATES.base.set);
 
