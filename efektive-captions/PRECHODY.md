@@ -123,3 +123,6 @@ Lerdee (dřív Metalická): podle brand manuálu – vedlejší řádky NEULIS S
 V nabídce se šablony jmenují jen „Styl N“ podle pořadí: Styl 1 (Base, žlutý) · Styl 2 (Neulis, Begie/Brown) · Styl 3 (modrá 3D) · Styl 4 (červená 3D) · Styl 5 (negativ 3D) · Styl 6 (Styl 1 + 3D hloubka) · Styl 7 (růžová script) · Styl 8–16 (původní Styl 2–10).
 
 3D náklon −37° se střídáním stran mají Styl 2, 3, 4, 6, 7 (Styl 5 negativ: −37° stále na jednu stranu). Styl 10 (původní negativ s kurzívou): wiggle vypnutý.
+
+## 18. 11. – nabídka vs. timeline (telefon)
+Posun obsahu nabídky dolů (> 24 px) → stav ed-exp: menší náhled, timeline se zúží na stopu videa + titulky (84 px), lišta nástrojů se schová, nabídka dostane víc místa. Až po návratu úplně nahoru (posun nahoru na 0) → zpět plná timeline. Pojistka 450 ms proti cukání během animace; jen na telefonu (< 900 px).

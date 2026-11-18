@@ -395,6 +395,12 @@ button.pro.on{background:var(--green)}
   #editor.ed-col .stage{height:auto;flex:1 1 auto}
   #editor.ed-col .panel{flex:0 0 0;min-height:0;padding-top:0;padding-bottom:0;overflow:hidden;border-top:0}
   #editor.ed-col .grab i{background:var(--acc)}
+  /* posun v nabídce dolů → timeline se zmenší (zůstane stopa videa + titulky), nabídka se zvětší; nahoře zase plná timeline */
+  .tl-scroll{max-height:200px;transition:max-height .3s cubic-bezier(.2,.8,.2,1)}
+  .tl-tools{max-height:60px;transition:max-height .3s cubic-bezier(.2,.8,.2,1),padding .3s}
+  #editor.ed-exp .tl{overflow:hidden}
+  #editor.ed-exp .tl-scroll{max-height:84px}
+  #editor.ed-exp .tl-tools{max-height:0;padding-top:0;padding-bottom:0;overflow:hidden}
 }
 .updbar{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 8px);z-index:90;border:0;background:var(--grad);color:#fff;font:700 14px var(--ui);padding:12px 14px;text-align:left;box-shadow:3px 3px 0 var(--text);cursor:pointer}
 .updbar .ic{stroke:#fff;margin-right:6px}

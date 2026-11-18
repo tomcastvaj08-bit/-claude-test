@@ -712,7 +712,8 @@ function bindControls(){
   el.addEventListener('touchstart',stop,{passive:true}); el.addEventListener('pointerdown',stop,{passive:true}); el.addEventListener('wheel',stop,{passive:true}); });
 let edState='normal';
 window.addEventListener('resize',()=>{ if ($('editor').classList.contains('on')) sizeCanvas(); });
-function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); ed.classList.toggle('ed-exp',st==='exp'); ed.classList.toggle('ed-col',st==='col'); setTimeout(sizeCanvas,350); }
+let edT=0;
+function setEd(st){ if (st===edState) return; edState=st; edT=performance.now(); const ed=$('editor'); ed.classList.toggle('ed-exp',st==='exp'); ed.classList.toggle('ed-col',st==='col'); setTimeout(sizeCanvas,350); }
 (function(){
   const pn=$('panel'), gr=$('grab'); let y0=null, top0=0, done=false;
   const start=(e,fromGrab)=>{ y0=e.touches[0].clientY; top0=fromGrab?0:pn.scrollTop; done=false; };
@@ -723,6 +724,11 @@ function setEd(st){ if (st===edState) return; edState=st; const ed=$('editor'); 
   gr.addEventListener('touchstart',e=>start(e,true),{passive:true}); gr.addEventListener('touchmove',move,{passive:true});
   gr.addEventListener('click',()=>setEd(edState==='col'?'normal':edState==='normal'?'exp':'normal'));
   pn.addEventListener('touchend',()=>{ y0=null; }); gr.addEventListener('touchend',()=>{ y0=null; });
+  // posun obsahu nabídky: dolů → víc místa pro nabídku (menší náhled + timeline), až úplně nahoře → zpátky plná timeline
+  let lastTop=0;
+  pn.addEventListener('scroll',()=>{ const st=pn.scrollTop, up=st<lastTop; lastTop=st; if (innerWidth>=900 || performance.now()-edT<450) return;
+    if (st>24 && edState==='normal') setEd('exp');
+    else if (st<=2 && up && edState==='exp') setEd('normal'); },{passive:true});
   // počítač: kolečko myši nad lištou
   pn.addEventListener('wheel',e=>{ if (e.deltaY>30 && edState!=='exp' && pn.scrollHeight>pn.clientHeight) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30 && pn.scrollTop<=0) setEd(edState==='exp'?'normal':'col'); },{passive:true});
 })();
