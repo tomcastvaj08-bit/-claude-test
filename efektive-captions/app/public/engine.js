@@ -544,7 +544,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // dvouprůchodové kreslení negativu s 3D náklonem: v každém průchodu jen „jeho“ slova
   if (E._negPass){ const neg=!!(L.em && S.negativ); if ((E._negPass==='skip' && neg) || (E._negPass==='only' && !neg)) return; }
   const flick = S.fadeOut && S.exitFlick;
-  const exitDur = flick ? FLICK_DUR : S.anim==='reel' ? 0.16 : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
+  const exitDur = flick ? FLICK_DUR : S.anim==='reel' ? 0.11 : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
   const st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
@@ -561,14 +561,12 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   else if (S.anim==='smooth'){ const q=clamp(since/0.5), e=1-Math.pow(1-q,3); a=e*exA; sc=0.94+0.06*e; }
   else if (S.anim==='fade'){ const q=clamp(since/0.35); a=(q*q*(3-2*q))*exA; }
   else if (S.anim==='reel'){
-    // příchod: velké slovo se prolne a zvětší (nebo vystřelí ze strany), malé slovo rychle přijede z boku; vše s rozmazáním pohybu
-    // odchod: švihnutí do strany s rozmazáním
+    // podle předlohy (snímek po snímku): řádek vystřelí ZLEVA za ~4 snímky (0,13 s) se silnou stopou pohybu, bez zvětšování;
+    // odchod: celý titulek švihne DOPRAVA s lehkým natočením a stopou za ~3 snímky (0,1 s)
     if (since<0) return;
-    const dir=(((L._i||0)+(j||0))%2)?1:-1, Wm=Math.min(cv.width,cv.height), big=!!L.em;
-    // rozmazání pohybu = stopa za písmem (rychlé i na iPhonu, bez filtru)
-    if (big && ((L._i||0)+(k||0))%2===0){ const q=clamp(since/0.3), e=1-Math.pow(1-q,3); a=e*exA; sc=0.8+0.2*e; }
-    else { const q=clamp(since/(big?0.24:0.18)), e=q>=1?1:(1-Math.pow(2,-9*q))/(1-Math.pow(2,-9)), d0=dir*(1-e)*Wm*(big?0.36:0.16); dx+=d0; trail=d0*0.35; a=clamp(since/0.05)*exA; }
-    const xo=1-exit; if (xo>0){ const d1=-dir*xo*xo*Wm*0.55; dx+=d1; trail=-d1*0.4; a=clamp(since/0.05)*Math.max(0,1-xo*0.7); }
+    const Wm=Math.min(cv.width,cv.height);
+    const q=clamp(since/0.14), e=1-Math.pow(1-q,3), d0=-(1-e)*Wm*0.5; dx+=d0; trail=d0*0.7; a=clamp(since/0.04)*exA;
+    const xo=1-exit; if (xo>0){ const xe=xo*xo, d1=xe*Wm*0.75; dx+=d1; dy+=xe*L.px*0.5; er+=xe*0.14; trail=-d1*0.6; a=Math.max(0,1-xo*0.5); }
   }
   else if (S.anim==='whip'){
     // jako v realitních reels: slovo vystřelí ze strany (řádky střídavě zleva / zprava), prudce dobrzdí, s rozmazáním pohybu
@@ -650,7 +648,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     }
     const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
     c.shadowColor='transparent';
-    if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc); for (let i=4;i>=1;i--){ c.globalAlpha=a0*0.16*(5-i)/4; c.drawImage(sp.cv,sp.x+tx*i/4,sp.y); } c.globalAlpha=a0; }   // stopa pohybu
+    if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc), N=Math.max(5,Math.min(18,Math.round(Math.abs(tx)/(L.px*0.06)))); for (let i=N;i>=1;i--){ c.globalAlpha=a0*Math.min(0.35,2.2/N)*(N+1-i)/N; c.drawImage(sp.cv,sp.x+tx*i/N,sp.y); } c.globalAlpha=a0*0.85; }   // stopa pohybu (rozmazání jako v předloze)
     c.drawImage(sp.cv,sp.x,sp.y);
   } else {
   if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa

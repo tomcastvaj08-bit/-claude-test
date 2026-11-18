@@ -34,10 +34,22 @@ function segments(W, H) {
     const fw = d.side[i] * W / 2.7, cx = d.x[i] * W, cy = d.y[i] * H + 0.2 * fw, tp = HEAD.topAt(i);
     if (cur) { const j = cur.t.length - 1; if (d.t[i] - cur.t[j] > 0.35 || Math.hypot(cx - cur.x[j], cy - cur.y[j]) > 0.6 * fw || fw / cur.f[j] > 1.4 || cur.f[j] / fw > 1.4) { out.push(cur); cur = null; } }
     if (!cur) cur = { t: [], x: [], y: [], f: [], top: [] };
-    cur.t.push(d.t[i]); cur.x.push(cx); cur.y.push(cy); cur.f.push(fw); cur.top.push(tp != null ? tp * H : cy - 0.95 * fw);
+    // nos přímo z bodů obličeje (přesnější, neskáče), u starších rozborů dopočet z výřezu
+    const nX = d.nx && d.nx[i] ? d.nx[i] * W : cx, nY = d.ny && d.ny[i] ? d.ny[i] * H : cy;
+    cur.t.push(d.t[i]); cur.x.push(nX); cur.y.push(nY); cur.f.push(fw); cur.top.push(tp != null ? tp * H : cy - 0.95 * fw);
   }
   if (cur) out.push(cur);
+  // vyhlazení každého úseku (střihy zvlášť): odlehlé hodnoty pryč, pak gauss ~0,1 s → plynulý pohyb bez cukání
+  for (const sg of out) for (const k of ['x', 'y', 'f', 'top']) sg[k] = smoothArr(sg.t, sg[k], k === 'top' ? 0.12 : 0.09);
   segCache = out.filter(s => s.t.length >= 4); segKey = key; return segCache;
+}
+function smoothArr(T, A, sig) {
+  const n = A.length, med = new Array(n);
+  for (let i = 0; i < n; i++) { const w = A.slice(Math.max(0, i - 3), Math.min(n, i + 4)).sort((a, b) => a - b); med[i] = w[w.length >> 1]; }
+  const B = A.map((v, i) => { const dev = Math.abs(v - med[i]); return dev > 3 * (Math.abs(med[i]) * 0.02 + 2) ? med[i] : v; });
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) { let s = 0, w = 0; for (let j = Math.max(0, i - 12); j < Math.min(n, i + 13); j++) { const d = (T[j] - T[i]) / sig; const ww = Math.exp(-0.5 * d * d); s += ww * B[j]; w += ww; } out[i] = s / w; }
+  return out;
 }
 function headFor(p, W, H) {
   const segs = segments(W, H); if (!segs.length) return null;
@@ -66,7 +78,7 @@ function headFor(p, W, H) {
 // video se v každém snímku posune (a jednou provždy přiblíží), aby nos byl uprostřed; vyhlazeno, bez skoků (střihy zvlášť)
 function headSmooth(sg, ts, sig) {
   const T = sg.t, tc = Math.max(T[0], Math.min(T[T.length - 1], ts)); let sx = 0, sy = 0, sw = 0;
-  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / sig; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * (sg.y[j] + 0.08 * sg.f[j]); sw += w; }
+  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / sig; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sw += w; }
   return sw ? [sx / sw, sy / sw] : [sg.x[0], sg.y[0]];
 }
 RE.stab = t => {
@@ -75,8 +87,9 @@ RE.stab = t => {
   const ts = E._fT != null ? E._fT : E.out2src(t), Z = Math.max(1, Math.min(2, (E.G.reZoom || 130) / 100));
   let sg = segs.find(q => ts >= q.t[0] - 0.02 && ts <= q.t[q.t.length - 1] + 0.02), w = 1;
   if (!sg) { let bd = 0.8; for (const q of segs) { const d = Math.max(0, q.t[0] - ts, ts - q.t[q.t.length - 1]); if (d < bd) { bd = d; sg = q; } } if (!sg) return { z: Z, x: 0, y: 0 }; w = 1 - bd / 0.8; w = w * w * (3 - 2 * w); }
-  const p = headSmooth(sg, ts, 0.1), lim = (Z - 1) / 2;
-  const tx = Math.max(-lim, Math.min(lim, -Z * (p[0] / W - 0.5))) * w, ty = Math.max(-lim, Math.min(lim, -Z * (p[1] / H - 0.5))) * w;
+  const p = headSmooth(sg, ts, 0.06), lim = (Z - 1) / 2;
+  const NY = (E.G.reNoseY || 39) / 100;   // nos jako v předloze: uprostřed na šířku, ve 39 % výšky
+  const tx = Math.max(-lim, Math.min(lim, -Z * (p[0] / W - 0.5))) * w, ty = Math.max(-lim, Math.min(lim, (NY - 0.5) - Z * (p[1] / H - 0.5))) * w;
   return { z: Z, x: tx * 100, y: ty * 100 };
 };
 // poloha hlavy v čase ts (vyhlazená přes ~0,2 s – plynule, bez chvění), mimo úsek drží krajní polohu
@@ -84,7 +97,7 @@ function headAt(sg, ts) {
   const T = sg.t; let sx = 0, sy = 0, sw = 0;
   const tc = Math.max(T[0], Math.min(T[T.length - 1], ts));
   let sf = 0;
-  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.07; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sf += w * sg.f[j]; sw += w; }
+  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.025; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sf += w * sg.f[j]; sw += w; }
   return sw ? [sx / sw, sy / sw, sf / sw] : [sg.x[0], sg.y[0], sg.f[0]];
 }
 

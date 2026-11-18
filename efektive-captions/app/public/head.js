@@ -36,7 +36,7 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
   const fl = await TRK.faceLoad(), seg = await HEAD.segLoad();
   const vw = video.videoWidth || 1080, vh = video.videoHeight || 1920, ar = vw / vh, dur = video.duration || 0;
   const long = Math.min(1280, Math.max(vw, vh)), W = Math.round(ar >= 1 ? long : long * ar) & ~1, H = Math.round(ar >= 1 ? long / ar : long) & ~1;
-  const out = { t: [], x: [], y: [], side: [], m: [], W, H };
+  const out = { t: [], x: [], y: [], side: [], m: [], nx: [], ny: [], ns: [], W, H };   // nx, ny = nos (těžiště pevných bodů), ns = velikost hlavy (stabilní)
   let cur = null, miss = 0, lastScan = -1e9, lastG = null, lastYield = performance.now(), segN = 0, lastM = null;
   for await (const fr of TRK.frames({ file, video, t0: 0, t1: dur, fps: 30, W, H })) {
     if (cancel && cancel()) break;
@@ -51,7 +51,7 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
     }
     if (!h && fr.t - lastScan > 0.3) { lastScan = fr.t; h = scanAll(fl, fr.canvas, W, H); }
     out.t.push(fr.t);
-    if (!h) { lastM = null; if (++miss > 3) cur = null; out.x.push(0); out.y.push(0); out.side.push(0); out.m.push(null); continue; }
+    if (!h) { lastM = null; if (++miss > 3) cur = null; out.x.push(0); out.y.push(0); out.side.push(0); out.m.push(null); out.nx.push(0); out.ny.push(0); out.ns.push(0); continue; }
     cur = h; miss = 0;
     // výřez kolem hlavy (s vlasy nad čelem), AI rozdělení na části postavy
     const side = h.fw * 2.7, cx = h.cx, cy = h.cy - h.fw * 0.2;
@@ -71,7 +71,7 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
       r.close && r.close();
     } catch (e) { console.warn('maska hlavy', e); }
     lastM = m;
-    out.x.push(cx / W); out.y.push(cy / H); out.side.push(side / W); out.m.push(m);
+    out.x.push(cx / W); out.y.push(cy / H); out.side.push(side / W); out.m.push(m); out.nx.push(h.cx / W); out.ny.push(h.cy / H); out.ns.push(h.s / W);
     if (performance.now() - lastYield > 40) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); }
   }
   // klidné okraje: maska se zprůměruje se sousedními snímky (ve výřezu kolem hlavy, takže bez zpoždění za pohybem)
@@ -89,7 +89,8 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
 HEAD.save = () => { const d = HEAD.data; if (!d) return null;
   // úsporně: maska hlavy jako běhy 0/1 (pár set bajtů na snímek) – uloží se k projektu
   const enc = m => { if (!m) return null; const r = []; let v = 0, n = 0; for (let i = 0; i < m.length; i++) { const b = m[i] > 127 ? 1 : 0; if (b === v) n++; else { r.push(n); v = b; n = 1; } } r.push(n); return r.join(','); };
-  return { v: 2, W: d.W, H: d.H, t: d.t, x: d.x, y: d.y, side: d.side, m: d.m.map(enc) }; };
+  const r4 = a => a ? a.map(v => Math.round(v * 1e4) / 1e4) : undefined;
+  return { v: 2, W: d.W, H: d.H, t: d.t, x: d.x, y: d.y, side: d.side, nx: r4(d.nx), ny: r4(d.ny), ns: r4(d.ns), m: d.m.map(enc) }; };
 HEAD.load = o => { if (!o || !o.t) { HEAD.data = null; return; }
   const dec = s => { if (!s) return null; const m = new Uint8Array(MS0 * MS0); let i = 0, v = 0; for (const n of s.split(',').map(Number)) { if (v) m.fill(255, i, i + n); i += n; v ^= 1; } return m; };
   const dec1 = s => { if (!s) return null; const b = atob(s), m = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) m[i] = b.charCodeAt(i); return m; };
