@@ -121,7 +121,7 @@ E.FONTS = [
   [ST('Chalkboard SE','"Comic Sans MS", "Caveat"'),700,'Chalkboard Bold'],[ST('Chalkboard SE','"Comic Sans MS", "Caveat"'),400,'Chalkboard Regular'],
   [ST('Gill Sans','"Gill Sans MT", "Inter"'),700,'Gill Sans Bold'],[ST('Gill Sans','"Gill Sans MT", "Inter"'),400,'Gill Sans Regular'],
   [ST('Noteworthy','"Caveat", cursive'),700,'Noteworthy Bold'],[ST('Noteworthy','"Caveat", cursive'),300,'Noteworthy Light'],
-  [ST('Snell Roundhand','"Dancing Script", cursive'),700,'Snell Roundhand'],
+  [ST('Snell Roundhand','"Pinyon Script", "Dancing Script", cursive'),700,'Snell Roundhand'],['"Pinyon Script"',400,'Pinyon Script (jako Snell, s háčky)'],
   ['"Playfair Display"',700,'Playfair'],['"Playfair Display"',900,'Playfair Black'],['"Playfair Display"',900,'Playfair Black Italic',true],
   ['"Anton"',400,'Anton'],['"Bebas Neue"',400,'Bebas Neue'],['"Oswald"',700,'Oswald'],['"Nunito"',900,'Nunito Black'],
 ];
@@ -156,7 +156,7 @@ E.TEMPLATES = {
 };
 // ---- HOTOVÉ VARIANTY ZÁKLADU (rozložení přesně jako Styl 1 / Base, mění se barvy, písmo, 3D) ----
 (()=>{
-  const B=E.TEMPLATES.base.set, SNELL=ST('Snell Roundhand','"Dancing Script", cursive');
+  const B=E.TEMPLATES.base.set, SCRIPT='"Pinyon Script", "Dancing Script", cursive';   // Snell Roundhand nemá česká písmena → stejně elegantní Pinyon Script se všemi znaky
   const col=(a,b,c)=>({grad:true,gA:a,gB:b,gradDir:'v',c1:c,c2:c,c3:c,c4:c});
   const tilt3d={tilt:-37,tiltAlt:true,tiltX:0,persp:60};                       // 3D náklon do strany −37°, střídá vlevo / vpravo
   const pv=(sec,main,css)=>`<span style="font-weight:600;letter-spacing:-.06em">${sec}</span><br><b style="${css}">${main}</b>`;
@@ -172,8 +172,8 @@ E.TEMPLATES = {
       pv:pv('začněte mě','Sledovat','background:#fff;color:#111;padding:0 4px;font-weight:800;letter-spacing:-.07em') },
     base3d:{ name:'Styl 1 + 3D hloubka', set:{...B, extrude:22,extrudeStyle:'light',negativ:false},
       pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 2px 0 #b86a00') },
-    snell:{ name:'Růžová Snell', set:{...B, fontEm:SNELL,wEm:700,trackEm:0,emScale:175,...col('#ff7cc8','#b98cff','#ff8ad0'),negativ:false,extrude:0,extrudeStyle:'light'},
-      pv:`<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="font-family:'Snell Roundhand','Dancing Script',cursive;${gr('#ff7cc8','#b98cff','700')};letter-spacing:0">Sledovat</b>` },
+    snell:{ name:'Růžová Snell', set:{...B, fontEm:SCRIPT,wEm:400,trackEm:0,emScale:165,glow:35,glowMode:'always',...col('#ff2d9a','#a845ff','#ff2d9a'),negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:`<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="font-family:'Pinyon Script','Dancing Script',cursive;${gr('#ff2d9a','#a845ff','400')};letter-spacing:0;font-size:1.25em">Sledovat</b>` },
   };
   const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',...v2}; }
   E.TEMPLATES=T;
@@ -342,8 +342,21 @@ const easeBack = x => 1 + 2.7*Math.pow(x-1,3) + 1.7*Math.pow(x-1,2);
 const easeBounce = x => { const n=7.5625,d=2.75; if(x<1/d) return n*x*x; if(x<2/d) return n*(x-=1.5/d)*x+.75; if(x<2.5/d) return n*(x-=2.25/d)*x+.9375; return n*(x-=2.625/d)*x+.984375; };
 const easeElastic = x => x===0?0:x===1?1:Math.pow(2,-10*x)*Math.sin((x*10-0.75)*(2*Math.PI/3))+1;
 E.ease={easeBack,easeBounce,easeElastic};
+// ČEŠTINA VŽDY CELÁ: (1) systémové písmo (iPhone), které nemá všechna česká písmena, se nepoužije – celý text jde
+// náhradním písmem ze stacku (žádné míchání písem v jednom slově); (2) u přibalených písem se hned načte i část s háčky/čárkami.
+const CZ_TEST='ÁáČčĎďÉéĚěÍíŇňÓóŘřŠšŤťÚúŮůÝýŽž', BUNDLED=new Set(['Inter Tight','Inter','Montserrat','Poppins','Roboto','Rubik','Nunito','Playfair Display','Libre Baskerville','Courier Prime','Bodoni Moda','Caveat','Dancing Script','Anton','Bebas Neue','Oswald','Outfit','Open Sans','Pinyon Script','Schibsted Grotesk']);
+const czCache=new Map(), czLoaded=new Set();
+function famList(st){ return (st.match(/"[^"]+"|'[^']+'|[^,]+/g)||[]).map(x=>x.trim()).filter(Boolean); }
+function czOk(name){ const tc=(czOk.c||(czOk.c=document.createElement('canvas').getContext('2d'))); const w=f=>{ tc.font=`100px ${name}, ${f}`; return CZ_TEST.split('').map(ch=>tc.measureText(ch).width.toFixed(1)).join(); }; return w('monospace')===w('serif'); }
+E.czFam=fam=>{ if (!fam || !fam.includes(',')) return fam; let r=czCache.get(fam); if (r) return r;
+  const L=famList(fam), first=L[0]||'', bare=first.replace(/^["']|["']$/g,'');
+  r = (L.length>1 && /^["']/.test(first) && !BUNDLED.has(bare) && !czOk(first)) ? L.slice(1).join(', ') : fam;
+  czCache.set(fam,r); return r; };
+E.loadFontsFor=S=>{ const ps=[]; for (const [f,w,it] of [[S.fontMain,S.wMain,S.mainItalic],[S.fontEm,S.wEm,S.emItalic]]){ if (!f) continue; const fam=E.czFam(f), k=fam+'|'+w+'|'+(it?1:0); if (czLoaded.has(k)) continue; czLoaded.add(k);
+    if (document.fonts && document.fonts.load) ps.push(document.fonts.load(`${it?'italic ':''}${w} 60px ${fam.includes(',')||fam.startsWith('"')?fam:'"'+fam+'"'}`, CZ_TEST+'AaBb').catch(()=>{})); } return Promise.all(ps); };
 function setFont(c, fam, weight, italic, px, track){
   if (fam===SF && weight>800) weight=800;   // SF: nejtlustší je Heavy (800) – nic tlustšího
+  fam=E.czFam(fam); { const k=fam+'|'+weight+'|'+(italic?1:0); if (!czLoaded.has(k)){ czLoaded.add(k); try{ document.fonts.load(`${italic?'italic ':''}${weight} 60px ${fam.includes(',')||fam.startsWith('"')?fam:'"'+fam+'"'}`, CZ_TEST+'AaBb').catch(()=>{}); }catch(e){} } }
   c.font = `${italic?'italic ':''}${weight} ${px}px ${fam.includes(',')||fam.startsWith('"')?fam:'"'+fam+'"'}`;
   if ('letterSpacing' in c) c.letterSpacing=(track/100*px).toFixed(2)+'px';
 }
@@ -412,6 +425,8 @@ E.mainColor=mainColor;
 
 // ---------- „vypálené“ slovo: písmo + stín (+ hloubka) v jednom obrázku, s mezipamětí ----------
 const SPR=new Map();
+// dočtené písmo (např. část s háčky) → předkreslená slova zahodit, ať se překreslí správným písmem
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>SPR.clear());
 function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,S.extrude||0,S.extrudeStyle||'light',kind==='glow'?S.glow+'|'+glowCol:''].join('~');
   let sp=SPR.get(key); if (sp){ SPR.delete(key); SPR.set(key,sp); return sp; }
