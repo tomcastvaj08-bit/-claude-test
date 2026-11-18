@@ -107,3 +107,7 @@ Shine (a vše ve Šablonách/Stylu/Pohybu/3D mixu/AI) ukazuje nastavení titulku
 
 ## 18. 11. – odchod titulku: Flicker
 Pohyb → Odchod → „Flicker (zabliká a zmizí)“ (`exitFlick`): posledních 0,33 s titulek bliká po krocích 1/30 s (1, 0.12, 1, 0.9, 0.06, 0.75, 0, 0.5, 0, 0.22, 0) a zhasne. Platí pro všechny animace nástupu, náhled i export; jde nastavit i jen pro jeden titulek.
+
+## 18. 11. – hotové šablony na základu Styl 1 (Base)
+Rozložení přesně jako Styl 1, mění se barvy / písmo / 3D (engine.js, blok „HOTOVÉ VARIANTY ZÁKLADU“), v nabídce hned za Stylem 1; původní šablony zůstávají:
+Krémová (Neulis Bold + Light, krémový přechod, hnědý stín) · Modrá 3D (#a5e6ff → #1f5fff, náklon −37°, střídá L/P) · Červená 3D (#ff8f8f → #d0001f, −37°, střídá) · Negativ 3D (negativ hlavního řádku, −37° stále na jednu stranu) · Styl 1 + 3D hloubka (extrude 22) · Růžová Snell (hlavní řádek Snell Roundhand, růžová #ff7cc8 → fialová #b98cff).

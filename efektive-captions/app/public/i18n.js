@@ -50,7 +50,7 @@
   const SKIP='script,style,textarea,input,.ws,.cb,.pn,[data-notr],#inlineEdit,#dictText';
   const SKIP_ATTR='.ws,.cb,.pn,[data-notr]';   // nápovědy (placeholder) v polích se překládají, obsah polí ne
   const ATTR=['title','placeholder','aria-label','alt'];
-  function trText(n){ const p=n.parentElement; if (!p || p.closest(SKIP)) return; const v=n.nodeValue; if (n.__tr===v) return; const t=tr(v); if (t!==v) n.nodeValue=t; n.__tr=n.nodeValue; }
+  function trText(n){ const p=n.parentElement; if (!p || p.closest(SKIP)) return; const v=n.nodeValue; if (n.__tr===v) return; const pv=p.closest('.pv'), k=pv&&D['pv:'+v.trim()]; const t=k?v.replace(v.trim(),k):tr(v);  /* náhled šablony: slova s vlastním významem (pv:…) */ if (t!==v) n.nodeValue=t; n.__tr=n.nodeValue; }
   function trEl(el){ if (el.closest(SKIP_ATTR)) return; for (const a of ATTR){ const v=el.getAttribute(a); if (v && el['__tr_'+a]!==v){ const t=tr(v); if (t!==v) el.setAttribute(a,t); el['__tr_'+a]=el.getAttribute(a); } } }
   function trTree(root){
     if (root.nodeType===3) return trText(root);

@@ -822,5 +822,12 @@ window.I18N_DICT.en={
 "Další jazyky připravujeme.": "More languages coming soon.",
 "Brzy": "Soon",
 "TADY": "HERE",
-"Vyrostla": "Grew"
+"Vyrostla": "Grew",
+"pv:Sledovat": "Follow",
+"Krémová (Neulis)": "Cream (Neulis)",
+"Modrá 3D": "Blue 3D",
+"Červená 3D": "Red 3D",
+"Negativ 3D": "Negative 3D",
+"Styl 1 + 3D hloubka": "Style 1 + 3D depth",
+"Růžová Snell": "Pink Snell"
 };

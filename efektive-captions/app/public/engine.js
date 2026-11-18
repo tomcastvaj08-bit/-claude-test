@@ -154,6 +154,30 @@ E.TEMPLATES = {
   klasik:{ name:'Styl 10', cat:'trending', set:{...common, mainLine:'word',fontMain:'"Anton"',wMain:400,fontEm:'"Anton"',wEm:400,emItalic:false,grad:false,c1:'#ffe600',c2:'#ffe600',c3:'#ffe600',c4:'#ffe600',cText:'#ffffff',track:1,gap:100,emScale:100,tilt:0,kinetic:0,layout:'center',anim:'none',shadowSize:25,shadowA:100,caseMain:'upper',caseSec:'upper',cShadow:'#000000',fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0,glow:0},
     pv:'<b style="font-family:Anton;font-weight:400">TEXT <span style="color:#ffe600">TADY</span></b>' },
 };
+// ---- HOTOVÉ VARIANTY ZÁKLADU (rozložení přesně jako Styl 1 / Base, mění se barvy, písmo, 3D) ----
+(()=>{
+  const B=E.TEMPLATES.base.set, SNELL=ST('Snell Roundhand','"Dancing Script", cursive');
+  const col=(a,b,c)=>({grad:true,gA:a,gB:b,gradDir:'v',c1:c,c2:c,c3:c,c4:c});
+  const tilt3d={tilt:-37,tiltAlt:true,tiltX:0,persp:60};                       // 3D náklon do strany −37°, střídá vlevo / vpravo
+  const pv=(sec,main,css)=>`<span style="font-weight:600;letter-spacing:-.06em">${sec}</span><br><b style="${css}">${main}</b>`;
+  const gr=(a,b,w='800')=>`background:linear-gradient(${a},${b});-webkit-background-clip:text;color:transparent;font-weight:${w};letter-spacing:-.07em`;
+  const add={
+    krem:{ name:'Krémová (Neulis)', set:{...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#f6efe6','#d8c3a6','#e9e0d6'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#f6efe6','#d8c3a6','700')};text-shadow:none">Sledovat</b>` },
+    modra3d:{ name:'Modrá 3D', set:{...B, ...col('#a5e6ff','#1f5fff','#3a8bff'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#a5e6ff','#1f5fff'))+'' },
+    cervena3d:{ name:'Červená 3D', set:{...B, ...col('#ff8f8f','#d0001f','#ff3b3b'),...tilt3d,negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat',gr('#ff8f8f','#d0001f')) },
+    negativ3d:{ name:'Negativ 3D', set:{...B, grad:false,c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',c4:'#ffffff',negativ:true,tilt:-37,tiltAlt:false,tiltX:0,persp:60,extrude:0,extrudeStyle:'light'},
+      pv:pv('začněte mě','Sledovat','background:#fff;color:#111;padding:0 4px;font-weight:800;letter-spacing:-.07em') },
+    base3d:{ name:'Styl 1 + 3D hloubka', set:{...B, extrude:22,extrudeStyle:'light',negativ:false},
+      pv:pv('začněte mě','Sledovat',gr('#ff9a00','#e8f200')+';text-shadow:0 2px 0 #b86a00') },
+    snell:{ name:'Růžová Snell', set:{...B, fontEm:SNELL,wEm:700,trackEm:0,emScale:175,...col('#ff7cc8','#b98cff','#ff8ad0'),negativ:false,extrude:0,extrudeStyle:'light'},
+      pv:`<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="font-family:'Snell Roundhand','Dancing Script',cursive;${gr('#ff7cc8','#b98cff','700')};letter-spacing:0">Sledovat</b>` },
+  };
+  const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',...v2}; }
+  E.TEMPLATES=T;
+})();
 Object.assign(E.G, E.TEMPLATES.base.set);
 
 // ================= STYL TITULKU =================
