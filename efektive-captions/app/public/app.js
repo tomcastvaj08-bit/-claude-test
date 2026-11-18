@@ -779,18 +779,19 @@ const binders={};
 // Samostatný mód: AI najde hlavu v každém snímku → každý titulek se umístí podle hlavy a pak stojí na místě (titulky se netrackují),
 // velké slovo jde za hlavu (chytře – nikdy neschová celé slovo), menší řádek nad hlavou nebo titulek před tělem.
 function pRe(){
-  const on=!!E.G.reMode, pl=E.G.rePlace||'alt';
-  const cols=TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${E.G.grad&&E.G.gA===a&&E.G.gB===b?'on':''}" data-a="${a}" data-b="${b}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('');
-  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Titulky se rozmístí podle hlavy (nad hlavu, za hlavu nebo před tělo) a pak stojí na svém místě – nehýbou se a nemění velikost. Chytře – hlava nikdy neschová celé slovo.</small></div></div>
+  const on=!!E.G.reMode, pl=E.G.rePlace||'alt', mix=reMix();
+  const cols=TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${mix.includes(n)?'on':''}" data-n="${n}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('');
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Jako v realitních reels: slova vystřelí po jednom ze stran, malá bílá + velká barevná, těsně pod sebou. Titulky jdou po dvojicích – nahoře u hlavy (velké slovo za vlasy) a před tělem. Barvy a rozmístění se mixují.</small></div></div>
   <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout Real estate styl':'Zapnout Real estate styl'}</button>
-  <div class="clabel">Barva hlavního slova</div><div class="d3cols" id="reCols">${cols}</div>
-  <div class="clabel">Druhá barva (střídá se každý druhý titulek)</div><div class="d3cols" id="reAlt"><div class="d3c ${!E.G.altOn?'on':''}" data-off="1"><i style="background:#333"></i>Nestřídat</div>${TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${E.G.altOn&&E.G.altA===a&&E.G.altB===b?'on':''}" data-a="${a}" data-b="${b}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('')}</div>
+  <div class="clabel">Barvy do mixu (klepnutím přidáš / ubereš)</div><div class="d3cols" id="reCols">${cols}</div>
   <div class="clabel">Kde jsou titulky</div>
   <div class="chips" id="rePl">${[['alt','Střílet nahoru i dolů (jako v předloze)'],['top','Vždy nahoře u hlavy'],['chest','Vždy před tělem']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="chips" id="reFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div><div class="chip ${E.G.extrude>0?'on':''}" data-k="extrude">3D hloubka</div></div>
-  ${on?`<button class="btn" id="reRedo">${I('refresh','grad')} Znovu rozmístit titulky</button>`:''}
+  ${on?`<button class="btn" id="reRedo">${I('refresh','grad')} Zamíchat znovu (jiné barvy a rozmístění)</button>`:''}
   <div class="note">Funguje, když je ve videu vidět obličej. Napoprvé appka projde celé video snímek po snímku (chvíli to trvá, pak už je to okamžité). Titulek jde pořád posunout prstem.</div>`;
 }
+// barvy do mixu (názvy z TXT_COLORS); výchozí jako v předloze
+function reMix(){ const m=E.G.reMix; return Array.isArray(m)&&m.length?m:['Citrón','Červená','Limetková','Bílá']; }
 // souvislé úseky s obličejem (mezi střihy) z rozboru hlavy: poloha obličeje a jeho velikost v px plátna
 // druhá barva pro střídání (každý druhý titulek): k modré žlutá, ke všemu ostatnímu modrá
 function reAlt(a){ const T=TXT_COLORS, blue=T.find(c=>c[0]==='Modrá'), yel=T.find(c=>c[0]==='Žlutá'); return (a===blue[1]?yel:blue).slice(1); }
@@ -845,7 +846,12 @@ function reLayout(){
       // nahoře: spodní řádek (velké slovo) spodní částí za vlasy; dole: celý titulek pod bradou, před tělem
       posY = r==='top' ? (top-(lb.em?0.04:-0.06)*lb.px-(lb.y-y0))/H*100 : (chin+0.3*fw-tb)/H*100;
       posX = cx/W*100; }
-    m.own.posX=Math.max(half+4,Math.min(96-half,posX)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
+    // mix rozmístění: dvojice se střídavě lehce posunou doleva / doprava od hlavy
+    const pair=Math.floor(k/2), jig=[0,-5,4,-2,6,-4][(pair+(E.G.reSeed||0))%6];
+    m.own.posX=Math.max(half+4,Math.min(96-half,posX+jig)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
+    // mix barev: velké slovo každého titulku jinou barvou z palety (sousední nikdy stejné)
+    const pal=reMix().map(nm=>TXT_COLORS.find(c=>c[0]===nm)).filter(Boolean);
+    if (pal.length){ const c=pal[(k+(E.G.reSeed||0))%pal.length]; Object.assign(m.own,{grad:true,gA:c[1],gB:c[2],gradDir:'v',c1:c[1],c2:c[1],c3:c[1],c4:c[1]}); }
     n++;
   });
   return n;
@@ -854,7 +860,9 @@ async function reToggle(btn){
   if (E.G.reMode){ E.G.reMode=false; for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
     for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (!m) continue; if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk; if (m.reL){ delete m.layer; delete m.eo; delete m.reL; } if (m.own){ delete m.own.posX; delete m.own.posY; delete m.own._manualPos; delete m.own.size; } }
     E.buildPages();
-    E.G.behind='off'; E.G.noSlots=false; E.G.altOn=false; Object.assign(E.G,{layout:E.TEMPLATES.base.set.layout, rowDy1:E.TEMPLATES.base.set.rowDy1, rowDy3:E.TEMPLATES.base.set.rowDy3, gap:E.TEMPLATES.base.set.gap}); changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
+    for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) for (const k of ['grad','gA','gB','gradDir','c1','c2','c3','c4']) delete m.own[k]; }
+    Object.assign(E.G,{anim:E.TEMPLATES.base.set.anim, enter:E.TEMPLATES.base.set.enter, enterBy:E.TEMPLATES.base.set.enterBy, emScale:E.TEMPLATES.base.set.emScale, track:E.TEMPLATES.base.set.track, trackEm:E.TEMPLATES.base.set.trackEm});
+    E.G.behind='off'; E.G.noSlots=false; E.G.altOn=false; E.G.emEach=false; Object.assign(E.G,{layout:E.TEMPLATES.base.set.layout, rowDy1:E.TEMPLATES.base.set.rowDy1, rowDy3:E.TEMPLATES.base.set.rowDy3, gap:E.TEMPLATES.base.set.gap}); changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
   if (!HEAD.data){ const v=await auxVideo(); vid.pause(); btn.disabled=true;
     try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ btn.textContent='Hledám hlavu v každém snímku… '+Math.round(pp*100)+' %'; }}); headSave(); }
     catch(e){ console.warn(e); toast('Nepovedlo se: '+(e.message||e)); freeVideo(v); renderPanel(); return; }
@@ -862,16 +870,15 @@ async function reToggle(btn){
   // vzhled: Styl 1 (bílý menší řádek + velké barevné slovo) s 3D leskem, barva zůstane, pokud už je vybraná
   const keep={gA:E.G.gA,gB:E.G.gB,grad:E.G.grad,c1:E.G.c1,c2:E.G.c2,c3:E.G.c3,c4:E.G.c4};
   const set={...E.TEMPLATES.base.set}; delete set.posX; delete set.posY;
-  const alt=reAlt(keep.gA);
-  Object.assign(E.G, set, keep, {gloss:'gloss', glossOn:'main', behind:'head', reMode:true, style:'base', layout:'center', noSlots:true, kinetic:0, rowDy1:0, rowDy3:0, gap:62, altOn:true, altEvery:2, altA:alt[0], altB:alt[1]});
+  Object.assign(E.G, set, keep, {gloss:'off', behind:'head', reMode:true, style:'base', layout:'center', noSlots:true, kinetic:0, rowDy1:0, rowDy3:0, gap:80, altOn:false,
+    anim:'whip', enter:'none', enterBy:'word', emEach:true, emScale:175, wMain:500, wEm:800, track:-2, trackEm:-3});   // jako v předloze: slova vystřelí ze stran, malá bílá + velká barevná, těsně pod sebou
   const n=reLayout(); changed(); renderPanel();
   toast(n?`Hotovo – ${n} ${n===1?'titulek umístěn':n<5?'titulky umístěny':'titulků umístěno'} podle hlavy`:'Ve videu jsem nenašel obličej – titulky zůstaly, kde byly');
 }
 binders.re=()=>{
   $('reOn').onclick=()=>reToggle($('reOn'));
-  if ($('reRedo')) $('reRedo').onclick=()=>{ const n=reLayout(); changed(); toast(`Rozmístěno znovu (${n})`); };
-  $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const a=c.dataset.a, b=c.dataset.b; Object.assign(E.G,{grad:true,gA:a,gB:b,gradDir:'v',c1:a,c2:a,c3:a,c4:a}); if (E.G.reMode && !E.G.reAltSet){ const al=reAlt(a); E.G.altA=al[0]; E.G.altB=al[1]; } for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) for (const k of ['grad','gA','gB','c1','c2','c3','c4']) delete m.own[k]; } changed(); renderPanel(); };
-  $('reAlt').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; if (c.dataset.off){ E.G.altOn=false; } else { E.G.altOn=true; E.G.altEvery=2; E.G.altA=c.dataset.a; E.G.altB=c.dataset.b; E.G.reAltSet=true; } for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) delete m.own.altOn; } changed(); renderPanel(); };
+  if ($('reRedo')) $('reRedo').onclick=()=>{ E.G.reSeed=((E.G.reSeed||0)+1)%60; const n=reLayout(); changed(); toast(`Zamícháno znovu (${n})`); };
+  $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const n=c.dataset.n; let m=reMix().slice(); m=m.includes(n)?m.filter(x=>x!==n):m.concat(n); if (!m.length) return; E.G.reMix=m; if (E.G.reMode) reLayout(); changed(); renderPanel(); };
   $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; if (E.G.reMode) reLayout(); changed(); renderPanel(); };
   $('reFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; else { E.G.extrude=E.G.extrude>0?0:45; E.G.extrudeStyle='light'; } changed(); renderPanel(); };
 };
@@ -1153,7 +1160,7 @@ function pTemplates(){
   <div class="note">Výchozí vzhled se použije u každého nového videa.</div>`;
 }
 // barvy hlavního řádku pro 3D texty (sytý přechod shora dolů)
-const TXT_COLORS=[['Žlutá','#ff9a00','#e8f200'],['Modrá','#14d6ff','#0040ff'],['Červená','#ff3b30','#c00000'],['Růžová','#ff2d9a','#a845ff'],['Zelená','#7dff6a','#00b84a'],['Bílá','#ffffff','#d9dde6'],['Zlatá','#fff1b8','#c98a00']];
+const TXT_COLORS=[['Žlutá','#ff9a00','#e8f200'],['Citrón','#fff200','#ffd400'],['Limetková','#e8ff4a','#a8d900'],['Modrá','#14d6ff','#0040ff'],['Červená','#ff3b30','#c00000'],['Růžová','#ff2d9a','#a845ff'],['Zelená','#7dff6a','#00b84a'],['Bílá','#ffffff','#d9dde6'],['Zlatá','#fff1b8','#c98a00']];
 function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k]; return set; }
 binders.templates=()=>{
   $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('Hotovo – nová videa budou vypadat takhle'); };

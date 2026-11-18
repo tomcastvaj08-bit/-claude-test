@@ -302,6 +302,8 @@ const range=(a,b)=>{ const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; };
 E.groupsOf = (p,S) => {
   const W=E.words;
   const manual=[]; for(let i=p.a;i<=p.b;i++) if(W[i].em) manual.push(i);
+  // každé velké slovo na vlastním řádku, malá slova mezi nimi spolu (realitní styl: that / SELLS / way / MORE)
+  if (S.emEach && manual.length && !p.manual){ const g=[]; for (let i=p.a;i<=p.b;i++){ const em=!!W[i].em, L=g[g.length-1]; if (L && !em && !L.em) L.ids.push(i); else g.push({ids:[i],em}); } return g; }
   if (manual.length && !p.manual){ const e0=Math.min(...manual), e1=Math.max(...manual);
     return [{ids:range(p.a,e0-1),em:false},{ids:range(e0,e1),em:true},{ids:range(e1+1,p.b),em:false}].filter(g=>g.ids.length); }
   const n=p.b-p.a+1, ids=range(p.a,p.b), ml=String(S.mainLine);
@@ -555,6 +557,13 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   else if (S.anim==='blur'){ blur=(1-kk)*L.px*0.25; sc=0.9+0.1*kk; }
   else if (S.anim==='smooth'){ const q=clamp(since/0.5), e=1-Math.pow(1-q,3); a=e*exA; sc=0.94+0.06*e; }
   else if (S.anim==='fade'){ const q=clamp(since/0.35); a=(q*q*(3-2*q))*exA; }
+  else if (S.anim==='whip'){
+    // jako v realitních reels: slovo vystřelí ze strany (řádky střídavě zleva / zprava), prudce dobrzdí, s rozmazáním pohybu
+    if (since<0) return;
+    const q=clamp(since/0.24), e=q>=1?1:(1-Math.pow(2,-9*q))/(1-Math.pow(2,-9)), dir=((L._i||0)%2)?1:-1;
+    dx+=dir*(1-e)*Math.min(cv.width,cv.height)*0.42; blur=(1-e)*L.px*0.16; a=clamp(since/0.05)*exA;
+    if (S.fadeOut && !flick) sc*=(0.94+0.06*exitE);
+  }
   else if (S.anim==='base'){
     // Base: titulek stojí, slova se jen prolnou (0,2 s, začne 0,05 s před vyslovením); odchod řeší celý blok v E.render
     const qa=clamp((since+(S.wordLead??0.05))/(S.wordFade??0.2)); a=(qa*qa*(3-2*qa))*exitE;
