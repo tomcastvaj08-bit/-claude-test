@@ -528,8 +528,10 @@ const inPoly = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i
 const segDist = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L)); return Math.hypot(p[0] - a[0] - u * dx, p[1] - a[1] - u * dy); };
 const polyDist = (P, x, y) => { let d = 1e9; for (let i = 0; i < P.length; i++) d = Math.min(d, segDist([x, y], P[i], P[(i + 1) % P.length])); return d; };
 // rohy z obrysu: zjednodušení na pár vrcholů + přichycení na skutečné rohy v obraze (Harrisova odezva)
-TRK.cornersFrom = (gray, W, H, contour, maxN) => {
-  const P = TRK.pyramid(gray, W, H)[0], N = contour.length; if (N < 4) return contour.slice();
+TRK.cornersFrom = (gray, W, H, contour0, maxN) => {
+  const P = TRK.pyramid(gray, W, H)[0], N = contour0.length; if (N < 4) return contour0.slice();
+  // zubatý obrys (schodky z masky v nízkém rozlišení) vyhladit – rohy se pak počítají z průsečíků přímek, takže se nezaoblí
+  const SW = 3, contour = contour0.map((_, i) => { let x = 0, y = 0; for (let k = -SW; k <= SW; k++) { const q = contour0[(i + k + N) % N]; x += q[0]; y += q[1]; } return [x / (2 * SW + 1), y / (2 * SW + 1)]; });
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of contour) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
   const D = Math.hypot(x1 - x0, y1 - y0) || 1;
   // 1) málo vrcholů: tolerance roste, dokud jich není nejvýš maxN
@@ -579,6 +581,46 @@ TRK.cornersFrom = (gray, W, H, contour, maxN) => {
     return best > 400 ? [bx, by] : [x0, y0]; });
   res.straight = tl ? sl / tl : 0;   // podíl rovných hran (dům, okno, pozemek ≈ 1; gauč, strom ≈ 0)
   return res;
+};
+// DOLADĚNÍ HRAN: každá hrana mnohoúhelníku se přitáhne na skutečnou VNĚJŠÍ hranu objektu v obraze (plné rozlišení):
+// podél hrany se v kolmém směru hledá nejvzdálenější výrazný přechod jasu (obrys domu proti trávě / nebi), přímka se
+// robustně proloží a rohy se spočítají jako průsečíky upravených hran. Výběr, který kus objektu nechal venku
+// (pruh boční stěny, okraj střechy) nebo je zubatý, tak sedne přesně na hranu.
+TRK.refineEdges = (rgba, W, H, poly, band) => {
+  const n = poly.length; if (n < 3) return poly;
+  const Ch = [0, 1, 2].map(c => { const A = new Float32Array(W * H); for (let i = 0; i < W * H; i++) A[i] = rgba[i * 4 + c]; return A; });
+  const cd = (x1, y1, x2, y2) => { let s = 0; for (const A of Ch) { const d = bil(A, W, H, x1, y1) - bil(A, W, H, x2, y2); s += d * d; } return Math.sqrt(s); };
+  let area = 0; for (let i = 0; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
+  const sg = area > 0 ? 1 : -1, L = [];
+  for (let i = 0; i < n; i++) {
+    const a = poly[i], b = poly[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+    const tx = dx / len, ty = dy / len, nx = ty * sg, ny = -tx * sg;   // normála ven z objektu
+    const pts = [], K = Math.max(8, Math.min(60, Math.round(len / 4)));
+    for (let k = 1; k < K; k++) { const u = 0.12 + 0.76 * k / K, px = a[0] + dx * u, py = a[1] + dy * u;
+      const R = []; let mx = 0;
+      for (let s = -band; s <= band; s += 0.5) { const g = cd(px + (s + 1) * nx, py + (s + 1) * ny, px + (s - 1) * nx, py + (s - 1) * ny); R.push([s, g]); if (g > mx) mx = g; }
+      if (mx < 12) continue;
+      // nejvzdálenější výrazný přechod ven (lokální maximum ≥ 55 % nejsilnějšího)
+      let best = null; for (let j = 1; j < R.length - 1; j++) { const [s, g] = R[j]; if (g >= mx * 0.55 && g >= R[j - 1][1] && g >= R[j + 1][1]) best = s; }
+      if (best != null) pts.push([px + best * nx, py + best * ny]); }
+    if (pts.length < 4) { L.push(null); continue; }
+    // robustní přímka: 2× proložit a vyhodit body daleko od přímky
+    let use = pts, line = null;
+    for (let it = 0; it < 3; it++) { let mx = 0, my = 0; for (const p of use) { mx += p[0]; my += p[1]; } mx /= use.length; my /= use.length;
+      let sxx = 0, sxy = 0, syy = 0; for (const p of use) { const ex = p[0] - mx, ey = p[1] - my; sxx += ex * ex; sxy += ex * ey; syy += ey * ey; }
+      const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy); line = { mx, my, dx: Math.cos(ang), dy: Math.sin(ang) };
+      const d = use.map(p => Math.abs((p[0] - mx) * -line.dy + (p[1] - my) * line.dx)), md = d.slice().sort((x, y) => x - y)[d.length >> 1];
+      const nu = use.filter((p, k) => d[k] <= Math.max(0.8, md * 2.5)); if (nu.length < 5 || nu.length === use.length) break; use = nu; }
+    // nová přímka musí být skoro rovnoběžná s původní hranou
+    // posun hrany ven/dovnitř = medián nalezených posunů; sklon z přímky jen když je spolehlivý (dost bodů, skoro rovnoběžná), jinak původní
+    const offs = use.map(p => (p[0] - a[0]) * nx + (p[1] - a[1]) * ny).sort((x, y) => x - y), off = offs[offs.length >> 1];
+    if (!(use.length >= 10 && Math.abs(line.dx * tx + line.dy * ty) > Math.cos(4 * Math.PI / 180))) line = { mx: a[0] + nx * off + dx / 2, my: a[1] + ny * off + dy / 2, dx: tx, dy: ty };
+    L.push(line);
+  }
+  return poly.map((v, i) => { const A = L[(i - 1 + n) % n], B = L[i]; if (!A || !B) return v;
+    const det = A.dx * B.dy - A.dy * B.dx; if (Math.abs(det) < Math.sin(12 * Math.PI / 180)) return v;
+    const t = ((B.mx - A.mx) * B.dy - (B.my - A.my) * B.dx) / det, q = [A.mx + A.dx * t, A.my + A.dy * t];
+    return Math.hypot(q[0] - v[0], q[1] - v[1]) < band * 2.2 ? q : v; });
 };
 function rdpIdx(P, eps) {   // uzavřený obrys → indexy vrcholů
   const N = P.length; let i1 = 0, md = -1; for (let i = 0; i < N; i++) { const d = Math.hypot(P[i][0] - P[0][0], P[i][1] - P[0][1]); if (d > md) { md = d; i1 = i; } }

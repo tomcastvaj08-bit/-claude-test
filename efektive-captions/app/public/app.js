@@ -2072,6 +2072,10 @@ function objBegin(o){
 }
 function trkMsgShort(m){ toast(m); }
 // mnohoúhelník (normalizovaný) → maska
+// hrany obrysu doladit na skutečnou hranu objektu ve snímku v plném rozlišení videa (max. 1920 px)
+function refineHi(P){ try{ const sc=Math.min(1,1920/Math.max(vid.videoWidth,vid.videoHeight)), W=Math.round(vid.videoWidth*sc), H=Math.round(vid.videoHeight*sc); if (!W||!H) return P;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(vid,0,0,W,H); const g=x.getImageData(0,0,W,H).data;
+  const band=Math.max(4,Math.round(Math.max(W,H)*0.012)); const R=TRK.refineEdges(g,W,H,P.map(([a,b])=>[a*W,b*H]),band); return R.map(([a,b])=>[a/W,b/H]); }catch(e){ console.warn(e); return P; } }
 function polyToMask(P,m){ const c=document.createElement('canvas'); c.width=m.w; c.height=m.h; const x=c.getContext('2d',{willReadFrequently:true}); x.fillStyle='#fff'; x.beginPath(); P.forEach(([a,b],i)=>i?x.lineTo(a*m.w,b*m.h):x.moveTo(a*m.w,b*m.h)); x.closePath(); x.fill();
   const d=x.getImageData(0,0,m.w,m.h).data; for (let i=0;i<m.d.length;i++) m.d[i]=d[i*4+3]>127?1:0; }
 // rohy z masky: hlavní obrys → pár vrcholů → přichycení na rohy v obraze
@@ -2142,7 +2146,7 @@ function objFinish(save){
   // trackovací body: ruční, jinak rohy objektu automaticky (obrys → rohy přichycené na skutečné rohy v obraze)
   let pts=E2.pts.length>=3?E2.pts.map(p=>p.slice()):autoCorners(E2);
   // AI výběr hranatého objektu (dům, okno, pozemek – většina obrysu rovné hrany): obrys povede rovně od rohu k rohu (skutečný tvar, ne okraj stromu před ním)
-  let polyMode=poly; if (!poly && E2.pts.length<3 && pts.length>=3 && (pts.straight||0)>0.55){ polyMode=true; polyToMask(pts,E2.m); }
+  let polyMode=poly; if (!poly && E2.pts.length<3 && pts.length>=3 && (pts.straight||0)>0.55){ polyMode=true; pts=refineHi(pts); polyToMask(pts,E2.m); }
   const fresh=!E2.obj, o=E2.obj||{id:'o'+Date.now().toString(36), t0:E2.t0, _mk:1, shine:true, shineC:'#ffffff', shineSpd:50, shineEvery:2.6, shineW:50, shineI:80, shRep:false, line:'solid', lineC:'#ffffff', lineW:45, fillA:0, fillC:'#000000', dots:true, trk:null};
   o.mask=OBJ.rle(E2.m); o.pts=pts.map(p=>p.slice()); o.poly=polyMode; if (!fresh){ o.t0=E2.t0; delete o.fix; } objInvalidate(o);
   if (fresh){ const s=E.src2out(E2.t0); o.s=s; o.e=Math.min(PV.duration||s+1.5,s+1.5); o.shS=s+0.1; o.shE=s+1.2; E.objs.push(o); }
