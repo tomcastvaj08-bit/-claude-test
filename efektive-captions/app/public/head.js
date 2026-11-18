@@ -146,7 +146,9 @@ HEAD.compose = (ctx, W, H, t, baseC, capC, xf, opt) => {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const q = y * w + x; if (!txt[q]) continue; const li = Math.min(nl - 1, Math.floor((x - x0) / Math.max(1, x1 - x0 + 1) * nl)); n++; seg[li * 2]++; if (M[q * 4 + 3] > 128) { o++; seg[li * 2 + 1]++; } }
     if (n < 4) continue;
     let worst = 0; for (let i = 0; i < nl; i++) if (seg[i * 2] >= 3) worst = Math.max(worst, seg[i * 2 + 1] / seg[i * 2]);
-    const fr = o / n, pf = wmem.get(wd.id), isF = pf ? (fr > 0.2 || worst > 0.45) : (fr > 0.35 || worst > 0.6);
+    let isF = (wmem.get(wd.id) ? (o / n > 0.2 || worst > 0.45) : (o / n > 0.35 || worst > 0.6));
+    // přes obličej (spodní ~60 % hlavy) se slovo dopředu nedá – obličej musí být vždy vidět
+    if (isF && wd.y1 > Y - s * 0.12 && wd.x1 > X - s * 0.25 && wd.x0 < X + s * 0.25) isF = false;
     wmem.set(wd.id, isF); if (isF) front.push(wd);
   }
   if (wmem.size > 400) wmem.clear();

@@ -834,8 +834,13 @@ function reLayout(){
     const t1=E.out2src(p.s+0.05), t2=E.out2src(p.e);
     let sg=null, best=0.15; for (const s2 of segs){ const ov=Math.min(t2,s2.t[s2.t.length-1])-Math.max(t1,s2.t[0]); if (ov>best){ best=ov; sg=s2; } }
     let posX=50, posY=role==='top'?26:64;
-    if (sg){ const ts=Math.max(t1,sg.t[0]); let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=ts) i++;
-      const fw=sg.f[i], cx=sg.x[i], fy=sg.y[i], top=sg.top[i], chin=fy+0.8*fw;
+    if (sg){
+      // hlava po CELOU dobu titulku (ne jen na začátku): nejvyšší vršek hlavy a nejnižší brada → titulek nikdy nevleze do obličeje,
+      // ani když se člověk přiblíží nebo kamera přiblíží
+      let top=1e9, chin=-1e9, cxs=0, nn=0, fw=0;
+      for (let j=0;j<sg.t.length;j++){ if (sg.t[j]<t1-0.04 || sg.t[j]>t2+0.04) continue; top=Math.min(top,sg.top[j]); chin=Math.max(chin,sg.y[j]+0.8*sg.f[j]); cxs+=sg.x[j]; nn++; fw=Math.max(fw,sg.f[j]); }
+      if (!nn){ let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=t1) i++; top=sg.top[i]; chin=sg.y[i]+0.8*sg.f[i]; cxs=sg.x[i]; nn=1; fw=sg.f[i]; }
+      const cx=cxs/nn;
       let r=role; if (r==='top' && top<H*0.14) r='chest'; if (r==='chest' && chin+fw*1.4>H*0.92) r='top';
       // nahoře: spodní řádek (velké slovo) spodní částí za vlasy; dole: celý titulek pod bradou, před tělem
       posY = r==='top' ? (top-(lb.em?0.04:-0.06)*lb.px-(lb.y-y0))/H*100 : (chin+0.3*fw-tb)/H*100;
