@@ -846,5 +846,6 @@ window.I18N_DICT.en={
 "Hlavní": "Main",
 "Vedlejší": "Secondary",
 "Oba": "Both",
-"Zapnuto": "On"
+"Zapnuto": "On",
+"Maska": "Mask"
 };

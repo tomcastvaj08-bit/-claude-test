@@ -733,7 +733,7 @@ function setEd(st){ if (st===edState) return; edState=st; edT=performance.now();
   // počítač: kolečko myši nad lištou
   pn.addEventListener('wheel',e=>{ if (e.deltaY>30 && edState!=='exp' && pn.scrollHeight>pn.clientHeight) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30 && pn.scrollTop<=0) setEd(edState==='exp'?'normal':'col'); },{passive:true});
 })();
-$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (selClip>=0){ selClip=-1; renderVideoTrack(); } if (edState==='col') setEd('normal'); panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
+$('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (b.dataset.p==='obj'){ $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); $('objBtn').click(); return; }  /* Maska = označit objekt */ if (selClip>=0){ selClip=-1; renderVideoTrack(); } if (edState==='col') setEd('normal'); panel=b.dataset.p; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); if (panel!=='overlay') selOv=null; renderPanel(); };
 function subHTML(name,opts,extra=''){ return `<div class="sub" data-sub="${name}">${opts.map(([v,l])=>`<div data-v="${v}" class="${sub[name]===v?'on':''}">${l}</div>`).join('')}${extra}</div>`; }
 function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s=>{ s.onclick=e=>{ const d=e.target.closest('[data-v]'); if (d){ sub[s.dataset.sub]=d.dataset.v; renderPanel(); } }; }); }
 function renderPanel(){
