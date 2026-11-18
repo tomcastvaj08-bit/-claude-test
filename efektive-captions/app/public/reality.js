@@ -19,7 +19,7 @@ RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? 
 // jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
 RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 400, wEm: 700, mainItalic: false, emItalic: false, size: 104, emScale: 160, track: -3, trackEm: -5, gap: 70, wordGap: 115,
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
-  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'head' };
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'head', reStab: true, reZoom: 130 };
 RE.on = () => !!(E.G.reMode);
 
 // ---------- hlava během titulku (z rozboru HEAD) ----------
@@ -58,8 +58,27 @@ function headFor(p, W, H) {
   for (let j = 0; j < sg.t.length; j++) if (sg.t[j] >= t1 - 0.04 && sg.t[j] <= t2 + 0.04) { relBrow = Math.min(relBrow, -0.42 * sg.f[j]); relChin = Math.max(relChin, 0.8 * sg.f[j]); relTop.push(sg.top[j] - sg.y[j]); }
   if (!relTop.length) { relBrow = -0.42 * sg.f[ri]; relChin = 0.8 * sg.f[ri]; relTop.push(sg.top[ri] - sg.y[ri]); }
   relTop.sort((a, b) => a - b);
-  return { top, topMed: tops[tops.length >> 1], brow, chin, fw, cx: cx / n, sg, rx: hp[0], ry: hp[1], rTop: hp[1] + relTop[relTop.length >> 1], rBrow: hp[1] + relBrow, rChin: hp[1] + relChin, rFw: fw, rf: hp[2] };
+  // všechno v souřadnicích OBRAZOVKY (po stabilizaci / přiblížení videa v referenčním okamžiku)
+  const fT0 = E._fT; E._fT = sg.t[ri]; const k = E.vxfAt(E.src2out(sg.t[ri])) || { z: 100, x: 0, y: 0 }; E._fT = fT0; const kz = k.z / 100, mx = v => W / 2 + k.x / 100 * W + kz * (v - W / 2), my = v => H / 2 + k.y / 100 * H + kz * (v - H / 2);
+  return { sg, rx: mx(hp[0]), ry: my(hp[1]), rTop: my(hp[1] + relTop[relTop.length >> 1]), rBrow: my(hp[1] + relBrow), rChin: my(hp[1] + relChin), rFw: fw * kz, rf: hp[2] * kz };
 }
+// ---------- STABILIZACE NA OBLIČEJ (nos uprostřed obrazovky) ----------
+// video se v každém snímku posune (a jednou provždy přiblíží), aby nos byl uprostřed; vyhlazeno, bez skoků (střihy zvlášť)
+function headSmooth(sg, ts, sig) {
+  const T = sg.t, tc = Math.max(T[0], Math.min(T[T.length - 1], ts)); let sx = 0, sy = 0, sw = 0;
+  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / sig; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * (sg.y[j] + 0.08 * sg.f[j]); sw += w; }
+  return sw ? [sx / sw, sy / sw] : [sg.x[0], sg.y[0]];
+}
+RE.stab = t => {
+  if (!RE.on() || E.G.reStab === false || !(g.HEAD && HEAD.data)) return null;
+  const W = E._cvW(), H = E._cvH(), segs = segments(W, H); if (!segs.length) return null;
+  const ts = E._fT != null ? E._fT : E.out2src(t), Z = Math.max(1, Math.min(2, (E.G.reZoom || 130) / 100));
+  let sg = segs.find(q => ts >= q.t[0] - 0.02 && ts <= q.t[q.t.length - 1] + 0.02), w = 1;
+  if (!sg) { let bd = 0.8; for (const q of segs) { const d = Math.max(0, q.t[0] - ts, ts - q.t[q.t.length - 1]); if (d < bd) { bd = d; sg = q; } } if (!sg) return { z: Z, x: 0, y: 0 }; w = 1 - bd / 0.8; w = w * w * (3 - 2 * w); }
+  const p = headSmooth(sg, ts, 0.1), lim = (Z - 1) / 2;
+  const tx = Math.max(-lim, Math.min(lim, -Z * (p[0] / W - 0.5))) * w, ty = Math.max(-lim, Math.min(lim, -Z * (p[1] / H - 0.5))) * w;
+  return { z: Z, x: tx * 100, y: ty * 100 };
+};
 // poloha hlavy v čase ts (vyhlazená přes ~0,2 s – plynule, bez chvění), mimo úsek drží krajní polohu
 function headAt(sg, ts) {
   const T = sg.t; let sx = 0, sy = 0, sw = 0;
@@ -81,9 +100,10 @@ function measure(p, S0) {
 let plan = null, planKey = '';
 function key(W, H) {
   const d = g.HEAD && HEAD.data, G = E.G;
-  return [W, H, E.pages.length, E.pages.map(p => p.a + ':' + p.b + ':' + p.s.toFixed(2) + ':' + p.e.toFixed(2) + ':' + (p.layer | 0)).join(','), d ? d.t.length : 0, G.size, G.emScale, G.rePlace, G.reSeed, (G.reMix || []).join(), G.fontMain, G.fontEm, G.gap].join('|');
+  return [W, H, E.pages.length, E.pages.map(p => p.a + ':' + p.b + ':' + p.s.toFixed(2) + ':' + p.e.toFixed(2) + ':' + (p.layer | 0)).join(','), d ? d.t.length : 0, G.size, G.emScale, G.rePlace, G.reSeed, (G.reMix || []).join(), G.fontMain, G.fontEm, G.gap, G.reStab === false ? 0 : 1, G.reZoom, (E.kf || []).length].join('|');
 }
 RE.invalidate = () => { plan = null; segCache = null; };
+RE._plan = () => plan;
 function build(W, H) {
   const out = new Map(), pl = E.G.rePlace || 'alt', mix = RE.mix(), seed = E.G.reSeed || 0;
   let lastTop = null;
@@ -115,7 +135,7 @@ function build(W, H) {
     const x = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, (hd ? hd.rx : W / 2) + jig));
     const col = RE.COLORS[mix[(k + seed) % mix.length]];
     const align = ['center', 'left', 'center', 'right', 'center', 'left'][(k + seed) % 6];
-    out.set(p, { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align });
+    out.set(E.keyOf(p) + '|' + (p.layer | 0), { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align });
   });
   return out;
 }
@@ -124,7 +144,7 @@ RE.apply = (p, S, t) => {
   if (!RE.on() || !p) return S;
   const W = E._cvW(), H = E._cvH(), k0 = key(W, H);
   if (!plan || planKey !== k0) { plan = build(W, H); planKey = k0; }
-  const o = plan.get(p); if (!o) return S;
+  const o = plan.get(E.keyOf(p) + '|' + (p.layer | 0)); if (!o) return S;   // podle slova (stránky se při úpravách vytváří znovu)
   const m = E.meta[E.keyOf(p)];
   if (!(m && m.own && m.own.reMoved)) {   // titulek posunutý prstem zůstane, kde je
     let x = o.x / 100 * W, y = o.y / 100 * H;
@@ -133,10 +153,12 @@ RE.apply = (p, S, t) => {
     // zamčeno na video: titulek jede s hlavou a zvětšuje se s ní (člověk jde blíž = větší text), vždy celý v obraze
     if (o.hd && t != null) {
       // po střihu (jiný záběr) se titulek přichytí na hlavu v novém záběru
-      const ts = E.out2src(t), sg0 = o.hd.sg; let sg = sg0;
+      const ts = E._fT != null ? E._fT : E.out2src(t), sg0 = o.hd.sg; let sg = sg0;   // stejný čas snímku jako stabilizace (bez cukání)
       if (ts < sg0.t[0] - 0.05 || ts > sg0.t[sg0.t.length - 1] + 0.05) { const L = segments(W, H); const s2 = L.find(q => ts >= q.t[0] - 0.05 && ts <= q.t[q.t.length - 1] + 0.05); if (s2) sg = s2; }
-      const hp = headAt(sg, ts); sc = Math.max(0.6, Math.min(1.8, hp[2] / o.hd.rf));
-      x = hp[0] + (x - o.hd.rx) * sc; y = hp[1] + (y - o.hd.ry) * sc;
+      const hp = headAt(sg, ts), k = E.vxfAt(t) || { z: 100, x: 0, y: 0 }, kz = k.z / 100;
+      const hx = W / 2 + k.x / 100 * W + kz * (hp[0] - W / 2), hy = H / 2 + k.y / 100 * H + kz * (hp[1] - H / 2);
+      sc = Math.max(0.6, Math.min(1.8, hp[2] * kz / o.hd.rf));
+      x = hx + (x - o.hd.rx) * sc; y = hy + (y - o.hd.ry) * sc;
       x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.01 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
     S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }
   S.blockAlign = o.align;

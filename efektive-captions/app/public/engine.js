@@ -1090,6 +1090,7 @@ function stabZoom(T,st,S){
 }
 E.stabInfo=()=>{ const st=E.stab, T=st&&E.tracks[st.trk]; if (!T||!window.TRK) return null; const S=stabSm(T,st); return {zoom:stabZoom(T,st,S)}; };
 E.stabAt=t=>{
+  if (window.RE && E.G.reMode && E.G.reStab!==false){ const r=RE.stab(t); if (r) return r; }   // Real estate: obličej (nos) uprostřed obrazovky
   const st=E.stab; if (!st || !st.trk || !window.TRK) return null; if (E.extClipAt(t)) return null; const T=E.tracks[st.trk]; if (!T || !T.t || T.t.length<2) return null;
   const S=stabSm(T,st), zs=stabZoom(T,st,S), ts=E._fT!=null ? E._fT : (E.out2src?E.out2src(t):t);
   const ta=T.t[0], tb=T.t[T.t.length-1], out=ts<ta?ta-ts:ts>tb?ts-tb:0;

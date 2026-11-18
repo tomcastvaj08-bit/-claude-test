@@ -785,6 +785,8 @@ function pRe(){
   ${on?`<div class="clabel">Barvy do mixu (klepnutím přidáš / ubereš)</div><div class="d3cols" id="reCols">${cols}</div>
   <div class="clabel">Kde jsou titulky</div>
   <div class="chips" id="rePl">${[['alt','Dvojice: za hlavou + na hrudi'],['top','Vždy za hlavou'],['chest','Vždy na hrudi']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="row"><span>Stabilizovat na obličej (nos pořád uprostřed)</span><input type="checkbox" class="sw" id="reStab" ${E.G.reStab!==false?'checked':''}></div>
+  ${E.G.reStab!==false?`<label class="ctl"><div class="lb"><span>Přiblížení videa</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label><div class="note">Víc přiblížení = obličej víc drží uprostřed i když se člověk hýbe do stran.</div>`:''}
   <button class="btn" id="reRedo">${I('refresh','grad')} Zamíchat barvy a rozmístění</button>
   ${window.HEAD&&HEAD.data?'':`<button class="btn" id="reHead">${I('user','grad')} Najít hlavu ve videu (pro text za hlavou)</button>`}`:''}
   <div class="note">Po zapnutí appka jednou projde video a najde hlavu (chvíli to trvá). Pak se titulky rozmístí samy – i po úpravě textu nebo času. Titulek můžeš posunout prstem, pak zůstane, kde ho dáš.</div>`;
@@ -813,6 +815,8 @@ binders.re=()=>{
   $('reOn').onclick=()=>reToggle($('reOn'));
   if ($('reCols')) $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const n=c.dataset.n; let m=RE.mix().slice(); m=m.includes(n)?m.filter(x=>x!==n):m.concat(n); if (!m.length) return; E.G.reMix=m; RE.invalidate(); changed(); renderPanel(); };
   if ($('rePl')) $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; E.buildPages(); RE.invalidate(); changed(); renderPanel(); };
+  if ($('reStab')) $('reStab').onchange=e=>{ E.G.reStab=e.target.checked; RE.invalidate(); changed(); renderPanel(); };
+  if ($('reZoom')){ $('reZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('reZoomV').textContent=E.G.reZoom+' %'; RE.invalidate(); }; $('reZoom').onchange=()=>changed(); }
   if ($('reRedo')) $('reRedo').onclick=()=>{ E.G.reSeed=((E.G.reSeed||0)+1)%60; RE.invalidate(); changed(); toast('Zamícháno'); };
   if ($('reHead')) $('reHead').onclick=async()=>{ await reHead($('reHead')); changed(); renderPanel(); };
 };

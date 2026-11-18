@@ -953,5 +953,8 @@ window.I18N_DICT.en={
 "Zamícháno": "Shuffled",
 "Hotovo – titulky jsou rozmístěné podle hlavy": "Done – captions placed by the head",
 "Titulky jsou nahoře a dole (hlava se nenašla)": "Captions are top and bottom (no head found)",
-"Barvy do mixu (klepnutím přidáš / ubereš)": "Colors in the mix (tap to add / remove)"
+"Barvy do mixu (klepnutím přidáš / ubereš)": "Colors in the mix (tap to add / remove)",
+"Stabilizovat na obličej (nos pořád uprostřed)": "Stabilize on the face (nose always centered)",
+"Přiblížení videa": "Video zoom",
+"Víc přiblížení = obličej víc drží uprostřed i když se člověk hýbe do stran.": "More zoom = the face stays centered even when the person moves sideways."
 };
