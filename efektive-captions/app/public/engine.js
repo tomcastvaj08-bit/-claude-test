@@ -420,6 +420,8 @@ function layoutRaw(p,S,scaleMul){
     L.x0+=W*(S['rowDx'+ri]||0)/100;
     L.rot=0;
   });
+  // zarovnání řádků v bloku (realitní styl): všechny řádky k levému / pravému okraji nejdelšího řádku
+  if (S.blockAlign==='left'||S.blockAlign==='right'){ const mt=Math.max(...lines.map(L=>L.total)); lines.forEach(L=>{ L.x0 = S.blockAlign==='left' ? cx-mt/2 : cx+mt/2-L.total; }); }
   lines.forEach((L,i)=>L._i=i);
   return lines;
 }
@@ -542,7 +544,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // dvouprůchodové kreslení negativu s 3D náklonem: v každém průchodu jen „jeho“ slova
   if (E._negPass){ const neg=!!(L.em && S.negativ); if ((E._negPass==='skip' && neg) || (E._negPass==='only' && !neg)) return; }
   const flick = S.fadeOut && S.exitFlick;
-  const exitDur = flick ? FLICK_DUR : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
+  const exitDur = flick ? FLICK_DUR : S.anim==='reel' ? 0.16 : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
   const st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
@@ -558,6 +560,15 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   else if (S.anim==='blur'){ blur=(1-kk)*L.px*0.25; sc=0.9+0.1*kk; }
   else if (S.anim==='smooth'){ const q=clamp(since/0.5), e=1-Math.pow(1-q,3); a=e*exA; sc=0.94+0.06*e; }
   else if (S.anim==='fade'){ const q=clamp(since/0.35); a=(q*q*(3-2*q))*exA; }
+  else if (S.anim==='reel'){
+    // příchod: velké slovo se prolne a zvětší (nebo vystřelí ze strany), malé slovo rychle přijede z boku; vše s rozmazáním pohybu
+    // odchod: švihnutí do strany s rozmazáním
+    if (since<0) return;
+    const dir=(((L._i||0)+(j||0))%2)?1:-1, Wm=Math.min(cv.width,cv.height), big=!!L.em;
+    if (big && ((L._i||0)+(k||0))%2===0){ const q=clamp(since/0.3), e=1-Math.pow(1-q,3); a=e*exA; sc=0.8+0.2*e; blur=(1-e)*L.px*0.07; }
+    else { const q=clamp(since/(big?0.24:0.18)), e=q>=1?1:(1-Math.pow(2,-9*q))/(1-Math.pow(2,-9)); dx+=dir*(1-e)*Wm*(big?0.36:0.16); blur=(1-e)*L.px*0.15; a=clamp(since/0.05)*exA; }
+    const xo=1-exit; if (xo>0){ dx+=-dir*xo*xo*Wm*0.55; blur=Math.max(blur,xo*L.px*0.2); a=clamp(since/0.05)*Math.max(0,1-xo*0.7); }
+  }
   else if (S.anim==='whip'){
     // jako v realitních reels: slovo vystřelí ze strany (řádky střídavě zleva / zprava), prudce dobrzdí, s rozmazáním pohybu
     if (since<0) return;

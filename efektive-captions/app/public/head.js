@@ -124,7 +124,7 @@ HEAD.compose = (ctx, W, H, t, baseC, capC, xf, opt) => {
   tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, 0, 0); tmx.globalCompositeOperation = 'source-over';
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.shadowColor = 'transparent';
   ctx.drawImage(tmp, 0, 0);
-  if (opt && opt.smart === false) { ctx.restore(); return true; }
+  if ((opt && opt.smart === false) || E.G.reMode) { ctx.restore(); return true; }   // Real estate styl: jako v předloze – slovo zůstane za hlavou (žádné přesouvání dopředu)
   // žádné slovo nezasahuje do hlavy → není co řešit (žádné čtení pixelů – přehrávání zůstane plynulé)
   const hx0 = X - s / 2, hy0 = Y - s / 2, hx1 = X + s / 2, hy1 = Y + s / 2;
   if (!((opt && opt.words) || []).some(wd => wd.x1 > hx0 && wd.x0 < hx1 && wd.y1 > hy0 && wd.y0 < hy1)) { ctx.restore(); return true; }

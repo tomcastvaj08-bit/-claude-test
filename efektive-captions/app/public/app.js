@@ -802,7 +802,7 @@ async function reToggle(btn){
     if (m.own && (E.G.reMode || m.own._manualPos)) for (const x of ['posX','posY','_manualPos','size','grad','gA','gB','gradDir','c1','c2','c3','c4','reMoved']) delete m.own[x]; }
   for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
   if (E.G.reMode){
-    E.G.reMode=false; const B=E.TEMPLATES.base.set; for (const k of Object.keys(RE.LOOK)) E.G[k]=B[k]; E.G.noSlots=false; E.G.emEach=false; E.G.behind='off';
+    E.G.reMode=false; const B=E.TEMPLATES.base.set; for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]); E.G.noSlots=false; E.G.emEach=false; E.G.behind='off';
     E.buildPages(); RE.invalidate(); changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
   Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel();
   toast('Real estate styl zapnutý – hledám hlavu ve videu…');

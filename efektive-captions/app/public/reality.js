@@ -10,12 +10,16 @@
 (function (g) {
 const RE = g.RE = {};
 // barvy (velké slovo) – jako v předloze; názvy odpovídají nabídce v appce
-RE.COLORS = { 'Citrón': ['#fff200', '#ffd400'], 'Červená': ['#ff3b30', '#c00000'], 'Limetková': ['#e8ff4a', '#a8d900'], 'Bílá': ['#ffffff', '#d9dde6'],
+RE.COLORS = { 'Citrón': ['#fff200', '#e8cc00'], 'Červená': ['#ff2a1f', '#d40000'], 'Limetková': ['#e2fb3a', '#a3c800'], 'Šedobílá': ['#eeeeee', '#b9b9b9'], 'Bílá': ['#ffffff', '#e2e2e2'],
   'Žlutá': ['#ff9a00', '#e8f200'], 'Modrá': ['#14d6ff', '#0040ff'], 'Růžová': ['#ff2d9a', '#a845ff'], 'Zelená': ['#7dff6a', '#00b84a'], 'Zlatá': ['#fff1b8', '#c98a00'] };
-RE.DEFAULT_MIX = ['Citrón', 'Červená', 'Limetková', 'Bílá'];
+RE.DEFAULT_MIX = ['Citrón', 'Šedobílá', 'Červená', 'Limetková'];
 RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? m : RE.DEFAULT_MIX).filter(n => RE.COLORS[n]); return L.length ? L : RE.DEFAULT_MIX; };
 // vzhled, který Real estate styl zapne (a co při vypnutí vrátí ze Stylu 1)
-RE.LOOK = { layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, gap: 80, altOn: false, anim: 'whip', enter: 'none', enterBy: 'word', emScale: 175, wMain: 500, wEm: 800, track: -2, trackEm: -3, gloss: 'off', behind: 'head' };
+// jako v předloze: geometrické písmo (Poppins) – malá slova tenká bílá, velká tlustá barevná (~2× větší), těsně přes sebe,
+// jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
+RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 300, wEm: 700, mainItalic: false, emItalic: false, size: 96, emScale: 190, track: -3, trackEm: -5, gap: 64, wordGap: 120,
+  layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: true, shineEvery: '2', caseMain: 'none', caseSec: 'none', behind: 'head' };
 RE.on = () => !!(E.G.reMode);
 
 // ---------- hlava během titulku (z rozboru HEAD) ----------
@@ -54,14 +58,15 @@ function headFor(p, W, H) {
   for (let j = 0; j < sg.t.length; j++) if (sg.t[j] >= t1 - 0.04 && sg.t[j] <= t2 + 0.04) { relBrow = Math.min(relBrow, -0.42 * sg.f[j]); relChin = Math.max(relChin, 0.8 * sg.f[j]); relTop.push(sg.top[j] - sg.y[j]); }
   if (!relTop.length) { relBrow = -0.42 * sg.f[ri]; relChin = 0.8 * sg.f[ri]; relTop.push(sg.top[ri] - sg.y[ri]); }
   relTop.sort((a, b) => a - b);
-  return { top, topMed: tops[tops.length >> 1], brow, chin, fw, cx: cx / n, sg, rx: hp[0], ry: hp[1], rTop: hp[1] + relTop[relTop.length >> 1], rBrow: hp[1] + relBrow, rChin: hp[1] + relChin, rFw: fw };
+  return { top, topMed: tops[tops.length >> 1], brow, chin, fw, cx: cx / n, sg, rx: hp[0], ry: hp[1], rTop: hp[1] + relTop[relTop.length >> 1], rBrow: hp[1] + relBrow, rChin: hp[1] + relChin, rFw: fw, rf: hp[2] };
 }
 // poloha hlavy v čase ts (vyhlazená přes ~0,2 s – plynule, bez chvění), mimo úsek drží krajní polohu
 function headAt(sg, ts) {
   const T = sg.t; let sx = 0, sy = 0, sw = 0;
   const tc = Math.max(T[0], Math.min(T[T.length - 1], ts));
-  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.07; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sw += w; }
-  return sw ? [sx / sw, sy / sw] : [sg.x[0], sg.y[0]];
+  let sf = 0;
+  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.07; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sf += w * sg.f[j]; sw += w; }
+  return sw ? [sx / sw, sy / sw, sf / sw] : [sg.x[0], sg.y[0], sg.f[0]];
 }
 
 // ---------- rozměry titulku při velikosti 1 ----------
@@ -92,7 +97,7 @@ function build(W, H) {
     if (role === 'top') {
       for (const k2 of ks) {
         let c;   // střed spodního řádku: spodek písmen za vlasy, nikdy pod obočí
-        if (hd) c = Math.min(hd.rTop + 0.12 * M.lbPx * k2, hd.rBrow - 0.4 * M.lbPx * k2);
+        if (hd) c = M.lbEm ? Math.min(hd.rTop + 0.22 * M.lbPx * k2, hd.rBrow - 0.05 * M.lbPx * k2) : hd.rTop + 0.08 * M.lbPx * k2;
         else c = H * 0.05 - M.tb * k2 + M.lbOff * k2;
         const yy = c - M.lbOff * k2;
         if (yy + M.tb * k2 >= H * 0.012) { y = yy; kk = k2; break; }
@@ -109,7 +114,8 @@ function build(W, H) {
     const pair = Math.floor(k / 2), jig = [0, -4, 3, -2, 5, -3][(pair + seed) % 6] / 100 * W, half = M.w * kk / 2;
     const x = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, (hd ? hd.rx : W / 2) + jig));
     const col = RE.COLORS[mix[(k + seed) % mix.length]];
-    out.set(p, { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half });
+    const align = ['center', 'left', 'center', 'right', 'center', 'left'][(k + seed) % 6];
+    out.set(p, { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align });
   });
   return out;
 }
@@ -123,9 +129,13 @@ RE.apply = (p, S, t) => {
   if (!(m && m.own && m.own.reMoved)) {   // titulek posunutý prstem zůstane, kde je
     let x = o.x / 100 * W, y = o.y / 100 * H;
     // zamčeno na video: titulek jede s hlavou (velikost se nemění), vždy celý v obraze
-    if (o.hd && t != null) { const hp = headAt(o.hd.sg, E.out2src(t)); x += hp[0] - o.hd.rx; y += hp[1] - o.hd.ry;
-      x = Math.max(o.half + W * 0.02, Math.min(W * 0.98 - o.half, x)); y = Math.max(H * 0.01 - o.tb, Math.min(H * 0.99 - o.bb, y)); }
-    S.posX = x / W * 100; S.posY = y / H * 100; }
+    let sc = 1;
+    // zamčeno na video: titulek jede s hlavou a zvětšuje se s ní (člověk jde blíž = větší text), vždy celý v obraze
+    if (o.hd && t != null) { const hp = headAt(o.hd.sg, E.out2src(t)); sc = Math.max(0.6, Math.min(1.8, hp[2] / o.hd.rf));
+      x = hp[0] + (x - o.hd.rx) * sc; y = hp[1] + (y - o.hd.ry) * sc;
+      x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.01 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
+    S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }
+  S.blockAlign = o.align;
   S.size *= o.k;
   if (o.col) { S.grad = true; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }
   return S;
