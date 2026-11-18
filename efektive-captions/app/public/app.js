@@ -2410,8 +2410,8 @@ try{ if (localStorage.getItem('efk_default_v')!=='2'){ localStorage.removeItem('
 // ---------- jazyk aplikace (zeměkoule na úvodu) ----------
 function renderUiLangs(){
   const L=window.I18N; if (!L) return;
-  const cur=L.langs.find(l=>l[0]===L.lang); $('uiLangCode').textContent=(cur?cur[2]+' ':'')+L.lang.toUpperCase();
-  $('uiLangList').innerHTML=L.langs.map(([c,n,f,ok])=>`<button class="uil ${c===L.lang?'on':''} ${ok?'':'off'}" data-c="${c}" ${ok?'':'disabled'}><span class="fl">${f}</span><span class="nm" data-notr>${n}</span>${ok?(c===L.lang?I('check'):''):'<small>Brzy</small>'}</button>`).join('');
+  const cur=L.langs.find(l=>l[0]===L.lang), flag=f=>`<img class="flag" src="flags/${f}.svg" alt="" loading="lazy">`; $('uiLangCode').innerHTML=(cur?flag(cur[2]):'')+L.lang.toUpperCase();
+  $('uiLangList').innerHTML=L.langs.map(([c,n,f,ok])=>`<button class="uil ${c===L.lang?'on':''} ${ok?'':'off'}" data-c="${c}" ${ok?'':'disabled'}>${flag(f)}<span class="nm" data-notr>${n}</span>${ok?(c===L.lang?I('check'):''):'<small>Brzy</small>'}</button>`).join('');
 }
 $('uiLangBtn').onclick=()=>openSheet('sheetUiLang');
 $('uiLangList').onclick=e=>{ const b=e.target.closest('.uil'); if (!b || b.disabled) return; if (b.dataset.c===I18N.lang){ $('sheetUiLang').classList.remove('on'); return; } I18N.set(b.dataset.c); };

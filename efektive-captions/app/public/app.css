@@ -508,6 +508,6 @@ button.pro.on{background:var(--green)}
 .langbtn .ic{width:17px;height:17px}
 .uilangs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 10px;max-height:58vh;overflow:auto}
 .uil{display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card);font:inherit;font-weight:700;font-size:14px;color:var(--text);text-align:left;cursor:pointer}
-.uil .fl{font-size:20px;line-height:1}.uil .nm{flex:1}.uil small{font-size:11px;font-weight:700;opacity:.6}
+.flag{width:22px;height:16.5px;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex:none;display:block}#uiLangCode{display:flex;align-items:center;gap:5px}#uiLangCode .flag{width:18px;height:13.5px}.uil .nm{flex:1}.uil small{font-size:11px;font-weight:700;opacity:.6}
 .uil.on{border-color:#2f6bff;box-shadow:0 0 0 2px rgba(47,107,255,.25)}.uil .ic{width:16px;height:16px;color:#2f6bff}
 .uil.off{opacity:.45;cursor:default}

@@ -4,14 +4,14 @@
 // podle slovníku ve složce i18n/ (např. i18n/en.js → window.I18N_DICT.en).
 // Volba jazyka se uloží do zařízení (localStorage 'efk_ui') a platí při každém dalším spuštění.
 (function(){
-  // [kód, název v daném jazyce, vlajka, je hotový]
+  // [kód, název v daném jazyce, vlajka (soubor flags/<kód>.svg), je hotový]
   const UI_LANGS = [
-    ['en','English','🇬🇧',true], ['cs','Čeština','🇨🇿',true],
-    ['sk','Slovenčina','🇸🇰'], ['pl','Polski','🇵🇱'], ['de','Deutsch','🇩🇪'], ['fr','Français','🇫🇷'],
-    ['es','Español','🇪🇸'], ['it','Italiano','🇮🇹'], ['pt','Português','🇵🇹'], ['nl','Nederlands','🇳🇱'],
-    ['hu','Magyar','🇭🇺'], ['ro','Română','🇷🇴'], ['uk','Українська','🇺🇦'], ['ru','Русский','🇷🇺'],
-    ['tr','Türkçe','🇹🇷'], ['ar','العربية','🇸🇦'], ['hi','हिन्दी','🇮🇳'], ['zh','中文','🇨🇳'],
-    ['ja','日本語','🇯🇵'], ['ko','한국어','🇰🇷'], ['id','Bahasa Indonesia','🇮🇩'], ['vi','Tiếng Việt','🇻🇳'],
+    ['en','English','gb',true], ['cs','Čeština','cz',true],
+    ['sk','Slovenčina','sk'], ['pl','Polski','pl'], ['de','Deutsch','de'], ['fr','Français','fr'],
+    ['es','Español','es'], ['it','Italiano','it'], ['pt','Português','pt'], ['nl','Nederlands','nl'],
+    ['hu','Magyar','hu'], ['ro','Română','ro'], ['uk','Українська','ua'], ['ru','Русский','ru'],
+    ['tr','Türkçe','tr'], ['ar','العربية','sa'], ['hi','हिन्दी','in'], ['zh','中文','cn'],
+    ['ja','日本語','jp'], ['ko','한국어','kr'], ['id','Bahasa Indonesia','id'], ['vi','Tiếng Việt','vn'],
   ];
   const READY = new Set(UI_LANGS.filter(l=>l[3]).map(l=>l[0]));
   let saved=null; try{ saved=localStorage.getItem('efk_ui'); }catch(e){}
