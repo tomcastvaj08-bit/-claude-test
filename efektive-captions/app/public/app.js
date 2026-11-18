@@ -649,7 +649,7 @@ function loop(now){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
       sfxTick(t);
       followTimeline(t);
-    }
+    } else { const p=E.pages[curPage]; if (!(p && t>=p.s && t<=p.e)){ const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); } } syncPanelToPage(); }
     lastT=t;
     syncOverlays(t, !vid.paused || PB.on);
     E.render(t,{});
@@ -730,7 +730,7 @@ $('bnav').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if (se
 function subHTML(name,opts,extra=''){ return `<div class="sub" data-sub="${name}">${opts.map(([v,l])=>`<div data-v="${v}" class="${sub[name]===v?'on':''}">${l}</div>`).join('')}${extra}</div>`; }
 function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s=>{ s.onclick=e=>{ const d=e.target.closest('[data-v]'); if (d){ sub[s.dataset.sub]=d.dataset.v; renderPanel(); } }; }); }
 function renderPanel(){
-  const P=$('panel'); C.length=0;
+  const P=$('panel'); C.length=0; panelPage=curPage;
   let h='';
   if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='audio' && panel!=='fxm' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML=`<div class="muted">Žádné titulky.</div><button class="btn" id="regenCap">${I('wand','grad')} Vytvořit titulky (AI přepis)</button>`; $('regenCap').onclick=regenCaptions; return; }
   switch(panel){
@@ -944,7 +944,11 @@ binders.captions=()=>{
     const pg=e.target.closest('.pg'); if (pg) selectPage(+pg.dataset.k);
   };
 };
-function selectPage(k,seek=true){ curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); PV.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions' && panel!=='templates') renderPanel(); }
+function selectPage(k,seek=true){ curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); PV.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions') renderPanel(); }
+// panely se stylem ukazují nastavení VYBRANÉHO titulku → když se titulek změní (posun hlavy), panel se překreslí
+const STYLE_PANELS=new Set(['templates','style','motion','mix','ai']);
+let panelPage=-1, panelSyncT=null;
+function syncPanelToPage(){ if (!STYLE_PANELS.has(panel) || curPage===panelPage || PB.on || !vid.paused || panelSyncT) return; panelSyncT=setTimeout(()=>{ panelSyncT=null; if (STYLE_PANELS.has(panel) && curPage!==panelPage && !PB.on && vid.paused) renderPanel(); },150); }
 function markCur(){
   document.querySelectorAll('#pglist .pg').forEach(el=>el.classList.toggle('cur',+el.dataset.k===curPage));
   document.querySelectorAll('#trC .cb').forEach(el=>el.classList.toggle('cur',+el.dataset.k===curPage));
@@ -1035,13 +1039,12 @@ binders.templates=()=>{
 };
 
 // ---------- STYL ----------
-const SHADOWS=[['none',null],['#000000','#000'],['#363029','#363029'],['#e9e0d6','#e9e0d6'],['#2f7bff','#2f7bff'],['#ffc531','#ffc531'],['#4df0ff','#4df0ff'],['#21d07a','#21d07a'],['#ff3ad7','#ff3ad7']];
+const SHADOWS=[['none',null],['#000000','#000'],['#2f7bff','#2f7bff'],['#ffc531','#ffc531'],['#4df0ff','#4df0ff'],['#21d07a','#21d07a'],['#ff3ad7','#ff3ad7']];
 function pStyle(){
   const S=cur(), st=sub.style;
   let h=`${scopeHTML()}${subHTML('style',[['color','Barva'],['font','Font'],['text','Text'],['shadow','Stín'],['transform','3D a tvar']],'<div class="sp"></div><div class="hrt" id="saveTpl" title="Uložit jako vlastní šablonu">'+I('heart','grad')+'</div>')}`;
   if (st==='color'){
     h+=`<div class="colors">${color('Text','cText')}${color('Zvýraznění 1','c1')}${color('2.','c2')}${color('3.','c3')}${color('4.','c4')}</div>
-    <div class="clabel">Barvy značky Lerdee</div><div class="chips" id="brandCol"><div class="chip" data-t="#e9e0d6" data-s="#363029"><i class="bsw" style="background:#e9e0d6"></i>Begie text</div><div class="chip" data-t="#363029" data-s="#e9e0d6"><i class="bsw" style="background:#363029"></i>Brown text</div></div>
     <div class="note">Zvýraznění 1–4 se střídá po titulcích (1. titulek = 1. barva…), když je přechod vypnutý.</div>
     ${toggle('Vedlejší řádky s jemným přelivem do šeda','textGrad')}
     ${S.textGrad?`<div class="colors">${color('Vedlejší nahoře','cText')}${color('Vedlejší dole','cText2')}</div>`:''}
@@ -1119,8 +1122,6 @@ binders.style=()=>{
   const sc=$('shCustom'); if (sc){ sc.oninput=()=>setVal('cShadow',sc.value,true); sc.onchange=()=>{ if(!cur().shadowSize) setVal('shadowSize',25); changed(); renderPanel(); }; }
   const ss=$('shSize'); if (ss) ss.onclick=e=>{ const d=e.target.closest('.chip'); if(!d) return; setVal('shadowSize',+d.dataset.v); renderPanel(); };
   const sg=$('suggestCol'); if (sg) sg.onclick=suggestColors;
-  const bc=$('brandCol'); if (bc) bc.onclick=e=>{ const d=e.target.closest('[data-t]'); if(!d) return; const t=d.dataset.t, sh=d.dataset.s;
-    setMany({cText:t,cText2:t,c1:t,c2:t,c3:t,c4:t,gA:t,gB:t,grad:false,textGrad:false,altOn:false,cShadow:sh,shadowSize:Math.max(cur().shadowSize||0,30),shadowA:Math.max(cur().shadowA||0,70)}); renderPanel(); };
 };
 async function suggestColors(){
   const box=$('suggBox'); box.innerHTML='<div class="muted">Analyzuju barvy ve videu…</div>';
@@ -2034,7 +2035,7 @@ $('trkCancel').onclick=()=>{ if (!trkPick) return; if (trkPick.running) trkPick.
 // ================= ZVÝRAZNĚNÍ OBJEKTU (shine, obrys, výplň, sledování tvaru) =================
 // výběr: AI klepnutím / kouzelná hůlka / štětec + / guma; vykreslení a sledování: objs.js + tracker.js
 let objEdit=null, selObj=null;
-const OBJ_COLORS=['#ffffff','#e9e0d6','#363029','#ffd27a','#ff9c00','#9fdcff','#27e1c1','#ff9ad5'];
+const OBJ_COLORS=['#ffffff','#ffd27a','#ff9c00','#9fdcff','#27e1c1','#ff9ad5'];
 function objSave(o){ const r={}; for (const k in o) if (k[0]!=='_') r[k]=o[k]; return r; }
 function objInvalidate(o){ o._m=null; o._mk=Math.random(); o._bb=null; o._ct=null; if (o.trk) o.trk._S=null; }
 const curObj=()=>E.objs.find(o=>o.id===selObj);

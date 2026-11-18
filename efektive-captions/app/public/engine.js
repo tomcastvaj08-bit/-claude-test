@@ -132,9 +132,6 @@ const common = {mix3d:false,mixShine:'hi',mixExtrude:'hi',mixFx:2,mixSpeed:100,m
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, wordLead:0.08, wordFade:0.28};
 E.COMMON = common;
 E.TEMPLATES = {
-  // LERDEE – brand klienta: Neulis Sans Bold (hlavní řádek) + Neulis Sans Light VELKÝMI s prostrkáním (vedlejší), Begie #E9E0D6 + Brown #363029
-  lerdee:{ name:'Lerdee', cat:'trending', set:{...common, fontMain:NEU,wMain:300,fontEm:NEU,wEm:700,emItalic:false,mainItalic:false,mainLine:'mid',size:70,posX:50,posY:72.5,track:6,trackEm:-1,cond:100,gap:72,rowDy1:0,rowDy3:0,emScale:200,wordGap:170,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'center',layerOrder:'natural',cText:'#e9e0d6',cText2:'#e9e0d6',textGrad:false,grad:false,gA:'#e9e0d6',gB:'#e9e0d6',gradDir:'v',c1:'#e9e0d6',c2:'#e9e0d6',c3:'#e9e0d6',c4:'#e9e0d6',altOn:false,glow:0,glowMode:'always',shadowSize:40,shadowA:85,shadowDist:2,cShadow:'#363029',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:25,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.8,exitDur:0.15,caseMain:'title',caseSec:'upper',capMain3:false,split:'fill',rowMax:61,wpp:6,maxLines:3,singleSec:true},
-    pv:'<span style="font-family:Outfit;font-weight:300;letter-spacing:.18em;font-size:.55em;color:#e9e0d6">NOVÁ PŘÍRODNÍ</span><br><b style="font-family:Outfit;font-weight:700;color:#e9e0d6;text-shadow:0 0 6px #363029">Kosmetika</b>' },
   // BASE – výchozí, změřeno ze vzorového videa VID_43543582 (viz NAVOD_BASE.md)
   base:{ name:'Styl 1', cat:'trending', set:{...common, fontMain:SF,wMain:500,fontEm:SF,wEm:800,emItalic:false,mainItalic:false,mainLine:'mid',size:118,posX:50,posY:72.5,track:-3,trackEm:-3.5,cond:100,gap:60,rowDy1:8,rowDy3:-2,emScale:158,wordGap:80,tilt:0,tiltX:0,persp:60,tiltAlt:false,kinetic:0,kinDir:'opposite',rot:0,layout:'diagonal',layerOrder:'natural',cText:'#ffffff',cText2:'#e0e0e0',textGrad:true,grad:true,gA:'#ff9a00',gB:'#e8f200',gradDir:'v',gradSpan:0.36,c1:'#ff9c00',c2:'#ff9c00',c3:'#ff9c00',c4:'#ff9c00',altOn:false,glow:0,glowMode:'always',shadowSize:42,shadowA:80,shadowDist:2,cShadow:'#000000',extrude:0,fxShine:false,fxFlicker:false,fxShake:false,fxWiggle:false,wiggle:0,enter:'bottom',ease:'silk',enterDur:90,enterDist:30,anim:'block',wordLead:0.05,wordFade:0.2,fadeOut:true,exitScale:0.6,exitDur:0.1,caseMain:'title',caseSec:'lowerStart',capMain3:false,split:'fill',rowMax:61,wpp:7,maxLines:3,singleSec:true},
     pv:'<span style="font-weight:600;letter-spacing:-.06em">začněte mě</span><br><b style="background:linear-gradient(#ff9a00,#e8f200);-webkit-background-clip:text;color:transparent;font-weight:800;letter-spacing:-.07em">Sledovat</b>' },
@@ -161,7 +158,7 @@ Object.assign(E.G, E.TEMPLATES.base.set);
 
 // ================= STYL TITULKU =================
 E.keyOf = p => p ? E.words[p.a].id : 0;
-E.styleOf = p => { const own = p && E.meta[E.keyOf(p)] && E.meta[E.keyOf(p)].own; const S = Object.assign({}, E.G, own||{}); S._k = p ? E.pages.indexOf(p) : 0; return S; };
+E.styleOf = p => { const own = p && E.meta[E.keyOf(p)] && E.meta[E.keyOf(p)].own; const S = Object.assign({}, E.G, own||{}); S._k = p ? E.pages.indexOf(p) : 0; S._ownShine = !!(own && own.fxShine===true && !('shineEvery' in own)); return S; };   // shine zapnutý jen u tohoto titulku → svítí vždy (nezávisle na „každý N-tý“)
 E.tiltOf = S => (S.tiltAlt && (S._k%2)) ? -S.tilt : S.tilt;
 
 // ================= SLOVA, ZÓNY, OPRAVY =================
@@ -551,7 +548,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   }
   // SHINE: přes hlavní slovo plynule přejede měkké světlo – písmo se v tom místě rozzáří (přičtením světla, ne bílou barvou)
   // a kolem písmen vznikne jemná záře. Záře se dělá rozmazáním zmenšením (žádný stín) na plátně s velkou rezervou → nic se neořízne.
-  const shineOk = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0);
+  const shineOk = S._ownShine || (S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0));
   if (S.fxShine && shineOk && L.em && !S.negativ){
     const dur = 2.4 - S.shineSpeed/100*1.3, st = -0.3, q = (since-st)/dur;   // lesk vyjede hned s příletem slova
     if (q>0 && q<1){
@@ -1233,7 +1230,7 @@ E.sfxEvents = () => {
     const at=t=>ev.push({t:t-sh.peak, type:'custom', buf:sh.buf, vol:sv, kind:'shine'});
     if (G.mix3d){ /* 3D mix: shine bez zvuku – na slova hraje jen mini swoosh (níž) */ }
     else E.pages.forEach((p,k)=>{ const S=E.styleOf(p); if (!S.fxShine || S.negativ) return;
-      const ok = S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0); if (!ok) return;
+      const ok = S._ownShine || (S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0)); if (!ok) return;
       let g=null; try{ g=E.groupsOf(p,S).find(x=>x.em); }catch(e){} if (!g) return;
       const by=S.enterBy || (S.wordByWord ? 'word' : 'page'); at((by==='page'?p.s:E.words[g.ids[0]].s)+0.06); });
     for (const o of E.objs||[]){ if (!o.shine || o.shSfx===false) continue; if (window.OBJ && OBJ.shineWin) OBJ.shineWin(o); if (o.shS!=null) at(o.shS+0.05); }

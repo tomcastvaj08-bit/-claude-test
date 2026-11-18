@@ -100,3 +100,7 @@ Opraveno + pojistky: (1) ukládá se jen projekt, který se otevřel celý (`pro
 
 ## 18. 11. – přepis jednoho klipu, koš v horní liště
 Panel klipu: „Nový přepis titulků tohoto klipu“ – AI přepíše jen zvuk vybraného úseku (i vloženého klipu), titulky v jeho čase se nahradí, ostatní zůstanou (časy přepočítané i při zrychlení). Horní lišta: místo oka koš = smaže vybrané (úsek, overlay, zvuk, shake, objekt, klíčový bod, jinak vybraný titulek; zpět jde šipkou). Oko (skrýt titulky) je malé vlevo nahoře vedle křížku. V panelu Titulky tlačítko „Smazat vybraný titulek“.
+
+## 18. 11. – Lerdee jen fonty; shine po titulcích
+Šablona Lerdee, řádek „Barvy značky Lerdee“ a brand barvy ve stínech/objektech ODSTRANĚNY (klient chtěl jen fonty) – zůstávají fonty Neulis Sans Bold/Light (Outfit) a Open Sans Light.
+Shine (a vše ve Šablonách/Stylu/Pohybu/3D mixu/AI) ukazuje nastavení titulku pod hlavou: při posunu hlavy (i tažením timeline) nebo klepnutí na titulek se panel překreslí. Shine zapnutý „jen u tohoto titulku“ svítí vždy (nezávisle na „každý N-tý“).
