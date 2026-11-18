@@ -110,7 +110,8 @@ function restore(json){
   E.audios=(s.audios||[]).filter(a=>ovAssets[a.asset]).map(a=>({...a}));
   E.fxMarks=(s.fxMarks||[]).map(m=>({...m}));
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease:'tok2'})):[];   // zatím jediný průběh: Tok 2
-  E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && (s.G.trSfxVol===80||s.G.trSfxVol===45)) E.G.trSfxVol=30; if (s.G && s.G.shineSfxVol===50) E.G.shineSfxVol=20;   // staré výchozí hlasitosti byly moc hlasité mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
+  E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && (s.G.trSfxVol===80||s.G.trSfxVol===45)) E.G.trSfxVol=30; if (s.G && s.G.shineSfxVol===50) E.G.shineSfxVol=20;
+  for (const c of E.clips||[]) if (c.trSnd && !E.TRSND.some(([v])=>v===c.trSnd)) delete c.trSnd;   // cinkavé zvuky už nejsou   // staré výchozí hlasitosti byly moc hlasité mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.face=Array.isArray(s.face)?s.face:null;
@@ -1097,10 +1098,10 @@ function pSfx(){
   ${sw('sxAll','<b>Všechny zvukové efekty</b>',E.G.sfxAll!==false)}
   <div class="note">Hlavní vypínač – vypne / zapne najednou zvuky slov, shine i přechodů. Jednotlivé skupiny níž.</div>
   ${E.G.sfxAll!==false?`
-  ${sw('sxShine','Shine (lesk u titulků a objektů, ve 3D mixu každé slovo)',E.G.sfxShineOn!==false)}
+  ${sw('sxShine','Shine (lesk u titulků a objektů)',E.G.sfxShineOn!==false)}
   ${E.G.sfxShineOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost shine</span><span id="sxShVv">${E.G.shineSfxVol??20} %</span></div><input type="range" id="sxShV" min="0" max="150" value="${E.G.shineSfxVol??20}"></label><button class="btn small" id="sxShPlay">${I('volume')} Poslechnout shine</button>`:''}
-  ${sw('sxMove','Posuny ve 3D mixu (mini swoosh)',E.G.sfxMoveOn!==false)}
-  ${E.G.sfxMoveOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost posunů</span><span id="sxMvVv">${E.G.moveSfxVol??30} %</span></div><input type="range" id="sxMvV" min="0" max="150" value="${E.G.moveSfxVol??30}"></label>`:''}
+  ${sw('sxMove','3D mix – mini swoosh na každé slovo',E.G.sfxMoveOn!==false)}
+  ${E.G.sfxMoveOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost swooshů ve 3D mixu</span><span id="sxMvVv">${E.G.moveSfxVol??30} %</span></div><input type="range" id="sxMvV" min="0" max="150" value="${E.G.moveSfxVol??30}"></label>`:''}
   ${sw('sxTr','Přechody mezi záběry a shake',E.G.sfxTrOn!==false)}
   ${E.G.sfxTrOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost přechodů</span><span id="sxTrVv">${E.G.trSfxVol??30} %</span></div><input type="range" id="sxTrV" min="0" max="150" value="${E.G.trSfxVol??30}"></label><div class="note">Každý přechod jde vypnout zvlášť (klepni na značku přechodu na stopě videa).</div>`:''}
   ${sw('sxWords','Zvuky na slova / titulky',E.G.sfxWordsOn!==false)}`:''}

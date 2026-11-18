@@ -68,3 +68,8 @@ Soubory `app/public/sfx/*.m4a` (špička −1 dB, AAC 128k). Nejsilnější mís
 - Blesk = spoušť foťáku, 2× negativ = mini glitch (výchozí); u každého přechodu výběr zvuku (`clip.trSnd`) a vlastní hlasitost (`clip.trVol`).
 - Zvuky se plánují 0,2 s dopředu na přesný čas a odečítá se zpoždění zvukového výstupu (žádné opoždění); přehrávání se střihem srovnává obraz se slyšeným zvukem.
 - Fialová mrtvá místa mají vlastní řádek pod stopou videa (nepřekážejí okrajům klipů).
+
+## Oprava 18. 11. večer (klient: „cinkavé zvuky pryč, jen swooshe“)
+- Č. 29 („spoušť foťáku“ / „záblesk“) a č. 31 („cink“) zní jako POKLADNA → vyřazené z nabídky i výchozích. Č. 22 („lusknutí“) taky vyřazené (neověřené).
+- V SFX videu klienta NENÍ zvuk foťáku ani lusknutí → čekáme na zvuk od klienta. Do té doby blesk = mini swoosh.
+- 3D mix: na každé slovo jen jemný mini swoosh, shine ve 3D mixu bez zvuku.
