@@ -701,7 +701,7 @@ function bindControls(){
     if (type==='range'){ el.oninput=()=>{ $(id+'v').textContent=el.value+el.dataset.unit; setVal(key,+el.value,true); }; el.onchange=()=>changed(); }
     else if (type==='tog') el.onchange=()=>setVal(key,el.checked?a:b);
     else if (type==='color'){ el.oninput=()=>{ if (key==='gA'||key==='gB') stopAlt(); setVal(key,el.value,true); }; el.onchange=()=>changed(); }
-    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout') renderPanel(); };
+    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout'||key==='gloss') renderPanel(); };
   }
   C.length=0;
 }
@@ -1027,6 +1027,7 @@ function pTemplates(){
     <div class="chip ${S.fxShine?'on':''}" data-k="fxShine">Shine</div>
     <div class="chip ${S.fxShake?'on':''}" data-k="fxShake">Shake</div>
     <div class="chip ${S.fxWiggle?'on':''}" data-k="fxWiggle">Wiggle</div>
+    <div class="chip ${S.gloss&&S.gloss!=='off'?'on':''}" data-k="gloss">3D lesk</div>
   </div>`;
 }
 function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k]; return set; }
@@ -1041,7 +1042,7 @@ binders.templates=()=>{
     setMany({...set, style:c.dataset.k}); renderPanel(); toast('Šablona „'+t.name+'“ '+(scope==='all'?'na všechny titulky':'na tento titulek'));
   };
   $('quickFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; const k=c.dataset.k, S=cur();
-    if (k==='squish') setVal('anim',S.anim==='squish'?'block':'squish'); else setVal(k,!S[k]); renderPanel(); };
+    if (k==='squish') setVal('anim',S.anim==='squish'?'block':'squish'); else if (k==='gloss') setVal('gloss',S.gloss&&S.gloss!=='off'?'off':'gloss'); else setVal(k,!S[k]); renderPanel(); };
 };
 
 // ---------- STYL ----------
@@ -1082,6 +1083,9 @@ function pStyle(){
     ${slider('Velikost (rozmazání)','shadowSize',0,100)}
     ${slider('Průhlednost','shadowA',0,100,1,'%')}
     ${slider('Vzdálenost stínu','shadowDist',0,40)}
+    <div class="clabel">3D lesk (jako z After Effects)</div>
+    ${chips('','gloss',[['off','Vypnuto'],['gloss','Lesklý'],['matte','Matný'],['neon','Neon']])}
+    ${S.gloss&&S.gloss!=='off'?slider('Síla 3D lesku','glossAmt',10,100,1,'%'):''}
     ${slider('3D hloubka písma (extrude)','extrude',0,100)}
     ${chips('Styl 3D hloubky','extrudeStyle',[['light','Světlá'],['dark','Tmavá']])}`;
   } else if (st==='transform'){

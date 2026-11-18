@@ -126,3 +126,7 @@ V nabídce se šablony jmenují jen „Styl N“ podle pořadí: Styl 1 (Base, �
 
 ## 18. 11. – nabídka vs. timeline (telefon)
 Posun obsahu nabídky dolů (> 24 px) → stav ed-exp: menší náhled, timeline se zúží na stopu videa + titulky (84 px), lišta nástrojů se schová, nabídka dostane víc místa. Až po návratu úplně nahoru (posun nahoru na 0) → zpět plná timeline. Pojistka 450 ms proti cukání během animace; jen na telefonu (< 900 px).
+
+## 18. 11. – 3D lesk (After Effects look, podle Instagram předloh)
+`S.gloss` = off | gloss | matte | neon, `S.glossAmt` 10–100 (výchozí 70). Kreslí se do předkresleného slova (wordSprite): tenká tmavá 3D hloubka (když vlastní extrude není), světlá horní hrana + tmavá spodní hrana (vypouklý reliéf), pevný lesk přes horní polovinu s ostrou hranou uprostřed (ne Matný), u Neonu záře v barvě písma. Nehýbe se, platí pro oba řádky, náhled i export.
+Ovládání: Šablony → Rychlé efekty → „3D lesk“ (převede aktuální styl); Styl → Stín → 3D lesk (Lesklý / Matný / Neon) + Síla. Šablony mají gloss:'off' (přepnutí šablony lesk vypne).

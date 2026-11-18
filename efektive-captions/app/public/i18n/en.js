@@ -833,5 +833,12 @@ window.I18N_DICT.en={
 "Pinyon Script (jako Snell, s háčky)": "Pinyon Script (like Snell, full accents)",
 "Metalická (Neulis)": "Metallic (Neulis)",
 "ZAČNĚTE MĚ": "FOLLOW ME",
-"Lerdee": "Lerdee"
+"Lerdee": "Lerdee",
+"3D lesk": "3D gloss",
+"3D lesk (jako z After Effects)": "3D gloss (After Effects look)",
+"Vypnuto": "Off",
+"Lesklý": "Glossy",
+"Matný": "Matte",
+"Neon": "Neon",
+"Síla 3D lesku": "3D gloss strength"
 };

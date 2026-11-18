@@ -81,7 +81,7 @@ E.G = {
   track:-4, gap:66, emScale:160, wordGap:160,
   tilt:18, tiltX:4, persp:60, tiltAlt:true, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
-  fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
+  gloss:'off', glossAmt:70, fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:20, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
@@ -128,7 +128,7 @@ E.FONTS = [
 
 // ================= ŠABLONY =================
 // každý spodní řádek leží VŽDY před řádkem nad ním (natural) – diakritika spodního řádku se nezakryje
-const common = {mix3d:false,mixShine:'hi',mixExtrude:'hi',mixFx:2,mixSpeed:100,mixSeed:1,mixSize:100,mixY:60,mixX:50,mixA:'#ffa21e',mixB:'#f38b00',rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
+const common = {gloss:'off',glossAmt:70,mix3d:false,mixShine:'hi',mixExtrude:'hi',mixFx:2,mixSpeed:100,mixSeed:1,mixSize:100,mixY:60,mixX:50,mixA:'#ffa21e',mixB:'#f38b00',rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0,opacity:100,enterDist:35,enterBy:'word',kinDir:'opposite',tiltX:0,enter:'none',ease:'smooth',fontMain:SF,fontEm:SF,mainItalic:false,negativ:false,glowMode:'always',altOn:false,extrude:0,shadowDist:10,wordGap:100,capMain3:false,caseMain:'none',caseSec:'none',layerOrder:'natural',fxShake:false,anim:'squish',fadeOut:true,
   wpp:4, maxLines:3, split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false, exitScale:null, exitDur:0.3, exitFlick:false, wordLead:0.08, wordFade:0.28};
 E.COMMON = common;
 E.TEMPLATES = {
@@ -431,15 +431,17 @@ const SPR=new Map();
 // dočtené písmo (např. část s háčky) → předkreslená slova zahodit, ať se překreslí správným písmem
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>SPR.clear());
 function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
-  const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,S.extrude||0,S.extrudeStyle||'light',kind==='glow'?S.glow+'|'+glowCol:''].join('~');
+  const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,S.extrude||0,S.extrudeStyle||'light',S.gloss||'off',S.glossAmt??70,kind==='glow'?S.glow+'|'+glowCol:''].join('~');
   let sp=SPR.get(key); if (sp){ SPR.delete(key); SPR.set(key,sp); return sp; }
   const px=L.px, cvs=document.createElement('canvas'), m=cvs.getContext('2d');
   setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center';
   const mt=m.measureText(s), asc=Math.max(mt.actualBoundingBoxAscent||0,px*0.75), desc=Math.max(mt.actualBoundingBoxDescent||0,px*0.45);
   const half=Math.max(measureT(m,s,px,tk)/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+px*0.08;
   const sb=S.shadowSize>0?px*S.shadowSize/100*1.15:0, sx=px*S.shadowDist/100*0.12, sy=px*S.shadowDist/100*0.9;
-  const ex=(S.extrude>0)?px*(S.extrudeStyle==='dark'?0.16:0.12)*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
-  const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy))+ex*1.05, gb*1.6, ex*1.2)+px*0.12);
+  const gl=(S.gloss&&S.gloss!=='off'&&kind!=='glow')?S.gloss:null, gA=(S.glossAmt??70)/100;
+  const exV=S.extrude>0?S.extrude:(gl&&gl!=='neon'?8+14*gA:0), exDark=S.extrude>0?S.extrudeStyle==='dark':!!gl;
+  const ex=(exV>0)?px*(exDark?0.16:0.12)*exV/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
+  const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy))+ex*1.05, gb*1.6, ex*1.2, gl==='neon'?px*0.55:0)+px*0.12);
   const W=Math.ceil(half*2+pad*2), H=Math.ceil(asc+desc+pad*2), cx=W/2, cy=pad+asc;
   cvs.width=W; cvs.height=H;
   setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center'; m.translate(cx,cy);
@@ -459,7 +461,7 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
       setFont(tc,L.fam,L.wt,L.it,px,tk); tc.textBaseline='middle'; tc.textAlign='center'; tc.translate(cx,cy);
       let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[3]); tf.addColorStop(1,p[4]); } }
       tc.fillStyle=tf;
-      const dark = S.extrudeStyle==='dark';
+      const dark = exDark;
       // světlá: jemné kopie s menším posunem do strany; tmavá (jako v Photoshopu): plné kopie po 1 px šikmo vpravo dolů, výrazně tmavší
       const dx=dark?0.75:0.55, dy=1, n=dark?Math.min(48,Math.max(4,Math.round(ex))):Math.min(28,Math.max(3,Math.round(ex/1.1)));
       for (let i=n;i>=1;i--){ const q=i/n; fillT(tc,s,ex*q*dx,ex*q*dy,px,tk); }
@@ -488,6 +490,31 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
     }
     // jemný „kontaktní“ stín těsně pod písmem – rozmazání roste plynule s velikostí stínu (žádný skok, žádný ostrý obrys)
     if (S.shadowSize>0 && !(ex>0)){ const k=Math.min(1,S.shadowSize/100); m.shadowColor=hexA(S.cShadow,Math.min(0.45,S.shadowA/100*0.7)*(0.6+0.4*k)); m.shadowBlur=px*(0.05+0.15*k); m.shadowOffsetX=0; m.shadowOffsetY=px*(0.015+0.02*k); fillT(m,s,0,0,px,tk); }
+    // 3D LESK (jako z After Effects): čelo písmen dostane světlou horní hranu, tmavou spodní hranu (vypouklý reliéf),
+    // pevný lesk přes horní polovinu (nehýbe se) a u Neonu záři v barvě písma. Kreslí se jen přes písmena, do mezipaměti.
+    if (gl){
+      const mk=ctx=>{ setFont(ctx,L.fam,L.wt,L.it,px,tk); ctx.textBaseline='middle'; ctx.textAlign='center'; };
+      const fcv=document.createElement('canvas'); fcv.width=W; fcv.height=H; const fc=fcv.getContext('2d'); mk(fc);
+      let ff=fill; if (typeof fill!=='string'){ const p=fd.split('|'); fc.translate(cx,cy);
+        if (p[0]==='t'){ ff=fc.createLinearGradient(0,-px*0.36,0,px*0.36); ff.addColorStop(0,p[1]); ff.addColorStop(1,p[2]); }
+        else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; ff=dir==='h'?fc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?fc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):fc.createLinearGradient(0,-px*gsp,0,px*gsp); ff.addColorStop(0,p[3]); ff.addColorStop(1,p[4]); }
+        fc.setTransform(1,0,0,1,0,0); }
+      fc.translate(cx,cy); fc.fillStyle=ff; fillT(fc,s,0,0,px,tk); fc.setTransform(1,0,0,1,0,0);
+      const ta=mt.actualBoundingBoxAscent||px*0.36, td=mt.actualBoundingBoxDescent||px*0.36;
+      const band=(col,dy,bl,al)=>{ const e=document.createElement('canvas'); e.width=W; e.height=H; const ec=e.getContext('2d'); mk(ec); ec.fillStyle=col; fillT(ec,s,cx,cy,px,tk);
+        ec.globalCompositeOperation='destination-out'; fillT(ec,s,cx,cy+dy,px,tk);
+        fc.save(); fc.globalCompositeOperation='source-atop'; fc.globalAlpha=Math.min(1,al); if (bl>0.4) fc.filter=`blur(${bl.toFixed(1)}px)`; fc.drawImage(e,0,0); fc.restore(); };
+      const d=Math.max(1,px*0.05);
+      band('#ffffff', d, px*0.018, 0.8*gA);            // světlá horní hrana
+      band('#000000', -d*1.1, px*0.022, 0.6*gA);        // tmavá spodní hrana
+      if (gl!=='matte'){                                // pevný lesk: horní polovina světlejší, ostrá hrana lesku uprostřed
+        const y0=cy-ta, y1=cy+td, g=fc.createLinearGradient(0,y0,0,y1);
+        g.addColorStop(0,`rgba(255,255,255,${0.55*gA})`); g.addColorStop(0.46,`rgba(255,255,255,${0.16*gA})`); g.addColorStop(0.5,'rgba(255,255,255,0)'); g.addColorStop(1,`rgba(0,0,0,${0.22*gA})`);
+        fc.save(); fc.globalCompositeOperation='source-atop'; fc.fillStyle=g; fc.fillRect(0,0,W,H); fc.restore(); }
+      m.save(); m.setTransform(1,0,0,1,0,0); m.shadowColor='transparent';
+      if (gl==='neon'){ const p=fd.split('|'), nc=p[0]==='g'?p[3]:(p[1]||'#ffffff'); m.shadowColor=hexA(/^#[0-9a-f]{6}$/i.test(nc)?nc:'#ffffff',0.9); m.shadowBlur=px*0.32*(0.5+gA); m.drawImage(fcv,0,0); m.shadowBlur=px*0.12; }
+      m.drawImage(fcv,0,0); m.restore();
+    }
   }
   sp={cv:cvs,x:-cx,y:-cy};
   SPR.set(key,sp); if (SPR.size>64){ SPR.delete(SPR.keys().next().value); }
