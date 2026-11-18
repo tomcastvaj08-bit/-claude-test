@@ -46,7 +46,22 @@ function headFor(p, W, H) {
   for (let j = 0; j < sg.t.length; j++) if (sg.t[j] >= t1 - 0.04 && sg.t[j] <= t2 + 0.04) use(j);
   if (!n) { let i = 0, bd = 1e9; sg.t.forEach((t, j) => { const d = Math.abs(t - t1); if (d < bd) { bd = d; i = j; } }); use(i); }
   tops.sort((a, b) => a - b);
-  return { top, topMed: tops[tops.length >> 1], brow, chin, fw, cx: cx / n };
+  // referenční snímek = hlava ve středu titulku; titulek se pak drží vůči hlavě (jede s ní)
+  const tm = (Math.max(t1, sg.t[0]) + Math.min(t2, sg.t[sg.t.length - 1])) / 2; let ri = 0, bd = 1e9; sg.t.forEach((t, j) => { const d = Math.abs(t - tm); if (d < bd) { bd = d; ri = j; } });
+  const hp = headAt(sg, sg.t[ri]);
+  // vůči středu hlavy po celou dobu titulku (hlava se může zvětšit – člověk jde blíž): nejvyšší obočí, nejnižší brada, vršek vlasů (medián)
+  let relBrow = 1e9, relChin = -1e9; const relTop = [];
+  for (let j = 0; j < sg.t.length; j++) if (sg.t[j] >= t1 - 0.04 && sg.t[j] <= t2 + 0.04) { relBrow = Math.min(relBrow, -0.42 * sg.f[j]); relChin = Math.max(relChin, 0.8 * sg.f[j]); relTop.push(sg.top[j] - sg.y[j]); }
+  if (!relTop.length) { relBrow = -0.42 * sg.f[ri]; relChin = 0.8 * sg.f[ri]; relTop.push(sg.top[ri] - sg.y[ri]); }
+  relTop.sort((a, b) => a - b);
+  return { top, topMed: tops[tops.length >> 1], brow, chin, fw, cx: cx / n, sg, rx: hp[0], ry: hp[1], rTop: hp[1] + relTop[relTop.length >> 1], rBrow: hp[1] + relBrow, rChin: hp[1] + relChin, rFw: fw };
+}
+// poloha hlavy v čase ts (vyhlazená přes ~0,2 s – plynule, bez chvění), mimo úsek drží krajní polohu
+function headAt(sg, ts) {
+  const T = sg.t; let sx = 0, sy = 0, sw = 0;
+  const tc = Math.max(T[0], Math.min(T[T.length - 1], ts));
+  for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.07; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sw += w; }
+  return sw ? [sx / sw, sy / sw] : [sg.x[0], sg.y[0]];
 }
 
 // ---------- rozměry titulku při velikosti 1 ----------
@@ -77,7 +92,7 @@ function build(W, H) {
     if (role === 'top') {
       for (const k2 of ks) {
         let c;   // střed spodního řádku: spodek písmen za vlasy, nikdy pod obočí
-        if (hd) c = Math.min(hd.topMed + 0.12 * M.lbPx * k2, hd.brow - 0.4 * M.lbPx * k2);
+        if (hd) c = Math.min(hd.rTop + 0.12 * M.lbPx * k2, hd.rBrow - 0.4 * M.lbPx * k2);
         else c = H * 0.05 - M.tb * k2 + M.lbOff * k2;
         const yy = c - M.lbOff * k2;
         if (yy + M.tb * k2 >= H * 0.012) { y = yy; kk = k2; break; }
@@ -85,27 +100,32 @@ function build(W, H) {
       if (y == null) role = 'chest'; else lastTop = { e: p.e, bot: y + M.bb * kk };
     }
     if (role === 'chest') {
-      let yTop = hd ? hd.chin + 0.5 * hd.fw : H * 0.58;
+      let yTop = hd ? hd.rChin + 0.5 * hd.rFw : H * 0.58;
       if (lastTop && p.s < lastTop.e) yTop = Math.max(yTop, lastTop.bot + H * 0.012);   // nikdy přes horní titulek
       for (const k2 of ks) { const yy = yTop - M.tb * k2; if (yy + M.bb * k2 <= H * 0.97) { y = yy; kk = k2; break; } }
       if (y == null) { kk = 0.5; y = H * 0.97 - M.bb * kk; }
     }
     // vodorovně na hlavu (dvojice se střídavě lehce posunou do stran), celý titulek vždy v obraze
     const pair = Math.floor(k / 2), jig = [0, -4, 3, -2, 5, -3][(pair + seed) % 6] / 100 * W, half = M.w * kk / 2;
-    const x = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, (hd ? hd.cx : W / 2) + jig));
+    const x = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, (hd ? hd.rx : W / 2) + jig));
     const col = RE.COLORS[mix[(k + seed) % mix.length]];
-    out.set(p, { x: x / W * 100, y: y / H * 100, k: kk, col });
+    out.set(p, { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half });
   });
   return out;
 }
 // styl titulku v Real estate stylu (volá E.styleAt)
-RE.apply = (p, S) => {
+RE.apply = (p, S, t) => {
   if (!RE.on() || !p) return S;
   const W = E._cvW(), H = E._cvH(), k0 = key(W, H);
   if (!plan || planKey !== k0) { plan = build(W, H); planKey = k0; }
   const o = plan.get(p); if (!o) return S;
   const m = E.meta[E.keyOf(p)];
-  if (!(m && m.own && m.own.reMoved)) { S.posX = o.x; S.posY = o.y; }   // titulek posunutý prstem zůstane, kde je
+  if (!(m && m.own && m.own.reMoved)) {   // titulek posunutý prstem zůstane, kde je
+    let x = o.x / 100 * W, y = o.y / 100 * H;
+    // zamčeno na video: titulek jede s hlavou (velikost se nemění), vždy celý v obraze
+    if (o.hd && t != null) { const hp = headAt(o.hd.sg, E.out2src(t)); x += hp[0] - o.hd.rx; y += hp[1] - o.hd.ry;
+      x = Math.max(o.half + W * 0.02, Math.min(W * 0.98 - o.half, x)); y = Math.max(H * 0.01 - o.tb, Math.min(H * 0.99 - o.bb, y)); }
+    S.posX = x / W * 100; S.posY = y / H * 100; }
   S.size *= o.k;
   if (o.col) { S.grad = true; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }
   return S;

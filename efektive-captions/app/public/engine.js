@@ -1054,7 +1054,7 @@ E.trkOffset=(id,t,px,py)=>{
 };
 // styl titulku v čase t (se sledováním objektu)
 E.styleAt=(p,t)=>{ let S=E.styleOf(p); const m=p&&E.meta[E.keyOf(p)];
-  if (window.RE && E.G.reMode) S=RE.apply(p,S);   // Real estate styl: poloha, velikost a barva podle hlavy
+  if (window.RE && E.G.reMode) S=RE.apply(p,S,t);   // Real estate styl: poloha, velikost a barva podle hlavy
   if (m && m.trk && E.tracks[m.trk]){ const o=E.trkOffset(m.trk,t,S.posX,S.posY); if (o){ S.posX+=o.dx; S.posY+=o.dy; if (E.tracks[m.trk].scale) S.size*=o.k; } }
   return S; };
 E._cvW=()=>cv.width; E._cvH=()=>cv.height;
