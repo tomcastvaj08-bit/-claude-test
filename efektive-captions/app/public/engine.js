@@ -1128,11 +1128,11 @@ E.applyFacePositions = () => {
 // vygeneruje zvuk do libovolného AudioContextu (živě i do offline exportu)
 E.trCustom = {};   // vlastní zvuky přechodů: typ přechodu → {buf (AudioBuffer), peak (s – nejsilnější místo)}
 E.bank = {};       // zvuková sada appky (public/sfx): jméno → {buf, peak}
-E.BANK_WORD = { mtick:['tick',0.2], mswoosh:['swoosh',0.25] };   // mini zvuky na slova (velmi tiché)
+E.BANK_WORD = { mtick:['tick',0.2], mswoosh:['wooshm',0.3] };   // mini zvuky na slova (velmi tiché)
 // výchozí zvuky podle typu zvuku v předlohách (tunel: klesající svist, propad: krátký nádech, průlet: svist, záblesk: cvak)
-E.BANK_TR = { warp:'swoosh', tunnel:'push', flysway:'swing', push1:'pushr', pushsway:'pushr', push:'pushr', pushb:'pushr', pushr:'pushr', swing:'swing', swingn:'swing', flashw:'click', flash2:'glitch' };
+E.BANK_TR = { warp:'wooshh', tunnel:'wooshh', flysway:'wooshh', push1:'woosh', pushsway:'woosh', push:'woosh', pushb:'woosh', pushr:'wooshk', swing:'woosh', swingn:'woosh', flashw:'click', flash2:'glitch' };   // pohybové přechody = čistý woosh
 // zvuky, ze kterých si jde u přechodu vybrat (výchozí = podle typu přechodu)
-E.TRSND = [['auto','Výchozí'],['swoosh','Mini swoosh'],['swing','Svist'],['push','Klesavý svist'],['pushr','Krátký nádech'],['tunnel','Stoupavý svist'],['warp','Nádech + rána'],['glitch','Mini glitch'],['glitch2','Glitch'],['click','Cvak'],['none','Bez zvuku']];   // jen swooshe a glitche (cinkavé zvuky pryč)
+E.TRSND = [['auto','Výchozí'],['woosh','Woosh'],['wooshk','Woosh krátký'],['wooshh','Woosh hluboký'],['wooshm','Woosh mini'],['swing','Svist'],['push','Klesavý svist'],['tunnel','Stoupavý svist'],['warp','Nádech + rána'],['glitch','Mini glitch'],['glitch2','Glitch'],['click','Cvak'],['none','Bez zvuku']];   // jen swooshe a glitche (cinkavé zvuky pryč)
 E.sfxInto = (ac, dest, t0, type, vol, dur, buf) => {
   if (!type || type==='none') return;
   const g=ac.createGain(); g.connect(dest);
@@ -1232,10 +1232,10 @@ E.sfxEvents = () => {
     for (const o of E.objs||[]){ if (!o.shine || o.shSfx===false) continue; if (window.OBJ && OBJ.shineWin) OBJ.shineWin(o); if (o.shS!=null) at(o.shS+0.05); }
   }
   // 3D mix: jemný mini swoosh při každém slově (slovo se objeví 0,08 s před svým časem – i posuny)
-  const sw=E.bank.swoosh, mv=(G.moveSfxVol??30)/100;
+  const sw=E.bank.wooshm, mv=(G.moveSfxVol??30)/100;
   if (sw && G.mix3d && E.mixPlan && G.sfxMoveOn!==false && mv>0){ let plan=null; try{ plan=E.mixPlan(); }catch(e){}
     if (plan) for (const L of plan.lines) for (const i of L.ids){ const w=E.words[i]; if (w) ev.push({t:w.s-0.08-sw.peak, type:'custom', buf:sw.buf, vol:mv, kind:'move'}); } }
-  if (G.sfxTrOn!==false) for (const m of E.fxMarks||[]){ if (m.sfx===false) continue; const b=E.bank.swing; if (b) ev.push({t:m.t+0.02-b.peak, type:'custom', buf:b.buf, vol:(G.trSfxVol??30)/100*((m.vol??100)/100), kind:'fxmark'}); }
+  if (G.sfxTrOn!==false) for (const m of E.fxMarks||[]){ if (m.sfx===false) continue; const b=E.bank.woosh; if (b) ev.push({t:m.t+0.02-b.peak, type:'custom', buf:b.buf, vol:(G.trSfxVol??30)/100*((m.vol??100)/100), kind:'fxmark'}); }
   if (G.sfxTrOn!==false && E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
     if (tv>0) for (let k=1;k<L.length;k++){ const c=L[k], tr=c.tr||'none'; if (tr==='none' || c.trSfx===false) continue;
       const pick=c.trSnd&&c.trSnd!=='auto'?c.trSnd:null; if (pick==='none') continue;
