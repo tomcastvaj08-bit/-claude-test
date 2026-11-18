@@ -60,3 +60,11 @@ Soubory `app/public/sfx/*.m4a` (špička −1 dB, AAC 128k). Nejsilnější mís
 ## Efekty v místě (bez střihu) – 18. 11. 2026
 `E.fxMarks = [{id, t, type:'shake', dur, amt, sfx}]` – tlačítko **Shake** na liště dá efekt na místo hlavy, značka na stopě videa.
 - **Houpavý shake** (`shake`, 1,2 s) PODLE PŘEDLOHY 18. 11. – proloženo: kopanec šikmo dolů-doleva (A = 0,212, ζ = 0,48, T = 1,02 s, vodorovně 0,46 × svisle; 1. vrchol ~9,5 % výšky za 0,18 s). Zoom roste s obálkou houpání → nikdy okraje. Síla 30–160 %, délka 0,5–2,5 s, zvuk = zvuk zahoupání.
+
+## Úpravy zvuků 18. 11. odpoledne
+- Všechny zvuky sady srovnané na stejnou vnímanou hlasitost (aktivní RMS −20 dBFS, špička max −1 dB); nové: `camera` (č. 29, spoušť foťáku), `snap` (č. 22, lusknutí), `glitch` (č. 17, mini glitch), `glitch2` (č. 26).
+- Výchozí hlasitosti: přechody 30 %, shine 20 %, posuny 3D mixu 30 % (staré uložené 80/45 → 30, shine 50 → 20). Špičky přechodů ~10 dB pod hlasem.
+- 3D mix: shine zvuk při KAŽDÉM slově (0,06 s před časem slova), mini swoosh při každém posunu (nový řádek / nová scéna).
+- Blesk = spoušť foťáku, 2× negativ = mini glitch (výchozí); u každého přechodu výběr zvuku (`clip.trSnd`) a vlastní hlasitost (`clip.trVol`).
+- Zvuky se plánují 0,2 s dopředu na přesný čas a odečítá se zpoždění zvukového výstupu (žádné opoždění); přehrávání se střihem srovnává obraz se slyšeným zvukem.
+- Fialová mrtvá místa mají vlastní řádek pod stopou videa (nepřekážejí okrajům klipů).
