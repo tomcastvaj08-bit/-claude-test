@@ -18,10 +18,22 @@ uniform vec2 WV;                          // svislá vlna (zahoupání): střed 
 uniform float expo, cool;                 // přeexpozice (blesk), studený nádech
 uniform float taps;                       // počet vzorků závěrky (1 = bez rozmazání)
 uniform float dbg;                        // 1 = test: vzorek mimo obraz obarví fialově
+uniform float rold, rcy;                  // rold = 1: původní plátno ze 16. 11. (normalizace výškou, střed rcy, prostá iterace)
 varying vec2 v;
 vec2 mirror(vec2 u){ return 1.0-abs(1.0-mod(u,2.0)); }
 // PRUŽNÉ PLÁTNO v elipse přes celou obrazovku (okraj elipsy = okraje obrazovky): zdrojový bod k bodu obrazovky
+vec2 rubOld(vec2 q, float a, float b){
+  if (abs(a-1.0)<1e-4 && abs(b)<1e-4) return q;
+  float h=0.5*res.y;
+  vec2 pc=vec2(q.x*res.x-0.5*res.x, (1.0-q.y)*res.y-rcy*res.y)/h;
+  float rq=length(pc); if (rq<1e-5) return q;
+  float rp=rq/a;
+  for (int i=0;i<6;i++){ rp=rq/max(0.05,a+b*rp*rp); }
+  vec2 pp=pc*(rp/rq);
+  return vec2((pp.x*h+0.5*res.x)/res.x, 1.0-(pp.y*h+rcy*res.y)/res.y);
+}
 vec2 rub(vec2 q, float a, float b){
+  if (rold>0.5) return rubOld(q,a,b);
   if (abs(a-1.0)<1e-5 && abs(b)<1e-5) return q;
   vec2 pc=(q-0.5)*2.0; float rq=length(pc); if (rq<1e-6) return q;
   float rp;
@@ -81,7 +93,7 @@ function init() {
     gl.useProgram(prog);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['tex', 'res', 'A', 'B', 'K', 'RA', 'RB', 'WV', 'expo', 'cool', 'taps', 'dbg']) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['tex', 'res', 'A', 'B', 'K', 'RA', 'RB', 'WV', 'expo', 'cool', 'taps', 'dbg', 'rold', 'rcy']) U[n] = gl.getUniformLocation(prog, n);
     tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -190,6 +202,42 @@ const CURVES = {
 };
 // varianty: stejný pohyb, jiná závěrka (s rozmazáním / bez)
 CURVES.pushb = CURVES.push;     // propad plátna + motion blur
+// PROPAD PLÁTNA 1 – PŘESNĚ verze ze 16. 11. (změřená z první předlohy): [čas (s) při 0,5 s, u, b], původní okrajové chování
+const RUB_PRE = [[-0.3, 0.0, 0.0], [-0.25, 0.0, 0.0], [-0.217, 0.0045, 0.0095], [-0.183, 0.018, 0.0378], [-0.15, 0.0525, 0.1103], [-0.117, 0.105, 0.2205], [-0.083, 0.18, 0.378], [-0.05, 0.2325, 0.4883], [-0.017, 0.285, 0.5985], [0, 0.36, 0.756]];
+const RUB_POST = [[0, 0.375, 0.7875], [0.017, 0.225, 0.4725], [0.033, 0.09, 0.189], [0.05, 0.045, 0.0945], [0.083, 0.015, 0.0315], [0.117, 0.0045, 0.0095], [0.15, 0.0, 0.0], [0.3, 0.0, 0.0]];
+function interpOld(K, t, j) {
+  if (t <= K[0][0] || t >= K[K.length - 1][0]) return 0;
+  let i = 0; while (i < K.length - 2 && t > K[i + 1][0]) i++;
+  const p1 = K[i], p2 = K[i + 1], p0 = K[Math.max(0, i - 1)], p3 = K[Math.min(K.length - 1, i + 2)], u = (t - p1[0]) / (p2[0] - p1[0]);
+  const a = p0[j], b = p1[j], c = p2[j], d = p3[j];
+  return 0.5 * ((2 * b) + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
+}
+CURVES.push1 = (d, D) => { const t = d * 0.5 / Math.max(0.05, D), K = t < 0 ? RUB_PRE : RUB_POST; return S({ ra: 1 - interpOld(K, t, 1), rb: interpOld(K, t, 2), rcy: 0.45, rold: 1 }); };
+// HOUPÁNÍ podle předlohy 18. 11. (průlet do místnosti) – proložené po snímcích (chyba 0,5 %): celý obraz se po střihu
+// zhoupne dolů a pak se pravidelně houpe (první vrchol 7,8 % výšky za 0,30 s, perioda 1,34 s, tlumení 0,15). Zoom ho drží bez okrajů.
+const SWAY = { A: 0.097, z: 0.15, T: 1.34, t0: 0, end: 2.4, fadeLen: 0.5 };
+function sway(t, P) {
+  const p = P || SWAY; if (t <= p.t0 || t >= p.end) return { y: 0, x: 0, zm: 1 };
+  const tau = t - p.t0, wd = 2 * Math.PI / p.T, wn = wd / Math.sqrt(1 - p.z * p.z), env = p.A * Math.exp(-p.z * wn * tau);
+  const fl = p.fadeLen || 0.35, f = 1 - cl((t - (p.end - fl)) / fl), fade = f * f * (3 - 2 * f), y = -env * Math.sin(wd * tau) * fade;
+  const rise = Math.min(1, tau / 0.06), zm = 1 + 2.4 * env * rise * fade;   // zoom vždy o kousek větší než výchylka → žádné okraje
+  return { y, x: (p.xr || 0) * y, zm };
+}
+// PRŮLET + DOHOUPÁNÍ (2,4 s): zrychlující najetí dovnitř (snímky 3–7 předlohy), nový záběr vyletí stlačený a rozvine se
+// (střed 57 % → 100 % za 0,3 s) a celý obraz se dohoupe.
+const FS_PRE = [[-0.2, 0], [-0.167, 0.019], [-0.133, 0.052], [-0.1, 0.116], [-0.067, 0.236], [-0.033, 0.426], [0, 0.65]];
+const FS_U = [[0, 0.43], [0.033, 0.25], [0.067, 0.17], [0.1, 0.11], [0.133, 0.07], [0.167, 0.045], [0.2, 0.03], [0.233, 0.015], [0.267, 0.005], [0.3, 0], [0.35, 0]];
+CURVES.flysway = (d, D) => { const t = d * 2.4 / Math.max(0.1, D);
+  if (t < 0) return S({ z: Math.exp(Math.max(0, mono(FS_PRE, t))) });
+  const u = Math.max(0, mono(FS_U, t)), w = sway(t); return S({ ra: 1 - u, rb: u, y: w.y, z: w.zm }); };
+// PROPAD PLÁTNA 3 (2,4 s): natažení plátna jako Propad plátna 2 + po puštění dohoupání z předlohy
+CURVES.pushsway = (d, D) => { const t = d * 2.4 / Math.max(0.1, D), U0 = 0.45; let u;
+  if (t < 0) { const q = cl((t + 0.45) / 0.45); u = U0 * (q < 0.5 ? 2 * q * q : 1 - 2 * (1 - q) * (1 - q)); return S({ ra: 1 - u, rb: u }); }
+  u = t > 0.6 ? 0 : spring(U0, t, 0.4, 0.222); const w = sway(t); return S({ ra: 1 - u, rb: u >= 0 ? u : u / 2, y: w.y, z: w.zm }); };
+// HOUPAVÝ SHAKE (efekt kamkoli do videa, 1,2 s) podle předlohy 18. 11. – proložené po snímcích (chyba 0,13 %): kopanec šikmo
+// dolů-doleva (vrchol 9,5 % výšky, vodorovně 46 % z toho, za 0,18 s), návrat a slabé dokývnutí (perioda 1,02 s, tlumení 0,48)
+const SHAKE = { A: 0.212, z: 0.48, T: 1.02, t0: 0, end: 1.2, xr: 0.46 };
+CURVES.shake = (d, D, o) => { const t = d * 1.2 / Math.max(0.1, D); if (t <= 0) return S({}); const k = (o && o.amt) || 1, w = sway(t, { ...SHAKE, A: SHAKE.A * k }); return S({ y: w.y, x: w.x, z: w.zm }); };
 // PROPAD PLÁTNA – RYCHLÝ (0,4 s, podle předlohy 18. 11. – kuchyň): plátno se 0,2 s zrychleně propadá dozadu (střed na 64 %),
 // okraje se ohnou; nový záběr začne propadlý (81 %) a za ~5 snímků se bez pružení narovná. S rozmazáním.
 const PR_PRE = [[-0.233, 0], [-0.2, 0.006], [-0.167, 0.021], [-0.133, 0.052], [-0.1, 0.103], [-0.067, 0.177], [-0.033, 0.296], [0, 0.36]];
@@ -203,17 +251,18 @@ FX.has = type => !!CURVES[type];
 FX.debug = false;   // test: vzorky mimo obraz fialově
 
 // závěrka (s): délka rozmazání pohybu; 0 = ostrý obraz
-const SHUT = { warp: 0.045, tunnel: 0.035, push: 0, pushb: 0.035, pushr: 0.035, swing: 0.03, swingn: 0, flashw: 0.015 };
+const SHUT = { warp: 0.045, tunnel: 0.035, push: 0, pushb: 0.035, pushr: 0.035, push1: 0.06, flysway: 0.035, pushsway: 0, shake: 0.03, swing: 0.03, swingn: 0, flashw: 0.015 };
 FX.SHUT = SHUT;
 const SHUT_POST = { tunnel: 0.06 };
-const same = (a, b) => ['z', 'r', 'x', 'y', 'k', 'ra', 'rb', 'wv'].every(n => Math.abs(a[n] - b[n]) < 1e-6);
+const same = (a, b) => ['z', 'r', 'x', 'y', 'k', 'ra', 'rb', 'wv'].every(n => Math.abs(a[n] - b[n]) < 1e-6) && !a.rold;
 const idle = s => Math.abs(s.z - 1) < 1e-4 && Math.abs(s.r) < 1e-5 && Math.abs(s.x) < 1e-5 && Math.abs(s.y) < 1e-5 && Math.abs(s.k) < 1e-4 && s.e < 1e-4 && Math.abs(s.ra - 1) < 1e-5 && Math.abs(s.rb) < 1e-5 && Math.abs(s.wv) < 1e-5;
 // vykreslí efekt: zdroj = plátno s videem, výsledek se nakreslí zpátky do c
 FX.apply = (c, W, H, type, d, D, o) => {
   // závěrka vystředěná kolem snímku, ale nikdy přes střih (stav před a po střihu se nemíchá)
   const sh = SHUT[type] ?? 0.03, shp = SHUT_POST[type];
   let ta = d < 0 ? d - sh / 2 : Math.max(0, d - sh / 2), tb = d < 0 ? Math.min(d + sh / 2, -1e-6) : d + sh / 2;
-  if (d >= 0 && shp) { ta = d; tb = d + shp; }   // po střihu delší rozmazání dopředu (tunel: nový záběr vyletí rozmazaný)
+  if (d >= 0 && shp) { ta = d; tb = d + shp; }
+  if (type === 'push1') { ta = d; tb = d + sh; }   // původní chování ze 16. 11. (závěrka dopředu, i přes střih)   // po střihu delší rozmazání dopředu (tunel: nový záběr vyletí rozmazaný)
   const B = FX.state(type, tb, D, o), A = sh > 0 ? FX.state(type, ta, D, o) : B;
   if (!B) return false;
   if (idle(A) && idle(B)) return false;
@@ -228,7 +277,7 @@ FX.apply = (c, W, H, type, d, D, o) => {
   gl.uniform4f(U.A, A.z, A.r, A.x, A.y); gl.uniform4f(U.B, Bz.z, B.r, B.x, B.y);
   gl.uniform2f(U.K, A.k, B.k); gl.uniform2f(U.RA, A.ra, B.ra); gl.uniform2f(U.RB, A.rb, B.rb); gl.uniform2f(U.WV, A.wv, B.wv);
   gl.uniform1f(U.expo, B.e); gl.uniform1f(U.cool, B.cool);
-  gl.uniform1f(U.taps, same(A, Bz) ? 1 : 24); gl.uniform1f(U.dbg, FX.debug ? 1 : 0);
+  gl.uniform1f(U.taps, same(A, Bz) ? 1 : 24); gl.uniform1f(U.dbg, FX.debug ? 1 : 0); gl.uniform1f(U.rold, B.rold ? 1 : 0); gl.uniform1f(U.rcy, B.rcy ?? 0.45);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'copy'; c.drawImage(glc, 0, 0, W, H); c.restore();
   return true;

@@ -879,10 +879,17 @@ E.drawCover=(c,src,sw,sh,W,H)=>{ if (!src || !sw || !sh) return; const k=Math.ma
 E.clipStarts=()=>{ const L=E.clipList(); const r=[]; let o=0; for (const c of L){ r.push(o); o+=E.clipDur(c); } return r; };
 E.clipAt=t=>{ const L=E.clipList(), st=E.clipStarts(); let k=0; for (let i=0;i<L.length;i++) if (t>=st[i]) k=i; return k; };
 // přechody: 2× negativní záblesk kolem střihu
-E.TRANSITIONS=[['none','Žádný'],['warp','Warp tunel (vcucnutí + vyplivnutí)'],['tunnel','Tunel (dlouhé vcucnutí)'],['push','Propad plátna'],['pushb','Propad plátna + motion blur'],['pushr','Propad plátna – rychlý (bez pružení)'],['swing','Zahoupání + motion blur'],['swingn','Zahoupání bez bluru'],['flashw','Blesk (bílý záblesk)'],['flash2','2× negativní záblesk']];
-E.TRDEF={warp:0.8,tunnel:0.8,push:0.8,pushb:0.8,pushr:0.4,swing:1.25,swingn:1.25,flashw:0.5,flash2:0.12};   // výchozí délka přechodu (s)
+E.TRANSITIONS=[['none','Žádný'],['warp','Warp tunel (vcucnutí + vyplivnutí)'],['tunnel','Tunel (dlouhé vcucnutí)'],['flysway','Průlet + dohoupání'],['push1','Propad plátna 1'],['push','Propad plátna 2'],['pushb','Propad plátna 2 + motion blur'],['pushsway','Propad plátna 3 (s dohoupáním)'],['pushr','Propad plátna – rychlý (bez pružení)'],['swing','Zahoupání + motion blur'],['swingn','Zahoupání bez bluru'],['flashw','Blesk (bílý záblesk)'],['flash2','2× negativní záblesk']];
+E.TRDEF={warp:0.8,tunnel:0.8,flysway:2.4,push1:0.5,push:0.8,pushb:0.8,pushsway:2.4,pushr:0.4,swing:1.25,swingn:1.25,flashw:0.5,flash2:0.12};   // výchozí délka přechodu (s)
 E.TRDIR=new Set();                                         // přechody se směrem (zatím žádný)
 E.TROLD={fly:'warp', whip:'none'};                         // zrušené přechody ve starých projektech
+// EFEKTY V MÍSTĚ (bez střihu): E.fxMarks=[{id, t, type:'shake', dur, amt (%), sfx:false?}] – např. houpavý shake uprostřed záběru
+E.fxMarks=[];
+E.FXMARK=[['shake','Houpavý shake']];
+E.drawFxMarks=(c,W,H,t)=>{
+  if (!window.FX) return;
+  for (const m of E.fxMarks||[]){ const D=m.dur||1.2, d=t-m.t; if (d<=0 || d>D+0.05) continue; FX.apply(c,W,H,m.type,d,D,{amt:(m.amt??100)/100}); }
+};
 E.drawTransition=(c,W,H,t)=>{
   const L=E.clipList(); if (L.length<2) return;
   const st=E.clipStarts();
@@ -1012,6 +1019,7 @@ E.render = (t, opts={}) => {
   for (const o of E.overlays) if (o.full) E.drawOverlay(ctx,o,t);   // překrytí celého videa = nový základ (pod přechody i titulky)
   if (!F.transparent && E.G.grade && E.G.grade!=='none' && window.FX) FX.grade(ctx,cv.width,cv.height,E.G.grade,(E.G.gradeI??70)/100);   // barvy (filtr) jen na video
   if (!F.transparent) E.drawTransition(ctx,cv.width,cv.height,t);
+  if (!F.transparent) E.drawFxMarks(ctx,cv.width,cv.height,t);
   if (window.OBJ && E.objs && E.objs.length && !F.transparent) OBJ.draw(ctx,cv.width,cv.height,t);   // zvýrazněné objekty (shine, obrys, výplň)
   // overlaye pod titulky
   for (const o of E.ovOrder()) if (!E.ovAbove(o)) E.drawOverlay(ctx,o,t);
@@ -1121,7 +1129,7 @@ E.applyFacePositions = () => {
 E.trCustom = {};   // vlastní zvuky přechodů: typ přechodu → {buf (AudioBuffer), peak (s – nejsilnější místo)}
 E.bank = {};       // zvuková sada appky (public/sfx): jméno → {buf, peak}
 E.BANK_WORD = { mtick:['tick',0.22], mswoosh:['swoosh',0.25] };   // mini zvuky na slova (velmi tiché)
-E.BANK_TR = { warp:'warp', tunnel:'tunnel', push:'push', pushb:'push', pushr:'pushr', swing:'swing', swingn:'swing', flashw:'flash', flash2:'flash2' };
+E.BANK_TR = { warp:'warp', tunnel:'tunnel', flysway:'warp', push1:'push', pushsway:'push', push:'push', pushb:'push', pushr:'pushr', swing:'swing', swingn:'swing', flashw:'flash', flash2:'flash2' };
 E.sfxInto = (ac, dest, t0, type, vol, dur, buf) => {
   if (!type || type==='none') return;
   const g=ac.createGain(); g.connect(dest);
@@ -1222,6 +1230,7 @@ E.sfxEvents = () => {
       const by=S.enterBy || (S.wordByWord ? 'word' : 'page'); at((by==='page'?p.s:E.words[g.ids[0]].s)+0.06); });
     for (const o of E.objs||[]){ if (!o.shine || o.shSfx===false) continue; if (window.OBJ && OBJ.shineWin) OBJ.shineWin(o); if (o.shS!=null) at(o.shS+0.05); }
   }
+  if (G.sfxTrOn!==false) for (const m of E.fxMarks||[]){ if (m.sfx===false) continue; const b=E.bank.swing; if (b) ev.push({t:m.t+0.02-b.peak, type:'custom', buf:b.buf, vol:(G.trSfxVol??45)/100, kind:'fxmark'}); }
   if (G.sfxTrOn!==false && E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
     if (tv>0) for (let k=1;k<L.length;k++){ const c=L[k], tr=c.tr||'none'; if (tr==='none' || c.trSfx===false) continue;
       const cu=E.trCustom[tr] || E.bank[E.BANK_TR[tr]];   // vlastní zvuk, jinak zvuk ze sady appky

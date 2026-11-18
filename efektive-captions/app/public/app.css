@@ -493,3 +493,8 @@ button.pro.on{background:var(--green)}
 .dz.cur{top:0;height:30px;background:rgba(168,85,247,.42);outline:2px solid #a855f7;border-radius:3px}
 .dzx{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#7e22ce;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .dzx .ic{width:15px;height:15px;stroke:#fff}
+
+/* efekt v místě (houpavý shake) na stopě videa */
+.vfx{position:absolute;top:2px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:linear-gradient(135deg,#ffb020,#ff6a00);display:flex;align-items:center;justify-content:center;z-index:6;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.vfx .ic{width:12px;height:12px;stroke:#fff}
+.vfx.cur{outline:2px solid #fff}

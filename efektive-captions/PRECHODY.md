@@ -6,7 +6,10 @@ Tyto přechody klient schválil. **Neměnit** jejich průběh – nový nápad p
 |---|---|---|---|---|
 | Warp tunel (vcucnutí + vyplivnutí) | `warp` | 0,8 s | pružné plátno + zrychlený zoom, monotónní křivky | 0,045 s |
 | Tunel (dlouhé vcucnutí) | `tunnel` | 0,8 s | PODLE PŘEDLOHY 18. 11.: 0,4 s zrychlující zoom, náklon do 10°, širokoúhlé zakřivení, natažení plátna; nový záběr jako přes rybí oko (u = 0,42), narovná se za ~7 snímků | 0,035 s (po střihu 0,06 s dopředu) |
-| Propad plátna | `push` | 0,8 s | elastické plátno: natažení dozadu U0 = 0,45 (0,45 s), pružina ζ = 0,4, T = 0,222 s | žádné |
+| Průlet + dohoupání | `flysway` | 2,4 s | PODLE PŘEDLOHY 18. 11. (průlet do místnosti): zrychlující najetí 0,2 s (ln zoom 0 → 0,65), nový záběr stlačený (střed 57 %) se rozvine za 0,3 s, pak houpání celého obrazu shora dolů – proložené po snímcích: A = 0,097, ζ = 0,15, T = 1,34 s (1. vrchol 7,8 % výšky za 0,30 s); naše měření: ζ 0,17, T 1,33, 7,7 % za 0,31 s | 0,035 s |
+| Propad plátna 1 | `push1` | 0,5 s | PŘESNĚ verze ze 16. 11. (RUB_PRE/RUB_POST, původní výpočet plátna, závěrka 0,06 s dopředu i přes střih) – ověřeno pixel po pixelu proti snímkům ze 16. 11. | 0,06 s |
+| Propad plátna 3 (s dohoupáním) | `pushsway` | 2,4 s | Propad plátna 2 + po puštění houpání z předlohy (stejné jako u Průletu + dohoupání) | žádné |
+| Propad plátna (= v nabídce „Propad plátna 2“) | `push` | 0,8 s | elastické plátno: natažení dozadu U0 = 0,45 (0,45 s), pružina ζ = 0,4, T = 0,222 s | žádné |
 | Propad plátna + motion blur | `pushb` | 0,8 s | stejné jako `push` | 0,035 s |
 | Propad plátna – rychlý (bez pružení) | `pushr` | 0,4 s | PODLE PŘEDLOHY 18. 11. (kuchyň): 0,2 s zrychlený propad dozadu (střed na 64 %), nový záběr začne na 81 % a za ~5 snímků se bez pružení narovná | 0,035 s |
 | Zahoupání + motion blur | `swing` | 1,25 s | PODLE PŘEDLOHY 18. 11. (tam do strany, tady shora dolů): před střihem couvání (plátno dozadu, 0,2 s), nový záběr začne na 140 % a dojíždí na 100 %, 0,1 s po střihu kopanec dolů, krajní poloha 5 % výšky za 0,13 s, tlumené houpání ζ = 0,3, T = 0,64 s; obraz se posouvá vcelku | 0,03 s |
@@ -53,3 +56,7 @@ Soubory `app/public/sfx/*.m4a` (špička −1 dB, AAC 128k). Nejsilnější mís
 - přechody: warp č. 35, tunel č. 20, propad plátna (+blur) č. 30, rychlý propad č. 13, zahoupání č. 23, blesk č. 29, 2× negativ č. 31. Výchozí hlasitost 45 % („ne moc nahlas“). Vlastní nahraný zvuk má přednost.
 - vypínače: hlavní (`sfxAll`), skupiny (`sfxShineOn`, `sfxTrOn`, `sfxWordsOn`), jednotlivě: přechod (`clip.trSfx`), objekt (`o.shSfx`), titulek (zvuk „Jen tento titulek“).
 - export: limiter na 0,89 (zvuky navrch hlasitého videa nepřebudí).
+
+## Efekty v místě (bez střihu) – 18. 11. 2026
+`E.fxMarks = [{id, t, type:'shake', dur, amt, sfx}]` – tlačítko **Shake** na liště dá efekt na místo hlavy, značka na stopě videa.
+- **Houpavý shake** (`shake`, 1,2 s) PODLE PŘEDLOHY 18. 11. – proloženo: kopanec šikmo dolů-doleva (A = 0,212, ζ = 0,48, T = 1,02 s, vodorovně 0,46 × svisle; 1. vrchol ~9,5 % výšky za 0,18 s). Zoom roste s obálkou houpání → nikdy okraje. Síla 30–160 %, délka 0,5–2,5 s, zvuk = zvuk zahoupání.

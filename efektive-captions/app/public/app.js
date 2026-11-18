@@ -92,7 +92,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), mute:E.flags.mute, clips:E.clips, audios:E.audios||[], kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, capZ:E.capZ, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), mute:E.flags.mute, clips:E.clips, audios:E.audios||[], fxMarks:E.fxMarks||[], kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, capZ:E.capZ, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -108,6 +108,7 @@ function restore(json){
   // chybějící (novější) volby ze starého projektu doplnit neutrálně – ne z naposledy otevřeného projektu
   E.clips=Array.isArray(s.clips)&&s.clips.length?s.clips.filter(c=>!c.a||(ovAssets[c.a]&&ovAssets[c.a].el)).map(c=>({...c, tr:E.TROLD[c.tr]||c.tr, ...(E.TROLD[c.tr]?{trDur:E.TRDEF[E.TROLD[c.tr]]}:{})})):null;   // vložený klip bez souboru vynechat
   E.audios=(s.audios||[]).filter(a=>ovAssets[a.asset]).map(a=>({...a}));
+  E.fxMarks=(s.fxMarks||[]).map(m=>({...m}));
   E.kf=Array.isArray(s.kf)?s.kf.map(k=>({...k, ease:'tok2'})):[];   // zatím jediný průběh: Tok 2
   E.G=Object.assign({},E.G0,E.COMMON,s.G); if (s.G && s.G.trSfxVol===80) E.G.trSfxVol=45; mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
@@ -199,7 +200,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.audios=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
@@ -654,7 +655,7 @@ function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s
 function renderPanel(){
   const P=$('panel'); C.length=0;
   let h='';
-  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='audio' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='audio' && panel!=='fxm' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
   switch(panel){
     case 'captions': h=pCaptions(); break;
     case 'templates': h=pTemplates(); break;
@@ -666,6 +667,7 @@ function renderPanel(){
     case 'mix': h=pMix(); break;
     case 'clip': h=pClip(); break;
     case 'audio': h=pAudio(); break;
+    case 'fxm': h=pFxm(); break;
     case 'kf': h=pKf(); break;
     case 'obj': h=pObj(); break;
     case 'color': h=pColor(); break;
@@ -711,7 +713,7 @@ function pClip(){
   ${c.a?`<label class="ctl"><div class="lb"><span>Hlasitost klipu</span><span>${c.vol??100} %</span></div><input type="range" id="clVol" min="0" max="200" value="${c.vol??100}"></label>`:''}
   <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
-  ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||E.TRDEF[c.tr]||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="1.5" step="0.01" value="${c.trDur||E.TRDEF[c.tr]||0.12}"></label><div class="note">Vlevo = rychlejší, vpravo = pomalejší.</div>
+  ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||E.TRDEF[c.tr]||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="2.5" step="0.01" value="${c.trDur||E.TRDEF[c.tr]||0.12}"></label><div class="note">Vlevo = rychlejší, vpravo = pomalejší.</div>
   ${E.TRDIR.has(c.tr)?`<div class="clabel">Směr</div><div class="chips" id="clTrDir">${[['r','Doprava'],['l','Doleva']].map(([v,l])=>`<div class="chip ${(c.trDir||'r')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:''}`:''}
   ${L.length>1?`<button class="btn small" id="clTrAll">Tenhle přechod na všechny střihy</button>`:''}
   ${k>0 && c.tr && c.tr!=='none'?`<div class="row"><span>Zvuk přechodu</span><input type="checkbox" class="sw" id="clTrSfx" ${c.trSfx===false?'':'checked'}></div>
@@ -1385,6 +1387,7 @@ function renderVideoTrack(){
     else for (let sec=Math.floor(c.s); sec<Math.ceil(c.e); sec++){ if (thumbImg[sec]) im+=`<img src="${thumbImg[sec]}" style="left:${(sec-c.s)*pps}px;width:${pps}px">`; }
     return `<div class="vb ${c.a?'ext':''} ${k===selClip?'cur':''}" data-v="${k}" style="left:${x}px;width:${w}px">${im}${k===selClip?'<span class="hl"></span><span class="hr"></span>':''}</div>`; }).join('')
     + deadZones().map((z,i)=>`<div class="dz ${i===selDz?'cur':''}" data-dz="${i}" style="left:${pad+z.a*pps}px;width:${Math.max(4,(z.b-z.a)*pps)}px" title="Tady se nemluví">${i===selDz?`<span class="dzx" data-dzx="${i}">${I('trash')}</span>`:''}</div>`).join('')
+    + (E.fxMarks||[]).map(m=>`<div class="vfx ${m.id===selFx?'cur':''}" data-fx="${m.id}" style="left:${pad+m.t*pps}px" title="Houpavý shake">${I('zap')}</div>`).join('')
     + (E.kf||[]).map((k,i)=>`<div class="vkf ${i===selKf?'cur':''} ${k.ease==='tok2'?'gold':''}" data-kf="${i}" style="left:${pad+k.t*pps}px"></div>`).join('')
     + L.map((c,k)=>k? `<div class="vtr ${c.tr&&c.tr!=='none'?'on':''}" data-tr="${k}" style="left:${pad+st[k]*pps}px" title="Přechod">${I(c.tr&&c.tr!=='none'?'sparkles':'plus')}</div>`:'').join('');
 }
@@ -1401,6 +1404,7 @@ function removeOut(a,b){
   E.objs=(E.objs||[]).filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); if (o.shS!=null){ o.shS=sh(o.shS); o.shE=sh(o.shE); } return o.e-o.s>0.05; });
   E.kf=E.kf.filter(k=>!(k.t>a+0.01&&k.t<b-0.01)).map(k=>({...k,t:sh(k.t)}));
   E.audios=(E.audios||[]).filter(x=>{ if (x.s>a && x.s<b) x.off=(x.off||0)+(b-x.s); x.s=sh(x.s); x.e=sh(x.e); return x.e-x.s>0.05; });
+  E.fxMarks=(E.fxMarks||[]).filter(m=>!(m.t>a+0.01&&m.t<b-0.01)).map(m=>({...m,t:sh(m.t)}));
 }
 function insertOut(at,len){
   if (len<=0) return;
@@ -1411,6 +1415,7 @@ function insertOut(at,len){
   for (const o of (E.objs||[])) if (o.s>=at){ o.s+=len; o.e+=len; if (o.shS!=null){ o.shS+=len; o.shE+=len; } }
   for (const k of E.kf) if (k.t>=at) k.t+=len;
   for (const x of E.audios||[]) if (x.s>=at){ x.s+=len; x.e+=len; }
+  for (const m of E.fxMarks||[]) if (m.t>=at) m.t+=len;
 }
 // výsledný úsek [a,b] se natáhne / zkrátí na délku D1 – titulky a ostatní věci v něm se roztáhnou, za ním posunou
 function remapOut(a,b,D1){
@@ -1423,6 +1428,7 @@ function remapOut(a,b,D1){
   for (const o of (E.objs||[])){ o.s=mp(o.s); o.e=mp(o.e); if (o.shS!=null){ o.shS=mp(o.shS); o.shE=mp(o.shE); } }
   for (const k of E.kf) k.t=mp(k.t);
   for (const x of E.audios||[]) if (x.s>=b-1e-6){ x.s+=dl; x.e+=dl; }   // hudba se nenatahuje, jen posune
+  for (const m of E.fxMarks||[]) m.t=mp(m.t);
 }
 function setClipSpeed(k,sp){
   ensureClips(); const c=E.clips[k]; if (!c) return; const st=E.clipStarts(), a=st[k], D0=E.clipDur(c);
@@ -1499,6 +1505,30 @@ $('audIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if (f) ad
 $('clipIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if (f) insertClipFile(f); };
 $('clipAdd').onclick=()=>$('clipIn').click();
 $('audAdd').onclick=()=>{ if ((E.audios||[]).length){ selAud=selAud||E.audios[E.audios.length-1].id; openAudPanel(); } else $('audIn').click(); };
+// ---------- EFEKTY V MÍSTĚ (houpavý shake kamkoli do videa) ----------
+let selFx=null;
+function openFxPanel(){ selClip=-1; panel='fxm'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
+function addFxMark(type){ if (PB.on) pbStop(); vid.pause(); const m={id:Date.now()%1e9, t:PV.currentTime, type, dur:1.2, amt:100}; E.fxMarks=(E.fxMarks||[]).concat(m).sort((a,b)=>a.t-b.t); selFx=m.id; changed(); renderVideoTrack(); openFxPanel(); toast('Houpavý shake přidaný na místo hlavy'); }
+function pFxm(){
+  const m=(E.fxMarks||[]).find(x=>x.id===selFx);
+  if (!m) return `<div class="mixhead"><svg class="ic grad"><use href="#i-zap"/></svg><div><b>Houpavý shake</b><small>Obraz se v daném místě zhoupne (kopanec dolů, návrat, jemné dokývnutí) – bez střihu, kamkoli do videa.</small></div></div><button class="btn primary" id="fxAdd">${I('plus')} Přidat na místo hlavy</button>`;
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-zap"/></svg><div><b>Houpavý shake</b><small>V čase ${fmt(m.t)}. Značku na stopě videa posuneš tak, že dáš hlavu jinam a „Přesunout sem“.</small></div></div>
+  <label class="ctl"><div class="lb"><span>Síla</span><span>${m.amt??100} %</span></div><input type="range" id="fxAmt" min="30" max="160" value="${m.amt??100}"></label>
+  <label class="ctl"><div class="lb"><span>Délka (rychlost)</span><span>${(m.dur||1.2).toFixed(2)} s</span></div><input type="range" id="fxDur" min="0.5" max="2.5" step="0.05" value="${m.dur||1.2}"></label>
+  <div class="row"><span>Zvuk</span><input type="checkbox" class="sw" id="fxSfx" ${m.sfx===false?'':'checked'}></div>
+  <div class="btnrow"><button class="btn" id="fxPlay">${I('play')} Přehrát</button><button class="btn" id="fxMove">${I('arrow-right')} Přesunout sem</button></div>
+  <div class="btnrow"><button class="btn" id="fxAdd">${I('plus')} Další na místo hlavy</button><button class="btn" id="fxDel">${I('trash')} Smazat</button></div>`;
+}
+binders.fxm=()=>{
+  $('fxAdd').onclick=()=>addFxMark('shake');
+  const m=(E.fxMarks||[]).find(x=>x.id===selFx); if (!m) return;
+  for (const [id,key,u,fx] of [['fxAmt','amt',' %',v=>v],['fxDur','dur',' s',v=>v.toFixed(2)]]){ const el=$(id); el.oninput=()=>{ m[key]=+el.value; el.previousElementSibling.lastElementChild.textContent=fx(+el.value)+u; }; el.onchange=()=>changed(); }
+  $('fxSfx').onchange=e=>{ if (e.target.checked) delete m.sfx; else m.sfx=false; changed(); };
+  $('fxPlay').onclick=()=>{ if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,m.t-0.5); setTimeout(()=>togglePlay(),120); };
+  $('fxMove').onclick=()=>{ m.t=PV.currentTime; changed(); renderVideoTrack(); renderPanel(); };
+  $('fxDel').onclick=()=>{ E.fxMarks=E.fxMarks.filter(x=>x!==m); selFx=null; changed(); renderVideoTrack(); renderPanel(); };
+};
+$('fxShake').onclick=()=>addFxMark('shake');
 function ensureClips(){ if (!E.clips||!E.clips.length) E.clips=[{s:0,e:E.srcDur||vid.duration||0,tr:'none'}]; }
 function cutAt(T){
   ensureClips(); const st=E.clipStarts(); const k=E.clips.findIndex((c,i)=>T>st[i]+0.08 && T<st[i]+E.clipDur(c)-0.08);
@@ -1548,6 +1578,7 @@ $('tlZoom').oninput=e=>setZoom(+e.target.value);
 let tlDrag=null;
 $('tlIn').addEventListener('pointerdown',e=>{
   if (e.pointerType==='touch' && tlTouches>1) return;
+  const fxm=e.target.closest('.vfx'); if (fxm){ e.preventDefault(); if (PB.on) pbStop(); vid.pause(); selFx=+fxm.dataset.fx; const m=(E.fxMarks||[]).find(x=>x.id===selFx); if (m) PV.currentTime=Math.max(0,m.t-0.3); openFxPanel(); return; }
   const dzx=e.target.closest('[data-dzx]'); if (dzx){ e.preventDefault(); dzDelete(+dzx.dataset.dzx); return; }
   const dz=e.target.closest('.dz'); if (dz){ e.preventDefault(); const i=+dz.dataset.dz; selDz=selDz===i?-1:i; const z=deadZones()[i]; if (selDz>=0 && z){ if (PB.on) pbStop(); vid.pause(); PV.currentTime=z.a+0.01; } renderVideoTrack(); if (selDz>=0) toast('Tady se nemluví – klepni na koš a místo se vystřihne'); return; }
   if (selDz>=0){ selDz=-1; renderVideoTrack(); }
