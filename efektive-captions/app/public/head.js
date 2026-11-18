@@ -87,11 +87,13 @@ HEAD.analyze = async ({ video, file, onP, cancel }) => {
 };
 // uložení do projektu (komprese: maska se uloží jako řetězec)
 HEAD.save = () => { const d = HEAD.data; if (!d) return null;
-  const enc = m => { if (!m) return null; let s = ''; for (let i = 0; i < m.length; i += 8192) s += String.fromCharCode.apply(null, m.subarray(i, i + 8192)); return btoa(s); };
-  return { W: d.W, H: d.H, t: d.t, x: d.x, y: d.y, side: d.side, m: d.m.map(enc) }; };
+  // úsporně: maska hlavy jako běhy 0/1 (pár set bajtů na snímek) – uloží se k projektu
+  const enc = m => { if (!m) return null; const r = []; let v = 0, n = 0; for (let i = 0; i < m.length; i++) { const b = m[i] > 127 ? 1 : 0; if (b === v) n++; else { r.push(n); v = b; n = 1; } } r.push(n); return r.join(','); };
+  return { v: 2, W: d.W, H: d.H, t: d.t, x: d.x, y: d.y, side: d.side, m: d.m.map(enc) }; };
 HEAD.load = o => { if (!o || !o.t) { HEAD.data = null; return; }
-  const dec = s => { if (!s) return null; const b = atob(s), m = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) m[i] = b.charCodeAt(i); return m; };
-  HEAD.data = { ...o, m: o.m.map(dec) }; HEAD._mc = null; };
+  const dec = s => { if (!s) return null; const m = new Uint8Array(MS0 * MS0); let i = 0, v = 0; for (const n of s.split(',').map(Number)) { if (v) m.fill(255, i, i + n); i += n; v ^= 1; } return m; };
+  const dec1 = s => { if (!s) return null; const b = atob(s), m = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) m[i] = b.charCodeAt(i); return m; };
+  HEAD.data = { ...o, m: o.m.map(o.v === 2 ? dec : dec1) }; HEAD._mc = null; };
 
 // ---------- 2) VYKRESLENÍ ----------
 // snímek (zdrojový čas) → nejbližší snímek rozboru

@@ -178,6 +178,7 @@ async function openProject(id){
   busy('Otevírám projekt…','Načítám video',0.5);
   await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
   restore(rec.state);
+  if (window.HEAD){ HEAD.data=null; try{ const hr=await dbDo('readonly',st=>st.get(rec.id+'|head'),'files'); if (hr && hr.head) HEAD.load(hr.head); }catch(e){} }   // rozbor hlavy (text za hlavou)
   // titulky zmizely (chyba starší verze) a je záloha → vrátit ji
   if (!E.words.length && rec.backup){ try{ const b=JSON.parse(rec.backup); if ((b.words||[]).length){ restore(rec.backup); setTimeout(()=>toast('Titulky obnoveny ze zálohy'),800); } }catch(e){} }
   project.restoredOk=true;
@@ -783,13 +784,16 @@ function pRe(){
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Real estate styl</b><small>Titulky se rozmístí podle hlavy (nad hlavu, za hlavu nebo před tělo) a pak stojí na svém místě – nehýbou se a nemění velikost. Chytře – hlava nikdy neschová celé slovo.</small></div></div>
   <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout Real estate styl':'Zapnout Real estate styl'}</button>
   <div class="clabel">Barva hlavního slova</div><div class="d3cols" id="reCols">${cols}</div>
+  <div class="clabel">Druhá barva (střídá se každý druhý titulek)</div><div class="d3cols" id="reAlt"><div class="d3c ${!E.G.altOn?'on':''}" data-off="1"><i style="background:#333"></i>Nestřídat</div>${TXT_COLORS.map(([n,a,b])=>`<div class="d3c ${E.G.altOn&&E.G.altA===a&&E.G.altB===b?'on':''}" data-a="${a}" data-b="${b}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('')}</div>
   <div class="clabel">Kde jsou titulky</div>
-  <div class="chips" id="rePl">${[['alt','Střídat: nad hlavou / před tělem'],['top','Vždy za hlavou'],['chest','Vždy před tělem']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="chips" id="rePl">${[['alt','Chytře (za hlavou / před tělem)'],['top','Vždy za hlavou'],['chest','Vždy před tělem']].map(([v,l])=>`<div class="chip ${pl===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="chips" id="reFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div><div class="chip ${E.G.extrude>0?'on':''}" data-k="extrude">3D hloubka</div></div>
   ${on?`<button class="btn" id="reRedo">${I('refresh','grad')} Znovu rozmístit titulky</button>`:''}
   <div class="note">Funguje, když je ve videu vidět obličej. Napoprvé appka projde celé video snímek po snímku (chvíli to trvá, pak už je to okamžité). Titulek jde pořád posunout prstem.</div>`;
 }
 // souvislé úseky s obličejem (mezi střihy) z rozboru hlavy: poloha obličeje a jeho velikost v px plátna
+// druhá barva pro střídání (každý druhý titulek): k modré žlutá, ke všemu ostatnímu modrá
+function reAlt(a){ const T=TXT_COLORS, blue=T.find(c=>c[0]==='Modrá'), yel=T.find(c=>c[0]==='Žlutá'); return (a===blue[1]?yel:blue).slice(1); }
 function reSegments(){
   const d=HEAD.data, W=cv.width, H=cv.height, segs=[]; let cur=null;
   for (let i=0;i<d.t.length;i++){
@@ -815,7 +819,9 @@ function reLayout(){
     const ts=Math.max(t1,sg.t[0]);
     let i=0; while (i<sg.t.length-1 && sg.t[i+1]<=ts) i++;
     const fw=sg.f[i], cx=sg.x[i], fy=sg.y[i], top=sg.top[i], chin=fy+0.8*fw;   // vršek hlavy přesně z masky (vlasy)
-    let place=pl==='alt'?(k2++%2?'chest':'top'):pl;
+    // chytře: titulek, který končí velkým slovem → velké slovo za hlavu; jinak (slova i pod velkým) celý před tělo
+    const S0=E.styleOf(p), L0=E.layoutPage(p,S0), last=L0.length?L0.reduce((a,L)=>L.y>a.y?L:a,L0[0]):null;
+    let place=pl==='alt'?(last&&(last.em||!L0.some(L=>L.em))?'top':'chest'):pl;
     if (place==='top' && top<H*0.14) place='chest';
     if (place==='chest' && chin+fw*1.4>H*0.9) place='top';
     // široký titulek se zmenší, ať se vejde (max. 90 % šířky videu)
@@ -825,7 +831,7 @@ function reLayout(){
     const y0=H*S.posY/100;
     let posY;
     // nad hlavou: spodní řádek titulku jen spodním okrajem písmen za vlasy (zbytek nad hlavou, obličej volný)
-    if (place==='top'){ const lb=lines.reduce((a,L)=>L.y>a.y?L:a,lines[0]); posY=(top+lb.px*0.06-(lb.y-y0))/H*100; }
+    if (place==='top'){ const lb=lines.reduce((a,L)=>L.y>a.y?L:a,lines[0]); posY=(top-(lb.em?0.04:-0.06)*lb.px-(lb.y-y0))/H*100; }   // spodní část velkého slova za vlasy
     else { const tb=Math.min(...lines.map(L=>L.y-L.px*0.55)); posY=(chin+0.3*fw-(tb-y0))/H*100; }   // celý titulek pod bradou, před tělem
     const half=Math.max(...lines.map(L=>L.total))/2/W*100;
     m.own.posX=Math.max(half+4,Math.min(96-half,cx/W*100)); m.own.posY=Math.max(8,Math.min(92,posY)); m.own._manualPos=true;
@@ -837,22 +843,24 @@ function reLayout(){
 async function reToggle(btn){
   if (E.G.reMode){ E.G.reMode=false; for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
     for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (!m) continue; if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk; if (m.own){ delete m.own.posX; delete m.own.posY; delete m.own._manualPos; delete m.own.size; } }
-    E.G.behind='off'; changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
+    E.G.behind='off'; E.G.noSlots=false; E.G.altOn=false; Object.assign(E.G,{layout:E.TEMPLATES.base.set.layout, rowDy1:E.TEMPLATES.base.set.rowDy1, rowDy3:E.TEMPLATES.base.set.rowDy3, gap:E.TEMPLATES.base.set.gap}); changed(); renderPanel(); toast('Real estate styl vypnutý'); return; }
   if (!HEAD.data){ const v=await auxVideo(); vid.pause(); btn.disabled=true;
-    try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ btn.textContent='Hledám hlavu v každém snímku… '+Math.round(pp*100)+' %'; }}); }
+    try{ await HEAD.analyze({video:v, file:videoFile, onP:pp=>{ btn.textContent='Hledám hlavu v každém snímku… '+Math.round(pp*100)+' %'; }}); headSave(); }
     catch(e){ console.warn(e); toast('Nepovedlo se: '+(e.message||e)); freeVideo(v); renderPanel(); return; }
     freeVideo(v); }
   // vzhled: Styl 1 (bílý menší řádek + velké barevné slovo) s 3D leskem, barva zůstane, pokud už je vybraná
   const keep={gA:E.G.gA,gB:E.G.gB,grad:E.G.grad,c1:E.G.c1,c2:E.G.c2,c3:E.G.c3,c4:E.G.c4};
   const set={...E.TEMPLATES.base.set}; delete set.posX; delete set.posY;
-  Object.assign(E.G, set, keep, {gloss:'gloss', glossOn:'main', behind:'head', reMode:true, style:'base'});
+  const alt=reAlt(keep.gA);
+  Object.assign(E.G, set, keep, {gloss:'gloss', glossOn:'main', behind:'head', reMode:true, style:'base', layout:'center', noSlots:true, kinetic:0, rowDy1:0, rowDy3:0, gap:62, altOn:true, altEvery:2, altA:alt[0], altB:alt[1]});
   const n=reLayout(); changed(); renderPanel();
   toast(n?`Hotovo – ${n} ${n===1?'titulek umístěn':n<5?'titulky umístěny':'titulků umístěno'} podle hlavy`:'Ve videu jsem nenašel obličej – titulky zůstaly, kde byly');
 }
 binders.re=()=>{
   $('reOn').onclick=()=>reToggle($('reOn'));
   if ($('reRedo')) $('reRedo').onclick=()=>{ const n=reLayout(); changed(); toast(`Rozmístěno znovu (${n})`); };
-  $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const a=c.dataset.a, b=c.dataset.b; Object.assign(E.G,{grad:true,gA:a,gB:b,gradDir:'v',c1:a,c2:a,c3:a,c4:a}); for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) for (const k of ['grad','gA','gB','c1','c2','c3','c4']) delete m.own[k]; } changed(); renderPanel(); };
+  $('reCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const a=c.dataset.a, b=c.dataset.b; Object.assign(E.G,{grad:true,gA:a,gB:b,gradDir:'v',c1:a,c2:a,c3:a,c4:a}); if (E.G.reMode && !E.G.reAltSet){ const al=reAlt(a); E.G.altA=al[0]; E.G.altB=al[1]; } for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) for (const k of ['grad','gA','gB','c1','c2','c3','c4']) delete m.own[k]; } changed(); renderPanel(); };
+  $('reAlt').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; if (c.dataset.off){ E.G.altOn=false; } else { E.G.altOn=true; E.G.altEvery=2; E.G.altA=c.dataset.a; E.G.altB=c.dataset.b; E.G.reAltSet=true; } for (const p of E.pages){ const m=E.meta[E.keyOf(p)]; if (m&&m.own) delete m.own.altOn; } changed(); renderPanel(); };
   $('rePl').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.rePlace=c.dataset.v; if (E.G.reMode && HEAD.data) reLayout(); changed(); renderPanel(); };
   $('reFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; else { E.G.extrude=E.G.extrude>0?0:45; E.G.extrudeStyle='light'; } changed(); renderPanel(); };
 };
@@ -1471,7 +1479,7 @@ binders.ai=()=>{
     if (v0==='off'){ setVal('behind','off'); renderPanel(); return; }
     $('behindCh').dataset.busy='1';
     if (v0==='head'){ if (!HEAD.data){ const v=await auxVideo(); vid.pause();
-        try{ await HEAD.analyze({video:v, file:videoFile, onP:p=>{ c.textContent='Hledám hlavu… '+Math.round(p*100)+' %'; }}); }
+        try{ await HEAD.analyze({video:v, file:videoFile, onP:p=>{ c.textContent='Hledám hlavu… '+Math.round(p*100)+' %'; }}); headSave(); }
         catch(err){ console.warn(err); toast('Nepovedlo se: '+(err.message||err)); freeVideo(v); renderPanel(); return; }
         freeVideo(v); }
       setVal('behind','head'); toast('Hotovo – text je za hlavou'); renderPanel(); return; }
@@ -2217,6 +2225,8 @@ function objBegin(o){
   }, o?350:0);
 }
 function trkMsgShort(m){ toast(m); }
+// rozbor hlavy uložit k projektu (zvlášť, ať se neukládá s každou úpravou)
+async function headSave(){ try{ if (project && HEAD.data) await dbDo('readwrite',st=>st.put({id:project.id+'|head',head:HEAD.save()}),'files'); }catch(e){ console.warn('rozbor hlavy se neuložil',e); } }
 // mnohoúhelník (normalizovaný) → maska
 // hrany obrysu doladit na skutečnou hranu objektu ve snímku v plném rozlišení videa (max. 1920 px)
 function refineHi(P){ try{ const sc=Math.min(1,1920/Math.max(vid.videoWidth,vid.videoHeight)), W=Math.round(vid.videoWidth*sc), H=Math.round(vid.videoHeight*sc); if (!W||!H) return P;

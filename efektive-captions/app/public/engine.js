@@ -394,7 +394,7 @@ function layoutRaw(p,S,scaleMul){
   };
   for (const g of groups){ const L=mk(g.ids,g.em); L.slot=g.slot; lines.push(L); }
   let y=0; const ys=[];
-  if (lines.length && lines.every(L=>L.slot!=null)){
+  if (lines.length && lines.every(L=>L.slot!=null) && !S.noSlots){
     // Base: pevné sloty (horní / hlavní / spodní) – horní řádek je na stejném místě i u kratšího titulku
     const st=(base+base*S.emScale/100)*0.5*(S.gap/100), slotY=[0,st,st*2]; y=st*2;
     lines.forEach(L=>ys.push(slotY[L.slot]));
