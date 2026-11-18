@@ -123,6 +123,9 @@ HEAD.compose = (ctx, W, H, t, baseC, capC, xf, opt) => {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.shadowColor = 'transparent';
   ctx.drawImage(tmp, 0, 0);
   if (opt && opt.smart === false) { ctx.restore(); return true; }
+  // žádné slovo nezasahuje do hlavy → není co řešit (žádné čtení pixelů – přehrávání zůstane plynulé)
+  const hx0 = X - s / 2, hy0 = Y - s / 2, hx1 = X + s / 2, hy1 = Y + s / 2;
+  if (!((opt && opt.words) || []).some(wd => wd.x1 > hx0 && wd.x0 < hx1 && wd.y1 > hy0 && wd.y0 < hy1)) { ctx.restore(); return true; }
   // 3) chytře: slova (shluky písma) – kolik z nich hlava zakrývá
   const SC = Math.max(1, Math.min(W, H) / 270);   // rozbor slov v malém rozlišení (kratší strana ~270 px)
   const w = Math.max(8, Math.round(W / SC)), h = Math.max(8, Math.round(H / SC));

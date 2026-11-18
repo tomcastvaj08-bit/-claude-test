@@ -274,6 +274,7 @@ OBJ.draw = (c, W, H, t) => {
       const k = E.vxfAt ? (E.vxfAt(t) || { z: 100, x: 0, y: 0 }) : { z: 100, x: 0, y: 0 }, z = k.z / 100, b = f.b, R = o.trk.R, ar = o.trk.ar || W / H;
       MM = new DOMMatrix(); MM.translateSelf(W / 2 + k.x / 100 * W, H / 2 + k.y / 100 * H); MM.scaleSelf(z, z); MM.translateSelf(-W / 2, -H / 2);
       MM.scaleSelf(W, H); MM.translateSelf(b[0], b[1]); MM.scaleSelf(b[2] / R, b[2] * ar / R);
+      if (o.line && o.line !== 'off' && !f.ct) f.ct = OBJ.contours(f.m);
       const q = Object.create(o); q._m = f.m; q._ct = f.ct; q._bb = f.bb;
       drawMaskObj(c, q, t, W, H, f.mc, MM, A2); continue;
     }
@@ -293,24 +294,26 @@ function segFrame(o, t) {
   if (!o._sc || o._scK !== o.trk.m) { o._sc = new Map(); o._scK = o.trk.m; }
   let f = o._sc.get(i);
   if (!f) {
-    const m = OBJ.unrle(o.trk.m[i]), c = document.createElement('canvas'); c.width = m.w; c.height = m.h;
-    const x = c.getContext('2d'), id = x.createImageData(m.w, m.h), a = feather(m);
-    for (let k = 0; k < m.d.length; k++) { id.data[k * 4] = id.data[k * 4 + 1] = id.data[k * 4 + 2] = 255; id.data[k * 4 + 3] = a[k]; }
-    x.putImageData(id, 0, 0);
-    f = { m, mc: c, ct: OBJ.contours(m), bb: null, b: o.trk.b[i] };
-    o._sc.set(i, f); if (o._sc.size > 90) o._sc.delete(o._sc.keys().next().value);
+    // v mezipaměti jen data masky (žádné nové plátno pro každý snímek – iPhone by to brzdilo)
+    const m = OBJ.unrle(o.trk.m[i]); let x0 = m.w, y0 = m.h, x1 = 0, y1 = 0;
+    for (let k = 0; k < m.d.length; k++) if (m.d[k]) { const xx = k % m.w, yy = (k / m.w) | 0; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    f = { m, ct: null, bb: [x0, y0, x1 + 1, y1 + 1], b: o.trk.b[i] };
+    o._sc.set(i, f); if (o._sc.size > 120) o._sc.delete(o._sc.keys().next().value);
   }
+  // jedno sdílené plátno: maska se do něj přepíše jen při změně snímku
+  if (!segC || segC.width !== f.m.w || segC.height !== f.m.h) { segC = document.createElement('canvas'); segC.width = f.m.w; segC.height = f.m.h; segX = segC.getContext('2d'); segId = segX.createImageData(f.m.w, f.m.h); segFor = null; }
+  if (segFor !== f) { const d = segId.data, m = f.m.d; for (let k = 0, j = 0; k < m.length; k++, j += 4) { const v = m[k] ? 255 : 0; d[j] = d[j + 1] = d[j + 2] = 255; d[j + 3] = v; } segX.putImageData(segId, 0, 0); segFor = f; }
+  f.mc = segC;
   return f;
 }
+let segC = null, segX = null, segId = null, segFor = null;
 function drawMaskObj(c, o, t, W, H, mc, MM, A) {
   {
     // výplň (jemný barevný nádech)
-    if ((o.fillA || 0) > 0) {
-      if (!oc || oc.width !== W || oc.height !== H) { oc = document.createElement('canvas'); oc.width = W; oc.height = H; ox = oc.getContext('2d'); }
-      ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, W, H);
-      ox.setTransform(MM); ox.imageSmoothingEnabled = true; ox.drawImage(mc, 0, 0);
-      ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-in'; ox.fillStyle = o.fillC || '#27e1c1'; ox.fillRect(0, 0, W, H);
-      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = A * o.fillA / 100; c.drawImage(oc, 0, 0); c.restore();
+    if ((o.fillA || 0) > 0) {   // výplň v rozlišení masky (malé plátno) a zvětšená na místo objektu
+      const sm = small(0, mc.width, mc.height), x = sm.x; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, mc.width, mc.height); x.drawImage(mc, 0, 0);
+      x.globalCompositeOperation = 'source-in'; x.fillStyle = o.fillC || '#27e1c1'; x.fillRect(0, 0, mc.width, mc.height); x.globalCompositeOperation = 'source-over';
+      c.save(); c.setTransform(MM); c.globalAlpha = A * o.fillA / 100; c.imageSmoothingEnabled = true; c.drawImage(sm.c, 0, 0); c.restore();
     }
     // shine – světlý pruh přejede jen po objektu + jemná záře kolem
     if (o.shine) drawShine(c, o, t, W, H, MM, mc, A);
@@ -335,42 +338,47 @@ function drawShine(c, o, t, W, H, MM, mc, A) {
   else { const dur = 1.6 - 1.1 * clamp((o.shineSpd ?? 50) / 100), every = Math.max(dur + 0.2, o.shineEvery ?? 2.6); ph = ((t - o.shS) % every) / dur; if (ph > 1) return; }
   const e = ph < 0.5 ? 2 * ph * ph : 1 - 2 * (1 - ph) * (1 - ph);   // plynulý průjezd
   const bb = objBox(o, MM), bw = bb.x1 - bb.x0, bh = bb.y1 - bb.y0; if (bw < 2 || bh < 2) return;
-  if (!oc || oc.width !== W || oc.height !== H) { oc = document.createElement('canvas'); oc.width = W; oc.height = H; ox = oc.getContext('2d'); }
-  ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, W, H);
-  ox.setTransform(MM); ox.imageSmoothingEnabled = true; ox.drawImage(mc, 0, 0);
-  ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-in';
+  const inv = MM.inverse(); if (!isFinite(inv.a)) return;
+  // vše v rozlišení masky (malé plátno) – pruh se spočítá v souřadnicích obrazovky a promítne do masky; pak se zvětší na místo objektu
+  const mw = mc.width, mh = mc.height, sm = small(1, mw, mh), x = sm.x;
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, mw, mh); x.imageSmoothingEnabled = true; x.drawImage(mc, 0, 0);
+  x.globalCompositeOperation = 'source-in'; x.setTransform(inv);
   // šikmý pruh (25°) jede zleva doprava přes celý objekt
   const ang = -25 * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-  const span = bw + bh * Math.abs(Math.tan(ang)), band = Math.max(bw, bh) * (0.05 + 0.14 * clamp((o.shineW ?? 50) / 100));   // užší pruh – měkký jen kousek kolem čáry
+  const span = bw + bh * Math.abs(Math.tan(ang)), band = Math.max(bw, bh) * (0.05 + 0.14 * clamp((o.shineW ?? 50) / 100));
   const cx = bb.x0 - band - bh * Math.abs(Math.tan(ang)) / 2 + (span + band * 2) * e, cy = (bb.y0 + bb.y1) / 2;
-  const gx0 = cx - band * ca, gy0 = cy - band * sa, gx1 = cx + band * ca, gy1 = cy + band * sa;
-  const gr = ox.createLinearGradient(gx0, gy0, gx1, gy1), col = o.shineC || '#ffffff';
+  const gr = x.createLinearGradient(cx - band * ca, cy - band * sa, cx + band * ca, cy + band * sa), col = o.shineC || '#ffffff';
   gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(0.3, hexA(col, 0.22)); gr.addColorStop(0.5, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.7, hexA(col, 0.22)); gr.addColorStop(1, hexA(col, 0));
-  ox.fillStyle = gr; ox.fillRect(0, 0, W, H);
-  const I = A * clamp((o.shineI ?? 80) / 100, 0, 1.5);
-  // záře kolem okrajů: světlo z pruhu se rozlije i do okolí objektu (blízká + široká měkká záře).
-  // Rozmazání postupným zmenšováním a zvětšováním (hladké jako gauss, funguje i v Safari bez ctx.filter).
-  const G = clamp((o.shGlow ?? 80) / 100, 0, 1.5), L = glowLevels(oc, W, H);
-  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'screen'; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-  if (G > 0) { c.globalAlpha = Math.min(1, I * G * 0.6); c.drawImage(L[0], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.45); c.drawImage(L[1], 0, 0, W, H); c.globalAlpha = Math.min(1, I * G * 0.25); c.drawImage(L[2], 0, 0, W, H); }
-  c.globalAlpha = I; c.drawImage(oc, 0, 0);
+  x.fillStyle = gr; x.fillRect(bb.x0 - band * 2, bb.y0 - band * 2, bw + band * 4, bh + band * 4);
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over';
+  const I = A * clamp((o.shineI ?? 80) / 100, 0, 1.5), G = clamp((o.shGlow ?? 80) / 100, 0, 1.5);
+  c.save(); c.setTransform(MM); c.globalCompositeOperation = 'screen'; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'low';
+  // záře kolem okrajů: zmenšené kopie pruhu zvětšené zpátky (měkké), všechno v malém rozlišení
+  if (G > 0) { const L = [small(2, Math.max(1, mw >> 2), Math.max(1, mh >> 2)), small(3, Math.max(1, mw >> 3), Math.max(1, mh >> 3))];
+    let prev = sm.c; for (const l of L) { l.x.clearRect(0, 0, l.c.width, l.c.height); l.x.imageSmoothingEnabled = true; l.x.drawImage(prev, 0, 0, l.c.width, l.c.height); prev = l.c; }
+    c.globalAlpha = Math.min(1, I * G * 0.7); c.drawImage(L[0].c, 0, 0, mw, mh); c.globalAlpha = Math.min(1, I * G * 0.5); c.drawImage(L[1].c, 0, 0, mw, mh); }
+  c.globalAlpha = I; c.drawImage(sm.c, 0, 0);
   c.restore();
 }
+// malá pomocná plátna (znovu použitá – žádné nové plátno pro každý snímek)
+const SM = [];
+function small(k, w, h) { let s = SM[k]; if (!s || s.c.width !== w || s.c.height !== h) { const c = document.createElement('canvas'); c.width = w; c.height = h; s = SM[k] = { c, x: c.getContext('2d') }; } return s; }
+let sc2 = null, sx2 = null;
 // tři úrovně rozmazání (malé / střední / široké), vrácené ve velikosti, ze které se hladce zvětší přes celé plátno
 const GL = [];
 function glowLevels(src, W, H) {
   const sizes = [4, 8, 16], out = [];   // úzká záře – jen lehce přečuhuje kolem objektu, do všech stran stejně
-  let prev = src, pw = W, ph = H;
+  let prev = src, pw = src.width, ph = src.height;
   for (let k = 0; k < sizes.length; k++) {
     const w = Math.max(1, Math.round(W / sizes[k])), h = Math.max(1, Math.round(H / sizes[k]));
     if (!GL[k] || GL[k].c.width !== w || GL[k].c.height !== h) { const c = document.createElement('canvas'); c.width = w; c.height = h; GL[k] = { c, x: c.getContext('2d') }; }
-    const g = GL[k]; g.x.clearRect(0, 0, w, h); g.x.imageSmoothingEnabled = true; g.x.imageSmoothingQuality = 'high'; g.x.drawImage(prev, 0, 0, pw, ph, 0, 0, w, h);
+    const g = GL[k]; g.x.clearRect(0, 0, w, h); g.x.imageSmoothingEnabled = true; g.x.imageSmoothingQuality = 'low'; g.x.drawImage(prev, 0, 0, pw, ph, 0, 0, w, h);
     prev = g.c; pw = w; ph = h;
   }
   // nejširší úroveň zvětšit přes střední velikost (hladší, bez „kosočtverců“)
   const k = 3; const w2 = GL[1].c.width, h2 = GL[1].c.height;
   if (!GL[k] || GL[k].c.width !== w2 || GL[k].c.height !== h2) { const c = document.createElement('canvas'); c.width = w2; c.height = h2; GL[k] = { c, x: c.getContext('2d') }; }
-  GL[k].x.clearRect(0, 0, w2, h2); GL[k].x.imageSmoothingEnabled = true; GL[k].x.imageSmoothingQuality = 'high'; GL[k].x.drawImage(GL[2].c, 0, 0, w2, h2);
+  GL[k].x.clearRect(0, 0, w2, h2); GL[k].x.imageSmoothingEnabled = true; GL[k].x.imageSmoothingQuality = 'low'; GL[k].x.drawImage(GL[2].c, 0, 0, w2, h2);
   return [GL[0].c, GL[1].c, GL[k].c];
 }
 function drawLine(c, o, t, W, H, MM, A) {
