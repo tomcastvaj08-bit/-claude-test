@@ -240,7 +240,9 @@ function wavFrom(samples,rate){
   for (let i=0;i<samples.length;i++){ const s=Math.max(-1,Math.min(1,samples[i])); v.setInt16(44+i*2,s<0?s*0x8000:s*0x7fff,true); }
   return new Blob([buf],{type:'audio/wav'});
 }
-async function extractAudio(file){
+const audCache=new WeakMap();
+async function extractAudio(file){ if (!audCache.has(file)) audCache.set(file, extractAudio0(file)); try{ return await audCache.get(file); }catch(e){ audCache.delete(file); throw e; } }
+async function extractAudio0(file){
   const decoded=await decodeVideoAudio(file);
   const RATE=16000, off=new OfflineAudioContext(1,Math.ceil(decoded.duration*RATE),RATE);
   const src=off.createBufferSource(); src.buffer=decoded; src.connect(off.destination); src.start();
@@ -290,24 +292,35 @@ async function transcribeFile(file,s0,s1){
     }
     return all;
 }
-// nový přepis jen jednoho klipu: titulky v jeho úseku se nahradí novými, ostatní zůstanou
-async function transcribeClip(k){
-  const L=E.clipList(), c=L[k]; if (!c) return;
-  const file=c.a?(ovAssets[c.a]&&ovAssets[c.a].blob):videoFile; if (!file) return toast('Soubor tohoto klipu se nenašel');
-  const o0=E.clipStarts()[k], o1=o0+E.clipDur(c), sp=E.clipSp(c);
-  const proj=project; vid.pause(); show('busy'); busy('Přepisuji klip…','Vytahuju zvuk',0.02);
+// nový přepis klipů (indexy v E.clipList): titulky v jejich úsecích se nahradí novými, ostatní zůstanou
+async function transcribeClips(ks,all){
+  const L=E.clipList(), st=E.clipStarts(), proj=project; vid.pause(); show('busy');
   try{
-    const ws=(await transcribeFile(file,c.s,c.e)).filter(w=>w.t);
-    if (project!==proj) return;
-    const nw=ws.map(w=>{ w.s=Math.max(o0,o0+(w.s-c.s)/sp); w.e=Math.min(o1,o0+(w.e-c.s)/sp); return w; }).filter(w=>w.e>w.s);
-    const old=E.words.filter(w=>{ const m=(w.s+w.e)/2; return m>=o0 && m<o1; });
-    for (const w of old) delete E.meta[w.id];
+    const parts=[];
+    for (let n=0;n<ks.length;n++){ const k=ks[n], c=L[k]; if (!c) continue;
+      const file=c.a?(ovAssets[c.a]&&ovAssets[c.a].blob):videoFile; if (!file) continue;
+      busy(all?'Přepisuji video…':'Přepisuji klip…', ks.length>1?`Klip ${n+1} z ${ks.length}`:'AI poslouchá a píše text',0.02+0.9*n/ks.length);
+      const o0=st[k], o1=o0+E.clipDur(c), sp=E.clipSp(c);
+      const ws=(await transcribeFile(file,c.s,c.e)).filter(w=>w.t);
+      if (project!==proj) return;
+      parts.push({o0,o1,ws:ws.map(w=>{ w.s=Math.max(o0,o0+(w.s-c.s)/sp); w.e=Math.min(o1,o0+(w.e-c.s)/sp); return w; }).filter(w=>w.e>w.s)});
+    }
+    const inPart=w=>{ const m=(w.s+w.e)/2; return parts.some(p=>m>=p.o0 && m<p.o1); };
+    const old=all?E.words:E.words.filter(inPart);
+    if (all) E.meta={}; else for (const w of old) delete E.meta[w.id];
+    const nw=parts.flatMap(p=>p.ws);
     E.words=E.words.filter(w=>!old.includes(w)).concat(nw).sort((a,b)=>a.s-b.s); window.__wordsAt=Date.now();
+    E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
     if ($('sDict').checked) E.applyCorrections(parseDict(dict));
-    E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); openEditor(); selClip=k; panel='clip'; changed(true); renderVideoTrack(); renderPanel();
-    toast(nw.length?`Klip přepsaný – ${nw.length} slov`:'V klipu jsem neslyšel žádnou řeč');
-  }catch(err){ console.error(err); if (project!==proj) return; openEditor(); toast('Přepis se nepovedl: '+err.message); }
+    E.buildPages(); if (all && E.face) { try{ E.applyFacePositions(); }catch(e){} }
+    curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); openEditor();
+    if (!all && ks.length===1){ selClip=ks[0]; panel='clip'; }
+    changed(true); renderVideoTrack(); renderPanel();
+    toast(nw.length?(all?`Titulky vytvořené znovu – ${nw.length} slov`:`Klip přepsaný – ${nw.length} slov`):'Neslyšel jsem žádnou řeč');
+  }catch(err){ console.error(err); if (project!==proj) return; E.buildPages(); openEditor(); toast('Přepis se nepovedl: '+err.message); }
 }
+const transcribeClip=k=>transcribeClips([k],false);
+const transcribeAllClips=()=>transcribeClips(E.clipList().map((c,i)=>i),true);
 // smazat titulek (jeho slova)
 function deletePage(k){
   const p=E.pages[k]; if (!p) return;
@@ -315,19 +328,7 @@ function deletePage(k){
   E.words=E.words.filter(w=>!ids.has(w.id)); for (const id of ids) delete E.meta[id];
   changed(true); renderPanel(); toast('Titulek smazaný (vrátíš šipkou zpět)');
 }
-// titulky znovu v otevřeném projektu (styl, střihy, přechody, overlaye zůstanou)
-async function regenCaptions(){
-  const proj=project; vid.pause(); show('busy'); busy('Analyzuji video…','Vytahuju zvuk z videa',0.02);
-  try{
-    const all=(await transcribeVideo()).filter(w=>w.t);
-    if (project!==proj) return;
-    if (!all.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
-    E.words=all; E.meta={}; E.setWid(Math.max(0,...E.words.map(w=>w.id))+1); window.__wordsAt=Date.now();
-    if ($('sDict').checked){ const n=E.applyCorrections(parseDict(dict)); if (n) toast(`Opraveno ${n}× podle slovníku`); }
-    E.buildPages(); if (E.face) { try{ E.applyFacePositions(); }catch(e){} }
-    hist=[snapshot()]; hi=0; curPage=0; openEditor(); saveProject(); toast('Titulky jsou zpátky');
-  }catch(err){ console.error(err); if (project!==proj) return; openEditor(); toast('Přepis se nepovedl: '+err.message); }
-}
+const regenCaptions=()=>transcribeAllClips();
 $('genBtn').onclick=async()=>{
   if ($('genBtn').disabled) return;
   const run=++genRun, proj=project; $('genBtn').disabled=true;
@@ -785,9 +786,9 @@ function openClipPanel(){ panel='clip'; $('bnav').querySelectorAll('button').for
 function pClip(){
   const L=E.clipList(), k=clamp(selClip,0,L.length-1), c=L[k], st=E.clipStarts();
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-scissors"/></svg><div><b>${c.a?'Vložený klip':'Úsek videa'} ${k+1} / ${L.length}</b><small>${fmt(st[k])} – ${fmt(st[k]+E.clipDur(c))} · délka ${E.clipDur(c).toFixed(1)} s${E.clipSp(c)!==1?` (rychlost ${E.clipSp(c)}×)`:''}. Konce úseku zkrátíš tažením za okraje na stopě videa.</small></div></div>
+  <div class="btnrow"><button class="btn primary" id="clTrans">${I('wand')} Znovu přepsat titulky tohoto klipu (AI)</button></div>
   <div class="btnrow"><button class="btn" id="clCut">${I('scissors','grad')} Rozstřihnout v místě hlavy</button><button class="btn" id="clAdd">${I('plus','grad')} Vložit klip</button></div>
   ${c.a?`<label class="ctl"><div class="lb"><span>Hlasitost klipu</span><span>${c.vol??100} %</span></div><input type="range" id="clVol" min="0" max="200" value="${c.vol??100}"></label>`:''}
-  <div class="btnrow"><button class="btn" id="clTrans">${I('wand','grad')} Nový přepis titulků tohoto klipu</button></div>
   <div class="btnrow"><button class="btn" id="clDel" ${L.length<2?'disabled':''}>${I('trash')} Smazat tento úsek</button></div>
   ${k>0?`<div class="clabel">Přechod na začátku úseku</div><div class="chips" id="clTr">${E.TRANSITIONS.map(([v,l])=>`<div class="chip ${(c.tr||'none')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:'<div class="note">Na začátku videa přechod není. Přechod se dává mezi dva úseky.</div>'}
   ${k>0 && c.tr && c.tr!=='none'?`<label class="ctl"><div class="lb"><span>Délka přechodu (rychlost)</span><span id="clTrDv">${(c.trDur||E.TRDEF[c.tr]||0.12).toFixed(2)} s</span></div><input type="range" id="clTrD" min="0.04" max="2.5" step="0.01" value="${c.trDur||E.TRDEF[c.tr]||0.12}"></label><div class="note">Vlevo = rychlejší, vpravo = pomalejší.</div>
@@ -909,7 +910,8 @@ binders.mix=()=>{
 function pCaptions(){
   const pg=E.pages.map((p,k)=>{ const ws=[]; for(let i=p.a;i<=p.b;i++){ const w=E.words[i]; ws.push(`<span class="w ${w.em?'em':''}" data-i="${i}">${esc(w.t)}</span>`); }
     const m=E.meta[E.keyOf(p)]; return `<div class="pg ${k===curPage?'cur':''}" data-k="${k}"><div class="t">${fmt(p.s)}</div><div class="ws">${ws.join('')}</div><button class="ed" data-ed="${k}">${I('pencil')}</button></div>`; }).join('');
-  return `${trkSection(E.pages[curPage]?(E.meta[E.keyOf(E.pages[curPage])]||{}).trk:null,'page')}
+  return `<div class="btnrow"><button class="btn primary" id="reTrClip">${I('wand')} Znovu přepsat klip</button><button class="btn" id="reTrAll">${I('refresh')} Znovu přepsat vše</button></div>
+  ${trkSection(E.pages[curPage]?(E.meta[E.keyOf(E.pages[curPage])]||{}).trk:null,'page')}
   <div class="btnrow"><button class="btn" id="editTxt">${I('pencil')} Upravit text</button><button class="btn" id="batchBtn">${I('list')} Hromadná úprava</button></div>
   <div class="btnrow"><button class="btn" id="capDel">${I('trash')} Smazat vybraný titulek</button></div>
   <div class="note">Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo). Tužka u titulku = upravit text.</div>
@@ -929,6 +931,8 @@ function pCaptions(){
 binders.captions=()=>{
   $('editTxt').onclick=()=>openInline(curPage);
   $('batchBtn').onclick=openBatch;
+  $('reTrClip').onclick=()=>transcribeClip(E.clipAt(PV.currentTime));
+  $('reTrAll').onclick=()=>{ if (confirm('Znovu přepsat celé video? Všechny titulky se vytvoří znovu (styl, střihy a přechody zůstanou).')) transcribeAllClips(); };
   $('capDel').onclick=()=>deletePage(curPage);
   $('dictBtn').onclick=()=>openSheet('sheetDict');
   $('resetOne').onclick=()=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); delete m.own; changed(); renderPanel(); toast('Titulek má zase společný styl'); } };
