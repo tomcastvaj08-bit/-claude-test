@@ -517,3 +517,11 @@ button.pro.on{background:var(--green)}
 .flag{width:22px;height:16.5px;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex:none;display:block}#uiLangCode{display:flex;align-items:center;gap:5px}#uiLangCode .flag{width:18px;height:13.5px}.uil .nm{flex:1}.uil small{font-size:11px;font-weight:700;opacity:.6}
 .uil.on{border-color:#2f6bff;box-shadow:0 0 0 2px rgba(47,107,255,.25)}.uil .ic{width:16px;height:16px;color:#2f6bff}
 .uil.off{opacity:.45;cursor:default}
+
+/* 3D texty: barvy hlavního řádku + 3D náhledy */
+.d3cols{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.d3cols::-webkit-scrollbar{display:none}
+.d3c{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer}
+.d3c i{width:40px;height:40px;border-radius:12px;border:2px solid transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.d3c.on{color:var(--text)}.d3c.on i{border-color:var(--acc)}
+.tpl.is3d .pv{font-size:21px}

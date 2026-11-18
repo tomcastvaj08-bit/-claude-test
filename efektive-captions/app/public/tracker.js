@@ -912,6 +912,7 @@ function relAngle(A, B, pa, pb) {
 // Postup: 1) běžné sledování rámečku (funguje i pro malý obličej v dálce) = vodítko,
 // 2) v každém snímku AI najde obličej ve výřezu kolem vodítka a dá přesnou polohu (bez ujíždění),
 // 3) kde obličej najít nejde (moc malý, otočený, zakrytý rukou), jede vodítko posunuté tak, aby navazovalo.
+TRK.facesIn = (src, x0, y0, side) => TRK.faceLoad().then(fl => facesIn(fl, src, x0, y0, side)); TRK._facesIn = facesIn; TRK.headPose = headPose;
 // box = rámeček kolem obličeje (normalizovaný, jako u TRK.run); vrací stejný tvar dráhy jako TRK.run + kind:'face'
 TRK.runFace = async (o) => {
   const { video, file, onP, cancel } = o;
