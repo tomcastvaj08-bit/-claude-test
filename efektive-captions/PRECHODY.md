@@ -73,3 +73,15 @@ Soubory `app/public/sfx/*.m4a` (špička −1 dB, AAC 128k). Nejsilnější mís
 - Č. 29 („spoušť foťáku“ / „záblesk“) a č. 31 („cink“) zní jako POKLADNA → vyřazené z nabídky i výchozích. Č. 22 („lusknutí“) taky vyřazené (neověřené).
 - V SFX videu klienta NENÍ zvuk foťáku ani lusknutí → čekáme na zvuk od klienta. Do té doby blesk = mini swoosh.
 - 3D mix: na každé slovo jen jemný mini swoosh, shine ve 3D mixu bez zvuku.
+
+## 18. 11. – výchozí zvuky přechodů podle předloh (klient: „podívej se, jaké zvuky používají ve videích“)
+Rozbor zvuků přechodů v předlohách (spektrogram, délka, směr výšky): záblesky = krátký cvak, propad = krátký nádech / klesavý svist, tunel = klesavý svist, průlet = svist. Výchozí nastavení:
+| přechod | výchozí zvuk |
+|---|---|
+| Blesk (flashw) | Cvak (nový `click.m4a`, 0,19 s) |
+| Negativ (flash2) | Mini glitch |
+| Propad plátna 1/2/2+blur/3, rychlý | Krátký nádech (`pushr`) |
+| Tunel | Klesavý svist (`push`) |
+| Průlet + dohoupání, Zahoupání | Svist (`swing`) |
+| Warp | Mini swoosh |
+Vše jde u každého přechodu přepnout v nabídce zvuků. Pokladní/cinkavé zvuky v nabídce nejsou.

@@ -1129,9 +1129,10 @@ E.applyFacePositions = () => {
 E.trCustom = {};   // vlastní zvuky přechodů: typ přechodu → {buf (AudioBuffer), peak (s – nejsilnější místo)}
 E.bank = {};       // zvuková sada appky (public/sfx): jméno → {buf, peak}
 E.BANK_WORD = { mtick:['tick',0.2], mswoosh:['swoosh',0.25] };   // mini zvuky na slova (velmi tiché)
-E.BANK_TR = { warp:'warp', tunnel:'tunnel', flysway:'warp', push1:'push', pushsway:'push', push:'push', pushb:'push', pushr:'pushr', swing:'swing', swingn:'swing', flashw:'swoosh', flash2:'glitch' };
+// výchozí zvuky podle typu zvuku v předlohách (tunel: klesající svist, propad: krátký nádech, průlet: svist, záblesk: cvak)
+E.BANK_TR = { warp:'swoosh', tunnel:'push', flysway:'swing', push1:'pushr', pushsway:'pushr', push:'pushr', pushb:'pushr', pushr:'pushr', swing:'swing', swingn:'swing', flashw:'click', flash2:'glitch' };
 // zvuky, ze kterých si jde u přechodu vybrat (výchozí = podle typu přechodu)
-E.TRSND = [['auto','Výchozí'],['swoosh','Mini swoosh'],['swing','Svist'],['push','Klesavý svist'],['pushr','Krátký nádech'],['tunnel','Stoupavý svist'],['warp','Nádech + rána'],['glitch','Mini glitch'],['glitch2','Glitch'],['none','Bez zvuku']];   // jen swooshe a glitche (cinkavé zvuky pryč)
+E.TRSND = [['auto','Výchozí'],['swoosh','Mini swoosh'],['swing','Svist'],['push','Klesavý svist'],['pushr','Krátký nádech'],['tunnel','Stoupavý svist'],['warp','Nádech + rána'],['glitch','Mini glitch'],['glitch2','Glitch'],['click','Cvak'],['none','Bez zvuku']];   // jen swooshe a glitche (cinkavé zvuky pryč)
 E.sfxInto = (ac, dest, t0, type, vol, dur, buf) => {
   if (!type || type==='none') return;
   const g=ac.createGain(); g.connect(dest);

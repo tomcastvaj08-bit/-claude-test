@@ -378,7 +378,7 @@ async function trSfxSet(tr, blob, save){
 }
 trSfxLoadAll();
 // zvuková sada appky (shine, mini zvuky na slova, výchozí zvuky přechodů) – nejsilnější místo se zarovnává na okamžik efektu
-async function bankLoad(){ for (const nm of ['shine','tick','swoosh','warp','tunnel','push','pushr','swing','flash','flash2','camera','snap','glitch','glitch2']){ try{
+async function bankLoad(){ for (const nm of ['shine','tick','swoosh','warp','tunnel','push','pushr','swing','flash','flash2','camera','snap','glitch','glitch2','click']){ try{
   const r=await fetch('sfx/'+nm+'.m4a'); if (!r.ok) continue; const ab=await decodeVideoAudio(await r.blob());
   const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0; for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
   E.bank[nm]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',nm,e); } } }
