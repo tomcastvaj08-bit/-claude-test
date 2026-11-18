@@ -489,8 +489,8 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
     }
     // jemný „kontaktní“ stín těsně pod písmem – rozmazání roste plynule s velikostí stínu (žádný skok, žádný ostrý obrys)
     if (S.shadowSize>0 && !(ex>0)){ const k=Math.min(1,S.shadowSize/100); m.shadowColor=hexA(S.cShadow,Math.min(0.45,S.shadowA/100*0.7)*(0.6+0.4*k)); m.shadowBlur=px*(0.05+0.15*k); m.shadowOffsetX=0; m.shadowOffsetY=px*(0.015+0.02*k); fillT(m,s,0,0,px,tk); }
-    // 3D LESK (podle předloh z AE): ostrá tenká světlá hrana nahoře, jemný vnitřní stín dole, plynulé ztmavení ke spodku,
-    // u Lesklého měkký odlesk vlevo nahoře, u Světlé hrany světlý lem po obvodu; pod písmem těsný tmavý „kontaktní“ stín.
+    // 3D LESK (podle předloh z AE, jeden styl): ostrá tenká světlá hrana nahoře, jemný vnitřní stín dole, plynulé ztmavení ke spodku,
+    // měkký odlesk vlevo nahoře; pod písmem těsný tmavý „kontaktní“ stín.
     // Jen na zvoleném řádku (hlavní / vedlejší / oba). Kreslí se jednou do mezipaměti.
     if (gl){
       const mk=ctx=>{ setFont(ctx,L.fam,L.wt,L.it,px,tk); ctx.textBaseline='middle'; ctx.textAlign='center'; };
@@ -509,11 +509,9 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
       { const e=band('#000',-Math.max(1,px*0.035)); atop(c=>c.drawImage(e,0,0),0.38*gA+0.1,px*0.012); }
       // ostrá světlá hrana nahoře
       { const e=band('#fff',Math.max(1,px*0.022)); atop(c=>c.drawImage(e,0,0),0.55*gA+0.3,px*0.004); }
-      if (gl==='gloss'){   // měkký odlesk vlevo nahoře (jako PREMIUM)
+      {   // měkký odlesk vlevo nahoře (jako PREMIUM) – jediný styl 3D lesku
         const r=fc.createRadialGradient(cx-half*0.45,y0,0,cx-half*0.45,y0,Math.max(half*0.9,px*0.8)); r.addColorStop(0,'rgba(255,255,255,'+(0.42*gA)+')'); r.addColorStop(1,'rgba(255,255,255,0)');
         atop(c=>{ c.fillStyle=r; c.fillRect(0,0,W,H); },1,0); }
-      if (gl==='rim'){     // světlý lem po celém obvodu (jako Whooshes, bez záře)
-        const d=Math.max(1,px*0.028); for (const [dx,dy] of [[0,d],[0,-d],[d,0],[-d,0]]){ const e=band('#fff',dy,dx); atop(c=>c.drawImage(e,0,0),(0.35*gA+0.2),px*0.006); } }
       m.save(); m.setTransform(1,0,0,1,0,0);
       // těsný tmavý stín přímo pod písmem
       m.shadowColor='rgba(0,0,0,'+(0.45+0.35*gA)+')'; m.shadowBlur=px*0.03; m.shadowOffsetX=0; m.shadowOffsetY=Math.max(1,px*0.03);

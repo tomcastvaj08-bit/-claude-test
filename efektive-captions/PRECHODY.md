@@ -132,3 +132,5 @@ Posun obsahu nabídky dolů (> 24 px) → stav ed-exp: menší náhled, timeline
 Ovládání: Šablony → Rychlé efekty → „3D lesk“ (převede aktuální styl); Styl → Stín → 3D lesk (Lesklý / Matný / Neon) + Síla. Šablony mají gloss:'off' (přepnutí šablony lesk vypne).
 
 3D lesk v2 (podle detailu předloh): bez záře a bez tlusté hloubky. Ostrá tenká světlá hrana nahoře, jemný vnitřní stín dole, plynulé ztmavení ke spodku, těsný tmavý stín pod písmem; Lesklý + měkký odlesk vlevo nahoře; Světlá hrana = tenký světlý lem po obvodu (jako Whooshes, bez záře). Volba řádku `glossOn` main | sec | both (výchozí Hlavní).
+
+3D lesk v3: jen JEDEN styl (ten „lesklý“, schválený na žluté a modré) – volby Matný / Světlá hrana zrušené, staré hodnoty se převedou na lesklý. Ovládání: Vypnuto / Zapnuto, řádek, síla.

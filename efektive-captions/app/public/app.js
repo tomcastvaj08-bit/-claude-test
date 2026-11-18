@@ -115,6 +115,7 @@ function restore(json){
   // staré výchozí hlasitosti byly moc hlasité
   mixDefaults(s.G); if (s.G && !('enterBy' in s.G)) E.G.enterBy = s.G.wordByWord===false?'page':'word'; E.words=s.words; E.meta=s.meta||{}; E.zones=s.zones||[]; E.flags.mute=!!s.mute; vid.muted=E.flags.mute;
   dedupeWords();
+  { const fix=o=>{ if (o && o.gloss && o.gloss!=='off' && o.gloss!=='gloss') o.gloss='gloss'; }; fix(E.G); for (const k in E.meta) fix(E.meta[k].own); }   // 3D lesk má jen jeden styl
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
   E.face=Array.isArray(s.face)?s.face:null;
   E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
@@ -1084,7 +1085,7 @@ function pStyle(){
     ${slider('Průhlednost','shadowA',0,100,1,'%')}
     ${slider('Vzdálenost stínu','shadowDist',0,40)}
     <div class="clabel">3D lesk (jako z After Effects)</div>
-    ${chips('','gloss',[['off','Vypnuto'],['gloss','Lesklý'],['matte','Matný'],['rim','Světlá hrana']])}
+    ${chips('','gloss',[['off','Vypnuto'],['gloss','Zapnuto']])}
     ${S.gloss&&S.gloss!=='off'?chips('Na kterém řádku','glossOn',[['main','Hlavní'],['sec','Vedlejší'],['both','Oba']])+slider('Síla 3D lesku','glossAmt',10,100,1,'%'):''}
     ${slider('3D hloubka písma (extrude)','extrude',0,100)}
     ${chips('Styl 3D hloubky','extrudeStyle',[['light','Světlá'],['dark','Tmavá']])}`;

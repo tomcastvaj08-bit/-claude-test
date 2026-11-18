@@ -845,5 +845,6 @@ window.I18N_DICT.en={
 "Na kterém řádku": "On which line",
 "Hlavní": "Main",
 "Vedlejší": "Secondary",
-"Oba": "Both"
+"Oba": "Both",
+"Zapnuto": "On"
 };
