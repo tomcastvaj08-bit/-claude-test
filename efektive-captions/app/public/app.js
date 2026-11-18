@@ -270,12 +270,8 @@ async function afterWords(){
   saveProject();
 }
 let genRun=0;
-$('genBtn').onclick=async()=>{
-  if ($('genBtn').disabled) return;
-  const run=++genRun, proj=project; $('genBtn').disabled=true;
-  readSetup(); show('busy');
-  try{
-    busy('Analyzuji video…','Vytahuju zvuk z videa',0.02);
+// AI přepis řeči z videa projektu → slova
+async function transcribeVideo(){
     const {data,rate}=await extractAudio(videoFile);
     const SEG=45, CH=rate*SEG, n=Math.ceil(data.length/CH), all=[];
     for (let i=0;i<n;i++){
@@ -287,6 +283,28 @@ $('genBtn').onclick=async()=>{
       if (!r.ok||j.error) throw new Error(j.error||('Chyba '+r.status));
       const off=i*SEG; j.words.forEach(w=>{ const raw=String(w.word).trim(); if (raw) all.push(E.mkWord(raw,w.start+off,w.end+off)); });
     }
+    return all;
+}
+// titulky znovu v otevřeném projektu (styl, střihy, přechody, overlaye zůstanou)
+async function regenCaptions(){
+  const proj=project; vid.pause(); show('busy'); busy('Analyzuji video…','Vytahuju zvuk z videa',0.02);
+  try{
+    const all=(await transcribeVideo()).filter(w=>w.t);
+    if (project!==proj) return;
+    if (!all.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
+    E.words=all; E.meta={}; E.setWid(Math.max(0,...E.words.map(w=>w.id))+1); window.__wordsAt=Date.now();
+    if ($('sDict').checked){ const n=E.applyCorrections(parseDict(dict)); if (n) toast(`Opraveno ${n}× podle slovníku`); }
+    E.buildPages(); if (E.face) { try{ E.applyFacePositions(); }catch(e){} }
+    hist=[snapshot()]; hi=0; curPage=0; openEditor(); saveProject(); toast('Titulky jsou zpátky');
+  }catch(err){ console.error(err); if (project!==proj) return; openEditor(); toast('Přepis se nepovedl: '+err.message); }
+}
+$('genBtn').onclick=async()=>{
+  if ($('genBtn').disabled) return;
+  const run=++genRun, proj=project; $('genBtn').disabled=true;
+  readSetup(); show('busy');
+  try{
+    busy('Analyzuji video…','Vytahuju zvuk z videa',0.02);
+    const all=await transcribeVideo();
     // uživatel mezitím odešel / otevřel jiný projekt → výsledek zahodit, nic nepřepisovat
     if (run!==genRun || project!==proj || !$('busy').classList.contains('on')) return;
     E.words=all.filter(w=>w.t); if (!E.words.length) throw new Error('Ve videu jsem neslyšel žádnou řeč.');
@@ -679,7 +697,7 @@ function bindSub(){ document.querySelectorAll('#panel .sub[data-sub]').forEach(s
 function renderPanel(){
   const P=$('panel'); C.length=0;
   let h='';
-  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='audio' && panel!=='fxm' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML='<div class="muted">Žádné titulky. Vytvoř je přes AI přepis nebo vlož text ručně.</div>'; return; }
+  if (!E.pages.length && panel!=='overlay' && panel!=='clip' && panel!=='audio' && panel!=='fxm' && panel!=='kf' && panel!=='obj' && panel!=='color'){ P.innerHTML=`<div class="muted">Žádné titulky.</div><button class="btn" id="regenCap">${I('wand','grad')} Vytvořit titulky (AI přepis)</button>`; $('regenCap').onclick=regenCaptions; return; }
   switch(panel){
     case 'captions': h=pCaptions(); break;
     case 'templates': h=pTemplates(); break;
