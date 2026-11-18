@@ -164,7 +164,7 @@ X.exportVideo = async (opts) => {
       }
       await aenc.flush(); aenc.close();
     }
-    const ctxBehind = opts.behind && window.AI;
+    const ctxBehind = opts.behind && window.AI && !(window.PERSON && PERSON.data);   // nová maska postavy je předpočítaná → rychlá cesta
     // rychlá cesta: snímky se dekódují postupně (MP4/MOV), bez přetáčení; text za postavou potřebuje <video> → přetáčení
     let src=null;
     if (!ctxBehind && window.openFrameSource){ try{ src=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); }catch(e){ console.warn('Rychlé čtení snímků nejde, použiji přetáčení',e); } }

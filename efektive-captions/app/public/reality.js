@@ -90,10 +90,14 @@ RE.stab = t => {
   const ts = E._fT != null ? E._fT : E.out2src(t), Z = Math.max(1, Math.min(2, (E.G.reZoom || 130) / 100));
   let sg = segs.find(q => ts >= q.t[0] - 0.02 && ts <= q.t[q.t.length - 1] + 0.02), w = 1;
   if (!sg) { let bd = 0.8; for (const q of segs) { const d = Math.max(0, q.t[0] - ts, ts - q.t[q.t.length - 1]); if (d < bd) { bd = d; sg = q; } } if (!sg) return { z: Z, x: 0, y: 0 }; w = 1 - bd / 0.8; w = w * w * (3 - 2 * w); }
-  const p = headSmooth(sg, ts, STAB_SIG), lim = (Z - 1) / 2;
+  // režim „Plynule“ (jako předloha): kamera obličej jen měkce dohání (vyhlazení ~0,7 s) a pomalu se přibližuje během záběru
+  const soft = E.G.stabMode === 'smooth';
+  const p = headSmooth(sg, ts, soft ? 0.7 : STAB_SIG);
+  let Zt = Z; if (soft) { const a = sg.t[0], b = sg.t[sg.t.length - 1], u = Math.max(0, Math.min(1, (ts - a) / Math.max(0.5, b - a))); Zt = Z * (1 + 0.05 * (0.5 - 0.5 * Math.cos(Math.PI * u))); }
+  const lim = (Zt - 1) / 2;
   const NY = (E.G.reNoseY || 39) / 100;   // nos jako v předloze: uprostřed na šířku, ve 39 % výšky
-  const tx = Math.max(-lim, Math.min(lim, -Z * (p[0] / W - 0.5))) * w, ty = Math.max(-lim, Math.min(lim, (NY - 0.5) - Z * (p[1] / H - 0.5))) * w;
-  return { z: Z, x: tx * 100, y: ty * 100 };
+  const tx = Math.max(-lim, Math.min(lim, -Zt * (p[0] / W - 0.5))) * w, ty = Math.max(-lim, Math.min(lim, (NY - 0.5) - Zt * (p[1] / H - 0.5))) * w;
+  return { z: Zt, x: tx * 100, y: ty * 100 };
 };
 // poloha hlavy v čase ts (vyhlazená přes ~0,2 s – plynule, bez chvění), mimo úsek drží krajní polohu
 function headAt(sg, ts) {

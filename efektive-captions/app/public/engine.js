@@ -968,7 +968,7 @@ function wordBoxes(lines,S){
 // ---------- TEXT ZA POSTAVOU ----------
 // E.personMask(t) vrací canvas s maskou postavy (bílá = postava) nebo null; vyplňuje ai.js
 E.personMask = null;
-let pcv=null, pcc=null, hbase=null, hcap=null;
+let pcv=null, pcc=null, hbase=null, hcap=null, pbase=null;
 function drawPersonOver(c, mask){
   if (!pcv||pcv.width!==cv.width||pcv.height!==cv.height){ pcv=document.createElement('canvas'); pcv.width=cv.width; pcv.height=cv.height; pcc=pcv.getContext('2d'); }
   pcc.globalCompositeOperation='source-over'; pcc.clearRect(0,0,cv.width,cv.height);
@@ -1163,6 +1163,10 @@ E.render = (t, opts={}) => {
   let mainLines=null, mainS=null, behind=false;
   // text za hlavou (chytře): snímek bez titulků si zapamatovat, po titulcích přes ně znovu nakreslit hlavu
   const headOn = !F.transparent && window.HEAD && HEAD.data && ks.some(kk=>E.styleOf(E.pages[kk]).behind==='head') && HEAD.has(E.out2src?E.out2src(t):t);
+  // text za postavou (v2): podklad pod postavou si zapamatovat, po titulcích přes ně znovu nakreslit postavu
+  const pXf=E.vxfAt(t), pR=(!F.transparent && window.PERSON && PERSON.data && ks.some(kk=>E.styleOf(E.pages[kk]).behind==='on')) ? PERSON.rect(t,cv.width,cv.height,pXf) : null;
+  if (pR){ if (!pbase||pbase.width!==cv.width||pbase.height!==cv.height){ pbase=document.createElement('canvas'); pbase.width=cv.width; pbase.height=cv.height; }
+    const x=pbase.getContext('2d'); x.clearRect(pR.x,pR.y,pR.w,pR.h); x.drawImage(cv,pR.x,pR.y,pR.w,pR.h,pR.x,pR.y,pR.w,pR.h); }
   if (headOn){ if (!hbase||hbase.width!==cv.width||hbase.height!==cv.height){ hbase=document.createElement('canvas'); hbase.width=cv.width; hbase.height=cv.height; hcap=document.createElement('canvas'); hcap.width=cv.width; hcap.height=cv.height; }
     var hR=HEAD.rect(t,cv.width,cv.height,E.vxfAt(t)); if (hR){ const x=hbase.getContext('2d'); x.clearRect(hR.x,hR.y,hR.w,hR.h); x.drawImage(cv,hR.x,hR.y,hR.w,hR.h,hR.x,hR.y,hR.w,hR.h); } }
   const wbox=[];
@@ -1175,7 +1179,8 @@ E.render = (t, opts={}) => {
   if (headOn && hR){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); const x=hcap.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); if (!E.G.reMode) x.drawImage(cv,0,0); ctx.restore(); HEAD.compose(ctx,cv.width,cv.height,t,hbase,hcap,E.vxfAt(t),{words:wbox}); }
   E.lastLines=mainLines;
   // text za postavou: přes titulky se znovu nakreslí jen postava z videa
-  if (behind && !F.transparent && E.personMask){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }
+  if (pR) PERSON.compose(ctx,cv.width,cv.height,t,pbase,pXf);
+  else if (behind && !F.transparent && E.personMask && !(window.PERSON && PERSON.data)){ const m=E.personMask(t); if (m) drawPersonOver(ctx,m); }   // starší projekty
   for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t);
   E.drawWatermark(ctx,cv.width,cv.height);
   if (opts.box && mainLines) E.drawBox(mainLines,mainS);

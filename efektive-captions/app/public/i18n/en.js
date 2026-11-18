@@ -967,5 +967,11 @@ window.I18N_DICT.en={
 "Napoprvé appka projde video a najde obličej v každém snímku (chvíli to trvá).": "The first time, the app goes through the video and finds the face in every frame (takes a while).",
 "Hledám obličej v každém snímku… # %": "Finding the face in every frame… # %",
 "Stabilizace vypnutá": "Stabilization off",
-"Hotovo – obličej je pořád uprostřed": "Done – the face stays centered"
+"Hotovo – obličej je pořád uprostřed": "Done – the face stays centered",
+"Zamčeno (obličej přesně uprostřed)": "Locked (face exactly centered)",
+"Plynule (kamera jemně dohání)": "Smooth (camera gently follows)",
+"Odděluji postavu v každém snímku…": "Separating the person in every frame…",
+"Odděluji postavu… # %": "Separating the person… # %",
+"Hotovo – text je za postavou": "Done – text is behind the person",
+"Odděluji postavu, aby text mohl být za ní": "Separating the person so text can go behind"
 };

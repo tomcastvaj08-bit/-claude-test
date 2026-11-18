@@ -180,7 +180,8 @@ async function openProject(id){
   busy('Otevírám projekt…','Načítám video',0.5);
   await loadVideo(raw instanceof File?raw:new File([raw],rec.fileName||'video.mp4',{type:raw.type}));
   restore(rec.state);
-  if (window.HEAD){ HEAD.data=null; try{ const hr=await dbDo('readonly',st=>st.get(rec.id+'|head'),'files'); if (hr && hr.head) HEAD.load(hr.head); }catch(e){} }   // rozbor hlavy (text za hlavou)
+  if (window.HEAD){ HEAD.data=null; try{ const hr=await dbDo('readonly',st=>st.get(rec.id+'|head'),'files'); if (hr && hr.head) HEAD.load(hr.head); }catch(e){} }
+  if (window.PERSON){ PERSON.data=null; try{ const pr=await dbDo('readonly',st=>st.get(rec.id+'|person'),'files'); if (pr && pr.person) PERSON.load(pr.person); }catch(e){} }   // rozbor hlavy (text za hlavou)
   // titulky zmizely (chyba starší verze) a je záloha → vrátit ji
   if (!E.words.length && rec.backup){ try{ const b=JSON.parse(rec.backup); if ((b.words||[]).length){ restore(rec.backup); setTimeout(()=>toast('Titulky obnoveny ze zálohy'),800); } }catch(e){} }
   project.restoredOk=true;
@@ -220,7 +221,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; if (window.HEAD) HEAD.data=null; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; if (window.HEAD) HEAD.data=null; if (window.PERSON) PERSON.data=null; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
@@ -274,7 +275,7 @@ async function afterWords(){
   }
   if (doBehind){
     busy('Analyzuji video…','Odstraňuji pozadí, aby text mohl být za postavou',0);
-    try{ await AI.analyzePerson(vid,p=>busy('Analyzuji video…','Odstraňuji pozadí, aby text mohl být za postavou',p)); E.G.behind='on'; analysed.person=true; }catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit'); }
+    try{ const v=await auxVideo(); try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>busy('Analyzuji video…','Odděluji postavu, aby text mohl být za ní',p)}); } finally { freeVideo(v); } E.G.behind='on'; analysed.person=true; personSave(); }catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit'); }
   }
   hist=[snapshot()]; hi=0; curPage=0;
   openEditor();
@@ -791,7 +792,8 @@ function pRe(){
   const on=!!E.G.faceStab;
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-user"/></svg><div><b>Stabilizace na obličej</b><small>Video se přiblíží a posouvá tak, aby obličej (nos) byl pořád uprostřed – jako v realitních reels. Titulky zůstanou, jak je máš.</small></div></div>
   <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout stabilizaci':'Zapnout stabilizaci'}</button>
-  ${on?`<label class="ctl"><div class="lb"><span>Přiblížení videa</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label>
+  ${on?`<div class="chips" id="reMode">${[['lock','Zamčeno (obličej přesně uprostřed)'],['smooth','Plynule (kamera jemně dohání)']].map(([v,l])=>`<div class="chip ${(E.G.stabMode||'lock')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <label class="ctl"><div class="lb"><span>Přiblížení videa</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label>
   <label class="ctl"><div class="lb"><span>Výška obličeje</span><span id="reNoseV">${E.G.reNoseY||39} %</span></div><input type="range" id="reNose" min="25" max="60" value="${E.G.reNoseY||39}"></label>
   <div class="note">Víc přiblížení = obličej drží uprostřed i když se člověk hýbe víc do stran.</div>`:''}
   <div class="note">Napoprvé appka projde video a najde obličej v každém snímku (chvíli to trvá).</div>`;
@@ -819,6 +821,7 @@ async function reToggle(btn){
 }
 binders.re=()=>{
   $('reOn').onclick=()=>reToggle($('reOn'));
+  if ($('reMode')) $('reMode').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.stabMode=c.dataset.v; changed(); renderPanel(); };
   if ($('reZoom')){ $('reZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('reZoomV').textContent=E.G.reZoom+' %'; }; $('reZoom').onchange=()=>changed(); }
   if ($('reNose')){ $('reNose').oninput=e=>{ E.G.reNoseY=+e.target.value; $('reNoseV').textContent=E.G.reNoseY+' %'; }; $('reNose').onchange=()=>changed(); }
 };
@@ -1441,10 +1444,9 @@ binders.ai=()=>{
         catch(err){ console.warn(err); toast('Nepovedlo se: '+(err.message||err)); freeVideo(v); renderPanel(); return; }
         freeVideo(v); }
       setVal('behind','head'); toast('Hotovo – text je za hlavou'); renderPanel(); return; }
-    if (!AI.masks.length){ const v=await auxVideo(); toast('Odstraňuji pozadí…');
-      try{ await AI.analyzePerson(v,p=>{ c.textContent='Odstraňuji pozadí… '+Math.round(p*100)+' %'; }); analysed.person=true; }catch(err){ toast('Nepovedlo se: '+err.message); freeVideo(v); renderPanel(); return; } freeVideo(v); }
-    else AI.useMasks();
-    setVal('behind','on'); renderPanel(); };
+    if (!PERSON.data){ const v=await auxVideo(); vid.pause(); toast('Odděluji postavu v každém snímku…');
+      try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>{ c.textContent='Odděluji postavu… '+Math.round(p*100)+' %'; }}); personSave(); analysed.person=true; }catch(err){ console.warn(err); toast('Nepovedlo se: '+(err.message||err)); freeVideo(v); renderPanel(); return; } freeVideo(v); }
+    setVal('behind','on'); toast('Hotovo – text je za postavou'); renderPanel(); };
   // při zapnutí „text za postavou“ nejdřív oddělit postavu
   document.querySelectorAll('#panel .sw').forEach(el=>{ if (el.id!=='faceDodge') el.onchange=async()=>{
     if (el.checked && !AI.masks.length){ el.disabled=true; toast('Odstraňuji pozadí…'); const v=await auxVideo();
@@ -2186,6 +2188,7 @@ function objBegin(o){
 }
 function trkMsgShort(m){ toast(m); }
 // rozbor hlavy uložit k projektu (zvlášť, ať se neukládá s každou úpravou)
+async function personSave(){ try{ if (project && PERSON.data) await dbDo('readwrite',st=>st.put({id:project.id+'|person',person:PERSON.data}),'files'); }catch(e){ console.warn('maska postavy se neuložila',e); } }
 async function headSave(){ try{ if (project && HEAD.data) await dbDo('readwrite',st=>st.put({id:project.id+'|head',head:HEAD.save()}),'files'); }catch(e){ console.warn('rozbor hlavy se neuložil',e); } }
 // mnohoúhelník (normalizovaný) → maska
 // hrany obrysu doladit na skutečnou hranu objektu ve snímku v plném rozlišení videa (max. 1920 px)
