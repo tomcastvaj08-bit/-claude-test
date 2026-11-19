@@ -546,3 +546,16 @@ button.pro.on{background:var(--green)}
 .mkc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;text-align:left;border:2px solid var(--line);background:var(--card);border-radius:14px;cursor:pointer;font:inherit;color:inherit}
 .mkc .ic{width:26px;height:26px}.mkc b{font-size:15px}.mkc small{font-size:11.5px;color:var(--muted);line-height:1.3}
 .mkfx{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mkfx .chip{text-align:center}
+
+/* čekací okno (Reality se připravuje) */
+#waitOv{position:fixed;inset:0;z-index:400;background:rgba(10,12,18,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
+#waitOv.on{display:flex}
+#waitOv .wo-box{background:var(--card,#fff);color:var(--text,#111);width:min(340px,100%);padding:24px 20px;border-radius:18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+#waitOv .wo-spin{width:46px;height:46px;margin:0 auto 14px;border-radius:50% !important;border:5px solid rgba(91,130,255,.2);border-top-color:#1f4dff;animation:wospin .9s linear infinite}
+@keyframes wospin{to{transform:rotate(360deg)}}
+#waitOv .wo-t{display:block;font-size:17px;margin-bottom:6px}
+#waitOv .wo-s{font-size:13px;color:var(--muted,#666);min-height:18px}
+#waitOv .wo-bar{height:8px;border-radius:6px;background:rgba(91,130,255,.15);overflow:hidden;margin:14px 0 6px}
+#waitOv .wo-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1f4dff,#13b97a);transition:width .25s}
+#waitOv .wo-p{font-weight:800;font-size:15px}
+#waitOv .wo-n{font-size:11.5px;color:var(--muted,#666);margin-top:10px}

@@ -979,5 +979,9 @@ window.I18N_DICT.en={
 "Vypnout Reality": "Turn off Real estate",
 "Po zapnutí appka jednou projde video: najde obličej a oddělí postavu v každém snímku (chvíli to trvá). Titulek můžeš posunout prstem.": "After turning on, the app goes through the video once: finds the face and separates the person in every frame (takes a while). You can move a caption with your finger.",
 "Reality vypnuté": "Real estate off",
-"Hotovo – titulky se střídají za hlavou a na hrudi": "Done – captions alternate behind the head and on the chest"
+"Hotovo – titulky se střídají za hlavou a na hrudi": "Done – captions alternate behind the head and on the chest",
+"Připravuji Reality – vyčkej": "Preparing Real estate – please wait",
+"1/2 · Hledám obličej v každém snímku": "1/2 · Finding the face in every frame",
+"2/2 · Odděluji postavu (maska) v každém snímku": "2/2 · Separating the person (mask) in every frame",
+"Nezavírej appku ani nezamykej telefon, dokud to nedoběhne.": "Don't close the app or lock your phone until it finishes."
 };

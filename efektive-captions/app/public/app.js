@@ -224,7 +224,11 @@ $('fileIn').onchange=async e=>{
   E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; if (window.HEAD) HEAD.data=null; if (window.PERSON) PERSON.data=null; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
-  const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ Object.assign(E.G, dflt); mixDefaults(dflt); }
+  const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ const d={...dflt}; for (const k of ['reMode','faceStab','behind','noSlots','emEach']) delete d[k]; Object.assign(E.G, d); mixDefaults(d); }
+  // nové video = vždy obyčejné titulky: Reality, stabilizace a text za postavou se zapínají až ručně
+  { const keep=E.G; E.G=Object.assign({},E.G0,keep); const B=E.TEMPLATES.base.set;
+    if (E.G.reMode || E.G.noSlots || E.G.emEach || E.G.anim==='reel'){ for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]); }
+    Object.assign(E.G,{reMode:false, faceStab:false, behind:'off', noSlots:false, emEach:false}); }
   if (E.G.fontMain===E.SF) E.G.wMain=500;   // vedlejší řádky vždy začínají SF Pro Medium
   project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now(), restoredOk:true};
   // hned dát najevo, že se něco děje
@@ -837,13 +841,24 @@ function pReality(){
   <button class="btn" id="rlRedo">${I('refresh','grad')} Zamíchat barvy a rozmístění</button>`:''}
   <div class="note">Po zapnutí appka jednou projde video: najde obličej a oddělí postavu v každém snímku (chvíli to trvá). Titulek můžeš posunout prstem.</div>`;
 }
+// čekací okno přes celou appku (Reality se připravuje)
+function waitOn(title){ let w=$('waitOv'); if (!w){ w=document.createElement('div'); w.id='waitOv'; w.innerHTML='<div class="wo-box"><div class="wo-spin"></div><b class="wo-t"></b><div class="wo-s"></div><div class="wo-bar"><i></i></div><div class="wo-p"></div><div class="wo-n">Nezavírej appku ani nezamykej telefon, dokud to nedoběhne.</div></div>'; document.body.appendChild(w); }
+  w.querySelector('.wo-t').textContent=title; w.classList.add('on'); return { set:(step,p)=>{ w.querySelector('.wo-s').textContent=step; w.querySelector('.wo-bar i').style.width=Math.round(p*100)+'%'; w.querySelector('.wo-p').textContent=Math.round(p*100)+' %'; } }; }
+function waitOff(){ const w=$('waitOv'); if (w) w.classList.remove('on'); }
 async function rlToggle(btn){
-  if (E.G.reMode){ reLegacyOff(); changed(); renderPanel(); toast('Reality vypnuté'); return; }
-  if (!await reHead(btn)){ renderPanel(); return; }
-  if (!PERSON.data){ const v=await auxVideo(); vid.pause(); btn.disabled=true;
-    try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>{ btn.textContent='Odděluji postavu v každém snímku… '+Math.round(p*100)+' %'; }}); personSave(); }
-    catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit: '+(e.message||e)); freeVideo(v); renderPanel(); return; }
-    freeVideo(v); }
+  if (E.G.reMode){ reLegacyOff(); E.G.faceStab=false; changed(); renderPanel(); toast('Reality vypnuté – zpět obyčejné titulky'); return; }
+  vid.pause(); if (PB.on) pbStop();
+  const W8=waitOn('Připravuji Reality – vyčkej'); W8.set('Načítám AI…',0);
+  try{
+    if (!(HEAD.data && HEAD.data.nx)){ const v=await auxVideo();
+      try{ await HEAD.analyze({video:v, file:videoFile, onP:p=>W8.set('1/2 · Hledám obličej v každém snímku',p*0.5)}); headSave(); }
+      catch(e){ console.warn(e); toast('Obličej se nepodařilo najít: '+(e.message||e)); return; } finally{ freeVideo(v); } }
+    if (!PERSON.data){ const v=await auxVideo();
+      try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>W8.set('2/2 · Odděluji postavu (maska) v každém snímku',0.5+p*0.5)}); personSave(); }
+      catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit: '+(e.message||e)); return; } finally{ freeVideo(v); } }
+  } finally { waitOff(); renderPanel(); }
+  if (!(HEAD.data && PERSON.data)) return;
+  E.G.faceStab=true; E.G.stabMode='lock';   // obličej zamčený přesně na střed
   for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','_manualPos','size','reMoved']) delete o[x]; }
   Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel();
   toast('Hotovo – titulky se střídají za hlavou a na hrudi');
@@ -1133,7 +1148,7 @@ function pTemplates(){
 }
 // barvy hlavního řádku pro 3D texty (sytý přechod shora dolů)
 const TXT_COLORS=[['Žlutá','#ff9a00','#e8f200'],['Citrón','#fff200','#ffd400'],['Limetková','#e8ff4a','#a8d900'],['Modrá','#14d6ff','#0040ff'],['Červená','#ff3b30','#c00000'],['Růžová','#ff2d9a','#a845ff'],['Zelená','#7dff6a','#00b84a'],['Bílá','#ffffff','#d9dde6'],['Zlatá','#fff1b8','#c98a00']];
-function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k]; return set; }
+function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind','reMode','faceStab','noSlots','emEach','stabMode','reZoom','reNoseY','reMix','reSeed','reStab','rePlace'].includes(k)) set[k]=S[k]; return set; }
 binders.templates=()=>{
   $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('Hotovo – nová videa budou vypadat takhle'); };
   if ($('clrDefault')) $('clrDefault').onclick=()=>{ lsSet('efk_default',null); renderPanel(); toast('Nová videa budou zase ve Stylu 1'); };
