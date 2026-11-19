@@ -126,8 +126,9 @@ RE.invalidate = () => { plan = null; segCache = null; };
 RE._plan = () => plan;
 function build(W, H) {
   const out = new Map(), pl = E.G.rePlace || 'alt', mix = RE.mix(), seed = E.G.reSeed || 0;
-  let lastTop = null;
-  E.pages.forEach((p, k) => {
+  let lastTop = null, ti = -1;
+  E.pages.forEach((p, k0) => {
+    if (!(p.layer | 0)) ti++; const k = Math.max(0, ti) * 2 + (p.layer | 0);   // titulky na hrudi patří k hornímu titulku (stejné místo, barva, zarovnání)
     const S = E.styleOf(p), M = measure(p, S); if (!M) return;
     let role = pl === 'alt' ? ((p.layer | 0) ? 'chest' : 'top') : pl;
     const hd = headFor(p, W, H);
@@ -135,7 +136,7 @@ function build(W, H) {
     const ks = []; for (let k2 = kW; k2 >= 0.5 - 1e-6; k2 -= 0.05) ks.push(k2);
     let y = null, kk = kW;
     const pair = Math.floor(k / 2), jig = [0, -4, 3, -2, 5, -3][(pair + seed) % 6] / 100 * W;
-    const align = ['center', 'left', 'center', 'right', 'center', 'left'][(k + seed) % 6];
+    const align = (p.layer | 0) ? 'center' : ['center', 'left', 'center', 'right', 'center', 'left'][(k + seed) % 6];
     // chytře: kolik ze spodního řádku zakryje postava (maska v referenčním okamžiku) – nikdy víc než ~40 % (slovo zůstane čitelné)
     const xf0 = hd && g.PERSON && PERSON.data ? (() => { const f0 = E._fT; E._fT = hd.rt; const v = E.vxfAt(E.src2out(hd.rt)); E._fT = f0; return v || { z: 100, x: 0, y: 0 }; })() : null;
     const coverAt = (c, k2) => { if (!xf0) return 0; const half = M.w * k2 / 2, cx = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, hd.rx + jig)), lw = M.lbW * k2;
@@ -182,10 +183,14 @@ RE.apply = (p, S, t) => {
       const ts = E._fT != null ? E._fT : E.out2src(t), sg0 = o.hd.sg; let sg = sg0;   // stejný čas snímku jako stabilizace (bez cukání)
       if (ts < sg0.t[0] - 0.05 || ts > sg0.t[sg0.t.length - 1] + 0.05) { const L = segments(W, H); const s2 = L.find(q => ts >= q.t[0] - 0.05 && ts <= q.t[q.t.length - 1] + 0.05); if (s2) sg = s2; }
       const hp = headAt(sg, ts), k = E.vxfAt(t) || { z: 100, x: 0, y: 0 }, kz = k.z / 100;
-      if (E.G.reStab !== false) { const q = headSmooth(sg, ts, STAB_SIG); hp[0] = q[0]; hp[1] = q[1]; }   // titulky přesně se stabilizací (žádné cukání vůči videu)
+      // plynulý pohyb: se stabilizací stejné vyhlazení jako kamera (na obrazovce stojí), bez ní silné vyhlazení (~0,35 s) – slova se netřesou
+      const sig = RE.stabOn() ? (E.G.stabMode === 'smooth' ? 0.7 : STAB_SIG) : 0.35, q = headSmooth(sg, ts, sig); hp[0] = q[0]; hp[1] = q[1];
+      { const T = sg.t, tc = Math.max(T[0], Math.min(T[T.length - 1], ts)); let sf = 0, sw = 0; for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.5; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sf += w * sg.f[j]; sw += w; } if (sw) hp[2] = sf / sw; }   // velikost hlavy ještě klidněji
       const hx = W / 2 + k.x / 100 * W + kz * (hp[0] - W / 2), hy = H / 2 + k.y / 100 * H + kz * (hp[1] - H / 2);
-      sc = Math.max(0.6, Math.min(1.8, hp[2] * kz / o.hd.rf));
-      x = hx + (x - o.hd.rx) * sc; y = hy + (y - o.hd.ry) * sc;
+      sc = Math.max(0.85, Math.min(1.2, hp[2] * kz / o.hd.rf));   // limit: text se zvětší / zmenší nanejvýš trochu
+      // limit pohybu: titulek jede s hlavou, ale nejvýš o 12 % šířky / 8 % výšky od výchozího místa
+      const dxh = Math.max(-0.12 * W, Math.min(0.12 * W, hx - o.hd.rx)), dyh = Math.max(-0.08 * H, Math.min(0.08 * H, hy - o.hd.ry));
+      x = o.hd.rx + dxh + (x - o.hd.rx) * sc; y = o.hd.ry + dyh + (y - o.hd.ry) * sc;
       x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.01 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
     S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }
   S.blockAlign = o.align;
@@ -195,16 +200,44 @@ RE.apply = (p, S, t) => {
   return S;
 };
 // dvojice titulků (volá E.buildPages): druhý jde do spodní vrstvy, oba zmizí spolu, když začne další dvojice
+// Reality rozvržení (volá E.buildPages): věta se rozdělí na „jednotky“ (slovo + krátká slovíčka ve/že/v/a… k němu),
+// HORNÍ titulek = 3 jednotky pod sebou (jedna na řádek) za hlavou, ZBYTEK věty jde na hruď po jednom (objeví se a zmizí).
+const letters = w => (w.t || '').replace(/[^\p{L}\p{N}]/gu, '').length;
 RE.pair = (pages) => {
   if (!RE.on()) return;
-  for (const p of pages) p.e = Math.min(p.e, Math.max(p.s + 0.3, E.words[p.b].e + 0.35));
-  if ((E.G.rePlace || 'alt') !== 'alt') return;
-  for (let k = 0; k < pages.length; k += 2) {
-    const A = pages[k], B = pages[k + 1], C = pages[k + 2]; if (!B) break;
-    if (B.s - A.s > 4) { k--; continue; }   // daleko od sebe → nová dvojice od B
-    // konec dvojice: hned jak domluví (poslední slovo + 0,35 s), nejpozději se začátkem další dvojice – titulky nezůstávají, když už nemluví
-    const W = E.words, spoke = Math.max(W[A.b].e, W[B.b].e) + 0.35;
-    B.layer = 1; const end = Math.max(B.s + 0.3, C ? Math.min(C.s, spoke) : spoke); A.e = end; B.e = end;
+  const W = E.words;
+  if ((E.G.rePlace || 'alt') !== 'alt') { for (const p of pages) p.e = Math.min(p.e, Math.max(p.s + 0.3, W[p.b].e + 0.35)); return; }
+  // slova, která mají titulky (pořadí), rozdělená na věty
+  const ids = []; for (const p of pages) for (let i = p.a; i <= p.b; i++) ids.push(i);
+  if (!ids.length) return;
+  const sents = []; let cur = [];
+  ids.forEach((i, n) => { const j = ids[n + 1]; cur.push(i);
+    const end = j == null || j !== i + 1 || W[j].s - W[i].e > 0.6 || /[.!?…]["“”»)]*$/u.test(W[i].raw || W[i].t);
+    if (end) { sents.push(cur); cur = []; } });
+  const kin0 = [0, 1, 2, 3].map(() => ({ dx: 0, dy: 0, rot: 0 }));
+  const mkPage = (u, layer) => ({ a: u[0], b: u[u.length - 1], s: W[u[0]].s, e: W[u[u.length - 1]].e + 0.35, lines: null, fill: false, manual: false, layer, kin: kin0, reLines: null, reEm: -1 });
+  const out = [];
+  for (const sn of sents) {
+    // jednotky: krátká slovíčka (≤ 2 písmena) se přilepí k dalšímu slovu (na konci věty k předchozímu)
+    const units = []; let pend = [];
+    for (const i of sn) { if (pend.length >= 2) { units.push(pend); pend = []; } pend.push(i); if (letters(W[i]) > 2) { units.push(pend); pend = []; } }   // nejvýš 2 slova na řádek
+    if (pend.length) { if (units.length) units[units.length - 1].push(...pend); else units.push(pend); }
+    for (let u = 0; u < units.length;) {
+      const top = units.slice(u, u + 3); u += top.length;
+      const chest = []; while (u < units.length && chest.length < 4) chest.push(units[u++]);
+      if (u === units.length - 1 && chest.length === 4) chest.push(units[u++]);   // osamělé poslední slovo nenechat na další horní titulek
+      const T = mkPage(top.flat(), 0); T.reLines = top;
+      let em = top.findIndex(l => l.some(i => W[i].em));
+      if (em < 0) { let best = -1; top.forEach((l, k) => { const n = Math.max(...l.map(i => letters(W[i]))); if (n > best) { best = n; em = k; } }); }
+      T.reEm = em; out.push(T);
+      const C = chest.map(l => { const P = mkPage(l, 1); P.reLines = [l]; P.reEm = l.some(i => W[i].em) ? 0 : -1; return P; });
+      C.forEach((P, k) => { if (C[k + 1]) P.e = Math.max(P.s + 0.25, Math.min(P.e, C[k + 1].s)); out.push(P); });   // na hrudi vždy jen jedno slovo
+      T.e = C.length ? C[C.length - 1].e : T.e;
+    }
   }
+  // horní titulek nejpozději do začátku dalšího horního
+  const tops = out.filter(p => !(p.layer | 0)); tops.forEach((p, k) => { if (tops[k + 1]) p.e = Math.max(p.s + 0.3, Math.min(p.e, tops[k + 1].s)); });
+  out.sort((x, y) => x.s - y.s);
+  pages.length = 0; pages.push(...out);
 };
 })(window);

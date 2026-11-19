@@ -302,6 +302,7 @@ const range=(a,b)=>{ const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; };
 // rozdělení titulku na řádky + který řádek je hlavní
 E.groupsOf = (p,S) => {
   const W=E.words;
+  if (p.reLines) return p.reLines.map((ids,k)=>({ids, em:k===p.reEm}));   // Reality: rozvržení po jednotkách (jedno slovo na řádek)
   const manual=[]; for(let i=p.a;i<=p.b;i++) if(W[i].em) manual.push(i);
   // každé velké slovo na vlastním řádku, malá slova mezi nimi spolu (realitní styl: that / SELLS / way / MORE)
   if (S.emEach && manual.length && !p.manual){ const g=[]; for (let i=p.a;i<=p.b;i++){ const em=!!W[i].em, L=g[g.length-1]; if (L && !em && !L.em) L.ids.push(i); else g.push({ids:[i],em}); } return g; }
