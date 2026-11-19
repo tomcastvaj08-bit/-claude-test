@@ -973,5 +973,11 @@ window.I18N_DICT.en={
 "Odděluji postavu v každém snímku…": "Separating the person in every frame…",
 "Odděluji postavu… # %": "Separating the person… # %",
 "Hotovo – text je za postavou": "Done – text is behind the person",
-"Odděluji postavu, aby text mohl být za ní": "Separating the person so text can go behind"
+"Odděluji postavu, aby text mohl být za ní": "Separating the person so text can go behind",
+"Titulky se střídají: za hlavou (postava je před textem), na hrudi, za hlavou, na hrudi… Velká slova barevná s 3D leskem.": "Captions alternate: behind the head (the person is in front of the text), on the chest, behind the head, on the chest… Big words colored with 3D gloss.",
+"Zapnout Reality": "Turn on Real estate",
+"Vypnout Reality": "Turn off Real estate",
+"Po zapnutí appka jednou projde video: najde obličej a oddělí postavu v každém snímku (chvíli to trvá). Titulek můžeš posunout prstem.": "After turning on, the app goes through the video once: finds the face and separates the person in every frame (takes a while). You can move a caption with your finger.",
+"Reality vypnuté": "Real estate off",
+"Hotovo – titulky se střídají za hlavou a na hrudi": "Done – captions alternate behind the head and on the chest"
 };

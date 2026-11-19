@@ -103,11 +103,21 @@ PERSON.analyze = async ({ video, file, onP, cancel }) => {
   for (let k = 0; k < buf.length; k++) finish(k);
   // časy musí jít po sobě (konec bufferu se dokončí bez řazení)
   const ord = out.t.map((t, i) => i).sort((a, b) => out.t[a] - out.t[b]);
-  PERSON.data = { W, H, R, t: ord.map(i => out.t[i]), r: ord.map(i => out.r[i]), a: ord.map(i => out.a[i]) }; cache.clear();
+  PERSON.data = { W, H, R, t: ord.map(i => out.t[i]), r: ord.map(i => out.r[i]), a: ord.map(i => out.a[i]) }; cache.clear(); rawCache.clear();
   return PERSON.data;
 };
 PERSON.save = () => PERSON.data;
-PERSON.load = o => { PERSON.data = o && o.t ? o : null; cache.clear(); };
+// jakou část obdélníku (px plátna, v okamžiku ts zdrojového videa) zakrývá postava – 0..1 (pro chytré umístění textu)
+const rawCache = new Map();
+PERSON.cover = (ts, W, H, xf, rx0, ry0, rx1, ry1) => {
+  const i = idxAt(ts); if (i < 0) return 0; const d = PERSON.data, Rr = d.R || R;
+  let m = rawCache.get(i); if (!m) { m = dec(d.a[i], Rr * Rr); rawCache.set(i, m); if (rawCache.size > 30) rawCache.delete(rawCache.keys().next().value); }
+  const r = d.r[i], z = xf ? xf.z / 100 : 1, kx = xf ? xf.x / 100 * W : 0, ky = xf ? xf.y / 100 * H : 0, s = r[2] * W * z, X = W / 2 + kx + (r[0] * W - W / 2) * z, Y = H / 2 + ky + (r[1] * H - H / 2) * z;
+  let n = 0, c = 0;
+  for (let a = 0; a < 6; a++) for (let b = 0; b < 16; b++) { const px = rx0 + (b + 0.5) / 16 * (rx1 - rx0), py = ry0 + (a + 0.5) / 6 * (ry1 - ry0), u = Math.floor((px - X) / s * Rr), v = Math.floor((py - Y) / s * Rr); n++; if (u >= 0 && v >= 0 && u < Rr && v < Rr && m[v * Rr + u] > 128) c++; }
+  return c / n;
+};
+PERSON.load = o => { PERSON.data = o && o.t ? o : null; cache.clear(); rawCache.clear(); };
 
 // ---------- 2) VYKRESLENÍ ----------
 const cache = new Map();

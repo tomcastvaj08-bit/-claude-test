@@ -123,7 +123,7 @@ function restore(json){
   dedupeWords();
   { const fix=o=>{ if (o && o.gloss && o.gloss!=='off' && o.gloss!=='gloss') o.gloss='gloss'; }; fix(E.G); for (const k in E.meta) fix(E.meta[k].own); }   // 3D lesk má jen jeden styl
   E.setWid(Math.max(0,...E.words.map(w=>w.id))+1);
-  if (E.G.reMode && window.RE){ try{ reLegacyOff(); }catch(e){ console.warn(e); } }
+  if (E.G.reMode && window.RE && E.G.behind==='head'){ try{ reLegacyOff(); }catch(e){ console.warn(e); } }   // stará verze Reality (maska jen hlavy) → vypnout; nová (maska postavy) zůstává
   if (E.G.behind==='head') E.G.behind='off'; for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o&&o.behind==='head') delete o.behind; }   // text za hlavou zrušen   // Reality (text za hlavou) zrušen → jen stabilizace
   E.face=Array.isArray(s.face)?s.face:null;
   E.tracks={}; for (const T of s.tracks||[]) if (T && T.id && Array.isArray(T.t)) E.tracks[T.id]={...T};
@@ -775,6 +775,7 @@ function renderPanel(){
     case 'ai': h=pAI(); break;
     case 'mix': h=pMix(); break;
     case 're': h=pRe(); break;
+    case 'reality': h=pReality(); break;
     case 'clip': h=pClip(); break;
     case 'audio': h=pAudio(); break;
     case 'fxm': h=pFxm(); break;
@@ -812,7 +813,7 @@ function reLegacyOff(){
     if (m.own) for (const x of ['posX','posY','_manualPos','size','grad','gA','gB','gradDir','c1','c2','c3','c4','reMoved']) delete m.own[x]; }
   for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
   const B=E.TEMPLATES.base.set; for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]);
-  E.G.reMode=false; E.G.noSlots=false; E.G.emEach=false; E.G.behind='off'; E.G.faceStab=stab; E.buildPages(); RE.invalidate();
+  E.G.reMode=false; E.G.noSlots=false; E.G.emEach=false; E.G.behind='off'; if (stab) E.G.faceStab=true; E.buildPages(); RE.invalidate();
 }
 async function reToggle(btn){
   if (E.G.faceStab){ E.G.faceStab=false; RE.invalidate(); changed(); renderPanel(); toast('Stabilizace vypnutá'); return; }
@@ -824,6 +825,34 @@ binders.re=()=>{
   if ($('reMode')) $('reMode').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; E.G.stabMode=c.dataset.v; changed(); renderPanel(); };
   if ($('reZoom')){ $('reZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('reZoomV').textContent=E.G.reZoom+' %'; }; $('reZoom').onchange=()=>changed(); }
   if ($('reNose')){ $('reNose').oninput=e=>{ E.G.reNoseY=+e.target.value; $('reNoseV').textContent=E.G.reNoseY+' %'; }; $('reNose').onchange=()=>changed(); }
+};
+// ---------- REALITY (titulky za hlavou / na hrudi, 3D lesk) ----------
+function pReality(){
+  const on=!!E.G.reMode, mix=RE.mix();
+  const cols=Object.entries(RE.COLORS).map(([n,[a,b]])=>`<div class="d3c ${mix.includes(n)?'on':''}" data-n="${n}"><i style="background:linear-gradient(${a},${b})"></i>${n}</div>`).join('');
+  return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Reality</b><small>Titulky se střídají: za hlavou (postava je před textem), na hrudi, za hlavou, na hrudi… Velká slova barevná s 3D leskem.</small></div></div>
+  <button class="btn ${on?'':'primary'} big" id="rlOn">${on?'Vypnout Reality':'Zapnout Reality'}</button>
+  ${on?`<div class="clabel">Barvy do mixu (klepnutím přidáš / ubereš)</div><div class="d3cols" id="rlCols">${cols}</div>
+  <div class="chips" id="rlFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div><div class="chip ${E.G.faceStab?'on':''}" data-k="stab">Stabilizace na obličej</div></div>
+  <button class="btn" id="rlRedo">${I('refresh','grad')} Zamíchat barvy a rozmístění</button>`:''}
+  <div class="note">Po zapnutí appka jednou projde video: najde obličej a oddělí postavu v každém snímku (chvíli to trvá). Titulek můžeš posunout prstem.</div>`;
+}
+async function rlToggle(btn){
+  if (E.G.reMode){ reLegacyOff(); changed(); renderPanel(); toast('Reality vypnuté'); return; }
+  if (!await reHead(btn)){ renderPanel(); return; }
+  if (!PERSON.data){ const v=await auxVideo(); vid.pause(); btn.disabled=true;
+    try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>{ btn.textContent='Odděluji postavu v každém snímku… '+Math.round(p*100)+' %'; }}); personSave(); }
+    catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit: '+(e.message||e)); freeVideo(v); renderPanel(); return; }
+    freeVideo(v); }
+  for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','_manualPos','size','reMoved']) delete o[x]; }
+  Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel();
+  toast('Hotovo – titulky se střídají za hlavou a na hrudi');
+}
+binders.reality=()=>{
+  $('rlOn').onclick=()=>rlToggle($('rlOn'));
+  if ($('rlCols')) $('rlCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const n=c.dataset.n; let m=RE.mix().slice(); m=m.includes(n)?m.filter(x=>x!==n):m.concat(n); if (!m.length) return; E.G.reMix=m; RE.invalidate(); changed(); renderPanel(); };
+  if ($('rlFx')) $('rlFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; else E.G.faceStab=!E.G.faceStab; RE.invalidate(); changed(); renderPanel(); };
+  if ($('rlRedo')) $('rlRedo').onclick=()=>{ E.G.reSeed=((E.G.reSeed||0)+1)%60; RE.invalidate(); changed(); toast('Zamícháno'); };
 };
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
 function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+E.clipDur(c); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }

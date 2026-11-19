@@ -19,7 +19,7 @@ RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? 
 // jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
 RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 400, wEm: 700, mainItalic: false, emItalic: false, size: 104, emScale: 160, track: -3, trackEm: -5, gap: 70, wordGap: 115,
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
-  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'head', reStab: true, reZoom: 130 };
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'gloss', glossOn: 'main', glossAmt: 70, extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
 RE.on = () => !!(E.G.reMode);
 // stabilizace na obličej: samostatně (E.G.faceStab) nebo jako součást starého Reality módu
 RE.stabOn = () => !!(E.G.faceStab || (E.G.reMode && E.G.reStab !== false));
@@ -74,7 +74,7 @@ function headFor(p, W, H) {
   relTop.sort((a, b) => a - b);
   // všechno v souřadnicích OBRAZOVKY (po stabilizaci / přiblížení videa v referenčním okamžiku)
   const fT0 = E._fT; E._fT = sg.t[ri]; const k = E.vxfAt(E.src2out(sg.t[ri])) || { z: 100, x: 0, y: 0 }; E._fT = fT0; const kz = k.z / 100, mx = v => W / 2 + k.x / 100 * W + kz * (v - W / 2), my = v => H / 2 + k.y / 100 * H + kz * (v - H / 2);
-  return { sg, rx: mx(hp[0]), ry: my(hp[1]), rTop: my(hp[1] + relTop[relTop.length >> 1]), rBrow: my(hp[1] + relBrow), rChin: my(hp[1] + relChin), rFw: fw * kz, rf: hp[2] * kz };
+  return { sg, rx: mx(hp[0]), ry: my(hp[1]), rTop: my(hp[1] + relTop[relTop.length >> 1]), rBrow: my(hp[1] + relBrow), rChin: my(hp[1] + relChin), rFw: fw * kz, rf: hp[2] * kz, rt: sg.t[ri] };
 }
 // ---------- STABILIZACE NA OBLIČEJ (nos uprostřed obrazovky) ----------
 const STAB_SIG = 0.12;   // jak klidně jede kamera (s), stejné pro titulky – titulky na obrazovce pak stojí úplně klidně
@@ -113,7 +113,7 @@ function headAt(sg, ts) {
 function measure(p, S0) {
   const S = { ...S0, posX: 50, posY: 50 }, H = E._cvH(), L = E.layoutPage(p, S); if (!L.length) return null;
   const y0 = H * 0.5, lb = L.reduce((a, x) => x.y > a.y ? x : a, L[0]);
-  return { tb: Math.min(...L.map(x => x.y - x.px * 0.55)) - y0, bb: Math.max(...L.map(x => x.y + x.px * 0.55)) - y0, lbOff: lb.y - y0, lbPx: lb.px, lbEm: !!lb.em, w: Math.max(...L.map(x => x.total)) };
+  return { tb: Math.min(...L.map(x => x.y - x.px * 0.55)) - y0, bb: Math.max(...L.map(x => x.y + x.px * 0.55)) - y0, lbOff: lb.y - y0, lbPx: lb.px, lbEm: !!lb.em, lbW: lb.total, w: Math.max(...L.map(x => x.total)) };
 }
 
 // ---------- rozmístění všech titulků (paměť; přepočítá se, když se cokoli změní) ----------
@@ -134,10 +134,17 @@ function build(W, H) {
     const kW = Math.min(1, W * 0.92 / Math.max(1, M.w));   // široký titulek se zmenší na šířku
     const ks = []; for (let k2 = kW; k2 >= 0.5 - 1e-6; k2 -= 0.05) ks.push(k2);
     let y = null, kk = kW;
+    const pair = Math.floor(k / 2), jig = [0, -4, 3, -2, 5, -3][(pair + seed) % 6] / 100 * W;
+    const align = ['center', 'left', 'center', 'right', 'center', 'left'][(k + seed) % 6];
+    // chytře: kolik ze spodního řádku zakryje postava (maska v referenčním okamžiku) – nikdy víc než ~40 % (slovo zůstane čitelné)
+    const xf0 = hd && g.PERSON && PERSON.data ? (() => { const f0 = E._fT; E._fT = hd.rt; const v = E.vxfAt(E.src2out(hd.rt)); E._fT = f0; return v || { z: 100, x: 0, y: 0 }; })() : null;
+    const coverAt = (c, k2) => { if (!xf0) return 0; const half = M.w * k2 / 2, cx = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, hd.rx + jig)), lw = M.lbW * k2;
+      const x0 = align === 'left' ? cx - half : align === 'right' ? cx + half - lw : cx - lw / 2, hh = M.lbPx * k2 * 0.36;
+      return PERSON.cover(hd.rt, W, H, xf0, x0, c - hh, x0 + lw, c + hh); };
     if (role === 'top') {
       for (const k2 of ks) {
-        let c;   // střed spodního řádku: spodek písmen za vlasy, nikdy pod obočí
-        if (hd) c = M.lbEm ? Math.min(hd.rTop + 0.22 * M.lbPx * k2, hd.rBrow - 0.05 * M.lbPx * k2) : hd.rTop + 0.08 * M.lbPx * k2;
+        let c;   // střed spodního řádku: spodní část písmen za hlavou (postava je před textem), nikdy přes oči
+        if (hd) { c = Math.min(hd.rTop + (M.lbEm ? 0.5 : 0.28) * M.lbPx * k2, hd.rBrow + 0.1 * hd.rFw); for (let n = 0; n < 14 && coverAt(c, k2) > 0.4; n++) c -= 0.05 * M.lbPx * k2; }
         else c = H * 0.07 - M.tb * k2 + M.lbOff * k2;
         const yy = c - M.lbOff * k2;
         if (yy + M.tb * k2 >= H * 0.012) { y = yy; kk = k2; break; }
@@ -151,11 +158,10 @@ function build(W, H) {
       if (y == null) { kk = 0.5; y = H * 0.97 - M.bb * kk; }
     }
     // vodorovně na hlavu (dvojice se střídavě lehce posunou do stran), celý titulek vždy v obraze
-    const pair = Math.floor(k / 2), jig = [0, -4, 3, -2, 5, -3][(pair + seed) % 6] / 100 * W, half = M.w * kk / 2;
+    const half = M.w * kk / 2;
     const x = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, (hd ? hd.rx : W / 2) + jig));
     const col = RE.COLORS[mix[(k + seed) % mix.length]];
-    const align = ['center', 'left', 'center', 'right', 'center', 'left'][(k + seed) % 6];
-    out.set(E.keyOf(p) + '|' + (p.layer | 0), { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align });
+    out.set(E.keyOf(p) + '|' + (p.layer | 0), { x: x / W * 100, y: y / H * 100, k: kk, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align, role });
   });
   return out;
 }
@@ -183,6 +189,7 @@ RE.apply = (p, S, t) => {
       x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.01 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
     S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }
   S.blockAlign = o.align;
+  S.behind = o.role === 'top' && g.PERSON && PERSON.data ? 'on' : 'off';   // za hlavou jen horní titulek, na hrudi je titulek před postavou
   S.size *= o.k;
   if (o.col) { S.grad = true; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }
   return S;
