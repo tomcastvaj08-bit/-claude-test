@@ -148,7 +148,7 @@ function build(W, H) {
         if (hd) { c = Math.min(hd.rTop + (M.lbEm ? 0.5 : 0.28) * M.lbPx * k2, hd.rBrow + 0.1 * hd.rFw); for (let n = 0; n < 14 && coverAt(c, k2) > 0.4; n++) c -= 0.05 * M.lbPx * k2; }
         else c = H * 0.07 - M.tb * k2 + M.lbOff * k2;
         const yy = c - M.lbOff * k2;
-        if (yy + M.tb * k2 >= H * 0.012) { y = yy; kk = k2; break; }
+        if (yy + M.tb * k2 >= H * 0.025) { y = yy; kk = k2; break; }
       }
       if (y == null) role = 'chest'; else lastTop = { e: p.e, bot: y + M.bb * kk };
     }
@@ -189,9 +189,21 @@ RE.apply = (p, S, t) => {
       const hx = W / 2 + k.x / 100 * W + kz * (hp[0] - W / 2), hy = H / 2 + k.y / 100 * H + kz * (hp[1] - H / 2);
       sc = Math.max(0.85, Math.min(1.2, hp[2] * kz / o.hd.rf));   // limit: text se zvětší / zmenší nanejvýš trochu
       // limit pohybu: titulek jede s hlavou, ale nejvýš o 12 % šířky / 8 % výšky od výchozího místa
-      const dxh = Math.max(-0.12 * W, Math.min(0.12 * W, hx - o.hd.rx)), dyh = Math.max(-0.08 * H, Math.min(0.08 * H, hy - o.hd.ry));
-      x = o.hd.rx + dxh + (x - o.hd.rx) * sc; y = o.hd.ry + dyh + (y - o.hd.ry) * sc;
-      x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.01 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
+      if (sg === sg0) {
+        const dxh = Math.max(-0.12 * W, Math.min(0.12 * W, hx - o.hd.rx)), dyh = Math.max(-0.08 * H, Math.min(0.08 * H, hy - o.hd.ry));
+        x = o.hd.rx + dxh + (x - o.hd.rx) * sc; y = o.hd.ry + dyh + (y - o.hd.ry) * sc;
+      } else {
+        // jiný záběr po střihu: titulek se usadí vůči hlavě v NOVÉM záběru (stejné místo vůči hlavě – za hlavou zůstane za hlavou),
+        // v rámci záběru pak platí stejné limity pohybu jako jinde
+        const t1 = Math.max(sg.t[0], E.out2src(p.s)), r = headSmooth(sg, t1, sig), rx = W / 2 + k.x / 100 * W + kz * (r[0] - W / 2), ry = H / 2 + k.y / 100 * H + kz * (r[1] - H / 2);
+        // horní titulek drží vůči vršku vlasů (spodní řádek zůstane za hlavou), titulek na hrudi vůči bradě
+        let ri = 0, bd = 1e9; sg.t.forEach((tt, j) => { const d = Math.abs(tt - t1); if (d < bd) { bd = d; ri = j; } });
+        const fr = sg.f[ri], anchorNew = o.role === 'top' ? sg.top[ri] : r[1] + 0.8 * fr, anchorOld = o.role === 'top' ? o.hd.rTop : o.hd.rChin;
+        const aY = H / 2 + k.y / 100 * H + kz * (anchorNew - H / 2);
+        const dxh = Math.max(-0.12 * W, Math.min(0.12 * W, hx - rx)), dyh = Math.max(-0.08 * H, Math.min(0.08 * H, hy - ry));
+        x = x + (rx - o.hd.rx) + dxh; y = y + (aY - anchorOld) + dyh;
+      }
+      x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.025 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
     S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }
   S.blockAlign = o.align;
   S.behind = o.role === 'top' && g.PERSON && PERSON.data ? 'on' : 'off';   // za hlavou jen horní titulek, na hrudi je titulek před postavou
