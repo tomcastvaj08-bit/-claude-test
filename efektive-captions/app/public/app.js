@@ -2723,7 +2723,7 @@ renderUiLangs();
 
 // ================= START =================
 renderHomeTpl(); renderProjects(); renderLangs();
-window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords,snapshot,restore,get curPage(){return curPage;}};
+window.__app={E,AI,EXP,setVal,setMany,selectPage,openEditor,loadVideo,afterWords,snapshot,restore,get curPage(){return curPage;}, panel:()=>panel};
 
 // Base měří šířku slov – když se písmo dočte později, titulky se přepočítají
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', ()=>{ if (E.G.split==='fill' && E.words.length && Date.now()-(window.__wordsAt||0)<10000){ E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1)); try{ renderTimeline(); }catch(e){} } });

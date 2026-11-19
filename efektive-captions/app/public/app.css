@@ -564,3 +564,13 @@ button.pro.on{background:var(--green)}
 .cb,.zb,.ob,.vb,.xb,.sb,.ab{touch-action:pan-x !important}
 .cur .hl,.cur .hr{touch-action:none}
 .lift{box-shadow:0 6px 16px rgba(0,0,0,.35) !important;transform:scale(1.04);z-index:6}
+
+/* editor se vždy vejde na výšku obrazovky – stránka se nikdy neposune (horní lišta zůstane vidět);
+   když je málo místa, zmenší se náhled videa a nabídka, na malých telefonech i timeline */
+#editor.on{overflow:hidden;overflow:clip}
+@media (max-width:899px){
+  .stage{flex:0 1 auto;min-height:110px}
+  .panel{min-height:140px}
+}
+@media (max-width:899px) and (max-height:760px){ #editor .tl-scroll{max-height:150px} #editor .panel{min-height:112px} }
+@media (max-width:899px) and (max-height:620px){ #editor .tl-scroll{max-height:112px} #editor .tl-tools{max-height:44px} #editor .panel{min-height:96px} }
