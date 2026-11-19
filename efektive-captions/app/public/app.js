@@ -2634,7 +2634,24 @@ async function runExport(){
     // písma všech titulků (i s háčky a čárkami) načíst dřív, než se začne kreslit export
     try{ await Promise.race([Promise.all([E.loadFontsFor(E.G),...E.pages.map(p=>E.loadFontsFor(E.styleOf(p)))]).then(()=>document.fonts&&document.fonts.ready), new Promise(r=>setTimeout(r,4000))]); }catch(e){}
     const o={file:videoFile,src:videoURL,w,h,fps,videoFps,mode,br:+($('exBr')?$('exBr').value:0.12),ovBlobs:Object.fromEntries(Object.entries(ovAssets).filter(([k,a])=>a.el&&a.el.tagName==='VIDEO').map(([k,a])=>[k,a.blob])),blobs:Object.fromEntries(Object.entries(ovAssets).map(([k,a])=>[k,a.blob])),mute:E.flags.mute,ovAudio:E.overlays.filter(x=>x.audio&&(x.speed||1)===1&&x.src&&x.src.tagName==='VIDEO'&&ovAssets[x.asset]).map(x=>({blob:ovAssets[x.asset].blob,s:x.s,e:x.e})),behind:E.pages.some(p=>E.styleOf(p).behind==='on'),onP,cancel:exCancel};
-    if (EXP.canPrecise() || mode==='captions') res=await EXP.exportVideo(o); else res=await EXP.recordRealtime(o);
+    if (EXP.canPrecise() || mode==='captions'){
+      try{ res=await EXP.exportVideo(o); }
+      catch(e){ if (!e.audioRetry) throw e; console.warn(e); res=await EXP.exportVideo({...o, safe:true}); }   // zvuk nešel zakódovat → původní zvuk videa
+      // kontrola hotového videa přímo v telefonu (zvuk, délka, nezaseknutý obraz); když něco nesedí, export znovu bezpečnějším způsobem
+      if (mode!=='captions' && EXP.verify){
+        onP(0.99,'Kontroluji hotové video…');
+        const ck={dur:res.dur, wantAudio:!o.mute, src:videoURL, o2s:t=>E.clips&&E.clips.length?E.out2src(t):t};
+        let vr=await EXP.verify(res.blob, ck);
+        if (!vr.ok && !exCancel.v){ console.warn('Kontrola exportu:',vr.issues);
+          // 2. pokus: bezpečné nastavení kódování (30 fps, původní zvuk), pořád rychlé čtení snímků
+          onP(0,'Video mělo chybu ('+vr.issues.join(', ')+') – exportuji znovu bezpečnějším způsobem…');
+          let r2=await EXP.exportVideo({...o, safe:true, fps:Math.min(o.fps,30), videoFps:0}), vr2=await EXP.verify(r2.blob, {...ck, dur:r2.dur});
+          // 3. pokus: snímky přetáčením (pomalé, ale nejspolehlivější)
+          if (!vr2.ok && !exCancel.v){ onP(0,'Pořád chyba ('+vr2.issues.join(', ')+') – poslední pokus, pomalejší a nejspolehlivější…'); r2=await EXP.exportVideo({...o, safe:true, seek:true, fps:Math.min(o.fps,30), videoFps:0}); vr2=await EXP.verify(r2.blob, {...ck, dur:r2.dur}); }
+          res=r2; if (!vr2.ok) res.audioNote=(res.audioNote?res.audioNote+'; ':'')+'kontrola videa: '+vr2.issues.join(', ');
+          else res.audioNote=(res.audioNote?res.audioNote+'; ':'')+'první pokus měl chybu, video je vyexportované znovu (30 fps)'; }
+      }
+    } else res=await EXP.recordRealtime(o);
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
     a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));
     // rozpis času (pro ladění rychlosti): čtení videa / overlaye / vykreslení / ukládání / příprava (zvuk…)

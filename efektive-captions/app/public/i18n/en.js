@@ -1014,5 +1014,17 @@ window.I18N_DICT.en={
 "Přepočítávám masku – vyčkej": "Recalculating the mask – please wait",
 "2/2 · Odděluji postavu a vlasy v každém snímku": "2/2 · Separating the person and hair in every frame",
 "Masku se nepodařilo přepočítat: ": "Could not recalculate the mask: ",
-"Hotovo – maska má přesnější vlasy": "Done – the mask has more precise hair"
+"Hotovo – maska má přesnější vlasy": "Done – the mask has more precise hair",
+"Kontroluji hotové video…": "Checking the finished video…",
+"Video mělo chybu (": "The video had an error (",
+") – exportuji znovu bezpečnějším způsobem…": ") – exporting again in a safer way…",
+"Pořád chyba (": "Still an error (",
+") – poslední pokus, pomalejší a nejspolehlivější…": ") – last attempt, slower and most reliable…",
+"první pokus měl chybu, video je vyexportované znovu (30 fps)": "the first attempt had an error, the video was exported again (30 fps)",
+"kontrola videa: ": "video check: ",
+"chybí zvuk": "missing sound",
+"obraz se zasekává": "picture freezes",
+"obraz stojí": "picture is frozen",
+"krátké video": "video too short",
+"chybí obraz": "missing picture"
 };

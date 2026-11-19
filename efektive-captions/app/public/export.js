@@ -58,9 +58,9 @@ X.buildAudio = async (file, duration, mute, ovAudio, blobs) => {
   return out;
 };
 
-async function pickVideoCodec(w,h,fps,br){
+async function pickVideoCodec(w,h,fps,br,safe){
   const bitrate=Math.round(w*h*Math.min(fps,30)*(br||0.12)); // ~7,5 Mb/s u 1080p30 – kvalita pro sociální sítě, menší soubor
-  const cands=[
+  const cands=safe?[{codec:'avc1.4d0028', mux:'avc'},{codec:'avc1.4d0033', mux:'avc'},{codec:'avc1.640028', mux:'avc'},{codec:'avc1.640034', mux:'avc'}]:[
     {codec:'avc1.640034', mux:'avc'},{codec:'avc1.640033', mux:'avc'},{codec:'avc1.64002A', mux:'avc'},{codec:'avc1.4d0034', mux:'avc'},
     {codec:'hvc1.1.6.L153.B0', mux:'hevc'},
     {codec:'vp09.00.51.08', mux:'vp9'},{codec:'vp09.00.41.08', mux:'vp9'},{codec:'av01.0.12M.08', mux:'av1'}
@@ -74,13 +74,44 @@ async function pickVideoCodec(w,h,fps,br){
   }
   return null;
 }
+// jen AAC: Opus v MP4 Fotky na iPhonu nepřehrají (video pak bývá bez zvuku nebo se zasekne)
 async function pickAudioCodec(ch,rate){
-  for (const c of [{codec:'mp4a.40.2',mux:'aac'},{codec:'opus',mux:'opus'}]){
-    const cfg={codec:c.codec,numberOfChannels:ch,sampleRate:rate,bitrate:256000};
+  for (const br of [192000,128000]) for (const c of [{codec:'mp4a.40.2',mux:'aac'}]){
+    const cfg={codec:c.codec,numberOfChannels:ch,sampleRate:rate,bitrate:br};
     try{ const s=await AudioEncoder.isConfigSupported(cfg); if (s.supported) return {cfg,mux:c.mux}; }catch(e){}
   }
   return null;
 }
+// ---------- KONTROLA HOTOVÉHO VIDEA ----------
+// Po exportu se video samo zkontroluje přímo v telefonu: má zvuk (AAC), správnou délku a obraz se nezasekne
+// (snímky z různých míst videa se liší podobně jako v originálu). Když ne, appka exportuje znovu bezpečnějším způsobem.
+const grabAt=async(v,t)=>{ await seek(v,t); await frameReady(v); const c=document.createElement('canvas'); c.width=32; c.height=56; const x=c.getContext('2d',{willReadFrequently:true}); try{ x.drawImage(v,0,0,32,56); }catch(e){ return null; } const d=x.getImageData(0,0,32,56).data, g=new Float32Array(32*56); for (let i=0,j=0;i<g.length;i++,j+=4) g[i]=0.299*d[j]+0.587*d[j+1]+0.114*d[j+2]; return g; };
+const gdiff=(a,b)=>{ if (!a||!b) return -1; let s=0; for (let i=0;i<a.length;i++) s+=Math.abs(a[i]-b[i]); return s/a.length; };
+const loadV=url=>new Promise((r,j)=>{ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.preload='auto'; v.src=url; let ok=false; const done=()=>{ if(!ok){ ok=true; r(v); } }; v.onloadedmetadata=done; v.onloadeddata=done; v.onerror=()=>j(new Error('nejde přehrát')); v.load(); setTimeout(()=>{ if(!ok) j(new Error('nenačetlo se')); },15000); });
+X.verify = async (blob, o) => {
+  const out={ok:true, issues:[]};
+  // 1) stopy v souboru
+  try{ const buf=await blob.arrayBuffer(); buf.fileStart=0; const mp4=MP4Box.createFile(); let info=null; mp4.onReady=i=>{ info=i; }; mp4.onError=()=>{}; mp4.appendBuffer(buf); mp4.flush();
+    const vt=info&&info.videoTracks[0], at=info&&info.audioTracks[0];
+    if (!vt){ out.ok=false; out.issues.push('chybí obraz'); return out; }
+    const vd=vt.duration/vt.timescale; if (o.dur && vd<o.dur*0.9){ out.ok=false; out.issues.push('krátké video'); }
+    if (o.wantAudio && !(at && /^mp4a/.test(at.codec))){ out.ok=false; out.audio=false; out.issues.push('chybí zvuk'); }
+  }catch(e){ console.warn('kontrola souboru',e); }
+  // 2) obraz se nezasekl: rozdíly mezi snímky z různých míst výstupu vs. originálu
+  let ov=null, sv=null, url=null;
+  try{ url=URL.createObjectURL(blob); ov=await loadV(url); sv=o.src?await loadV(o.src):null;
+    const D=Math.min(ov.duration||o.dur||0, o.dur||1e9); if (!(D>3)) return out;
+    const ts=[]; for (let k=0;k<7;k++) ts.push(Math.min(D-0.3, 0.6+(D-0.9)*k/6));
+    const go=[], gs=[]; for (const t of ts){ go.push(await grabAt(ov,t)); if (sv) gs.push(await grabAt(sv,o.o2s?o.o2s(t):t)); }
+    let frozen=0, pairs=0;
+    for (let k=1;k<ts.length;k++){ const dO=gdiff(go[k],go[k-1]), dS=sv?gdiff(gs[k],gs[k-1]):8; if (dO<0||dS<0) continue; pairs++;
+      if (dS>5 && dO<Math.max(0.8,0.3*dS)) frozen++; else frozen=Math.max(0,frozen); }
+    if (go.slice(1).every(g=>g&&go[0]&&gdiff(g,go[0])<0.5) && pairs>=3){ out.ok=false; out.issues.push('obraz stojí'); }
+    else if (frozen>=2){ out.ok=false; out.issues.push('obraz se zasekává'); }
+  }catch(e){ console.warn('kontrola obrazu',e); out.issues.push('kontrola obrazu nešla: '+e.message); }
+  finally{ try{ if (url) URL.revokeObjectURL(url); }catch(e){} }
+  return out;
+};
 X.canPrecise = () => !!(window.VideoEncoder && window.VideoFrame && window.Mp4Muxer);
 
 function seek(v,t){ return new Promise(r=>{ let ok=false; const done=()=>{ if(ok) return; ok=true; v.removeEventListener('seeked',done); r(); }; v.addEventListener('seeked',done); v.currentTime=t; setTimeout(done,4000); }); }
@@ -118,18 +149,19 @@ X.exportVideo = async (opts) => {
       return {blob:zip.blob(), name:'efektive-titulky-pruhledne.zip'};
     }
     // ---------- celé video ----------
-    const vc=await pickVideoCodec(w,h,fps,opts.br); if (!vc) throw new Error('Tento prohlížeč neumí kódovat video');
+    const vc=await pickVideoCodec(w,h,fps,opts.br,opts.safe); if (!vc) throw new Error('Tento prohlížeč neumí kódovat video');
     onP(0,'Připravuju zvuk…');
     // Zvuk: bez zvukových efektů (nebo když prohlížeč neumí kódovat zvuk – iPhone) se vloží původní stopa
     // bez překódování → vždy se zvukem, rychle a v původní kvalitě. Se SFX se zvuk smíchá a zakóduje.
     const music=!!(E.audios&&E.audios.some(a=>a.s<dur && (a.vol??100)>0)), ext=!!(E.clips&&E.clips.some(c=>c.a));
     const sfxOn=E.sfxEvents().some(ev=>ev.t<dur) || (opts.ovAudio&&opts.ovAudio.length>0) || music || (ext && !opts.mute);
     let raw=null, audio=null, ac=null, audioNote='';
-    if (!opts.mute && (!sfxOn || !window.AudioEncoder)){ try{ raw=window.rawAudioTrack?await rawAudioTrack(opts.file):null; }catch(e){ console.warn('Původní zvuk nejde převzít',e); } }
+    const getRaw=async()=>{ try{ return window.rawAudioTrack?await rawAudioTrack(opts.file):null; }catch(e){ console.warn('Původní zvuk nejde převzít',e); return null; } };
+    if (!opts.mute && (!sfxOn || !window.AudioEncoder || opts.safe)) raw=await getRaw();
     const fxOnly=E.sfxEvents().some(ev=>ev.t<dur);   // zvukové efekty i u ztlumeného videa
     if (!raw && window.AudioEncoder && (!opts.mute || music || fxOnly)){
-      audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio, opts.blobs);
-      ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate);
+      try{ audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio, opts.blobs); ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate); }catch(e){ console.warn('Míchání zvuku nejde',e); ac=null; }
+      if (!ac && !opts.mute){ raw=await getRaw(); audio=null; }   // AAC se zakódovat nedá → aspoň původní zvuk videa
     }
     if (raw && sfxOn) audioNote='zvukové efekty, hudbu a zvuk vložených klipů tento prohlížeč neumí přimíchat';
     else if (!raw && !ac && music && !window.AudioEncoder) audioNote='hudbu tento prohlížeč neumí přidat';
@@ -153,7 +185,8 @@ X.exportVideo = async (opts) => {
     const venc=new VideoEncoder({output:(c,m)=>muxer.addVideoChunk(c,m), error:e=>{ err=e; }});
     venc.configure(vc.cfg);
     if (ac){
-      const aenc=new AudioEncoder({output:(c,m)=>muxer.addAudioChunk(c,m), error:e=>{ err=e; }});
+      let aerr=null; const achunks=[];
+      const aenc=new AudioEncoder({output:(c,m)=>achunks.push([c,m]), error:e=>{ aerr=e; }});
       aenc.configure(ac.cfg);
       const CH=audio.numberOfChannels, R=audio.sampleRate, block=R; // 1 s bloky
       for (let s=0;s<audio.length;s+=block){
@@ -162,12 +195,14 @@ X.exportVideo = async (opts) => {
         const ad=new AudioData({format:'f32-planar',sampleRate:R,numberOfFrames:n,numberOfChannels:CH,timestamp:Math.round(s/R*1e6),data});
         aenc.encode(ad); ad.close();
       }
-      await aenc.flush(); aenc.close();
+      try{ await aenc.flush(); }catch(e){ aerr=aerr||e; } try{ aenc.close(); }catch(e){}
+      if (aerr || !achunks.length) throw Object.assign(new Error('Zvuk se nepodařilo zakódovat'),{audioRetry:true});
+      for (const [c,m] of achunks) muxer.addAudioChunk(c,m);
     }
     const ctxBehind = opts.behind && window.AI && !(window.PERSON && PERSON.data);   // nová maska postavy je předpočítaná → rychlá cesta
     // rychlá cesta: snímky se dekódují postupně (MP4/MOV), bez přetáčení; text za postavou potřebuje <video> → přetáčení
     let src=null;
-    if (!ctxBehind && window.openFrameSource){ try{ src=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); }catch(e){ console.warn('Rychlé čtení snímků nejde, použiji přetáčení',e); } }
+    if (!ctxBehind && !opts.seek && window.openFrameSource){ try{ src=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); }catch(e){ console.warn('Rychlé čtení snímků nejde, použiji přetáčení',e); } }
     // VIDEO OVERLAYE: snímky se čtou postupně (WebCodecs) jako u hlavního videa – přetáčení <video> na každý snímek je na iPhonu velmi pomalé
     const OVS=[];
     if (window.openFrameSource) for (const o of E.overlays){
@@ -191,12 +226,27 @@ X.exportVideo = async (opts) => {
       q.last=want; const fr=q.s&&await q.s.frameAt(want); if (fr){ const x=q.c.getContext('2d'); x.clearRect(0,0,q.c.width,q.c.height); q.s.draw(x,fr,q.c.width,q.c.height); o._frame=q.c; } } };
     // hlavní video se čte postupně; když další úsek začíná ve zdroji dřív (prodloužený úsek), otevřít čtení znovu
     let srcLast=-1;
-    const srcAt=async ts=>{ if (ts<srcLast-0.001){ try{ src.close(); const s2=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); if (s2) src=s2; }catch(e){} IP.cache.clear(); } srcLast=ts; return src.frameAt(ts); };
+    // čtení snímku s pojistkou: když se dekodér zasekne (nevrátí snímek, nebo vrací pořád starý), otevře se čtení znovu;
+    // když se to stane podruhé, zbytek videa se čte přetáčením (pomaleji, ale spolehlivě) → video se v exportu nikdy nezasekne
+    let stalls=0;
+    const reopen=async()=>{ try{ src.close(); }catch(e){} const s2=await openFrameSource(opts.file, v.videoWidth, v.videoHeight); if (!s2) throw new Error('reopen'); src=s2; IP.cache.clear(); };
+    const srcAt=async ts=>{ if (ts<srcLast-0.001){ try{ await reopen(); }catch(e){} } srcLast=ts;
+      for (let attempt=0; attempt<2; attempt++){
+        let to; const fr=await Promise.race([src.frameAt(ts), new Promise(r=>{ to=setTimeout(()=>r('stall'),5000); })]); clearTimeout(to);
+        const T=src.times, ft=fr&&fr!=='stall'?fr.timestamp/1e6-(src.first||0):-1;
+        // existuje ve videu snímek blíž požadovanému času, a dekodér vrátil o víc než 0,5 s starší → zaseknutý
+        const lag = fr!=='stall' && fr && T && T.length && ts-ft>0.3 && T.some(x=>x>ft+0.05 && x<=ts+0.001);
+        if (fr!=='stall' && !lag) return fr;
+        console.warn('Export: čtení snímků se zaseklo v čase', ts.toFixed(2), fr==='stall'?'(nic nevrací)':'(starý snímek)');
+        stalls++; if (stalls>2) break;
+        try{ await reopen(); }catch(e){ break; }
+      }
+      try{ src.close(); }catch(e){} src=null; return null; };   // → přetáčení
     const t0=performance.now();
     const PF={ov:0,dec:0,ren:0,enc:0};   // měření: kde export tráví čas
     // ZPOMALENÍ: mezisnímky z dvojice sousedních zdrojových snímků – prolnutí nebo optický tok (tok se počítá jednou na dvojici)
     const IP={cache:new Map(), flows:new Map(), fw:0, fh:0, g1:null, g2:null};
-    const ipFrame=async i=>{ if (IP.cache.has(i)) return IP.cache.get(i); const T=src.times; const fr=await srcAt(T[i]+0.0005); const c=document.createElement('canvas'); c.width=w; c.height=h; if (fr) src.draw(c.getContext('2d'),fr,w,h); IP.cache.set(i,c); for (const k of [...IP.cache.keys()]) if (k<i-1) IP.cache.delete(k); return c; };
+    const ipFrame=async i=>{ if (IP.cache.has(i)) return IP.cache.get(i); const T=src.times; const fr=await srcAt(T[i]+0.0005); const c=document.createElement('canvas'); c.width=w; c.height=h; if (fr && src) src.draw(c.getContext('2d'),fr,w,h); IP.cache.set(i,c); for (const k of [...IP.cache.keys()]) if (k<i-1) IP.cache.delete(k); return c; };
     const ipGray=c=>{ const fw=320, fh=Math.round(320*h/w)&~1; IP.fw=fw; IP.fh=fh; const t=document.createElement('canvas'); t.width=fw; t.height=fh; const x=t.getContext('2d',{willReadFrequently:true}); x.drawImage(c,0,0,fw,fh); return TRK.gray(x.getImageData(0,0,fw,fh).data); };
     const slowFrame=async (t,ts,mode)=>{
       const T=src.times; let lo=0, hi=T.length-1; while (hi-lo>1){ const m=(lo+hi)>>1; if (T[m]<=ts) lo=m; else hi=m; }
@@ -229,7 +279,8 @@ X.exportVideo = async (opts) => {
         // snímek, který je ve videu vidět uprostřed tohoto výstupního snímku (přesná mřížka výstupu, ne 30fps mřížka):
         // u videa z iPhonu (proměnná snímková frekvence, 29,97 / 24 fps) se tak žádný snímek nepřeskočí ani nezdvojí navíc → plynulé
         const sp0=ck?E.clipSp(ck):1, fr=await srcAt(o2s(t)+0.5/fps*sp0); const a=performance.now(); PF.dec+=a-pf1;
-        E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
+        if (!src){ await seek(v,o2s(tv)); await frameReady(v); E.render(t); }   // dekodér selhal → přetáčení
+        else E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
         PF.ren+=performance.now()-a;
       } else {
         await seek(v,o2s(tv)); await frameReady(v);
@@ -239,7 +290,7 @@ X.exportVideo = async (opts) => {
       }
       const pf2=performance.now();
       const f=new VideoFrame(cv,{timestamp:Math.round(t*1e6),duration:Math.round(1e6/fps)});
-      venc.encode(f,{keyFrame:i%(fps*2)===0}); f.close();
+      venc.encode(f,{keyFrame:opts.safe?i===0:i%(fps*2)===0}); f.close();   // bezpečný režim: klíčové snímky volí sám kodér
       while (venc.encodeQueueSize>8) await new Promise(r=>setTimeout(r,5));
       PF.enc+=performance.now()-pf2;
       if (i%3===0){ const el=(performance.now()-t0)/1000, left=el/(i+1)*(N-i-1); onP(i/N, `Snímek ${i+1} / ${N}`+(i>10?` · zbývá ${left<60?Math.ceil(left)+' s':Math.ceil(left/60)+' min'}`:'')); }
@@ -258,7 +309,7 @@ X.exportVideo = async (opts) => {
     }
     await venc.flush(); venc.close();
     muxer.finalize();
-    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—'};
+    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—', stalls, hasAudio:!!(raw||ac), dur};
   } finally {
     E.flags.transparent=false; E.flags.exporting=false; E.personMask=prevMask;
     if (prev) E.attach(prev[0],prev[1]);
