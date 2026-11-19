@@ -94,6 +94,64 @@ async function encodeAAC(audio, ac){
   const asc=window.aacLcConfig?aacLcConfig(R,CH):null;
   return { chunks, meta:{decoderConfig:{codec:'mp4a.40.2', sampleRate:R, numberOfChannels:CH, description:asc}} };
 }
+// ---------- SMÍCHANÝ ZVUK PŘES NAHRÁVÁNÍ (iPhone bez kodéru AAC) ----------
+// Smíchaný zvuk se potichu „přehraje“ do nahrávání (MediaRecorder → AAC v MP4), nic není slyšet.
+// Přesné srovnání: na začátek se přidá krátký značkovací tón; v nahrávce se najde a podle něj se zvuk usadí na čas 0.
+let mrCtx=null;
+X.prepareAudio = () => { try{ if (!window.MediaRecorder) return; const AC=window.AudioContext||window.webkitAudioContext; if (!AC) return; if (!mrCtx) mrCtx=new AC(); if (mrCtx.state==='suspended') mrCtx.resume(); }catch(e){ console.warn('AudioContext',e); } };   // volat přímo při klepnutí (iPhone)
+X.recordAAC = async (buf, onP, allowAny) => {
+  const no=m=>{ console.warn('Nahrání zvuku nejde: '+m); return null; };
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('audio/mp4')) return no('nahrávání audio/mp4 nepodporováno');
+  if (!mrCtx) X.prepareAudio(); const ctx=mrCtx; if (!ctx) return no('AudioContext');
+  try{ if (ctx.state!=='running') await ctx.resume(); }catch(e){} if (ctx.state!=='running') return no('AudioContext neběží ('+ctx.state+')');
+  const CH=2, R=buf.sampleRate, PRE=0.3, MK=0.04, GAP=0.3, head=Math.round((PRE+MK+GAP)*R);
+  const tail=head+buf.length+Math.round(GAP*R);   // druhá značka za koncem zvuku (na přesné doladění)
+  const nb=ctx.createBuffer(CH, tail+Math.round((MK+0.3)*R), R);
+  for (let c=0;c<CH;c++){ const d=nb.getChannelData(c); for (let i=Math.round(PRE*R);i<Math.round((PRE+MK)*R);i++) d[i]=0.9*Math.sin(2*Math.PI*1000*i/R); for (let i=tail;i<tail+Math.round(MK*R);i++) d[i]=0.9*Math.sin(2*Math.PI*1000*i/R); d.set(buf.getChannelData(Math.min(c,buf.numberOfChannels-1)),head); }   // vždy stereo (mono se zdvojí)
+  const dest=ctx.createMediaStreamDestination(); dest.channelCount=CH; const src=ctx.createBufferSource(); src.buffer=nb; src.connect(dest);
+  const mt=['audio/mp4;codecs=mp4a.40.2','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
+  const rec=new MediaRecorder(dest.stream,{mimeType:mt, audioBitsPerSecond:192000}), parts=[];
+  rec.ondataavailable=e=>{ if (e.data&&e.data.size) parts.push(e.data); }; const stopped=new Promise(r=>{ rec.onstop=r; });
+  rec.start(1000); await new Promise(r=>setTimeout(r,200));
+  const t0=ctx.currentTime+0.05; src.start(t0);
+  while (ctx.currentTime < t0+nb.duration+0.1){ onP&&onP(Math.max(0,Math.min(1,(ctx.currentTime-t0)/nb.duration))); await new Promise(r=>setTimeout(r,250)); }
+  rec.stop(); await stopped; try{ src.disconnect(); }catch(e){}
+  const blob=new Blob(parts,{type:rec.mimeType||'audio/mp4'});
+  // najít značkovací tón v nahrávce (dekódovaný zvuk)
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  const ab=await new Promise((res,rej)=>{ blob.arrayBuffer().then(a=>{ const p=new OAC(1,R,R).decodeAudioData(a,res,rej); if (p&&p.then) p.then(res,rej); }); });
+  const d=ab.getChannelData(0), r2=ab.sampleRate; let on=-1; for (let i=0;i<d.length;i++) if (Math.abs(d[i])>0.3){ on=i; break; }
+  if (on<0) return no('značka nenalezena');
+  const start=on/r2+MK+GAP;   // čas (v nahrávce), kde začíná zvuk videa
+  const tr=await rawAudioTrack(blob, allowAny); if (!tr || !tr.samples.length) return no('nahrávka nejde přečíst ('+blob.type+', '+blob.size+' B)');
+  // zvuk začne přesně na hranici rámce (rámce se nedají dělit): vybere se rámec nejblíž začátku zvuku videa
+  const S=tr.samples; let i0=0, bd=1e9; S.forEach((x,i)=>{ const dd=Math.abs(x.ts-tr.skip-start); if (dd<bd){ bd=dd; i0=i; } });
+  const sel=k=>{ const i=Math.max(0,Math.min(S.length-1,i0+k)), t0=S[i].ts, out=[]; for (let j=i;j<S.length;j++){ const ts=S[j].ts-t0; if (ts>buf.duration) break; out.push({...S[j], ts}); } return out; };
+  let shift=0, samples=sel(0), lag=null;
+  // doladění: zabalit stejně jako ve výsledném videu, přehrát (dekódovat) a podle obsahu změřit posun; posouvá se o celé rámce
+  try{ lag=await measureLag(samples, tr, buf, R); const pk=S[Math.min(S.length-1,i0+1)].ts-S[i0].ts || 0.021;
+    if (lag!=null && Math.abs(lag)>pk*0.6 && Math.abs(lag)<0.25){ shift=Math.round(lag/pk); samples=sel(shift); } }catch(e){ console.warn('doladění zvuku',e); }
+  const st=S[Math.max(0,Math.min(S.length-1,i0+shift))].ts-tr.skip;
+  return {codec:tr.codec, rate:tr.rate, ch:tr.ch, dsi:tr.dsi, samples, skip:0, start:st, lag};
+};
+async function measureLag(samples, tr, buf, R){
+  const opus=tr.codec==='opus', target=new Mp4Muxer.ArrayBufferTarget();
+  const mux=new Mp4Muxer.Muxer({target, fastStart:'in-memory', firstTimestampBehavior:'offset', audio:{codec:opus?'opus':'aac', numberOfChannels:tr.ch, sampleRate:tr.rate}});
+  const meta={decoderConfig:{codec:tr.codec, sampleRate:tr.rate, numberOfChannels:tr.ch, description:opus?undefined:tr.dsi}};
+  let last=-1, first=true; for (const smp of samples){ let ts=smp.ts; if (ts<=last) ts=last+smp.dur; mux.addAudioChunkRaw(smp.data,'key',Math.max(0,Math.round(ts*1e6)),Math.round(smp.dur*1e6),first?meta:undefined); first=false; last=ts; }
+  mux.finalize();
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  const ab=await new Promise((res,rej)=>{ const p=new OAC(1,R,R).decodeAudioData(target.buffer,res,rej); if (p&&p.then) p.then(res,rej); });
+  const d=ab.getChannelData(0), ref=buf.getChannelData(0); if (ab.sampleRate!==R) return null;
+  // nejživější 3 s (hlas) a obálka hlasitosti po 2 ms: hrubý posun ±150 ms (nesplete se o kmit tónu), pak přesně po vzorcích ±2 ms
+  const B=Math.max(1,Math.round(0.002*R)), W=Math.min(Math.round(3*R), ref.length-Math.round(0.6*R)); if (W<R) return null;
+  const env=(x,i0,n)=>{ const e=new Float32Array(Math.floor(n/B)); for (let k=0;k<e.length;k++){ let s=0; for (let j=0;j<B;j++){ const v=x[i0+k*B+j]||0; s+=Math.abs(v); } e[k]=s/B; } return e; };
+  let s0=Math.round(0.3*R), bestE=-1; for (let i=Math.round(0.3*R); i+W<ref.length-Math.round(0.3*R); i+=Math.round(0.5*R)){ let e=0, m=0; const ee=env(ref,i,W); for (const v of ee){ e+=v*v; m+=v; } const varE=e/ee.length-(m/ee.length)**2; if (varE>bestE){ bestE=varE; s0=i; } }
+  const er=env(ref,s0,W), M=Math.round(0.15*R/B); let bc=-1e18, bk=0; const mr=er.reduce((a,b)=>a+b,0)/er.length;
+  for (let k=-M;k<=M;k++){ const ed=env(d,s0+k*B,W); const md=ed.reduce((a,b)=>a+b,0)/ed.length; let c=0; for (let i=0;i<er.length;i++) c+=(ed[i]-md)*(er[i]-mr); if (c>bc){ bc=c; bk=k; } }
+  let best=-1e18, bl=bk*B; const base=bk*B; for (let L=base-2*B; L<=base+2*B; L++){ let c=0; for (let k=s0;k<s0+W;k+=4){ const j=k+L; if (j>=0&&j<d.length) c+=d[j]*ref[k]; } if (c>best){ best=c; bl=L; } }
+  return bl/R;   // kladné = přehraný zvuk je opožděný
+}
 // Rychlý test v telefonu: zakóduje 0,4 s tónu, zabalí do MP4 a zkusí ho přehrát. Jen když je tón slyšet,
 // použije se míchání zvuku (s efekty); jinak rovnou původní zvuk videa (žádný zbytečný druhý export).
 let aacOK=null;
@@ -205,25 +263,29 @@ X.exportVideo = async (opts) => {
     const sfxOn=E.sfxEvents().some(ev=>ev.t<dur) || (opts.ovAudio&&opts.ovAudio.length>0) || music || (ext && !opts.mute);
     let raw=null, audio=null, ac=null, audioNote='';
     const getRaw=async()=>{ try{ return window.rawAudioTrack?await rawAudioTrack(opts.file):null; }catch(e){ console.warn('Původní zvuk nejde převzít',e); return null; } };
-    if (!opts.mute && (!sfxOn || !window.AudioEncoder || opts.safe)) raw=await getRaw();
     const fxOnly=E.sfxEvents().some(ev=>ev.t<dur);   // zvukové efekty i u ztlumeného videa
-    if (!raw && window.AudioEncoder && (!opts.mute || music || fxOnly)){
-      try{ if (await X.aacProbe()){ audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio, opts.blobs); ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate); } }catch(e){ console.warn('Míchání zvuku nejde',e); ac=null; }
-      if (!ac && !opts.mute){ raw=await getRaw(); audio=null; }   // AAC se zakódovat nedá → aspoň původní zvuk videa
+    if (sfxOn && (!opts.mute || music || fxOnly)){
+      // 1) smíchat a zakódovat přímo (rychlé) – jen když to telefon prokazatelně umí
+      if (!opts.safe && window.AudioEncoder){ try{ if (await X.aacProbe()){ audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio, opts.blobs); ac=await pickAudioCodec(audio.numberOfChannels,audio.sampleRate); } }catch(e){ console.warn('Míchání zvuku nejde',e); ac=null; } }
+      // 2) jinak smíchaný zvuk nahrát vestavěným nahráváním telefonu (AAC) – hudba ani efekty se neztratí
+      if (!ac){ try{ if (!audio) audio=await X.buildAudio(opts.file, dur, opts.mute, opts.ovAudio, opts.blobs);
+          const rec=await X.recordAAC(audio, p=>onP(0,`Míchám zvuk (hlas, hudba, efekty)… ${Math.round(p*100)} %`), X._recAny); if (rec){ raw=rec; raw.mixed=true; } }
+        catch(e){ console.warn('Nahrání smíchaného zvuku nejde',e); } audio=null; }
     }
-    if (raw && sfxOn) audioNote='zvukové efekty, hudbu a zvuk vložených klipů tento prohlížeč neumí přimíchat';
-    else if (!raw && !ac && music && !window.AudioEncoder) audioNote='hudbu tento prohlížeč neumí přidat';
-    if (!raw && !ac && !opts.mute) audioNote='zvuk se nepodařilo přidat';
+    if (!raw && !ac && !opts.mute) raw=await getRaw();   // nouzově aspoň původní zvuk videa
+    if (raw && !raw.mixed && sfxOn) audioNote='zvukové efekty, hudbu a zvuk vložených klipů se nepodařilo přimíchat';
+    if (!raw && !ac && (!opts.mute || music)) audioNote='zvuk se nepodařilo přidat';
     const target=new Mp4Muxer.ArrayBufferTarget();
     const muxer=new Mp4Muxer.Muxer({ target, fastStart:'in-memory', firstTimestampBehavior:'offset',
       video:{codec:vc.mux,width:w,height:h,frameRate:fps},
-      audio: raw?{codec:'aac',numberOfChannels:raw.ch,sampleRate:raw.rate}:ac?{codec:ac.mux,numberOfChannels:audio.numberOfChannels,sampleRate:audio.sampleRate}:undefined });
+      audio: raw?{codec:raw.codec==='opus'?'opus':'aac',numberOfChannels:raw.ch,sampleRate:raw.rate}:ac?{codec:ac.mux,numberOfChannels:audio.numberOfChannels,sampleRate:audio.sampleRate}:undefined });
     if (raw){
-      const meta={decoderConfig:{codec:raw.codec,sampleRate:raw.rate,numberOfChannels:raw.ch,description:raw.dsi}};
+      const meta={decoderConfig:{codec:raw.codec,sampleRate:raw.rate,numberOfChannels:raw.ch,description:raw.codec==='opus'?undefined:raw.dsi}};
       let first=true;
       let lastOut=-1;
       const put=(smp,ts)=>{ if (ts<=lastOut) ts=lastOut+smp.dur; if (ts < -smp.dur/2 || ts >= dur) return; muxer.addAudioChunkRaw(smp.data,'key',Math.max(0,Math.round(ts*1e6)),Math.round(smp.dur*1e6),first?meta:undefined); first=false; lastOut=ts; };
-      if (cut){
+      if (raw.mixed){ for (const smp of raw.samples) put(smp, smp.ts); }   // nahraný smíchaný zvuk je už v čase výsledného videa
+      else if (cut){
         // po úsecích: stejný kus zvuku se může použít víckrát (prodloužený úsek překrývá další)
         let o=0; for (const c of E.clips){ const d=E.clipDur(c); if (!c.a && E.clipSp(c)===1){ for (const smp of raw.samples){ const ts0=smp.ts-raw.skip, mid=ts0+smp.dur/2; if (mid<c.s) continue; if (mid>=c.e) break; put(smp, o+(ts0-c.s)); } } o+=d; }
       } else for (const smp of raw.samples) put(smp, smp.ts-raw.skip);
@@ -347,7 +409,7 @@ X.exportVideo = async (opts) => {
     }
     await venc.flush(); venc.close();
     muxer.finalize();
-    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—', stalls, hasAudio:!!(raw||ac), audioMode:raw?'raw':ac?'mix':'none', dur};
+    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—', stalls, hasAudio:!!(raw||ac), audioMode:raw&&raw.mixed?'mixrec':raw?'raw':ac?'mix':'none', dur};
   } finally {
     E.flags.transparent=false; E.flags.exporting=false; E.personMask=prevMask;
     if (prev) E.attach(prev[0],prev[1]);

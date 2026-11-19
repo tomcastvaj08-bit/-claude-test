@@ -1035,5 +1035,8 @@ window.I18N_DICT.en={
 "zvuk nejde přehrát": "sound can't be played",
 "zvuk je tichý": "sound is silent",
 "první pokus měl chybu (": "the first attempt had an error (",
-"), video je vyexportované znovu (30 fps)": "), the video was exported again (30 fps)"
+"), video je vyexportované znovu (30 fps)": "), the video was exported again (30 fps)",
+"zvuk: video + přidaný zvuk a efekty": "sound: video + added sound and effects",
+"Míchám zvuk (hlas, hudba, efekty)… # %": "Mixing sound (voice, music, effects)… # %",
+"zvukové efekty, hudbu a zvuk vložených klipů se nepodařilo přimíchat": "sound effects, music and inserted clips' sound could not be mixed in"
 };

@@ -95,7 +95,7 @@ global.openFrameSource = openFrameSource;
 (function (global) {
 "use strict";
 // Původní zvuková stopa (AAC) jako surové vzorky – bez dekódování. Použije se i pro export bez překódování.
-async function rawAudioTrack(file) {
+async function rawAudioTrack(file, any) {
   if (!global.MP4Box) return null;
   const buf = await file.arrayBuffer(); buf.fileStart = 0;
   const mp4 = MP4Box.createFile(); let info = null;
@@ -103,7 +103,7 @@ async function rawAudioTrack(file) {
   try { mp4.appendBuffer(buf); mp4.flush(); } catch (e) { return null; }
   if (!info || !info.audioTracks || !info.audioTracks.length) return null;
   const tr = info.audioTracks[0];
-  if (!/^mp4a/.test(tr.codec)) return null;
+  if (!/^mp4a/.test(tr.codec) && !any) return null;
   const rate = tr.audio.sample_rate, ch = tr.audio.channel_count;
   let dsi = null;
   try { const en = mp4.getTrackById(tr.id).mdia.minf.stbl.stsd.entries[0]; dsi = en.esds.esd.descs[0].descs[0].data; } catch (e) {}
@@ -117,7 +117,7 @@ async function rawAudioTrack(file) {
   // úvodní „priming“ AAC: originál ho schovává přes edit list
   let skip = 0;
   try { const t = mp4.getTrackById(tr.id), e = t.edts && t.edts.elst && t.edts.elst.entries && t.edts.elst.entries[0]; if (e && e.media_time > 0) skip = e.media_time / t.mdia.mdhd.timescale; } catch (e) {}
-  const codec = /^mp4a\.40\.\d+$/.test(tr.codec) ? tr.codec : 'mp4a.40.' + ((dsi[0] >> 3) || 2);
+  const codec = /opus/i.test(tr.codec) ? 'opus' : /^mp4a\.40\.\d+$/.test(tr.codec) ? tr.codec : 'mp4a.40.' + ((dsi[0] >> 3) || 2);   // opus jen pro testy (any)
   return { codec, rate, ch, dsi, samples, skip: Math.min(0.5, skip) };
 }
 async function audioOnlyM4A(file) {
