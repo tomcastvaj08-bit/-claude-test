@@ -669,7 +669,9 @@ function loop(now){
       const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); }
       sfxTick(t);
       followTimeline(t);
-    } else { const p=E.pages[curPage]; if (!(p && t>=p.s && t<=p.e)){ const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); } } syncPanelToPage(); }
+    } else { const p=E.pages[curPage]; if (!(p && t>=p.s && t<=p.e)){ const k=E.pageAt(t); if (k>=0 && k!==curPage){ curPage=k; markCur(); } } syncPanelToPage();
+      // čas se změnil jinak než posunem timeline (klepnutí na titulek, rádce, tlačítka…) → timeline dojede na stejné místo
+      if (Math.abs(t-lastT)>0.001 && !scrubBusy && scrubT==null && !tlDrag && !tlUser && performance.now()-tlScrollAt>400) followTimeline(t,true); }
     lastT=t;
     syncOverlays(t, !vid.paused || PB.on);
     E.render(t,{});
@@ -1808,7 +1810,8 @@ let tlUser=false, tlUserT=0;
 const tlBusy=()=>tlUser || (vid.paused && performance.now()-tlUserT<250);
 function followTimeline(t,force){ if (tlBusy() && vid.paused && !PB.on) return; const sc=$('tlScroll'); const x=t*pps; if (force||Math.abs(sc.scrollLeft-x)>1){ tlSync=true; tlSyncT=performance.now(); sc.scrollLeft=x; requestAnimationFrame(()=>{ tlSync=false; }); } }
 let kfRefT=null;
-$('tlScroll').addEventListener('scroll',()=>{ if (panel==='kf'){ clearTimeout(kfRefT); kfRefT=setTimeout(()=>renderPanel(),120); } if (tlSync||tlDrag) return; if (!vid.paused) return; if (performance.now()-tlSyncT<350 && !tlUser) return; if (tlUser||true) tlUserT=performance.now(); const t=clamp($('tlScroll').scrollLeft/pps,0,PV.duration-0.01); scrubTo(t); const k=E.pageAt(t); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
+let tlScrollAt=0;
+$('tlScroll').addEventListener('scroll',()=>{ if (panel==='kf'){ clearTimeout(kfRefT); kfRefT=setTimeout(()=>renderPanel(),120); } if (tlSync||tlDrag) return; tlScrollAt=performance.now(); if (!vid.paused) return; if (performance.now()-tlSyncT<350 && !tlUser) return; if (tlUser||true) tlUserT=performance.now(); const t=clamp($('tlScroll').scrollLeft/pps,0,PV.duration-0.01); scrubTo(t); const k=E.pageAt(t); if (k>=0&&k!==curPage){ curPage=k; markCur(); } });
 // posun timeline prstem: video se přetáčí plynule – vždy jen jedno přetočení naráz, další míří rovnou na poslední místo
 // (telefon nestíhá stovky přetočení za sekundu → dřív to sekalo a obraz zaostával)
 let scrubT=null, scrubBusy=false;
