@@ -579,3 +579,6 @@ button.pro.on{background:var(--green)}
 button,.chip,.sub>div,.seg>div,.scope>div,.look,.tpl,.mkc,.pg,.lay,label.btn{touch-action:manipulation}
 .bnav button:active,.ico:active,.sub>div:active,.seg>div:active,.scope>div:active,.look:active,.mkc:active,.pg:active,.step button:active,.chips .chip:active{transform:scale(.94);opacity:.85;transition:none}
 .bnav button:active .ic{transform:scale(.9)}
+/* Reality: oddíly v panelu */
+.rl-sec{display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;margin:16px 0 4px;padding-top:12px;border-top:1px solid var(--line)}
+.rl-sec .ic{width:18px;height:18px}

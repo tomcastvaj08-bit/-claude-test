@@ -228,7 +228,7 @@ $('fileIn').onchange=async e=>{
   // nové video = vždy obyčejné titulky: Reality, stabilizace a text za postavou se zapínají až ručně
   { const keep=E.G; E.G=Object.assign({},E.G0,keep); const B=E.TEMPLATES.base.set;
     if (E.G.reMode || E.G.noSlots || E.G.emEach || E.G.anim==='reel'){ for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]); }
-    Object.assign(E.G,{reMode:false, faceStab:false, behind:'off', noSlots:false, emEach:false}); }
+    Object.assign(E.G,{reMode:false, faceStab:false, behind:'off', noSlots:false, emEach:false}); for (const k of ['reFollow','reBehindTop','reBehindChest','stabMode']) delete E.G[k]; }
   if (E.G.fontMain===E.SF) E.G.wMain=500;   // vedlejší řádky vždy začínají SF Pro Medium
   project={id:'p'+Date.now(), name:f.name.replace(/\.[^.]+$/,'').slice(0,40), created:Date.now(), restoredOk:true};
   // hned dát najevo, že se něco děje
@@ -796,12 +796,14 @@ function renderPanel(){
 const binders={};
 // ---------- REAL ESTATE STYL (v2) ----------
 // Vše se počítá v reality.js při vykreslení – zapnout / vypnout, barvy a rozmístění; titulky se nijak nepřepisují.
+const STABMODES=[['lock','Zamčeno (obličej přesně uprostřed)'],['smooth','Plynule (kamera jemně dohání)'],['pin','Pevně na bod (úplně zamčeno, obraz se ořízne)']];
 function pRe(){
   const on=!!E.G.faceStab;
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-user"/></svg><div><b>Stabilizace na obličej</b><small>Video se přiblíží a posouvá tak, aby obličej (nos) byl pořád uprostřed – jako v realitních reels. Titulky zůstanou, jak je máš.</small></div></div>
   <button class="btn ${on?'':'primary'} big" id="reOn">${on?'Vypnout stabilizaci':'Zapnout stabilizaci'}</button>
-  ${on?`<div class="chips" id="reMode">${[['lock','Zamčeno (obličej přesně uprostřed)'],['smooth','Plynule (kamera jemně dohání)']].map(([v,l])=>`<div class="chip ${(E.G.stabMode||'lock')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  <label class="ctl"><div class="lb"><span>Přiblížení videa</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label>
+  ${on?`<div class="chips" id="reMode">${STABMODES.map(([v,l])=>`<div class="chip ${(E.G.stabMode||'lock')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  ${E.G.stabMode==='pin'?'<div class="note">Pevně na bod: nos je v každém snímku přesně na stejném místě. Appka video přiblíží, kolik je potřeba (okraje se oříznou).</div>':''}
+  <label class="ctl"><div class="lb"><span>${E.G.stabMode==='pin'?'Přiblížení videa (nejméně)':'Přiblížení videa'}</span><span id="reZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="reZoom" min="105" max="180" value="${E.G.reZoom||130}"></label>
   <label class="ctl"><div class="lb"><span>Výška obličeje</span><span id="reNoseV">${E.G.reNoseY||39} %</span></div><input type="range" id="reNose" min="25" max="60" value="${E.G.reNoseY||39}"></label>
   <div class="note">Víc přiblížení = obličej drží uprostřed i když se člověk hýbe víc do stran.</div>`:''}
   <div class="note">Napoprvé appka projde video a najde obličej v každém snímku (chvíli to trvá).</div>`;
@@ -817,7 +819,7 @@ async function reHead(btn){
 function reLegacyOff(){
   if (!E.G.reMode) return; const stab=E.G.reStab!==false;
   for (const k in E.meta){ const m=E.meta[k]; if (!m) continue; if (m.reL){ delete m.layer; delete m.eo; delete m.reL; } if (m.trk&&String(m.trk).startsWith('re_')) delete m.trk;
-    if (m.own) for (const x of ['posX','posY','_manualPos','size','grad','gA','gB','gradDir','c1','c2','c3','c4','reMoved']) delete m.own[x]; }
+    if (m.own) for (const x of ['posX','posY','_manualPos','size','grad','gA','gB','gradDir','c1','c2','c3','c4','reMoved','reDx','reDy']) delete m.own[x]; }
   for (const id in E.tracks) if (id.startsWith('re_')) delete E.tracks[id];
   const B=E.TEMPLATES.base.set; for (const k of Object.keys(RE.LOOK)) E.G[k]=(k in B)?B[k]:(E.G0&&k in E.G0?E.G0[k]:E.G[k]);
   E.G.reMode=false; E.G.noSlots=false; E.G.emEach=false; E.G.behind='off'; if (stab) E.G.faceStab=true; E.buildPages(); RE.invalidate();
@@ -840,8 +842,21 @@ function pReality(){
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-home"/></svg><div><b>Reality</b><small>Titulky se střídají: za hlavou (postava je před textem), na hrudi, za hlavou, na hrudi… Velká slova barevná s 3D leskem.</small></div></div>
   <button class="btn ${on?'':'primary'} big" id="rlOn">${on?'Vypnout Reality':'Zapnout Reality'}</button>
   ${on?`<div class="clabel">Barvy do mixu (klepnutím přidáš / ubereš)</div><div class="d3cols" id="rlCols">${cols}</div>
-  <div class="chips" id="rlFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div><div class="chip ${E.G.faceStab?'on':''}" data-k="stab">Stabilizace na obličej</div></div>
-  <button class="btn" id="rlRedo">${I('refresh','grad')} Zamíchat barvy a rozmístění</button>`:''}
+  <div class="chips" id="rlFx" style="margin-top:8px"><div class="chip ${E.G.gloss==='gloss'?'on':''}" data-k="gloss">${I('sparkles')} 3D lesk</div></div>
+  <button class="btn" id="rlRedo">${I('refresh','grad')} Zamíchat barvy a rozmístění</button>
+  <div class="rl-sec">${I('user','grad')} Stabilizace (kamera na obličej)</div>
+  <div class="chips" id="rlStab">${[['off','Vypnuto'],...STABMODES].map(([v,l])=>`<div class="chip ${(E.G.faceStab?(E.G.stabMode||'lock'):'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  ${E.G.faceStab?`<label class="ctl"><div class="lb"><span>${E.G.stabMode==='pin'?'Přiblížení videa (nejméně)':'Přiblížení videa'}</span><span id="rlZoomV">${E.G.reZoom||130} %</span></div><input type="range" id="rlZoom" min="105" max="180" value="${E.G.reZoom||130}"></label>`:''}
+  <div class="rl-sec">${I('crosshair','grad')} Titulky a hlava (tracking)</div>
+  <label class="ctl"><div class="lb"><span>Jak moc titulky jedou s hlavou</span><span id="rlFollowV">${E.G.reFollow??100} %</span></div><input type="range" id="rlFollow" min="0" max="100" value="${E.G.reFollow??100}"></label>
+  <div class="note">Titulek chyť prstem na videu a posuň, kam chceš – dál pojede s hlavou.</div>
+  <button class="btn" id="rlReset">${I('refresh')} Vrátit titulky na automatická místa</button>
+  <div class="rl-sec">${I('layers','grad')} Maska postavy</div>
+  <div class="clabel">Horní titulky</div><div class="chips" id="rlTop">${[['1','Za postavou (hlava a ramena přes text)'],['0','Před postavou']].map(([v,l])=>`<div class="chip ${(E.G.reBehindTop!==false?'1':'0')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <div class="clabel">Spodní titulky (na hrudi)</div><div class="chips" id="rlBot">${[['0','Před postavou'],['1','Za postavou']].map(([v,l])=>`<div class="chip ${(E.G.reBehindChest===true?'1':'0')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  <label class="ctl"><div class="lb"><span>Měkkost okraje masky (vlasy)</span><span id="rlFeaV">${E.G.maskFeather??50}</span></div><input type="range" id="rlFea" min="0" max="100" value="${E.G.maskFeather??50}"></label>
+  <div class="rl-sec">${I('target','grad')} Tracking a maska objektu</div>
+  <div class="btnrow"><button class="btn" id="rlTrk">${I('crosshair')} Titulek sleduje objekt</button><button class="btn" id="rlMask">${I('target')} Maska objektu</button></div>`:''}
   <div class="note">Po zapnutí appka jednou projde video: najde obličej a oddělí postavu v každém snímku (chvíli to trvá). Titulek můžeš posunout prstem.</div>`;
 }
 // čekací okno přes celou appku (Reality se připravuje)
@@ -862,15 +877,25 @@ async function rlToggle(btn){
   } finally { waitOff(); renderPanel(); }
   if (!(HEAD.data && PERSON.data)) return;
   E.G.faceStab=true; E.G.stabMode='lock';   // obličej zamčený přesně na střed
-  for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','_manualPos','size','reMoved']) delete o[x]; }
+  for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','_manualPos','size','reMoved','reDx','reDy']) delete o[x]; }
   Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel();
   toast('Hotovo – titulky se střídají za hlavou a na hrudi');
 }
 binders.reality=()=>{
   $('rlOn').onclick=()=>rlToggle($('rlOn'));
   if ($('rlCols')) $('rlCols').onclick=e=>{ const c=e.target.closest('.d3c'); if(!c) return; const n=c.dataset.n; let m=RE.mix().slice(); m=m.includes(n)?m.filter(x=>x!==n):m.concat(n); if (!m.length) return; E.G.reMix=m; RE.invalidate(); changed(); renderPanel(); };
-  if ($('rlFx')) $('rlFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; else E.G.faceStab=!E.G.faceStab; RE.invalidate(); changed(); renderPanel(); };
+  if ($('rlFx')) $('rlFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.k==='gloss') E.G.gloss=E.G.gloss==='gloss'?'off':'gloss'; RE.invalidate(); changed(); renderPanel(); };
   if ($('rlRedo')) $('rlRedo').onclick=()=>{ E.G.reSeed=((E.G.reSeed||0)+1)%60; RE.invalidate(); changed(); toast('Zamícháno'); };
+  const chipOf=(id,fn)=>{ if ($(id)) $(id).onclick=e=>{ const c=e.target.closest('.chip'); if (!c) return; fn(c.dataset.v); RE.invalidate(); changed(); renderPanel(); }; };
+  chipOf('rlStab',v=>{ if (v==='off') E.G.faceStab=false; else { E.G.faceStab=true; E.G.stabMode=v; } });
+  chipOf('rlTop',v=>{ E.G.reBehindTop=v==='1'; });
+  chipOf('rlBot',v=>{ E.G.reBehindChest=v==='1'; });
+  if ($('rlZoom')){ $('rlZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('rlZoomV').textContent=E.G.reZoom+' %'; }; $('rlZoom').onchange=()=>{ RE.invalidate(); changed(); }; }
+  if ($('rlFollow')){ $('rlFollow').oninput=e=>{ E.G.reFollow=+e.target.value; $('rlFollowV').textContent=E.G.reFollow+' %'; }; $('rlFollow').onchange=()=>changed(); }
+  if ($('rlFea')){ $('rlFea').oninput=e=>{ E.G.maskFeather=+e.target.value; $('rlFeaV').textContent=E.G.maskFeather; }; $('rlFea').onchange=()=>changed(); }
+  if ($('rlReset')) $('rlReset').onclick=()=>{ for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','reMoved','reDx','reDy']) delete o[x]; } RE.invalidate(); changed(); toast('Titulky jsou zase na automatických místech'); };
+  if ($('rlTrk')) $('rlTrk').onclick=()=>{ if (!E.pages.length){ toast('Nejdřív vytvoř titulky'); return; } toast('Vyber titulek (hlavu přehrávání dej na něj) a klepni na to, co má sledovat'); $('trkBtn').click(); };
+  if ($('rlMask')) $('rlMask').onclick=()=>{ const b=document.querySelector('#bnav button[data-p="obj"]'); if (b) b.click(); };
 };
 // ---------- KLÍČOVÉ SNÍMKY (zoom / posun / průhlednost videa) ----------
 function openKfPanel(){ if (selClip<0) selClip=Math.max(0,E.clipList().findIndex((c,i)=>{ const st=E.clipStarts(); return PV.currentTime>=st[i] && PV.currentTime<st[i]+E.clipDur(c); })); panel='clip'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
@@ -1151,7 +1176,7 @@ function pTemplates(){
 }
 // barvy hlavního řádku pro 3D texty (sytý přechod shora dolů)
 const TXT_COLORS=[['Žlutá','#ff9a00','#e8f200'],['Citrón','#fff200','#ffd400'],['Limetková','#e8ff4a','#a8d900'],['Modrá','#14d6ff','#0040ff'],['Červená','#ff3b30','#c00000'],['Růžová','#ff2d9a','#a845ff'],['Zelená','#7dff6a','#00b84a'],['Bílá','#ffffff','#d9dde6'],['Zlatá','#fff1b8','#c98a00']];
-function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind','reMode','faceStab','noSlots','emEach','stabMode','reZoom','reNoseY','reMix','reSeed','reStab','rePlace'].includes(k)) set[k]=S[k]; return set; }
+function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind','reMode','faceStab','noSlots','emEach','stabMode','reZoom','reNoseY','reMix','reSeed','reStab','rePlace','reFollow','reBehindTop','reBehindChest','maskFeather'].includes(k)) set[k]=S[k]; return set; }
 binders.templates=()=>{
   $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('Hotovo – nová videa budou vypadat takhle'); };
   if ($('clrDefault')) $('clrDefault').onclick=()=>{ lsSet('efk_default',null); renderPanel(); toast('Nová videa budou zase ve Stylu 1'); };
@@ -1462,6 +1487,7 @@ function pAI(){
   <div class="clabel">${I('user','grad')} Text za postavou</div>
   <div class="note">Titulek bude za člověkem (postava zakryje písmo).</div>
   <div class="chips" id="behindCh">${[['off','Vypnuto'],['on','Za celou postavou']].map(([v,l])=>`<div class="chip ${(cur().behind||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  ${(cur().behind||'off')==='on'?`<label class="ctl"><div class="lb"><span>Měkkost okraje masky (vlasy)</span><span id="aiFeaV">${E.G.maskFeather??50}</span></div><input type="range" id="aiFea" min="0" max="100" value="${E.G.maskFeather??50}"></label>`:''}
 
   <div class="clabel">${I('palette','grad')} Barva z videa</div>
   <button class="btn" id="aiColor">Navrhnout barvy podle videa</button><div class="sugg" id="suggBox" style="margin-top:8px"></div>
@@ -1483,6 +1509,7 @@ binders.ai=()=>{
     freeVideo(v); renderPanel();
   };
   // text za hlavou: nejdřív projít video (obličej + maska hlavy v každém snímku)
+  if ($('aiFea')){ $('aiFea').oninput=e=>{ E.G.maskFeather=+e.target.value; $('aiFeaV').textContent=E.G.maskFeather; }; $('aiFea').onchange=()=>changed(); }
   $('behindCh').onclick=async e=>{ const c=e.target.closest('.chip'); if (!c || $('behindCh').dataset.busy) return; const v0=c.dataset.v;
     if (v0==='off'){ setVal('behind','off'); renderPanel(); return; }
     $('behindCh').dataset.busy='1';
@@ -2038,7 +2065,7 @@ stg.addEventListener('pointerdown',e=>{
     if (Math.hypot(x-B.pe[0],y-B.pe[1])<hr*1.4){ openInline(curPage); ptrs.clear(); return; }
     if (Math.hypot(x-B.h[0],y-B.h[1])<hr*1.4){ gest={type:'resize',cx:B.cx,cy:B.cy,d0:Math.hypot(x-B.cx,y-B.cy),size0:cur().size}; guides=true; return; }
     const P=B.P, inside=x>Math.min(...P.map(p=>p[0]))-hr&&x<Math.max(...P.map(p=>p[0]))+hr&&y>Math.min(...P.map(p=>p[1]))-hr&&y<Math.max(...P.map(p=>p[1]))+hr;
-    if (inside){ const S=E.G.reMode?E.styleAt(E.pages[curPage],PV.currentTime):cur(); gest={type:'move',x0:x,y0:y,px:S.posX,py:S.posY,moved:false}; return; }   // Real estate: od polohy, kde titulek je vidět
+    if (inside){ const S=E.G.reMode?E.styleAt(E.pages[curPage],PV.currentTime):cur(), mo=E.G.reMode&&(E.meta[E.keyOf(E.pages[curPage])]||{}).own||{}; gest={type:'move',x0:x,y0:y,px:S.posX,py:S.posY,dx0:mo.reDx||0,dy0:mo.reDy||0,moved:false}; return; }   // Real estate: od polohy, kde titulek je vidět
   }
   gest={type:'tap',x0:x,y0:y,v0:kfVals()};
 });
@@ -2062,7 +2089,7 @@ stg.addEventListener('pointermove',e=>{
   if (gest.type==='ov'){ gest.moved=true; gest.o.x=clamp(gest.ox+(x-gest.x0)/cv.width*100,0,100); gest.o.y=clamp(gest.oy+(y-gest.y0)/cv.height*100,0,100); }
   else if (gest.type==='move'){ if (Math.hypot(x-gest.x0,y-gest.y0)>6){ gest.moved=true; guides=true; } if (!gest.moved) return;
     let nx=gest.px+(x-gest.x0)/cv.width*100, ny=gest.py+(y-gest.y0)/cv.height*100; if (Math.abs(nx-50)<1.5) nx=50;
-    if (E.G.reMode){ const m=pageMeta(E.pages[curPage]); m.own=m.own||{}; m.own.posX=+nx.toFixed(1); m.own.posY=+clamp(ny,3,97).toFixed(1); m.own.reMoved=true; }   // Real estate: posunutý titulek zůstane, kde ho dáš
+    if (E.G.reMode){ const m=pageMeta(E.pages[curPage]); m.own=m.own||{}; delete m.own.posX; delete m.own.posY; m.own.reMoved=true; m.own.reDx=+(gest.dx0+(x-gest.x0)/cv.width*100).toFixed(2); m.own.reDy=+(gest.dy0+(y-gest.y0)/cv.height*100).toFixed(2); }   // Reality: posunutý titulek si drží odsazení a dál jede s hlavou
     else { setVal('posX',+nx.toFixed(1),true); setVal('posY',+clamp(ny,3,97).toFixed(1),true); } }
   else if (gest.type==='resize'){ const d=Math.hypot(x-gest.cx,y-gest.cy); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }
   else if (gest.type==='pinch' && ptrs.size>=2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }

@@ -123,11 +123,15 @@ PERSON.load = o => { PERSON.data = o && o.t ? o : null; cache.clear(); rawCache.
 const cache = new Map();
 function idxAt(ts) { const d = PERSON.data; if (!d || !d.t.length) return -1; let lo = 0, hi = d.t.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (d.t[m] < ts) lo = m; else hi = m; } const i = Math.abs(d.t[lo] - ts) <= Math.abs(d.t[hi] - ts) ? lo : hi; return Math.abs(d.t[i] - ts) < 0.06 && d.a[i] ? i : -1; }
 PERSON.has = ts => idxAt(ts) >= 0;
+// měkký okraj masky (feather): 0 = ostrý, 100 = hodně měkký; výchozí 50 – vlasy a okraje neblikají
+const featherR = () => { const f = g.E && E.G && E.G.maskFeather != null ? E.G.maskFeather : 50; return Math.max(0, Math.min(6, Math.round(f / 17))); };
 function maskCanvas(i) {
-  let c = cache.get(i); if (c) return c;
+  const fr = featherR(), key = i + '|' + fr; let c = cache.get(key); if (c) return c;
   const d = PERSON.data, Rr = d.R || R, m = dec(d.a[i], Rr * Rr); c = mk(Rr, Rr); const x = c.getContext('2d'), id = x.createImageData(Rr, Rr);
-  for (let k = 0; k < m.length; k++) { const j = k * 4; id.data[j] = id.data[j + 1] = id.data[j + 2] = 255; id.data[j + 3] = m[k]; }
-  x.putImageData(id, 0, 0); cache.set(i, c); if (cache.size > 40) cache.delete(cache.keys().next().value);
+  let A = m;
+  if (fr > 0) { let f = new Float32Array(m.length); for (let k = 0; k < m.length; k++) f[k] = m[k]; f = boxBlur(boxBlur(f, Rr, Rr, fr), Rr, Rr, fr); A = f; }   // 2× průměr ≈ gaussovské rozmazání okraje
+  for (let k = 0; k < m.length; k++) { const j = k * 4; id.data[j] = id.data[j + 1] = id.data[j + 2] = 255; id.data[j + 3] = A[k]; }
+  x.putImageData(id, 0, 0); cache.set(key, c); if (cache.size > 60) cache.delete(cache.keys().next().value);
   return c;
 }
 // obdélník postavy na plátně v čase t (px), s ohledem na přiblížení / stabilizaci
@@ -136,14 +140,28 @@ PERSON.rect = (t, W, H, xf) => { const ts = E._fT != null ? E._fT : (E.out2src ?
   const x0 = Math.max(0, Math.floor(X) - 2), y0 = Math.max(0, Math.floor(Y) - 2), x1 = Math.min(W, Math.ceil(X + s) + 2), y1 = Math.min(H, Math.ceil(Y + s) + 2);
   return x1 > x0 && y1 > y0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, X, Y, s, i } : null; };
 let tmp = null, tmx = null;
+// rámeček masky snímku i na plátně (px)
+const rectOf = (i, W, H, xf) => { const r = PERSON.data.r[i]; if (!r) return null; const z = xf ? xf.z / 100 : 1, kx = xf ? xf.x / 100 * W : 0, ky = xf ? xf.y / 100 * H : 0;
+  return { X: W / 2 + kx + (r[0] * W - W / 2) * z, Y: H / 2 + ky + (r[1] * H - H / 2) * z, s: r[2] * W * z }; };
 PERSON.compose = (ctx, W, H, t, baseC, xf) => {
   const R2 = PERSON.rect(t, W, H, xf); if (!R2) return false;
   if (!tmp || tmp.width !== W || tmp.height !== H) { tmp = mk(W, H); tmx = tmp.getContext('2d'); }
-  tmx.globalCompositeOperation = 'source-over'; tmx.clearRect(R2.x, R2.y, R2.w, R2.h); tmx.imageSmoothingEnabled = true; tmx.imageSmoothingQuality = 'high';
-  tmx.drawImage(maskCanvas(R2.i), R2.X, R2.Y, R2.s, R2.s);
-  tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, R2.x, R2.y, R2.w, R2.h, R2.x, R2.y, R2.w, R2.h); tmx.globalCompositeOperation = 'source-over';
+  // oblast = sjednocení rámečků sousedních snímků (měkké časové prolnutí)
+  const d = PERSON.data, i = R2.i, soft = featherR() > 0, nb = [];
+  if (soft) for (const j of [i - 1, i + 1]) if (j >= 0 && j < d.t.length && d.a[j] && Math.abs(d.t[j] - d.t[i]) < 0.06) nb.push(j);
+  let x0 = R2.x, y0 = R2.y, x1 = R2.x + R2.w, y1 = R2.y + R2.h;
+  for (const j of nb) { const q = rectOf(j, W, H, xf); x0 = Math.min(x0, Math.floor(q.X) - 2); y0 = Math.min(y0, Math.floor(q.Y) - 2); x1 = Math.max(x1, Math.ceil(q.X + q.s) + 2); y1 = Math.max(y1, Math.ceil(q.Y + q.s) + 2); }
+  x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(W, x1); y1 = Math.min(H, y1); const w = x1 - x0, h = y1 - y0; if (w <= 0 || h <= 0) return false;
+  tmx.globalCompositeOperation = 'source-over'; tmx.globalAlpha = 1; tmx.clearRect(x0, y0, w, h); tmx.imageSmoothingEnabled = true; tmx.imageSmoothingQuality = 'high';
+  if (nb.length) {   // průměr masky tohoto a sousedních snímků (vlasy a okraj se nemění skokem)
+    const wt = nb.length === 2 ? [0.5, 0.25, 0.25] : [0.65, 0.35]; tmx.globalCompositeOperation = 'lighter';
+    tmx.globalAlpha = wt[0]; tmx.drawImage(maskCanvas(i), R2.X, R2.Y, R2.s, R2.s);
+    nb.forEach((j, n) => { const q = rectOf(j, W, H, xf); tmx.globalAlpha = wt[n + 1]; tmx.drawImage(maskCanvas(j), q.X, q.Y, q.s, q.s); });
+    tmx.globalAlpha = 1;
+  } else tmx.drawImage(maskCanvas(i), R2.X, R2.Y, R2.s, R2.s);
+  tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, x0, y0, w, h, x0, y0, w, h); tmx.globalCompositeOperation = 'source-over';
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.shadowColor = 'transparent';
-  ctx.drawImage(tmp, R2.x, R2.y, R2.w, R2.h, R2.x, R2.y, R2.w, R2.h); ctx.restore();
+  ctx.drawImage(tmp, x0, y0, w, h, x0, y0, w, h); ctx.restore();
   return true;
 };
 })(window);

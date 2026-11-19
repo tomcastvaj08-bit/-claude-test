@@ -42,6 +42,8 @@ function segments(W, H) {
   }
   if (cur) out.push(cur);
   // vyhlazení každého úseku (střihy zvlášť): odlehlé hodnoty pryč, pak gauss ~0,1 s → plynulý pohyb bez cukání
+  // pro režim „Pevně na bod“: skoro surová poloha nosu (jen bez chvění bodů) – obličej se drží přesně
+  for (const sg of out) { sg.xr = smoothArr(sg.t, sg.x, 0.035); sg.yr = smoothArr(sg.t, sg.y, 0.035); }
   for (const sg of out) for (const k of ['x', 'y', 'f', 'top']) sg[k] = smoothArr(sg.t, sg[k], k === 'top' ? 0.12 : 0.09);
   segCache = out.filter(s => s.t.length >= 4); segKey = key; return segCache;
 }
@@ -84,12 +86,32 @@ function headSmooth(sg, ts, sig) {
   for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / sig; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sx += w * sg.x[j]; sy += w * sg.y[j]; sw += w; }
   return sw ? [sx / sw, sy / sw] : [sg.x[0], sg.y[0]];
 }
+// poloha nosu v čase ts pro režim „Pevně na bod“ (lineárně mezi snímky)
+function pinAt(sg, ts) {
+  const T = sg.t, n = T.length; if (ts <= T[0]) return [sg.xr[0], sg.yr[0]]; if (ts >= T[n - 1]) return [sg.xr[n - 1], sg.yr[n - 1]];
+  let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (T[m] <= ts) lo = m; else hi = m; }
+  const u = (ts - T[lo]) / Math.max(1e-6, T[hi] - T[lo]); return [sg.xr[lo] + (sg.xr[hi] - sg.xr[lo]) * u, sg.yr[lo] + (sg.yr[hi] - sg.yr[lo]) * u];
+}
+// jak moc přiblížit záběr, aby nos mohl být v KAŽDÉM snímku přesně na bodu a obraz přitom vyplnil celé plátno (ořízne se)
+function pinZoom(sg, W, H, NY, Zmin) {
+  const key = W + 'x' + H + ':' + NY; if (sg._pz && sg._pz.key === key) return Math.max(Zmin, sg._pz.z);
+  let z = 1; for (let j = 0; j < sg.t.length; j++) { const xn = Math.min(0.999, Math.max(0.001, sg.xr[j] / W)), yn = Math.min(0.999, Math.max(0.001, sg.yr[j] / H));
+    z = Math.max(z, 0.5 / xn, 0.5 / (1 - xn), NY / yn, (1 - NY) / (1 - yn)); }
+  sg._pz = { key, z: Math.min(3, z * 1.01) }; return Math.max(Zmin, sg._pz.z);
+}
+RE.pinOn = () => RE.stabOn() && E.G.stabMode === 'pin';
 RE.stab = t => {
   if (!RE.stabOn() || !(g.HEAD && HEAD.data)) return null;
   const W = E._cvW(), H = E._cvH(), segs = segments(W, H); if (!segs.length) return null;
   const ts = E._fT != null ? E._fT : E.out2src(t), Z = Math.max(1, Math.min(2, (E.G.reZoom || 130) / 100));
   let sg = segs.find(q => ts >= q.t[0] - 0.02 && ts <= q.t[q.t.length - 1] + 0.02), w = 1;
   if (!sg) { let bd = 0.8; for (const q of segs) { const d = Math.max(0, q.t[0] - ts, ts - q.t[q.t.length - 1]); if (d < bd) { bd = d; sg = q; } } if (!sg) return { z: Z, x: 0, y: 0 }; w = 1 - bd / 0.8; w = w * w * (3 - 2 * w); }
+  // režim „Pevně na bod“: nos přesně na bodu v každém snímku; přiblížení se dopočítá samo (obraz se ořízne, nikdy černé okraje)
+  if (E.G.stabMode === 'pin') {
+    const NYp = (E.G.reNoseY || 39) / 100, Zp = pinZoom(sg, W, H, NYp, Z), q = pinAt(sg, ts), lp = (Zp - 1) / 2;
+    const tx = Math.max(-lp, Math.min(lp, -Zp * (q[0] / W - 0.5))), ty = Math.max(-lp, Math.min(lp, (NYp - 0.5) - Zp * (q[1] / H - 0.5)));
+    return { z: Zp, x: tx * w * 100, y: ty * w * 100 };   // přiblížení zůstává i mimo obličej (bez skoků)
+  }
   // režim „Plynule“ (jako předloha): kamera obličej jen měkce dohání (vyhlazení ~0,7 s) a pomalu se přibližuje během záběru
   const soft = E.G.stabMode === 'smooth';
   const p = headSmooth(sg, ts, soft ? 0.7 : STAB_SIG);
@@ -120,7 +142,7 @@ function measure(p, S0) {
 let plan = null, planKey = '';
 function key(W, H) {
   const d = g.HEAD && HEAD.data, G = E.G;
-  return [W, H, E.pages.length, E.pages.map(p => p.a + ':' + p.b + ':' + p.s.toFixed(2) + ':' + p.e.toFixed(2) + ':' + (p.layer | 0)).join(','), d ? d.t.length : 0, G.size, G.emScale, G.rePlace, G.reSeed, (G.reMix || []).join(), G.fontMain, G.fontEm, G.gap, G.reStab === false ? 0 : 1, G.reZoom, (E.kf || []).length].join('|');
+  return [W, H, E.pages.length, E.pages.map(p => p.a + ':' + p.b + ':' + p.s.toFixed(2) + ':' + p.e.toFixed(2) + ':' + (p.layer | 0)).join(','), d ? d.t.length : 0, G.size, G.emScale, G.rePlace, G.reSeed, (G.reMix || []).join(), G.fontMain, G.fontEm, G.gap, G.reStab === false ? 0 : 1, G.reZoom, G.stabMode, G.faceStab ? 1 : 0, G.reNoseY, (E.kf || []).length].join('|');
 }
 RE.invalidate = () => { plan = null; segCache = null; };
 RE._plan = () => plan;
@@ -150,6 +172,11 @@ function build(W, H) {
         const yy = c - M.lbOff * k2;
         if (yy + M.tb * k2 >= H * 0.025) { y = yy; kk = k2; break; }
       }
+      // nad hlavou není místo (detail, velké přiblížení): titulek zůstane nahoře u okraje a hlava ho překryje víc – nepadá na hruď
+      if (y == null && hd) { let best = null;
+        for (let k2 = Math.min(kW, 0.85); k2 >= 0.5 - 1e-6; k2 -= 0.05) { const yy = H * 0.025 - M.tb * k2, cv = coverAt(yy + M.lbOff * k2, k2);   // menší písmo = spodní řádek výš = méně zakrytý
+          if (!best || cv < best.cv - 0.02) best = { k2, yy, cv }; if (cv <= 0.4) break; }
+        kk = best.k2; y = best.yy; }
       if (y == null) role = 'chest'; else lastTop = { e: p.e, bot: y + M.bb * kk };
     }
     if (role === 'chest') {
@@ -172,25 +199,28 @@ RE.apply = (p, S, t) => {
   const W = E._cvW(), H = E._cvH(), k0 = key(W, H);
   if (!plan || planKey !== k0) { plan = build(W, H); planKey = k0; }
   const o = plan.get(E.keyOf(p) + '|' + (p.layer | 0)); if (!o) return S;   // podle slova (stránky se při úpravách vytváří znovu)
-  const m = E.meta[E.keyOf(p)];
-  if (!(m && m.own && m.own.reMoved)) {   // titulek posunutý prstem zůstane, kde je
+  const m = E.meta[E.keyOf(p)], own = m && m.own;
+  const legacyMoved = own && own.reMoved && own.reDx == null;   // starší projekty: posunutý titulek stál na místě
+  const ownTrk = m && m.trk && E.tracks && E.tracks[m.trk];       // vlastní tracking objektu má přednost před hlavou
+  if (!legacyMoved) {
     let x = o.x / 100 * W, y = o.y / 100 * H;
     // zamčeno na video: titulek jede s hlavou (velikost se nemění), vždy celý v obraze
     let sc = 1;
     // zamčeno na video: titulek jede s hlavou a zvětšuje se s ní (člověk jde blíž = větší text), vždy celý v obraze
-    if (o.hd && t != null) {
+    const follow = Math.max(0, Math.min(1, (E.G.reFollow != null ? E.G.reFollow : 100) / 100));   // jak moc titulek jede s hlavou
+    if (o.hd && t != null && !ownTrk) {
       // po střihu (jiný záběr) se titulek přichytí na hlavu v novém záběru
       const ts = E._fT != null ? E._fT : E.out2src(t), sg0 = o.hd.sg; let sg = sg0;   // stejný čas snímku jako stabilizace (bez cukání)
       if (ts < sg0.t[0] - 0.05 || ts > sg0.t[sg0.t.length - 1] + 0.05) { const L = segments(W, H); const s2 = L.find(q => ts >= q.t[0] - 0.05 && ts <= q.t[q.t.length - 1] + 0.05); if (s2) sg = s2; }
       const hp = headAt(sg, ts), k = E.vxfAt(t) || { z: 100, x: 0, y: 0 }, kz = k.z / 100;
       // plynulý pohyb: se stabilizací stejné vyhlazení jako kamera (na obrazovce stojí), bez ní silné vyhlazení (~0,35 s) – slova se netřesou
-      const sig = RE.stabOn() ? (E.G.stabMode === 'smooth' ? 0.7 : STAB_SIG) : 0.35, q = headSmooth(sg, ts, sig); hp[0] = q[0]; hp[1] = q[1];
+      const sig = RE.stabOn() ? (E.G.stabMode === 'smooth' ? 0.7 : STAB_SIG) : 0.35, q = RE.pinOn() ? pinAt(sg, ts) : headSmooth(sg, ts, sig); hp[0] = q[0]; hp[1] = q[1];
       { const T = sg.t, tc = Math.max(T[0], Math.min(T[T.length - 1], ts)); let sf = 0, sw = 0; for (let j = 0; j < T.length; j++) { const d = (T[j] - tc) / 0.5; if (d < -3) continue; if (d > 3) break; const w = Math.exp(-0.5 * d * d); sf += w * sg.f[j]; sw += w; } if (sw) hp[2] = sf / sw; }   // velikost hlavy ještě klidněji
       const hx = W / 2 + k.x / 100 * W + kz * (hp[0] - W / 2), hy = H / 2 + k.y / 100 * H + kz * (hp[1] - H / 2);
       sc = Math.max(0.85, Math.min(1.2, hp[2] * kz / o.hd.rf));   // limit: text se zvětší / zmenší nanejvýš trochu
       // limit pohybu: titulek jede s hlavou, ale nejvýš o 12 % šířky / 8 % výšky od výchozího místa
       if (sg === sg0) {
-        const dxh = Math.max(-0.12 * W, Math.min(0.12 * W, hx - o.hd.rx)), dyh = Math.max(-0.08 * H, Math.min(0.08 * H, hy - o.hd.ry));
+        const dxh = follow * Math.max(-0.12 * W, Math.min(0.12 * W, hx - o.hd.rx)), dyh = follow * Math.max(-0.08 * H, Math.min(0.08 * H, hy - o.hd.ry));
         x = o.hd.rx + dxh + (x - o.hd.rx) * sc; y = o.hd.ry + dyh + (y - o.hd.ry) * sc;
       } else {
         // jiný záběr po střihu: titulek se usadí vůči hlavě v NOVÉM záběru (stejné místo vůči hlavě – za hlavou zůstane za hlavou),
@@ -200,13 +230,18 @@ RE.apply = (p, S, t) => {
         let ri = 0, bd = 1e9; sg.t.forEach((tt, j) => { const d = Math.abs(tt - t1); if (d < bd) { bd = d; ri = j; } });
         const fr = sg.f[ri], anchorNew = o.role === 'top' ? sg.top[ri] : r[1] + 0.8 * fr, anchorOld = o.role === 'top' ? o.hd.rTop : o.hd.rChin;
         const aY = H / 2 + k.y / 100 * H + kz * (anchorNew - H / 2);
-        const dxh = Math.max(-0.12 * W, Math.min(0.12 * W, hx - rx)), dyh = Math.max(-0.08 * H, Math.min(0.08 * H, hy - ry));
+        const dxh = follow * Math.max(-0.12 * W, Math.min(0.12 * W, hx - rx)), dyh = follow * Math.max(-0.08 * H, Math.min(0.08 * H, hy - ry));
         x = x + (rx - o.hd.rx) + dxh; y = y + (aY - anchorOld) + dyh;
       }
-      x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.025 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
+    }
+    // posunutý prstem: odsazení od automatického místa – titulek dál jede s hlavou
+    if (own && own.reDx != null) { x += own.reDx / 100 * W; y += (own.reDy || 0) / 100 * H; }
+    if (!(own && own.reDx != null)) { x = Math.max(o.half * sc + W * 0.02, Math.min(W * 0.98 - o.half * sc, x)); y = Math.max(H * 0.025 - o.tb * sc, Math.min(H * 0.99 - o.bb * sc, y)); }
     S.posX = x / W * 100; S.posY = y / H * 100; S.size *= sc; }
   S.blockAlign = o.align;
-  S.behind = o.role === 'top' && g.PERSON && PERSON.data ? 'on' : 'off';   // za hlavou jen horní titulek, na hrudi je titulek před postavou
+  // horní titulky za postavou (hlava, ramena je překrývají), spodní (na hrudi) před ní – obojí jde v panelu Reality přepnout
+  const behind = o.role === 'top' ? E.G.reBehindTop !== false : E.G.reBehindChest === true;
+  S.behind = behind && g.PERSON && PERSON.data ? 'on' : 'off';
   S.size *= o.k;
   if (o.col) { S.grad = true; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }
   return S;
