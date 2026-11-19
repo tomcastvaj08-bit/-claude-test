@@ -796,6 +796,7 @@ function renderPanel(){
 const binders={};
 // ---------- REAL ESTATE STYL (v2) ----------
 // Vše se počítá v reality.js při vykreslení – zapnout / vypnout, barvy a rozmístění; titulky se nijak nepřepisují.
+const MASKEDGES=[['tight','Přesný'],['fine','Jemný (doporučeno)'],['soft','Měkký'],['halo','Kolem hlavy']];
 const STABMODES=[['lock','Zamčeno (obličej přesně uprostřed)'],['smooth','Plynule (kamera jemně dohání)'],['pin','Pevně na bod (úplně zamčeno, obraz se ořízne)']];
 function pRe(){
   const on=!!E.G.faceStab;
@@ -854,7 +855,7 @@ function pReality(){
   <div class="rl-sec">${I('layers','grad')} Maska postavy</div>
   <div class="clabel">Horní titulky</div><div class="chips" id="rlTop">${[['1','Za postavou (hlava a ramena přes text)'],['0','Před postavou']].map(([v,l])=>`<div class="chip ${(E.G.reBehindTop!==false?'1':'0')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="clabel">Spodní titulky (na hrudi)</div><div class="chips" id="rlBot">${[['0','Před postavou'],['1','Za postavou']].map(([v,l])=>`<div class="chip ${(E.G.reBehindChest===true?'1':'0')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  <label class="ctl"><div class="lb"><span>Měkkost okraje masky (vlasy)</span><span id="rlFeaV">${E.G.maskFeather??50}</span></div><input type="range" id="rlFea" min="0" max="100" value="${E.G.maskFeather??50}"></label>
+  <div class="clabel">Okraj masky (vlasy)</div><div class="chips" id="rlEdge">${MASKEDGES.map(([v,l])=>`<div class="chip ${(E.G.maskEdge||'fine')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="rl-sec">${I('target','grad')} Tracking a maska objektu</div>
   <div class="btnrow"><button class="btn" id="rlTrk">${I('crosshair')} Titulek sleduje objekt</button><button class="btn" id="rlMask">${I('target')} Maska objektu</button></div>`:''}
   <div class="note">Po zapnutí appka jednou projde video: najde obličej a oddělí postavu v každém snímku (chvíli to trvá). Titulek můžeš posunout prstem.</div>`;
@@ -892,7 +893,7 @@ binders.reality=()=>{
   chipOf('rlBot',v=>{ E.G.reBehindChest=v==='1'; });
   if ($('rlZoom')){ $('rlZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('rlZoomV').textContent=E.G.reZoom+' %'; }; $('rlZoom').onchange=()=>{ RE.invalidate(); changed(); }; }
   if ($('rlFollow')){ $('rlFollow').oninput=e=>{ E.G.reFollow=+e.target.value; $('rlFollowV').textContent=E.G.reFollow+' %'; }; $('rlFollow').onchange=()=>changed(); }
-  if ($('rlFea')){ $('rlFea').oninput=e=>{ E.G.maskFeather=+e.target.value; $('rlFeaV').textContent=E.G.maskFeather; }; $('rlFea').onchange=()=>changed(); }
+  chipOf('rlEdge',v=>{ E.G.maskEdge=v; });
   if ($('rlReset')) $('rlReset').onclick=()=>{ for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','reMoved','reDx','reDy']) delete o[x]; } RE.invalidate(); changed(); toast('Titulky jsou zase na automatických místech'); };
   if ($('rlTrk')) $('rlTrk').onclick=()=>{ if (!E.pages.length){ toast('Nejdřív vytvoř titulky'); return; } toast('Vyber titulek (hlavu přehrávání dej na něj) a klepni na to, co má sledovat'); $('trkBtn').click(); };
   if ($('rlMask')) $('rlMask').onclick=()=>{ const b=document.querySelector('#bnav button[data-p="obj"]'); if (b) b.click(); };
@@ -1176,7 +1177,7 @@ function pTemplates(){
 }
 // barvy hlavního řádku pro 3D texty (sytý přechod shora dolů)
 const TXT_COLORS=[['Žlutá','#ff9a00','#e8f200'],['Citrón','#fff200','#ffd400'],['Limetková','#e8ff4a','#a8d900'],['Modrá','#14d6ff','#0040ff'],['Červená','#ff3b30','#c00000'],['Růžová','#ff2d9a','#a845ff'],['Zelená','#7dff6a','#00b84a'],['Bílá','#ffffff','#d9dde6'],['Zlatá','#fff1b8','#c98a00']];
-function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind','reMode','faceStab','noSlots','emEach','stabMode','reZoom','reNoseY','reMix','reSeed','reStab','rePlace','reFollow','reBehindTop','reBehindChest','maskFeather'].includes(k)) set[k]=S[k]; return set; }
+function styleSet(){ const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind','reMode','faceStab','noSlots','emEach','stabMode','reZoom','reNoseY','reMix','reSeed','reStab','rePlace','reFollow','reBehindTop','reBehindChest','maskFeather','maskEdge'].includes(k)) set[k]=S[k]; return set; }
 binders.templates=()=>{
   $('setDefault').onclick=()=>{ lsSet('efk_default',styleSet()); renderPanel(); toast('Hotovo – nová videa budou vypadat takhle'); };
   if ($('clrDefault')) $('clrDefault').onclick=()=>{ lsSet('efk_default',null); renderPanel(); toast('Nová videa budou zase ve Stylu 1'); };
@@ -1487,7 +1488,7 @@ function pAI(){
   <div class="clabel">${I('user','grad')} Text za postavou</div>
   <div class="note">Titulek bude za člověkem (postava zakryje písmo).</div>
   <div class="chips" id="behindCh">${[['off','Vypnuto'],['on','Za celou postavou']].map(([v,l])=>`<div class="chip ${(cur().behind||'off')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  ${(cur().behind||'off')==='on'?`<label class="ctl"><div class="lb"><span>Měkkost okraje masky (vlasy)</span><span id="aiFeaV">${E.G.maskFeather??50}</span></div><input type="range" id="aiFea" min="0" max="100" value="${E.G.maskFeather??50}"></label>`:''}
+  ${(cur().behind||'off')==='on'?`<div class="clabel">Okraj masky (vlasy)</div><div class="chips" id="aiEdge">${MASKEDGES.map(([v,l])=>`<div class="chip ${(E.G.maskEdge||'fine')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>`:''}
 
   <div class="clabel">${I('palette','grad')} Barva z videa</div>
   <button class="btn" id="aiColor">Navrhnout barvy podle videa</button><div class="sugg" id="suggBox" style="margin-top:8px"></div>
@@ -1509,7 +1510,7 @@ binders.ai=()=>{
     freeVideo(v); renderPanel();
   };
   // text za hlavou: nejdřív projít video (obličej + maska hlavy v každém snímku)
-  if ($('aiFea')){ $('aiFea').oninput=e=>{ E.G.maskFeather=+e.target.value; $('aiFeaV').textContent=E.G.maskFeather; }; $('aiFea').onchange=()=>changed(); }
+  if ($('aiEdge')) $('aiEdge').onclick=e=>{ const c=e.target.closest('.chip'); if (!c) return; E.G.maskEdge=c.dataset.v; changed(); renderPanel(); };
   $('behindCh').onclick=async e=>{ const c=e.target.closest('.chip'); if (!c || $('behindCh').dataset.busy) return; const v0=c.dataset.v;
     if (v0==='off'){ setVal('behind','off'); renderPanel(); return; }
     $('behindCh').dataset.busy='1';

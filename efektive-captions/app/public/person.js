@@ -123,16 +123,21 @@ PERSON.load = o => { PERSON.data = o && o.t ? o : null; cache.clear(); rawCache.
 const cache = new Map();
 function idxAt(ts) { const d = PERSON.data; if (!d || !d.t.length) return -1; let lo = 0, hi = d.t.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (d.t[m] < ts) lo = m; else hi = m; } const i = Math.abs(d.t[lo] - ts) <= Math.abs(d.t[hi] - ts) ? lo : hi; return Math.abs(d.t[i] - ts) < 0.06 && d.a[i] ? i : -1; }
 PERSON.has = ts => idxAt(ts) >= 0;
-// měkký okraj masky (feather): 0 = ostrý, 100 = hodně měkký; výchozí 50 – vlasy a okraje neblikají
-const featherR = () => { const f = g.E && E.G && E.G.maskFeather != null ? E.G.maskFeather : 50; return Math.max(0, Math.min(6, Math.round(f / 17))); };
+// OKRAJ MASKY – varianty (E.G.maskEdge), uživatel si vybere:
+//  tight = Přesný: těsně podle hlavy, jen vyhlazené schody
+//  fine  = Jemný (výchozí): úzký měkký přechod přesně na okraji vlasů – žádné volné místo kolem hlavy, plynulé
+//  soft  = Měkký: širší přechod na okraji (text se do vlasů víc prolne)
+//  halo  = Kolem hlavy: hlava úplně neprůhledná, přechod jde jen ven (kolem hlavy trochu volného místa)
+const EDGES = { tight: { r: 1, a: 0.42, b: 0.58, tmp: 'avg' }, fine: { r: 2, a: 0.3, b: 0.7, tmp: 'avg' }, soft: { r: 4, a: 0.15, b: 0.85, tmp: 'avg' }, halo: { r: 2, a: 0.12, b: 0.5, tmp: 'out' } };
+PERSON.EDGES = Object.keys(EDGES);
+const edge = () => { const k = g.E && E.G && E.G.maskEdge; return EDGES[k] ? k : 'fine'; };
 function maskCanvas(i) {
-  const fr = featherR(), key = i + '|' + fr; let c = cache.get(key); if (c) return c;
+  const ek = edge(), P = EDGES[ek], key = i + '|' + ek; let c = cache.get(key); if (c) return c;
   const d = PERSON.data, Rr = d.R || R, m = dec(d.a[i], Rr * Rr); c = mk(Rr, Rr); const x = c.getContext('2d'), id = x.createImageData(Rr, Rr);
-  let A = m;
-  // měkký přechod jen VEN od postavy: rozmazání ×2,4 → na původním okraji (a uvnitř) je postava úplně neprůhledná,
-  // měkce mizí až za okrajem hlavy / vlasů – text nikdy neprosvítá „v hlavě“
-  if (fr > 0) { let f = new Float32Array(m.length); for (let k = 0; k < m.length; k++) f[k] = m[k]; f = boxBlur(boxBlur(f, Rr, Rr, fr), Rr, Rr, fr); A = f.map(v => Math.min(255, v * 2.4)); }
-  for (let k = 0; k < m.length; k++) { const j = k * 4; id.data[j] = id.data[j + 1] = id.data[j + 2] = 255; id.data[j + 3] = A[k]; }
+  let f = new Float32Array(m.length); for (let k = 0; k < m.length; k++) f[k] = m[k] / 255;
+  f = boxBlur(boxBlur(f, Rr, Rr, P.r), Rr, Rr, P.r);   // 2× průměr ≈ gaussovské vyhlazení
+  for (let k = 0; k < m.length; k++) { const u = Math.max(0, Math.min(1, (f[k] - P.a) / (P.b - P.a))), v = u * u * (3 - 2 * u), j = k * 4;   // plynulá křivka přechodu
+    id.data[j] = id.data[j + 1] = id.data[j + 2] = 255; id.data[j + 3] = Math.round(v * 255); }
   x.putImageData(id, 0, 0); cache.set(key, c); if (cache.size > 60) cache.delete(cache.keys().next().value);
   return c;
 }
@@ -149,17 +154,20 @@ PERSON.compose = (ctx, W, H, t, baseC, xf) => {
   const R2 = PERSON.rect(t, W, H, xf); if (!R2) return false;
   if (!tmp || tmp.width !== W || tmp.height !== H) { tmp = mk(W, H); tmx = tmp.getContext('2d'); }
   // oblast = sjednocení rámečků sousedních snímků (měkké časové prolnutí)
-  const d = PERSON.data, i = R2.i, soft = featherR() > 0, nb = [];
+  const d = PERSON.data, i = R2.i, soft = true, nb = [], P = EDGES[edge()];
   if (soft) for (const j of [i - 1, i + 1]) if (j >= 0 && j < d.t.length && d.a[j] && Math.abs(d.t[j] - d.t[i]) < 0.06) nb.push(j);
   let x0 = R2.x, y0 = R2.y, x1 = R2.x + R2.w, y1 = R2.y + R2.h;
   for (const j of nb) { const q = rectOf(j, W, H, xf); x0 = Math.min(x0, Math.floor(q.X) - 2); y0 = Math.min(y0, Math.floor(q.Y) - 2); x1 = Math.max(x1, Math.ceil(q.X + q.s) + 2); y1 = Math.max(y1, Math.ceil(q.Y + q.s) + 2); }
   x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(W, x1); y1 = Math.min(H, y1); const w = x1 - x0, h = y1 - y0; if (w <= 0 || h <= 0) return false;
   tmx.globalCompositeOperation = 'source-over'; tmx.globalAlpha = 1; tmx.clearRect(x0, y0, w, h); tmx.imageSmoothingEnabled = true; tmx.imageSmoothingQuality = 'high';
-  tmx.drawImage(maskCanvas(i), R2.X, R2.Y, R2.s, R2.s);   // tento snímek naplno (hlava vždy celá)
-  if (nb.length) {   // sousední snímky jen přidají měkký okraj kolem (vlasy se nemění skokem), dovnitř nic neprosvítá
-    tmx.globalCompositeOperation = 'lighter';
-    nb.forEach(j => { const q = rectOf(j, W, H, xf); tmx.globalAlpha = 0.35; tmx.drawImage(maskCanvas(j), q.X, q.Y, q.s, q.s); });
+  if (P.tmp === 'avg' && nb.length) {   // průměr tohoto a sousedních snímků – okraj vlasů se mění plynule, nic neskáče
+    const wt = nb.length === 2 ? [0.5, 0.25, 0.25] : [0.65, 0.35]; tmx.globalCompositeOperation = 'lighter';
+    tmx.globalAlpha = wt[0]; tmx.drawImage(maskCanvas(i), R2.X, R2.Y, R2.s, R2.s);
+    nb.forEach((j, n) => { const q = rectOf(j, W, H, xf); tmx.globalAlpha = wt[n + 1]; tmx.drawImage(maskCanvas(j), q.X, q.Y, q.s, q.s); });
     tmx.globalAlpha = 1;
+  } else {
+    tmx.drawImage(maskCanvas(i), R2.X, R2.Y, R2.s, R2.s);   // tento snímek naplno (hlava vždy celá)
+    if (nb.length) { tmx.globalCompositeOperation = 'lighter'; nb.forEach(j => { const q = rectOf(j, W, H, xf); tmx.globalAlpha = 0.3; tmx.drawImage(maskCanvas(j), q.X, q.Y, q.s, q.s); }); tmx.globalAlpha = 1; }
   }
   tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, x0, y0, w, h, x0, y0, w, h); tmx.globalCompositeOperation = 'source-over';
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.shadowColor = 'transparent';

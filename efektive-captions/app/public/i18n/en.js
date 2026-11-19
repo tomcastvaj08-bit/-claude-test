@@ -1003,5 +1003,10 @@ window.I18N_DICT.en={
 "Titulek sleduje objekt": "Caption follows an object",
 "Maska objektu": "Object mask",
 "Titulky jsou zase na automatických místech": "Captions are back in their automatic places",
-"Vyber titulek (hlavu přehrávání dej na něj) a klepni na to, co má sledovat": "Select a caption (put the playhead on it) and tap what it should follow"
+"Vyber titulek (hlavu přehrávání dej na něj) a klepni na to, co má sledovat": "Select a caption (put the playhead on it) and tap what it should follow",
+"Okraj masky (vlasy)": "Mask edge (hair)",
+"Přesný": "Precise",
+"Jemný (doporučeno)": "Fine (recommended)",
+"Měkký": "Soft",
+"Kolem hlavy": "Around the head"
 };
