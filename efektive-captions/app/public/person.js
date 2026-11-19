@@ -13,12 +13,14 @@ const IN = 256;          // vstup AI
 
 // ---------- pomocné ----------
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-function boxBlur(src, w, h, r) {   // průměr ve čtverci (2r+1)², rychle (integrální obraz)
-  const I = new Float64Array((w + 1) * (h + 1));
-  for (let y = 0; y < h; y++) { let s = 0; for (let x = 0; x < w; x++) { s += src[y * w + x]; I[(y + 1) * (w + 1) + x + 1] = I[y * (w + 1) + x + 1] + s; } }
-  const out = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) { const y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1); for (let x = 0; x < w; x++) { const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
-    out[y * w + x] = (I[y1 * (w + 1) + x1] - I[y0 * (w + 1) + x1] - I[y1 * (w + 1) + x0] + I[y0 * (w + 1) + x0]) / ((y1 - y0) * (x1 - x0)); } }
+function boxBlur(src, w, h, r) {   // průměr ve čtverci (2r+1)² – po řádcích a pak po sloupcích (klouzavý součet, rychlé)
+  const tmpA = new Float32Array(w * h), out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) { const o = y * w; let s = 0, n = 0;
+    for (let x = 0; x <= Math.min(r, w - 1); x++) { s += src[o + x]; n++; }
+    for (let x = 0; x < w; x++) { tmpA[o + x] = s / n; const xa = x + r + 1, xr = x - r; if (xa < w) { s += src[o + xa]; n++; } if (xr >= 0) { s -= src[o + xr]; n--; } } }
+  for (let x = 0; x < w; x++) { let s = 0, n = 0;
+    for (let y = 0; y <= Math.min(r, h - 1); y++) { s += tmpA[y * w + x]; n++; }
+    for (let y = 0; y < h; y++) { out[y * w + x] = s / n; const ya = y + r + 1, yr = y - r; if (ya < h) { s += tmpA[ya * w + x]; n++; } if (yr >= 0) { s -= tmpA[yr * w + x]; n--; } } }
   return out;
 }
 // guided filter (He et al.): okraj masky p se přizpůsobí hranám v obraze I (0..1)
@@ -226,7 +228,10 @@ PERSON.compose = (ctx, W, H, t, baseC, xf, opt) => {
   for (const j of nb) { const q = rectOf(j, W, H, xf); x0 = Math.min(x0, Math.floor(q.X) - 2); y0 = Math.min(y0, Math.floor(q.Y) - 2); x1 = Math.max(x1, Math.ceil(q.X + q.s) + 2); y1 = Math.max(y1, Math.ceil(q.Y + q.s) + 2); }
   const ts = E._fT != null ? E._fT : (E.out2src ? E.out2src(t) : t), hp = headPatch(ts, W, H, xf);
   if (hp) { x0 = Math.min(x0, Math.floor(hp.X) - 2); y0 = Math.min(y0, Math.floor(hp.Y) - 2); x1 = Math.max(x1, Math.ceil(hp.X + hp.s) + 2); y1 = Math.max(y1, Math.ceil(hp.Y + hp.s) + 2); }
+  // postava se přes sebe kreslí jen tam, kde je za ní titulek (jinde se nic nemění) → mnohem rychlejší
+  if (opt && opt.clip) { x0 = Math.max(x0, Math.floor(opt.clip[0])); y0 = Math.max(y0, Math.floor(opt.clip[1])); x1 = Math.min(x1, Math.ceil(opt.clip[2])); y1 = Math.min(y1, Math.ceil(opt.clip[3])); }
   x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(W, x1); y1 = Math.min(H, y1); const w = x1 - x0, h = y1 - y0; if (w <= 0 || h <= 0) return false;
+  tmx.save(); tmx.beginPath(); tmx.rect(x0, y0, w, h); tmx.clip();
   tmx.globalCompositeOperation = 'source-over'; tmx.globalAlpha = 1; tmx.clearRect(x0, y0, w, h); tmx.imageSmoothingEnabled = true; tmx.imageSmoothingQuality = 'high';
   if (P.tmp === 'avg' && nb.length) {   // průměr tohoto a sousedních snímků – okraj vlasů se mění plynule, nic neskáče
     const wt = nb.length === 2 ? [0.5, 0.25, 0.25] : [0.65, 0.35]; tmx.globalCompositeOperation = 'lighter';
@@ -247,7 +252,7 @@ PERSON.compose = (ctx, W, H, t, baseC, xf, opt) => {
     tmx.globalAlpha = 1; tmx.globalCompositeOperation = 'source-over'; tmx.restore(); }
   // (pokus) dopočet okraje podle obrazu – ve výchozím stavu vypnutý, maska hlavy je přesnější
   if (opt && opt.clip && E.G.maskRefine === true) refine(baseC, opt.clip, x0, y0, x1, y1, P);
-  tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, x0, y0, w, h, x0, y0, w, h); tmx.globalCompositeOperation = 'source-over';
+  tmx.globalCompositeOperation = 'source-in'; tmx.drawImage(baseC, x0, y0, w, h, x0, y0, w, h); tmx.globalCompositeOperation = 'source-over'; tmx.restore();
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.shadowColor = 'transparent';
   ctx.drawImage(tmp, x0, y0, w, h, x0, y0, w, h); ctx.restore();
   return true;
