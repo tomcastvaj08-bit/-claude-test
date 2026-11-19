@@ -1179,7 +1179,10 @@ E.render = (t, opts={}) => {
     if (kk===kMain){ mainLines=r.lines; mainS=r.S; }
     if (r.S.behind==='on') behind=true;
     if (headOn && r.lines && r.S.behind==='head') wbox.push(...wordBoxes(r.lines,r.S)); };
-  if (pR){ kBack.forEach(drawK); PERSON.compose(ctx,cv.width,cv.height,t,pbase,pXf); kFront.forEach(drawK); }
+  if (pR){ kBack.forEach(drawK);
+    // oblast titulků za postavou (jen tam se dopočítá přesný okraj vlasů)
+    let clip=null; for (const a of E.lastAll) if (kBack.includes(a.k)) for (const L of a.lines){ const pad=L.px*0.6, b=[L.x0-pad, L.y-L.px*0.75-pad, L.x0+L.total+pad, L.y+L.px*0.75+pad]; clip=clip?[Math.min(clip[0],b[0]),Math.min(clip[1],b[1]),Math.max(clip[2],b[2]),Math.max(clip[3],b[3])]:b; }
+    PERSON.compose(ctx,cv.width,cv.height,t,pbase,pXf,{clip}); kFront.forEach(drawK); }
   else ks.forEach(drawK);
   if (headOn && hR){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); const x=hcap.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); if (!E.G.reMode) x.drawImage(cv,0,0); ctx.restore(); HEAD.compose(ctx,cv.width,cv.height,t,hbase,hcap,E.vxfAt(t),{words:wbox}); }
   E.lastLines=mainLines;

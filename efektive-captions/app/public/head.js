@@ -112,6 +112,8 @@ function at(ts) {
   return Math.abs(d.t[i] - ts) < 0.06 && d.m[i] ? i : -1;
 }
 HEAD.has = ts => at(ts) >= 0;
+HEAD.idx = ts => at(ts);   // index snímku s maskou hlavy (pro přesné vlasy v masce postavy)
+HEAD.MS = MS0;
 let mc = null, mcx = null, mcI = -1;
 function maskCanvas(i) {
   if (!mc) { mc = document.createElement('canvas'); mc.width = mc.height = MS; mcx = mc.getContext('2d'); }

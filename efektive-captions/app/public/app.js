@@ -855,6 +855,7 @@ function pReality(){
   <div class="rl-sec">${I('layers','grad')} Maska postavy</div>
   <div class="clabel">Horní titulky</div><div class="chips" id="rlTop">${[['1','Za postavou (hlava a ramena přes text)'],['0','Před postavou']].map(([v,l])=>`<div class="chip ${(E.G.reBehindTop!==false?'1':'0')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="clabel">Spodní titulky (na hrudi)</div><div class="chips" id="rlBot">${[['0','Před postavou'],['1','Za postavou']].map(([v,l])=>`<div class="chip ${(E.G.reBehindChest===true?'1':'0')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
+  ${window.PERSON && PERSON.data && !(PERSON.data.v>=3) ? `<button class="btn" id="rlRemask">${I('refresh','grad')} Přepočítat masku (přesnější vlasy)</button><div class="note">Tenhle projekt má masku ze starší verze – nový rozbor najde vlasy přesněji.</div>`:''}
   <div class="clabel">Okraj masky (vlasy)</div><div class="chips" id="rlEdge">${MASKEDGES.map(([v,l])=>`<div class="chip ${(E.G.maskEdge||'fine')===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
   <div class="rl-sec">${I('target','grad')} Tracking a maska objektu</div>
   <div class="btnrow"><button class="btn" id="rlTrk">${I('crosshair')} Titulek sleduje objekt</button><button class="btn" id="rlMask">${I('target')} Maska objektu</button></div>`:''}
@@ -872,7 +873,7 @@ async function rlToggle(btn){
     if (!(HEAD.data && HEAD.data.nx)){ const v=await auxVideo();
       try{ await HEAD.analyze({video:v, file:videoFile, onP:p=>W8.set('1/2 · Hledám obličej v každém snímku',p*0.5)}); headSave(); }
       catch(e){ console.warn(e); toast('Obličej se nepodařilo najít: '+(e.message||e)); return; } finally{ freeVideo(v); } }
-    if (!PERSON.data){ const v=await auxVideo();
+    if (!PERSON.data || !(PERSON.data.v>=3)){ const v=await auxVideo();
       try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>W8.set('2/2 · Odděluji postavu (maska) v každém snímku',0.5+p*0.5)}); personSave(); }
       catch(e){ console.warn(e); toast('Postavu se nepodařilo oddělit: '+(e.message||e)); return; } finally{ freeVideo(v); } }
   } finally { waitOff(); renderPanel(); }
@@ -894,6 +895,11 @@ binders.reality=()=>{
   if ($('rlZoom')){ $('rlZoom').oninput=e=>{ E.G.reZoom=+e.target.value; $('rlZoomV').textContent=E.G.reZoom+' %'; }; $('rlZoom').onchange=()=>{ RE.invalidate(); changed(); }; }
   if ($('rlFollow')){ $('rlFollow').oninput=e=>{ E.G.reFollow=+e.target.value; $('rlFollowV').textContent=E.G.reFollow+' %'; }; $('rlFollow').onchange=()=>changed(); }
   chipOf('rlEdge',v=>{ E.G.maskEdge=v; });
+  if ($('rlRemask')) $('rlRemask').onclick=async()=>{ vid.pause(); if (PB.on) pbStop(); const W8=waitOn('Přepočítávám masku – vyčkej'); W8.set('Načítám AI…',0);
+    try{ if (!(HEAD.data && HEAD.data.nx)){ const v=await auxVideo(); try{ await HEAD.analyze({video:v, file:videoFile, onP:p=>W8.set('1/2 · Hledám obličej v každém snímku',p*0.4)}); headSave(); } finally{ freeVideo(v); } }
+      const v=await auxVideo(); try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>W8.set('2/2 · Odděluji postavu a vlasy v každém snímku',0.4+p*0.6)}); personSave(); } finally{ freeVideo(v); } }
+    catch(e){ console.warn(e); toast('Masku se nepodařilo přepočítat: '+(e.message||e)); }
+    finally{ waitOff(); RE.invalidate(); changed(); renderPanel(); } toast('Hotovo – maska má přesnější vlasy'); };
   if ($('rlReset')) $('rlReset').onclick=()=>{ for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','reMoved','reDx','reDy']) delete o[x]; } RE.invalidate(); changed(); toast('Titulky jsou zase na automatických místech'); };
   if ($('rlTrk')) $('rlTrk').onclick=()=>{ if (!E.pages.length){ toast('Nejdřív vytvoř titulky'); return; } toast('Vyber titulek (hlavu přehrávání dej na něj) a klepni na to, co má sledovat'); $('trkBtn').click(); };
   if ($('rlMask')) $('rlMask').onclick=()=>{ const b=document.querySelector('#bnav button[data-p="obj"]'); if (b) b.click(); };

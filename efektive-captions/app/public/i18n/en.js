@@ -1008,5 +1008,11 @@ window.I18N_DICT.en={
 "Přesný": "Precise",
 "Jemný (doporučeno)": "Fine (recommended)",
 "Měkký": "Soft",
-"Kolem hlavy": "Around the head"
+"Kolem hlavy": "Around the head",
+"Přepočítat masku (přesnější vlasy)": "Recalculate mask (more precise hair)",
+"Tenhle projekt má masku ze starší verze – nový rozbor najde vlasy přesněji.": "This project has a mask from an older version – a new analysis finds hair more precisely.",
+"Přepočítávám masku – vyčkej": "Recalculating the mask – please wait",
+"2/2 · Odděluji postavu a vlasy v každém snímku": "2/2 · Separating the person and hair in every frame",
+"Masku se nepodařilo přepočítat: ": "Could not recalculate the mask: ",
+"Hotovo – maska má přesnější vlasy": "Done – the mask has more precise hair"
 };
