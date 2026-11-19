@@ -217,7 +217,7 @@ X.exportVideo = async (opts) => {
       // „plynulé titulky“: titulky v každém snímku (60 fps), video a overlaye se čtou jen 30× za sekundu
       const tv=opts.videoFps? Math.floor(t*opts.videoFps+1e-6)/opts.videoFps : t;
       // překrytí videa novou verzí: přesný snímek v čase t
-      await ovFrames(tv); const pf1=performance.now(); PF.ov+=pf1-pf0;
+      await ovFrames(tv+0.5/(opts.videoFps||fps)); const pf1=performance.now(); PF.ov+=pf1-pf0;   // střed snímku (u videí s proměnnou snímkovou frekvencí se nic nepřeskočí)
       for (const o of E.overlays){ if (!o.src || o.src.tagName!=='VIDEO' || t<o.s || t>o.e || OVS.some(q=>q.o===o)) continue; o.src.pause(); const want=Math.min(E.ovTime(o,tv),(o.src.duration||1e9)-0.01); if (Math.abs(o.src.currentTime-want)>0.001){ await seek(o.src,want); await frameReady(o.src); } }
       const ck=cut?E.clipList()[E.clipAt(t)]:null, xd=ck&&ck.a?await extFrame(tv):null, slow=!xd && ck && E.clipSp(ck)<1 && (ck.blend||'flow')!=='none' && src && src.times && src.times.length>1;
       if (xd){
@@ -226,7 +226,9 @@ X.exportVideo = async (opts) => {
         const ts=o2s(tv), draw=await slowFrame(t,ts,ck.blend||'flow'); const a=performance.now(); PF.dec+=a-pf1;
         E.render(t,{frameDraw:(c,W,H)=>draw(c), frameT:ts}); PF.ren+=performance.now()-a;
       } else if (src){
-        const fr=await srcAt(o2s(tv)); const a=performance.now(); PF.dec+=a-pf1;
+        // snímek, který je ve videu vidět uprostřed tohoto výstupního snímku (přesná mřížka výstupu, ne 30fps mřížka):
+        // u videa z iPhonu (proměnná snímková frekvence, 29,97 / 24 fps) se tak žádný snímek nepřeskočí ani nezdvojí navíc → plynulé
+        const sp0=ck?E.clipSp(ck):1, fr=await srcAt(o2s(t)+0.5/fps*sp0); const a=performance.now(); PF.dec+=a-pf1;
         E.render(t, fr ? {frameDraw:(c,W,H)=>src.draw(c,fr,W,H), frameT:fr.timestamp/1e6-(src.first||0)} : {});   // frameT = přesný čas snímku (stabilizace)
         PF.ren+=performance.now()-a;
       } else {
