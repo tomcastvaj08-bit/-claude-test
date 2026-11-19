@@ -740,24 +740,17 @@ function setEd(st){ if (st===edState) return; edState=st; edT=performance.now();
 (function(){
   const pn=$('panel'), gr=$('grab'); let y0=null, x0=0, top0=0, done=false, fromG=false;
   const start=(e,fromGrab)=>{ y0=e.touches[0].clientY; x0=e.touches[0].clientX; top0=fromGrab?0:pn.scrollTop; done=false; fromG=fromGrab; };
-  const calm=()=>performance.now()-edT<650;   // po změně chvíli klid (žádné přeskakování tam a zpět)
-  const move=e=>{ if (y0==null||done||calm()) return; const dy=e.touches[0].clientY-y0, dx=e.touches[0].clientX-x0;
-    if (Math.abs(dy)<Math.abs(dx)*2) return;   // vodorovný posun (řada tlačítek, posuvník) nic nemění
-    if (fromG){   // úchyt: prst nahoru = víc místa pro nabídku, dolů = míň
-      if (dy<-24){ if (edState==='col') setEd('normal'); else if (edState==='normal') setEd('exp'); done=true; }
-      else if (dy>24){ if (edState==='exp') setEd('normal'); else if (edState==='normal') setEd('col'); done=true; }
-      return; }
-    // obsah nabídky: zpátky plná timeline až po výrazném stažení dolů úplně nahoře
-    if (dy>70 && top0<=0 && pn.scrollTop<=0 && edState==='exp'){ setEd('normal'); done=true; } };
-  pn.addEventListener('touchstart',e=>start(e,false),{passive:true}); pn.addEventListener('touchmove',move,{passive:true});
+  const calm=()=>performance.now()-edT<650;
+  // velikost timeline / nabídky se mění JEN úchytem (tažením nebo klepnutím) – posouvání obsahu nabídky nic nepřepíná
+  const move=e=>{ if (y0==null||done||calm()||!fromG) return; const dy=e.touches[0].clientY-y0, dx=e.touches[0].clientX-x0;
+    if (Math.abs(dy)<Math.abs(dx)*2) return;
+    if (dy<-24){ if (edState==='col') setEd('normal'); else if (edState==='normal') setEd('exp'); done=true; }
+    else if (dy>24){ if (edState==='exp') setEd('normal'); else if (edState==='normal') setEd('col'); done=true; } };
   gr.addEventListener('touchstart',e=>start(e,true),{passive:true}); gr.addEventListener('touchmove',move,{passive:true});
   gr.addEventListener('click',()=>setEd(edState==='col'?'normal':edState==='normal'?'exp':'normal'));
-  pn.addEventListener('touchend',()=>{ y0=null; }); gr.addEventListener('touchend',()=>{ y0=null; });
-  // posun obsahu nabídky dolů (o kus, ne o pár px) → víc místa pro nabídku; zpátky jen stažením nahoře (viz výš) nebo úchytem
-  pn.addEventListener('scroll',()=>{ if (innerWidth>=900 || calm()) return;
-    if (pn.scrollTop>90 && edState==='normal' && pn.scrollHeight-pn.clientHeight>220) setEd('exp'); },{passive:true});
+  gr.addEventListener('touchend',()=>{ y0=null; });
   // počítač: kolečko myši nad lištou
-  pn.addEventListener('wheel',e=>{ if (e.deltaY>30 && edState!=='exp' && pn.scrollHeight>pn.clientHeight) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30 && pn.scrollTop<=0) setEd(edState==='exp'?'normal':'col'); },{passive:true});
+  gr.addEventListener('wheel',e=>{ if (e.deltaY>30) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30) setEd(edState==='exp'?'normal':'col'); },{passive:true});
 })();
 // spodní lišta: zmizí ztmavení na konci, když je dojeto; vybrané tlačítko se vždy posune do záběru
 { const bn=$('bnav'), upd=()=>bn.classList.toggle('end', bn.scrollLeft+bn.clientWidth>=bn.scrollWidth-4); bn.addEventListener('scroll',upd,{passive:true}); setTimeout(upd,300); window.addEventListener('resize',upd); }
@@ -1844,11 +1837,23 @@ $('tlIn').addEventListener('pointerdown',e=>{
   const kfm=e.target.closest('.vkf'); if (kfm){ vid.pause(); selKf=+kfm.dataset.kf; PV.currentTime=E.kf[selKf].t; openKfPanel(); return; }
   const trm=e.target.closest('.vtr'); if (trm){ vid.pause(); selClip=+trm.dataset.tr; openClipPanel(); return; }
   const blk=e.target.closest('.cb,.zb,.ob,.vb,.xb,.sb,.ab'); if (!blk) return;
-  e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
   const mode=e.target.classList.contains('hl')?'l':e.target.classList.contains('hr')?'r':'m';
+  // prstem (jako CapCut): švihnutí = posun timeline, klepnutí = výběr, PODRŽENÍ = chytit a posunout;
+  // okraje (zkrácení) jdou chytit hned jen u vybraného bloku. Myší jako dřív.
+  if (e.pointerType==='touch' && !(mode!=='m' && blk.classList.contains('cur'))){
+    const x0=e.clientX, y0=e.clientY, id=e.pointerId, mk=()=>({blk,mode,x0,y0,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width),layer0:blk.parentElement&&blk.parentElement.id==='trC2'?1:0,layer:null});
+    if (tlPend) clearTimeout(tlPend.timer);
+    tlPend={id, x0, y0, sl:$('tlScroll').scrollLeft, mk, timer:setTimeout(()=>{ if (!tlPend || tlPend.id!==id) return; tlPend=null; try{ blk.setPointerCapture(id); }catch(er){} vid.pause(); tlDrag=mk(); blk.classList.add('lift'); try{ navigator.vibrate&&navigator.vibrate(12); }catch(er){} },380)};
+    return; }
+  e.preventDefault(); blk.setPointerCapture(e.pointerId); vid.pause();
   tlDrag={blk,mode,x0:e.clientX,y0:e.clientY,moved:false,left0:parseFloat(blk.style.left),w0:parseFloat(blk.style.width),layer0:blk.parentElement&&blk.parentElement.id==='trC2'?1:0,layer:null};
 });
+let tlPend=null;
+$('tlIn').addEventListener('pointercancel',()=>{ if (tlPend){ clearTimeout(tlPend.timer); tlPend=null; } if (tlDrag){ tlDrag.blk.classList.remove('lift'); tlDrag=null; renderTimeline(); } });
+// během tažení chyceného bloku se timeline nesmí posouvat
+$('tlScroll').addEventListener('touchmove',e=>{ if (tlDrag) e.preventDefault(); },{passive:false});
 $('tlIn').addEventListener('pointermove',e=>{
+  if (tlPend && e.pointerId===tlPend.id && Math.hypot(e.clientX-tlPend.x0,e.clientY-tlPend.y0)>8){ clearTimeout(tlPend.timer); tlPend=null; }   // posun prstem = posouvání timeline
   if (!tlDrag) return; const d=e.clientX-tlDrag.x0, dy=e.clientY-tlDrag.y0; if (Math.abs(d)>4||Math.abs(dy)>8) tlDrag.moved=true; if (!tlDrag.moved) return;
   const b=tlDrag.blk;
   if (tlDrag.mode==='m' && b.classList.contains('cb')){
@@ -1864,7 +1869,9 @@ $('tlIn').addEventListener('pointermove',e=>{
   else b.style.width=Math.max(6,tlDrag.w0+d)+'px';
 });
 $('tlIn').addEventListener('pointerup',e=>{
-  if (!tlDrag) return; const {blk,mode,moved}=tlDrag, newLayer=tlDrag.layer; const dt=(e.clientX-tlDrag.x0)/pps; tlDrag=null;
+  if (tlPend && e.pointerId===tlPend.id){ const P=tlPend; clearTimeout(P.timer); tlPend=null;
+    if (!tlDrag && Math.hypot(e.clientX-P.x0,e.clientY-P.y0)<=8 && Math.abs($('tlScroll').scrollLeft-P.sl)<3){ vid.pause(); tlDrag=P.mk(); } }   // klepnutí = výběr
+  if (!tlDrag) return; tlDrag.blk.classList.remove('lift'); const {blk,mode,moved}=tlDrag, newLayer=tlDrag.layer; const dt=(e.clientX-tlDrag.x0)/pps; tlDrag=null;
   if (blk.dataset.k!==undefined){
     const k=+blk.dataset.k;
     if (!moved){ if (selClip>=0){ selClip=-1; renderVideoTrack(); if (panel==='clip'){ panel='captions'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.p==='captions')); } } selectPage(k); renderPanel(); return; }

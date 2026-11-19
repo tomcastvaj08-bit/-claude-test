@@ -559,3 +559,8 @@ button.pro.on{background:var(--green)}
 #waitOv .wo-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1f4dff,#13b97a);transition:width .25s}
 #waitOv .wo-p{font-weight:800;font-size:15px}
 #waitOv .wo-n{font-size:11.5px;color:var(--muted,#666);margin-top:10px}
+
+/* timeline: bloky nechávají posouvání timeline do strany (chycení podržením) */
+.cb,.zb,.ob,.vb,.xb,.sb,.ab{touch-action:pan-x !important}
+.cur .hl,.cur .hr{touch-action:none}
+.lift{box-shadow:0 6px 16px rgba(0,0,0,.35) !important;transform:scale(1.04);z-index:6}
