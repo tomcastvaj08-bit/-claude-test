@@ -674,12 +674,12 @@ function loop(now){
       if (Math.abs(t-lastT)>0.001 && !scrubBusy && scrubT==null && !tlDrag && !tlUser && performance.now()-tlScrollAt>400) followTimeline(t,true); }
     lastT=t;
     syncOverlays(t, !vid.paused || PB.on);
-    E.render(t,{});
+    E.focusPage=curPage; E.render(t,{});
     syncVmode();
     if (objEdit){ drawObjEdit(); E.lastBox=null; }
     else if (trkPick){ drawTrkPick(); E.lastBox=null; }
     else if (panel==='obj' && vid.paused && !PB.on && drawObjHandles(t)){ E.lastBox=null; }
-    else if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const p=E.pages[E.pageAt(t)]; if (p) E.drawBox(E.lastLines,E.styleAt(p,t),guides); }
+    else if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const a=(E.lastAll||[]).find(q=>q.k===curPage), kk=a?curPage:E.pageAt(t), p=E.pages[kk]; if (p) E.drawBox(a?a.lines:E.lastLines,E.styleAt(p,t),guides); }
     else E.lastBox=null;
     if (selOv && vid.paused) drawOvSel();
     drawVGuide();
@@ -2059,9 +2059,14 @@ stg.addEventListener('pointerdown',e=>{
   // titulek nad overlayem má při klepnutí přednost před overlayem pod ním
   const inCap=(()=>{ const B=E.lastBox; if (!B||!B.P) return false; const xs=B.P.map(p=>p[0]), ys=B.P.map(p=>p[1]); return x>Math.min(...xs)-hr && x<Math.max(...xs)+hr && y>Math.min(...ys)-hr && y<Math.max(...ys)+hr; })();
   for (const o of [...E.overlays].reverse()){ if (t<o.s||t>o.e||o.full) continue; if (!o.above && inCap) continue; const b=E.overlayBox(o); if (Math.abs(x-b.cx)<b.w/2 && Math.abs(y-b.cy)<b.h/2){ selOv=o.id; gest={type:'ov',o,x0:x,y0:y,ox:o.x,oy:o.y,moved:false}; vid.pause(); if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='overlay')); } renderPanel(); renderTimeline(); return; } }
+  // klepnutí na jiný titulek, který je zrovna vidět (v Reality horní za hlavou + spodní na hrudi) → vybrat ho a rovnou ho jde posunout
+  { const hitK=(E.lastAll||[]).map(a=>{ const L=a.lines; return {k:a.k, x0:Math.min(...L.map(q=>q.x0)), x1:Math.max(...L.map(q=>q.x0+q.total)), y0:Math.min(...L.map(q=>q.y-q.px*0.55)), y1:Math.max(...L.map(q=>q.y+q.px*0.55))}; })
+      .filter(b=>x>b.x0-hr&&x<b.x1+hr&&y>b.y0-hr&&y<b.y1+hr).map(b=>b.k);
+    if (hitK.length && !hitK.includes(curPage)){ const k2=hitK[hitK.length-1]; curPage=k2; markCur(); if (panel==='captions') renderPanel();
+      const S=E.styleAt(E.pages[k2],t), mo=E.G.reMode&&(E.meta[E.keyOf(E.pages[k2])]||{}).own||{}; gest={type:'move',x0:x,y0:y,px:S.posX,py:S.posY,dx0:mo.reDx||0,dy0:mo.reDy||0,moved:false,k:k2}; return; } }
   const B=E.lastBox;
   if (B){
-    const k=E.pageAt(t); if (k>=0) curPage=k;
+    const k=E.pageAt(t); if (k>=0 && !(E.lastAll||[]).some(a=>a.k===curPage)) curPage=k;
     if (Math.hypot(x-B.pe[0],y-B.pe[1])<hr*1.4){ openInline(curPage); ptrs.clear(); return; }
     if (Math.hypot(x-B.h[0],y-B.h[1])<hr*1.4){ gest={type:'resize',cx:B.cx,cy:B.cy,d0:Math.hypot(x-B.cx,y-B.cy),size0:cur().size}; guides=true; return; }
     const P=B.P, inside=x>Math.min(...P.map(p=>p[0]))-hr&&x<Math.max(...P.map(p=>p[0]))+hr&&y>Math.min(...P.map(p=>p[1]))-hr&&y<Math.max(...P.map(p=>p[1]))+hr;

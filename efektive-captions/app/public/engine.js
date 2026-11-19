@@ -1160,7 +1160,7 @@ E.render = (t, opts={}) => {
   if (E.G.mix3d && !F.hidden && E.drawMix){ E.lastBox=null; E.lastLines=null; E.drawMix(ctx,t); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.shadowColor='transparent'; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);
-  if (!ks.length){ E.lastBox=null; E.lastLines=null; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
+  if (!ks.length){ E.lastBox=null; E.lastLines=null; E.lastAll=[]; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   let mainLines=null, mainS=null, behind=false;
   // text za hlavou (chytře): snímek bez titulků si zapamatovat, po titulcích přes ně znovu nakreslit hlavu
   const headOn = !F.transparent && window.HEAD && HEAD.data && ks.some(kk=>E.styleOf(E.pages[kk]).behind==='head') && HEAD.has(E.out2src?E.out2src(t):t);
@@ -1172,8 +1172,11 @@ E.render = (t, opts={}) => {
   if (headOn){ if (!hbase||hbase.width!==cv.width||hbase.height!==cv.height){ hbase=document.createElement('canvas'); hbase.width=cv.width; hbase.height=cv.height; hcap=document.createElement('canvas'); hcap.width=cv.width; hcap.height=cv.height; }
     var hR=HEAD.rect(t,cv.width,cv.height,E.vxfAt(t)); if (hR){ const x=hbase.getContext('2d'); x.clearRect(hR.x,hR.y,hR.w,hR.h); x.drawImage(cv,hR.x,hR.y,hR.w,hR.h,hR.x,hR.y,hR.w,hR.h); } }
   const wbox=[];
+  const kMain = ks.includes(E.focusPage) ? E.focusPage : k;   // vybraný titulek (v Reality jsou na obrazovce dva naráz)
+  E.lastAll=[];
   const drawK=kk=>{ const r=drawPage(kk,t);
-    if (kk===k){ mainLines=r.lines; mainS=r.S; }
+    if (r.lines && r.lines.length) E.lastAll.push({k:kk, lines:r.lines, S:r.S});
+    if (kk===kMain){ mainLines=r.lines; mainS=r.S; }
     if (r.S.behind==='on') behind=true;
     if (headOn && r.lines && r.S.behind==='head') wbox.push(...wordBoxes(r.lines,r.S)); };
   if (pR){ kBack.forEach(drawK); PERSON.compose(ctx,cv.width,cv.height,t,pbase,pXf); kFront.forEach(drawK); }
