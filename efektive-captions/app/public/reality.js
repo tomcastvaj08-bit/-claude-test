@@ -130,7 +130,7 @@ function build(W, H) {
   E.pages.forEach((p, k0) => {
     if (!(p.layer | 0)) ti++; const k = Math.max(0, ti) * 2 + (p.layer | 0);   // titulky na hrudi patří k hornímu titulku (stejné místo, barva, zarovnání)
     const S = E.styleOf(p), M = measure(p, S); if (!M) return;
-    let role = pl === 'alt' ? ((p.layer | 0) ? 'chest' : 'top') : pl;
+    let role = (p.layer | 0) ? 'chest' : 'top';   // vždy střídání: za hlavou / na hrudi
     const hd = headFor(p, W, H);
     const kW = Math.min(1, W * 0.92 / Math.max(1, M.w));   // široký titulek se zmenší na šířku
     const ks = []; for (let k2 = kW; k2 >= 0.5 - 1e-6; k2 -= 0.05) ks.push(k2);
@@ -206,7 +206,6 @@ const letters = w => (w.t || '').replace(/[^\p{L}\p{N}]/gu, '').length;
 RE.pair = (pages) => {
   if (!RE.on()) return;
   const W = E.words;
-  if ((E.G.rePlace || 'alt') !== 'alt') { for (const p of pages) p.e = Math.min(p.e, Math.max(p.s + 0.3, W[p.b].e + 0.35)); return; }
   // slova, která mají titulky (pořadí), rozdělená na věty
   const ids = []; for (const p of pages) for (let i = p.a; i <= p.b; i++) ids.push(i);
   if (!ids.length) return;
