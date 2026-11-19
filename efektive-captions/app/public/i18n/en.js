@@ -1033,5 +1033,7 @@ window.I18N_DICT.en={
 "zvuk: žádný": "sound: none",
 "Pozor: zvuk videa máš vypnutý – video bude bez tvého hlasu (zapneš ho tlačítkem „Zvuk videa“ pod timeline)": "Note: your video sound is off – the video will be without your voice (turn it on with “Video sound” below the timeline)",
 "zvuk nejde přehrát": "sound can't be played",
-"zvuk je tichý": "sound is silent"
+"zvuk je tichý": "sound is silent",
+"první pokus měl chybu (": "the first attempt had an error (",
+"), video je vyexportované znovu (30 fps)": "), the video was exported again (30 fps)"
 };

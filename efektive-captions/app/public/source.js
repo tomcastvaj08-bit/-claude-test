@@ -180,6 +180,7 @@ async function decodeVideoAudio(file) {
   } catch (e) { throw new Error('Zvuk z videa se nepodařilo přečíst. Zkus video uložit znovu (ve Fotkách Sdílet → Uložit video) a nahrát ho znovu.'); }
 }
 global.audioOnlyM4A = audioOnlyM4A;
+global.aacLcConfig = aacLcConfig;
 global.rawAudioTrack = rawAudioTrack;
 global.decodeVideoAudio = decodeVideoAudio;
 })(window);

@@ -2650,7 +2650,7 @@ async function runExport(){
           // 3. pokus: snímky přetáčením (pomalé, ale nejspolehlivější)
           if (!vr2.ok && !exCancel.v){ onP(0,'Pořád chyba ('+vr2.issues.join(', ')+') – poslední pokus, pomalejší a nejspolehlivější…'); r2=await EXP.exportVideo({...o, safe:true, seek:true, fps:Math.min(o.fps,30), videoFps:0}); vr2=await EXP.verify(r2.blob, {...ck, dur:r2.dur}); }
           res=r2; if (!vr2.ok) res.audioNote=(res.audioNote?res.audioNote+'; ':'')+'kontrola videa: '+vr2.issues.join(', ');
-          else res.audioNote=(res.audioNote?res.audioNote+'; ':'')+'první pokus měl chybu, video je vyexportované znovu (30 fps)'; }
+          else res.audioNote=(res.audioNote?res.audioNote+'; ':'')+'první pokus měl chybu ('+vr.issues.join(', ')+'), video je vyexportované znovu (30 fps)'; }
       }
     } else res=await EXP.recordRealtime(o);
     // jaký zvuk ve videu je (aby bylo hned jasné, když chybí)
