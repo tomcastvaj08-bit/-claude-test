@@ -574,3 +574,8 @@ button.pro.on{background:var(--green)}
 }
 @media (max-width:899px) and (max-height:760px){ #editor .tl-scroll{max-height:150px} #editor .panel{min-height:112px} }
 @media (max-width:899px) and (max-height:620px){ #editor .tl-scroll{max-height:112px} #editor .tl-tools{max-height:44px} #editor .panel{min-height:96px} }
+
+/* okamžitá reakce na stisk u všech ovládacích prvků (vidět hned, ještě než se akce provede) */
+button,.chip,.sub>div,.seg>div,.scope>div,.look,.tpl,.mkc,.pg,.lay,label.btn{touch-action:manipulation}
+.bnav button:active,.ico:active,.sub>div:active,.seg>div:active,.scope>div:active,.look:active,.mkc:active,.pg:active,.step button:active,.chips .chip:active{transform:scale(.94);opacity:.85;transition:none}
+.bnav button:active .ic{transform:scale(.9)}

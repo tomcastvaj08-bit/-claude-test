@@ -749,6 +749,14 @@ function setEd(st){ if (st===edState) return; edState=st; edT=performance.now();
   gr.addEventListener('touchstart',e=>start(e,true),{passive:true}); gr.addEventListener('touchmove',move,{passive:true});
   gr.addEventListener('click',()=>setEd(edState==='col'?'normal':edState==='normal'?'exp':'normal'));
   gr.addEventListener('touchend',()=>{ y0=null; });
+  // nabídka: když se v ní posuneš POŘÁDNĚ dolů (přes 160 px) a je v ní hodně obsahu, timeline se zmenší a nabídka zvětší;
+  // zpátky velká timeline až když je nabídka úplně nahoře A táhneš prstem dál dolů (přes 110 px) – žádné náhodné přepínání
+  let pY=null, pTop0=0, pDone=false;
+  pn.addEventListener('touchstart',e=>{ pY=e.touches[0].clientY; pTop0=pn.scrollTop; pDone=false; },{passive:true});
+  pn.addEventListener('touchmove',e=>{ if (pY==null||pDone||calm()) return; const dy=e.touches[0].clientY-pY;
+    if (edState==='exp' && pTop0<=0 && pn.scrollTop<=0 && dy>110){ setEd('normal'); pDone=true; } },{passive:true});
+  pn.addEventListener('touchend',()=>{ pY=null; },{passive:true});
+  pn.addEventListener('scroll',()=>{ if (edState==='normal' && !calm() && pY!=null && pn.scrollTop>160 && pn.scrollTop-pTop0>60 && pn.scrollHeight-pn.clientHeight>320) setEd('exp'); },{passive:true});
   // počítač: kolečko myši nad lištou
   gr.addEventListener('wheel',e=>{ if (e.deltaY>30) setEd(edState==='col'?'normal':'exp'); else if (e.deltaY<-30) setEd(edState==='exp'?'normal':'col'); },{passive:true});
 })();
