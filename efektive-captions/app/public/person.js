@@ -76,7 +76,18 @@ PERSON.analyze = async ({ video, file, onP, cancel }) => {
       for (let n = 0; n < m.length; n++) { const v = (q[n] - 0.5) * 3.2 + 0.5; m[n] = v <= 0 ? 0 : v >= 1 ? 255 : Math.round(v * 15) * 17; }   // ostřejší přechod, 16 úrovní (dobře se komprimuje)
       out.t.push(f.t); out.r.push([f.x0 / W, f.y0 / H, f.s / W].map(v => Math.round(v * 1e5) / 1e5)); out.a.push(enc(m));
     } else { out.t.push(f.t); out.r.push(null); out.a.push(null); }
-    out.hr.push(f.hair ? f.hair.r : null); out.ha.push(f.hair ? f.hair.a : null);
+    // vlasy: stejné časové vyhlazení přes sousední snímky (výřezy přepočtené na sebe), pak přichycení na hrany
+    let ha = null;
+    if (f.hair) { const hf = f.hair, acc = new Float32Array(R * R); let ws = 0;
+      for (let q = 0; q < buf.length; q++) { const o = buf[q] && buf[q].hair; if (!o || Math.abs(buf[q].t - f.t) > 0.1) continue; const w = q === k ? 3 : (Math.abs(q - k) === 1 ? 2 : 1); ws += w;
+        if (o === hf) { for (let n = 0; n < acc.length; n++) acc[n] += w * o.conf[n]; continue; }
+        for (let j = 0; j < R; j++) { const v = Math.floor((hf.y0 + (j + 0.5) / R * hf.s - o.y0) / o.s * R); for (let i = 0; i < R; i++) { const u = Math.floor((hf.x0 + (i + 0.5) / R * hf.s - o.x0) / o.s * R);
+          acc[j * R + i] += w * (u >= 0 && v >= 0 && u < R && v < R ? o.conf[v * R + u] : hf.conf[j * R + i]); } } }
+      for (let n = 0; n < acc.length; n++) acc[n] /= ws;
+      const q = guided(hf.gray, acc, R, R, 3, 0.003), m = new Uint8Array(R * R);
+      for (let n = 0; n < m.length; n++) { const v = (q[n] - 0.5) * 2.6 + 0.5; m[n] = v <= 0 ? 0 : v >= 1 ? 255 : Math.round(v * 15) * 17; }
+      ha = enc(m); }
+    out.hr.push(f.hair ? f.hair.r : null); out.ha.push(ha);
   };
   for await (const fr of TRK.frames({ file, video, t0: 0, t1: dur, fps: 30, W, H })) {
     if (cancel && cancel()) break;
@@ -104,9 +115,7 @@ PERSON.analyze = async ({ video, file, onP, cancel }) => {
       const hc = runAI(hx0, hy0, hs, fr.canvas);
       if (hc) { gX.fillStyle = '#000'; gX.fillRect(0, 0, R, R); gX.drawImage(fr.canvas, hx0, hy0, hs, hs, 0, 0, R, R);
         const hp = gX.getImageData(0, 0, R, R).data, hg = new Float32Array(R * R); for (let n = 0, j = 0; n < hg.length; n++, j += 4) hg[n] = (0.299 * hp[j] + 0.587 * hp[j + 1] + 0.114 * hp[j + 2]) / 255;
-        const q = guided(hg, hc, R, R, 3, 0.003), m = new Uint8Array(R * R);
-        for (let n = 0; n < m.length; n++) { const v = (q[n] - 0.5) * 2.6 + 0.5; m[n] = v <= 0 ? 0 : v >= 1 ? 255 : Math.round(v * 15) * 17; }
-        hair = { r: [hx0 / W, hy0 / H, hs / W, (ny - 0.3 * fw) / H, 0.2 * fw / H].map(v => Math.round(v * 1e5) / 1e5), a: enc(m) }; }
+        hair = { x0: hx0, y0: hy0, s: hs, conf: hc, gray: hg, r: [hx0 / W, hy0 / H, hs / W, (ny - 0.3 * fw) / H, 0.2 * fw / H].map(v => Math.round(v * 1e5) / 1e5) }; }
     } catch (e) { console.warn('vlasy', e); } }
     buf.push({ t: fr.t, x0, y0, s, conf: bb ? conf : null, gray, hair });
     if (buf.length === 5) { finish(2); buf.shift(); }
