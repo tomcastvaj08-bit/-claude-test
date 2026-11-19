@@ -2627,6 +2627,7 @@ async function runExport(){
   const w=Math.round(fullW*sc/2)*2, h=Math.round(fullH*sc/2)*2, fps=$('exFps').value==='s60'?60:+$('exFps').value, videoFps=$('exFps').value==='s60'?30:0, mode=segVal('exMode');
   $('exGo').classList.add('hidden'); $('exCancel').classList.remove('hidden'); $('exBarW').classList.remove('hidden'); $('exDl').classList.add('hidden');
   exCancel={v:false};
+  if (E.flags.mute && mode!=='captions') toast('Pozor: zvuk videa máš vypnutý – video bude bez tvého hlasu (zapneš ho tlačítkem „Zvuk videa“ pod timeline)');
   const onP=(p,m)=>{ $('exBar').style.width=(p*100)+'%'; $('exStatus').textContent=`${Math.round(p*100)} % · ${m}`; };
   const t0=performance.now();
   try{
@@ -2640,7 +2641,7 @@ async function runExport(){
       // kontrola hotového videa přímo v telefonu (zvuk, délka, nezaseknutý obraz); když něco nesedí, export znovu bezpečnějším způsobem
       if (mode!=='captions' && EXP.verify){
         onP(0.99,'Kontroluji hotové video…');
-        const ck={dur:res.dur, wantAudio:!o.mute, src:videoURL, o2s:t=>E.clips&&E.clips.length?E.out2src(t):t};
+        const ck={dur:res.dur, wantAudio:!o.mute, file:videoFile, src:videoURL, o2s:t=>E.clips&&E.clips.length?E.out2src(t):t};
         let vr=await EXP.verify(res.blob, ck);
         if (!vr.ok && !exCancel.v){ console.warn('Kontrola exportu:',vr.issues);
           // 2. pokus: bezpečné nastavení kódování (30 fps, původní zvuk), pořád rychlé čtení snímků
@@ -2652,8 +2653,10 @@ async function runExport(){
           else res.audioNote=(res.audioNote?res.audioNote+'; ':'')+'první pokus měl chybu, video je vyexportované znovu (30 fps)'; }
       }
     } else res=await EXP.recordRealtime(o);
+    // jaký zvuk ve videu je (aby bylo hned jasné, když chybí)
+    if (mode!=='captions'){ const am=res.audioMode; res.audioInfo = am==='mix'?'zvuk: video + zvukové efekty':am==='raw'?'zvuk: původní zvuk videa':(o.mute?'zvuk: žádný – zvuk videa máš vypnutý (tlačítko „Zvuk videa“ pod timeline)':'zvuk: žádný'); }
     const url=URL.createObjectURL(res.blob); const a=$('exDl'); a.href=url; a.download=(project?project.name:'video')+'-'+res.name;
-    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));
+    a.classList.remove('hidden'); onP(1,`Hotovo za ${Math.round((performance.now()-t0)/1000)} s · ${(res.blob.size/1048576).toFixed(1)} MB`+(res.method==='seek'?' · pomalá cesta (přetáčení)':'')+(res.audioInfo?` · ${res.audioInfo}`:'')+(res.audioNote?` · pozor: ${res.audioNote}`:''));
     // rozpis času (pro ladění rychlosti): čtení videa / overlaye / vykreslení / ukládání / příprava (zvuk…)
     if (res.prof){ const P=res.prof, tot=(performance.now()-t0)/1000, s=v=>(v/1000).toFixed(0)+' s', rest=Math.max(0,tot-(P.ov+P.dec+P.ren+P.enc)/1000);
       $('exStatus').textContent+=` · rozpis: video ${s(P.dec)} (${res.codecIn}), overlay ${s(P.ov)}, titulky+efekty ${s(P.ren)}, ukládání ${s(P.enc)}, zvuk a příprava ${rest.toFixed(0)} s`; }

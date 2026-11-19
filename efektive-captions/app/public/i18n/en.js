@@ -1026,5 +1026,12 @@ window.I18N_DICT.en={
 "obraz se zasekává": "picture freezes",
 "obraz stojí": "picture is frozen",
 "krátké video": "video too short",
-"chybí obraz": "missing picture"
+"chybí obraz": "missing picture",
+"zvuk: video + zvukové efekty": "sound: video + sound effects",
+"zvuk: původní zvuk videa": "sound: original video sound",
+"zvuk: žádný – zvuk videa máš vypnutý (tlačítko „Zvuk videa“ pod timeline)": "sound: none – your video sound is turned off (“Video sound” button below the timeline)",
+"zvuk: žádný": "sound: none",
+"Pozor: zvuk videa máš vypnutý – video bude bez tvého hlasu (zapneš ho tlačítkem „Zvuk videa“ pod timeline)": "Note: your video sound is off – the video will be without your voice (turn it on with “Video sound” below the timeline)",
+"zvuk nejde přehrát": "sound can't be played",
+"zvuk je tichý": "sound is silent"
 };

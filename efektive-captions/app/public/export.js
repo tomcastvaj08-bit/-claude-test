@@ -88,14 +88,26 @@ async function pickAudioCodec(ch,rate){
 const grabAt=async(v,t)=>{ await seek(v,t); await frameReady(v); const c=document.createElement('canvas'); c.width=32; c.height=56; const x=c.getContext('2d',{willReadFrequently:true}); try{ x.drawImage(v,0,0,32,56); }catch(e){ return null; } const d=x.getImageData(0,0,32,56).data, g=new Float32Array(32*56); for (let i=0,j=0;i<g.length;i++,j+=4) g[i]=0.299*d[j]+0.587*d[j+1]+0.114*d[j+2]; return g; };
 const gdiff=(a,b)=>{ if (!a||!b) return -1; let s=0; for (let i=0;i<a.length;i++) s+=Math.abs(a[i]-b[i]); return s/a.length; };
 const loadV=url=>new Promise((r,j)=>{ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.preload='auto'; v.src=url; let ok=false; const done=()=>{ if(!ok){ ok=true; r(v); } }; v.onloadedmetadata=done; v.onloadeddata=done; v.onerror=()=>j(new Error('nejde přehrát')); v.load(); setTimeout(()=>{ if(!ok) j(new Error('nenačetlo se')); },15000); });
+// zvuk souboru opravdu přehrát (dekódovat) a změřit hlasitost – stejnou cestou, jakou iPhone čte zvuk z videí
+X.audioLevel = async file => {
+  try{ const m4a=await audioOnlyM4A(file); if (!m4a) return {has:false};
+    const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext, ac=new OAC(1,44100,44100);
+    const ab=await new Promise((res,rej)=>{ const p=ac.decodeAudioData(m4a,res,rej); if (p&&p.then) p.then(res,rej); });
+    let s=0,n=0; for (let c=0;c<ab.numberOfChannels;c++){ const d=ab.getChannelData(c); for (let i=0;i<d.length;i+=37){ s+=d[i]*d[i]; n++; } }
+    return {has:true, rms:Math.sqrt(s/Math.max(1,n)), dur:ab.duration};
+  }catch(e){ console.warn('zvuk nejde přečíst',e); return {has:true, rms:0, bad:true}; } };
 X.verify = async (blob, o) => {
   const out={ok:true, issues:[]};
+  // 0) zvuk je opravdu slyšet (ne jen že je v souboru stopa)
+  if (o.wantAudio){ const a=await X.audioLevel(blob), sl=o.file?await X.audioLevel(o.file):null; out.audioLevel=a;
+    const srcLoud=!sl || !sl.has || sl.rms>0.002;   // originál má slyšitelný zvuk
+    if (!a.has || a.bad || (srcLoud && !(a.rms>0.001))){ out.ok=false; out.audio=false; out.issues.push(!a.has?'chybí zvuk':a.bad?'zvuk nejde přehrát':'zvuk je tichý'); } }
   // 1) stopy v souboru
   try{ const buf=await blob.arrayBuffer(); buf.fileStart=0; const mp4=MP4Box.createFile(); let info=null; mp4.onReady=i=>{ info=i; }; mp4.onError=()=>{}; mp4.appendBuffer(buf); mp4.flush();
     const vt=info&&info.videoTracks[0], at=info&&info.audioTracks[0];
     if (!vt){ out.ok=false; out.issues.push('chybí obraz'); return out; }
     const vd=vt.duration/vt.timescale; if (o.dur && vd<o.dur*0.9){ out.ok=false; out.issues.push('krátké video'); }
-    if (o.wantAudio && !(at && /^mp4a/.test(at.codec))){ out.ok=false; out.audio=false; out.issues.push('chybí zvuk'); }
+    if (o.wantAudio && !(at && /^mp4a/.test(at.codec)) && !out.issues.includes('chybí zvuk')){ out.ok=false; out.audio=false; out.issues.push('chybí zvuk'); }
   }catch(e){ console.warn('kontrola souboru',e); }
   // 2) obraz se nezasekl: rozdíly mezi snímky z různých míst výstupu vs. originálu
   let ov=null, sv=null, url=null;
@@ -309,7 +321,7 @@ X.exportVideo = async (opts) => {
     }
     await venc.flush(); venc.close();
     muxer.finalize();
-    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—', stalls, hasAudio:!!(raw||ac), dur};
+    return {blob:new Blob([target.buffer],{type:'video/mp4'}), name:'efektive-titulky.mp4', codec:vc.mux+(raw?'+aac':ac?'+'+ac.mux:''), audioNote, method:src?'decode':'seek', prof:PF, codecIn:src?src.codec:'—', stalls, hasAudio:!!(raw||ac), audioMode:raw?'raw':ac?'mix':'none', dur};
   } finally {
     E.flags.transparent=false; E.flags.exporting=false; E.personMask=prevMask;
     if (prev) E.attach(prev[0],prev[1]);
