@@ -187,8 +187,11 @@ E.TEMPLATES = {
       pv:pv('začněte mě','Sledovat',gr('#ff3b30','#c00000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
   };
   const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',d3:true,...v2}; }
-  // béžová/hnědá s Neulis (Styl 2) i normálně – rovně, bez 3D náklonu; na konci seznamu, ať se čísla ostatních stylů nemění
-  { const k=add.krem, st={...k.set}; delete st.tilt; delete st.tiltAlt; delete st.tiltX; delete st.persp; T.krem_rovne={cat:'trending', name:'', set:{...st, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
+  // přechod béžová → hnědá (Neulis), rovně – normálně i se 3D leskem; na konci seznamu, ať se čísla ostatních stylů nemění
+  { const met={...B, fontMain:E.NEU,wMain:300,fontEm:E.NEU,wEm:700,track:-1,trackEm:-2,...col('#e9e0d6','#363029','#e9e0d6'),cText:'#ffffff',cText2:'#efe7dc',cShadow:'#363029',shadowA:75,negativ:false,extrude:0,extrudeStyle:'light',tilt:0,tiltAlt:false,tiltX:0};
+    const mpv=sh=>`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#e9e0d6','#363029','700')};text-shadow:${sh}">Sledovat</b>`;
+    T.metal={cat:'trending', name:'', set:{...met, gloss:'off'}, pv:mpv('none')};
+    T.metal_lesk={cat:'trending', d3:true, name:'', set:{...met, gloss:'gloss',glossAmt:70,glossOn:'main'}, pv:mpv('0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')}; }
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
