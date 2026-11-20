@@ -195,8 +195,8 @@ E.TEMPLATES = {
   // béžová s Neulis (Styl 2) i rovně, bez 3D náklonu – nový styl, Styl 2 zůstává
   { const k=add.krem; T.krem_rovne={cat:'trending', name:'', set:{...k.set, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
   // limetková se 3D leskem: sytě světlá → tmavší limetka, 3D náklon se střídáním stran, níž (mimo obličej)
-  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#c8ff00','#124a00','#8fdc00'), ...tilt3d, posY:74, gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
-    pv:pv('začněte mě','Sledovat',gr('#c8ff00','#124a00')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
+  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, enterBy:'line', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
+    pv:pv('začněte mě','Sledovat',gr('#b8ff0a 40%','#008000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
@@ -478,13 +478,13 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
     if (typeof fill!=='string'){
       const p=fd.split('|');
       if (p[0]==='t'){ f=m.createLinearGradient(0,-px*0.36,0,px*0.36); f.addColorStop(0,p[1]); f.addColorStop(1,p[2]); }
-      else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; f=dir==='h'?m.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?m.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):m.createLinearGradient(0,-px*gsp,0,px*gsp); f.addColorStop(0,p[3]); f.addColorStop(1,p[4]); }
+      else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; f=dir==='h'?m.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?m.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):m.createLinearGradient(0,-px*gsp,0,px*gsp); f.addColorStop(0,p[4]); if (hold>0) f.addColorStop(Math.min(0.9,hold),p[4]); f.addColorStop(1,p[5]); }
     }
     if (ex>0){
       // 3D hloubka: písmo „nakopírované za sebe“ ve stejných barvách (kopie se kreslí jen jednou – obrázek je v mezipaměti)
       const t=document.createElement('canvas'); t.width=W; t.height=H; const tc=t.getContext('2d');
       setFont(tc,L.fam,L.wt,L.it,px,tk); tc.textBaseline='middle'; tc.textAlign='center'; tc.translate(cx,cy);
-      let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[3]); tf.addColorStop(1,p[4]); } }
+      let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[4]); if (hold>0) tf.addColorStop(Math.min(0.9,hold),p[4]); tf.addColorStop(1,p[5]); } }
       tc.fillStyle=tf;
       const dark = S.extrudeStyle==='dark';
       // světlá: jemné kopie s menším posunem do strany; tmavá (jako v Photoshopu): plné kopie po 1 px šikmo vpravo dolů, výrazně tmavší
@@ -524,7 +524,7 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
       let ff=fill; fc.translate(cx,cy);
       if (typeof fill!=='string'){ const p=fd.split('|');
         if (p[0]==='t'){ ff=fc.createLinearGradient(0,-px*0.36,0,px*0.36); ff.addColorStop(0,p[1]); ff.addColorStop(1,p[2]); }
-        else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], ww=+p[5]||half*2; ff=dir==='h'?fc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?fc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):fc.createLinearGradient(0,-px*gsp,0,px*gsp); ff.addColorStop(0,p[3]); ff.addColorStop(1,p[4]); } }
+        else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; ff=dir==='h'?fc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?fc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):fc.createLinearGradient(0,-px*gsp,0,px*gsp); ff.addColorStop(0,p[4]); if (hold>0) ff.addColorStop(Math.min(0.9,hold),p[4]); ff.addColorStop(1,p[5]); } }
       fc.fillStyle=ff; fillT(fc,s,0,0,px,tk); fc.setTransform(1,0,0,1,0,0);
       const ta=mt.actualBoundingBoxAscent||px*0.36, td=mt.actualBoundingBoxDescent||px*0.36, y0=cy-ta, y1=cy+td;
       const atop=(draw,al,bl)=>{ fc.save(); fc.globalCompositeOperation='source-atop'; fc.globalAlpha=Math.min(1,al); if (bl>0.3) fc.filter=`blur(${bl.toFixed(1)}px)`; draw(fc); fc.restore(); };
@@ -641,12 +641,12 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   let fill=L.em?mA:S.cText;
   const gs=S.gradSpan||0.5, ww=wWidth/(L.cond||1);
   if (!L.em && S.textGrad && S.cText2 && S.cText2!==S.cText){ const g=c.createLinearGradient(0,-L.px*0.36,0,L.px*0.36); g.addColorStop(0,S.cText); g.addColorStop(1,S.cText2); fill=g; }
-  if (L.em && S.grad){ const dir=S.gradDir, g=dir==='h'?c.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?c.createLinearGradient(-ww/2,-L.px*gs,ww/2,L.px*gs):c.createLinearGradient(0,-L.px*gs,0,L.px*gs); g.addColorStop(0,mA); g.addColorStop(1,mB); fill=g; }
+  if (L.em && S.grad){ const dir=S.gradDir, g=dir==='h'?c.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?c.createLinearGradient(-ww/2,-L.px*gs,ww/2,L.px*gs):c.createLinearGradient(0,-L.px*gs,0,L.px*gs); g.addColorStop(0,mA); if (S.gradHold>0) g.addColorStop(Math.min(0.9,S.gradHold),mA); g.addColorStop(1,mB); fill=g; }   // gradHold: světlá barva drží větší část písmene
   let gMul=1; if (S.glowMode==='entrance') gMul = clamp(1-(since-0.15)/0.6);
   const burn = !(L.em&&S.negativ) && blur<=0.5;
   if (burn){
     // Text i se stínem jako jeden „vypálený“ obrázek: stín se natáčí, zmenšuje a mizí přesně s písmem
-    const fd = L.em ? (S.grad ? `g|${S.gradDir}|${gs}|${mA}|${mB}|${S.gradDir==='v'?0:Math.round(ww)}` : `c|${mA}`) : (S.textGrad && S.cText2 && S.cText2!==S.cText ? `t|${S.cText}|${S.cText2}` : `c|${S.cText}`);
+    const fd = L.em ? (S.grad ? `g|${S.gradDir}|${gs}|${S.gradHold||0}|${mA}|${mB}|${S.gradDir==='v'?0:Math.round(ww)}` : `c|${mA}`) : (S.textGrad && S.cText2 && S.cText2!==S.cText ? `t|${S.cText}|${S.cText2}` : `c|${S.cText}`);
     if (L.em && S.glow>0 && gMul>0){
       E._glowColor=mA;
       if (c===ctx){
