@@ -4,7 +4,7 @@ const path = require('path');
 (async () => {
   const dir = __dirname;
   const b = await chromium.launch();
-  for (const [html, pdf] of [['polep-stul.html', 'Best-Account-polep-stolu-120x70cm-nad-sebou.pdf'], ['polep-stul-vedle.html', 'Best-Account-polep-stolu-120x70cm-vedle-sebe.pdf']]) {
+  for (const [html, pdf] of [['polep-stul.html', 'Best-Account-polep-stolu-120x70cm-nad-sebou.pdf'], ['polep-vedle-A-jen-nazev.html', 'Best-Account-polep-stolu-120x70cm-A-jen-nazev.pdf'], ['polep-vedle-B-kancelar.html', 'Best-Account-polep-stolu-120x70cm-B-ucetni-a-danova-kancelar.pdf'], ['polep-vedle-C-since-2008.html', 'Best-Account-polep-stolu-120x70cm-C-since-2008.pdf']]) {
   const p = await b.newPage({ viewport: { width: Math.round(1206 * 96 / 25.4), height: Math.round(706 * 96 / 25.4) } });
   await p.goto('file://' + path.join(dir, html));
   await p.evaluate(() => document.fonts.ready);
