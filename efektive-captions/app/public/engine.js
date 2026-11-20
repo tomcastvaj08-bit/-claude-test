@@ -195,7 +195,7 @@ E.TEMPLATES = {
   // béžová s Neulis (Styl 2) i rovně, bez 3D náklonu – nový styl, Styl 2 zůstává
   { const k=add.krem; T.krem_rovne={cat:'trending', name:'', set:{...k.set, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
   // limetková se 3D leskem: sytě světlá → tmavší limetka, 3D náklon se střídáním stran, níž (mimo obličej)
-  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, layout:'center', enterBy:'line', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
+  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, layout:'center', enterBy:'line', caseSec:'lower', caseMain:'title', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
     pv:pv('začněte mě','Sledovat',gr('#b8ff0a 40%','#008000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
@@ -350,7 +350,7 @@ E.groupsOf = (p,S) => {
   } else mains=[clamp(+ml-1,0,lines.length-1)];
   return lines.map((l,i)=>({ids:l,em:mains.includes(i),slot:(p.fill&&!manual.length)||p.manual?Math.min(i,2):undefined}));
 };
-function applyCase(s,mode){ if (mode==='upper') return s.toLocaleUpperCase(); if (mode==='lower') return s.toLocaleLowerCase(); if (mode==='title') return s.charAt(0).toLocaleUpperCase()+s.slice(1); return s; }
+function applyCase(s,mode){ if (mode==='upper') return s.toLocaleUpperCase(); if (mode==='lower') return (/\p{Ll}\p{Lu}/u.test(s) || /^\p{Lu}{2,}$/u.test(s)) ? s : s.toLocaleLowerCase(); /* značky (MyceLove) a zkratky zůstanou, jak jsou */ if (mode==='title') return s.charAt(0).toLocaleUpperCase()+s.slice(1); return s; }
 E.txt = (w,S,isEm) => {
   let s = S.punct ? (w.raw||w.t) : w.t;
   s = applyCase(s, isEm ? (S.caseMain||S.case||'none') : (S.caseSec||S.case||'none'));
