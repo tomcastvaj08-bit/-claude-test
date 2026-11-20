@@ -186,7 +186,9 @@ E.TEMPLATES = {
     cervena_lesk:{ name:'', set:{...B, ...col('#ff3b30','#c00000','#e00a00'),gloss:'gloss',glossAmt:70,glossOn:'main',negativ:false,extrude:0,extrudeStyle:'light'},
       pv:pv('začněte mě','Sledovat',gr('#ff3b30','#c00000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)') },
   };
-  const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',d3:k2!=='krem',...v2}; }
+  const T={}; for (const [k,v] of Object.entries(E.TEMPLATES)){ T[k]=v; if (k==='base') for (const [k2,v2] of Object.entries(add)) T[k2]={cat:'trending',d3:true,...v2}; }
+  // béžová/hnědá s Neulis (Styl 2) i normálně – rovně, bez 3D náklonu; na konci seznamu, ať se čísla ostatních stylů nemění
+  { const k=add.krem, st={...k.set}; delete st.tilt; delete st.tiltAlt; delete st.tiltX; delete st.persp; T.krem_rovne={cat:'trending', name:'', set:{...st, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
