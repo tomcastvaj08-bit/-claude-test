@@ -3,3 +3,5 @@ pozadi/*
 vystup/*
 !vystup/.gitkeep
 assets/avatary.png
+polep/*.pdf
+polep/*.png
