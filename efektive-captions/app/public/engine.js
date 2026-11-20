@@ -195,7 +195,7 @@ E.TEMPLATES = {
   // béžová s Neulis (Styl 2) i rovně, bez 3D náklonu – nový styl, Styl 2 zůstává
   { const k=add.krem; T.krem_rovne={cat:'trending', name:'', set:{...k.set, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
   // limetková se 3D leskem: sytě světlá → tmavší limetka, 3D náklon se střídáním stran, níž (mimo obličej)
-  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, enterBy:'line', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
+  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, layout:'center', enterBy:'line', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
     pv:pv('začněte mě','Sledovat',gr('#b8ff0a 40%','#008000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
@@ -1274,12 +1274,16 @@ E.drawBox = (lines,S,guides) => {
 // pro každý titulek: nejnižší spodní hrana obličeje během titulku → posY = clamp(fb·100+12, 60, 74); bez obličeje 64
 E.applyFacePositions = () => {
   if (!E.face) return 0; let n=0;
+  // jedna výška pro celé video (titulky neskáčou nahoru a dolů): spodek obličeje z celého videa, odolně proti omylům AI (75. percentil)
+  const all=[]; for (const f of Object.values(E.face)) if (f) all.push(f[3]); all.sort((a,b)=>a-b);
+  const fbAll = all.length ? all[Math.min(all.length-1,Math.floor(all.length*0.75))] : null;
+  const yAll = fbAll==null ? 64 : clamp(fbAll*100+12,60,74);
   E.pages.forEach(p=>{
     const key=E.keyOf(p); const m=E.meta[key]=E.meta[key]||{}; m.own=m.own||{};
     if (m.own._manualPos) return;
-    let fb=null, fx=null;
-    for (let t=p.s; t<=p.e; t+=0.1){ const f=E.face[Math.round(t*10)]; if (f){ fb=Math.max(fb??0,f[3]); fx=(f[0]+f[2])/2; } }
-    m.own.posY = fb==null ? 64 : clamp(fb*100+12,60,74);
+    let fx=null;
+    for (let t=p.s; t<=p.e; t+=0.1){ const f=E.face[Math.round(t*10)]; if (f){ fx=(f[0]+f[2])/2; } }
+    m.own.posY = yAll;
     if (E.G.faceDodgeX && fx!=null){ m.own.posX = fx<0.38 ? 60 : fx>0.62 ? 40 : 50; } else m.own.posX = 50;
     n++;
   });
