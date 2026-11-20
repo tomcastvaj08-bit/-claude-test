@@ -192,6 +192,8 @@ E.TEMPLATES = {
     const mpv=sh=>`<span style="font-family:Outfit;font-weight:300">začněte mě</span><br><b style="font-family:Outfit;${gr('#e9e0d6','#363029','700')};text-shadow:${sh}">Sledovat</b>`;
     T.metal={cat:'trending', name:'', set:{...met, gloss:'off'}, pv:mpv('none')};
     T.metal_lesk={cat:'trending', d3:true, name:'', set:{...met, gloss:'gloss',glossAmt:70,glossOn:'main'}, pv:mpv('0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')}; }
+  // béžová s Neulis (Styl 2) i rovně, bez 3D náklonu – nový styl, Styl 2 zůstává
+  { const k=add.krem; T.krem_rovne={cat:'trending', name:'', set:{...k.set, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
