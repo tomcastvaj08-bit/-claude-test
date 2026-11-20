@@ -194,6 +194,9 @@ E.TEMPLATES = {
     T.metal_lesk={cat:'trending', d3:true, name:'', set:{...met, gloss:'gloss',glossAmt:70,glossOn:'main'}, pv:mpv('0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')}; }
   // béžová s Neulis (Styl 2) i rovně, bez 3D náklonu – nový styl, Styl 2 zůstává
   { const k=add.krem; T.krem_rovne={cat:'trending', name:'', set:{...k.set, tilt:0, tiltAlt:false, tiltX:0}, pv:k.pv}; }
+  // zelená se 3D leskem: sytě světle → tmavě zelená, 3D náklon se střídáním stran, níž (mimo obličej)
+  T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#3dff5a','#00852b','#14d94a'), ...tilt3d, posY:74, gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
+    pv:pv('začněte mě','Sledovat',gr('#3dff5a','#00852b')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
