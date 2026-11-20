@@ -10,7 +10,6 @@ const path = require('path');
   await p.evaluate(() => Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))));
   await p.evaluate(() => layout());
   await p.pdf({ path: path.join(dir, 'Best-Account-polep-stolu-120x70cm.pdf'), width: '1206mm', height: '706mm', printBackground: true, preferCSSPageSize: true });
-  await p.screenshot({ path: path.join(dir, 'Best-Account-polep-stolu-nahled.png') });
   await b.close();
   console.log('✓ hotovo');
 })();
