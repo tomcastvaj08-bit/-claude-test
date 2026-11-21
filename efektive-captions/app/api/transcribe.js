@@ -1,5 +1,7 @@
 // Přepis řeči na text se slovy a časy (OpenAI Whisper).
 // Klíč je jen na serveru (proměnná OPENAI_API_KEY), do telefonu se nedostane.
+// Neplatící uživatelé mají denní limit délky zvuku (api/_quota.js), PRO bez omezení.
+const Q = require('./_quota');
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -24,7 +26,7 @@ function cors(req, res) {
     res.setHeader('Access-Control-Allow-Origin', o);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Quota, X-Pro');
     res.setHeader('Access-Control-Max-Age', '86400');
   }
   if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return true; }
@@ -42,6 +44,14 @@ module.exports = async function handler(req, res) {
   try {
     const audio = await readBody(req);
     if (!audio.length) return send(res, 400, { error: 'Prázdný zvuk' });
+
+    // denní limit pro neplatící (PRO bez omezení)
+    const secs = Q.wavSeconds(audio), q = await Q.check(req, secs);
+    if (!q.ok) {
+      const min = Math.round(q.limit / 60);
+      return send(res, 429, { error: `Dnešní AI přepis zdarma (${min} min zvuku denně) je vyčerpaný. Zítra se obnoví – nebo si vezmi PRO a přepisuj bez omezení.`, quotaExceeded: true, used: q.used, limit: q.limit });
+    }
+    const done = obj => { const c = Q.commit(q, secs); return send(res, 200, { ...obj, quota: c.quota, left: c.left, pro: !!q.pro }); };
 
     const url = new URL(req.url, 'http://x');
     const lang = (url.searchParams.get('lang') || '').slice(0, 5);
@@ -61,7 +71,7 @@ module.exports = async function handler(req, res) {
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         const words = (j.words || []).filter(w => w.type === 'word').map(w => ({ word: w.text, start: w.start, end: w.end }));
-        return send(res, 200, { words, text: j.text || '', engine: 'elevenlabs-scribe' });
+        return done({ words, text: j.text || '', engine: 'elevenlabs-scribe' });
       }
       const code = j?.detail?.code || j?.detail?.status || '';
       elError = code === 'quota_exceeded' ? 'Na účtu ElevenLabs došly kredity. Dobij kredity na elevenlabs.io (nebo počkej na měsíční obnovení), případně nastav záložní přepis.'
@@ -83,7 +93,7 @@ module.exports = async function handler(req, res) {
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         const words = (j.words || []).map(w => ({ word: w.word, start: w.start, end: w.end }));
-        return send(res, 200, { words, text: j.text || '', engine: 'groq-whisper' });
+        return done({ words, text: j.text || '', engine: 'groq-whisper' });
       }
       if (!key) return send(res, r.status || 502, { error: (elError ? elError + ' ' : '') + 'Záložní přepis (Groq): ' + (j?.error?.message || 'chyba') });
     }
@@ -106,7 +116,7 @@ module.exports = async function handler(req, res) {
     if (!r.ok) return send(res, r.status, { error: j?.error?.message || 'Chyba OpenAI' });
 
     const words = (j.words || []).map(w => ({ word: w.word, start: w.start, end: w.end }));
-    return send(res, 200, { words, text: j.text || '' });
+    return done({ words, text: j.text || '' });
   } catch (e) {
     return send(res, 500, { error: e.message });
   }

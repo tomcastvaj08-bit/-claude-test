@@ -1038,5 +1038,6 @@ window.I18N_DICT.en={
 "), video je vyexportované znovu (30 fps)": "), the video was exported again (30 fps)",
 "zvuk: video + přidaný zvuk a efekty": "sound: video + added sound and effects",
 "Míchám zvuk (hlas, hudba, efekty)… # %": "Mixing sound (voice, music, effects)… # %",
-"zvukové efekty, hudbu a zvuk vložených klipů se nepodařilo přimíchat": "sound effects, music and inserted clips' sound could not be mixed in"
+"zvukové efekty, hudbu a zvuk vložených klipů se nepodařilo přimíchat": "sound effects, music and inserted clips' sound could not be mixed in",
+"Dnešní AI přepis zdarma (# min zvuku denně) je vyčerpaný. Zítra se obnoví – nebo si vezmi PRO a přepisuj bez omezení.": "Today's free AI transcription (# min of audio per day) is used up. It resets tomorrow – or get PRO for unlimited transcription."
 };

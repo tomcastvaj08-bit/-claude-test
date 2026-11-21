@@ -300,8 +300,10 @@ async function transcribeFile(file,s0,s1){
       busy('Analyzuji video…',`AI poslouchá a píše text (${i+1}/${n})`,0.05+0.9*i/n);
       const blob=wavFrom(data.subarray(i*CH,Math.min(data.length,(i+1)*CH)),rate);
       const q=new URLSearchParams({lang,quality:segVal('sQuality')});
-      const r=await fetch(NATIVE.api('/api/transcribe?'+q),{method:'POST',headers:{'Content-Type':'audio/wav'},body:blob});
+      const hd={'Content-Type':'audio/wav'}; const qt=lsGet('efk_quota',null); if (qt) hd['X-Quota']=qt; try{ const pp=PRO.get(); if (pp && pp.token) hd['X-Pro']=pp.token; }catch(e){}
+      const r=await fetch(NATIVE.api('/api/transcribe?'+q),{method:'POST',headers:hd,body:blob});
       const j=await r.json().catch(()=>({error:'Server neodpověděl'}));
+      if (j && j.quota) lsSet('efk_quota',j.quota);   // denní limit přepisu zdarma (podepsaný lístek ze serveru)
       if (!r.ok||j.error) throw new Error(j.error||('Chyba '+r.status));
       const off=base+i*SEG; j.words.forEach(w=>{ const raw=String(w.word).trim(); if (raw) all.push(E.mkWord(raw,w.start+off,w.end+off)); });
     }
