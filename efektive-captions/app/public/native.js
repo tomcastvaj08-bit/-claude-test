@@ -7,7 +7,7 @@
   "use strict";
   const Cap = g.Capacitor;
   const isNative = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
-  const SERVER = 'https://efektive-titulky.vercel.app';
+  const SERVER = 'https://captions.efektive.cz';
   // Veřejné klíče RevenueCat (nejsou tajné, patří do aplikace). Doplní se po založení účtu RevenueCat.
   const RC_KEYS = { ios: '', android: '' };
   const ENTITLEMENT = 'pro';
