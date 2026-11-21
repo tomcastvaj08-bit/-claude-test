@@ -1039,5 +1039,20 @@ window.I18N_DICT.en={
 "zvuk: video + přidaný zvuk a efekty": "sound: video + added sound and effects",
 "Míchám zvuk (hlas, hudba, efekty)… # %": "Mixing sound (voice, music, effects)… # %",
 "zvukové efekty, hudbu a zvuk vložených klipů se nepodařilo přimíchat": "sound effects, music and inserted clips' sound could not be mixed in",
-"Dnešní AI přepis zdarma (# min zvuku denně) je vyčerpaný. Zítra se obnoví – nebo si vezmi PRO a přepisuj bez omezení.": "Today's free AI transcription (# min of audio per day) is used up. It resets tomorrow – or get PRO for unlimited transcription."
+"Dnešní AI přepis zdarma (# min zvuku denně) je vyčerpaný. Zítra se obnoví – nebo si vezmi PRO a přepisuj bez omezení.": "Today's free AI transcription (# min of audio per day) is used up. It resets tomorrow – or get PRO for unlimited transcription.",
+"Knihovna zvuků": "Sound library",
+"▶ přehraje, + přidá zvuk na místo hlavy (pak ho na stopě posuneš prstem).": "▶ plays, + adds the sound at the playhead (then drag it on the track).",
+"Bez zvuku (výchozí)": "No sound (default)",
+"Cvak foťáku": "Camera click",
+"Klik": "Click",
+"Psaní na Macu": "Mac typing",
+"Ding krátký": "Short ding",
+"Zvonění (chime)": "Chime",
+"Kovový riser": "Metallic riser",
+"Riser s úderem": "Punch riser",
+"Filmový úder": "Cinematic impact",
+"Glitch dlouhý": "Long glitch",
+"Ozubená kola": "Gears",
+"Nabíjení iPhonu": "iPhone charging",
+"Zvuk se nepodařilo načíst": "The sound could not be loaded"
 };

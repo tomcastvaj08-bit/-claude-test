@@ -460,7 +460,11 @@ trSfxLoadAll();
 async function bankLoad(){ for (const nm of ['shine','tick','swoosh','warp','tunnel','push','pushr','swing','flash','flash2','camera','snap','glitch','glitch2','click','woosh','wooshk','wooshh','wooshm']){ try{
   const r=await fetch('sfx/'+nm+'.m4a'); if (!r.ok) continue; const ab=await decodeVideoAudio(await r.blob());
   const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0; for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
-  E.bank[nm]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',nm,e); } } }
+  E.bank[nm]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',nm,e); } }
+  // knihovna zvuků (pro přechody a efekty) – načte se na pozadí po základní sadě
+  for (const [k] of E.SFXLIB){ try{ const r=await fetch('sfx/lib/'+k+'.m4a'); if (!r.ok) continue; const ab=await decodeVideoAudio(await r.blob());
+    const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0; for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
+    E.bank['lib:'+k]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',k,e); } } }
 bankLoad();
 
 // --- smyčka ---
@@ -997,12 +1001,12 @@ binders.clip=()=>{
   const dr=$('clTrDir'); if (dr) dr.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); E.clips[selClip].trDir=d.dataset.v; changed(); renderPanel(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.6); };
   const ts=$('clTrSfx'); if (ts) ts.onchange=e=>{ ensureClips(); if (e.target.checked) delete E.clips[selClip].trSfx; else E.clips[selClip].trSfx=false; changed(); renderPanel(); };
   const tsn=$('clTrSnd'); if (tsn) tsn.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; ensureClips(); const c=E.clips[selClip]; if (d.dataset.v==='auto') delete c.trSnd; else c.trSnd=d.dataset.v; changed(); renderPanel();
-    const b=E.bank[d.dataset.v==='auto'?E.BANK_TR[c.tr]:d.dataset.v]; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.trSfxVol??30)/100*((c.trVol??100)/100)}); };
+    const b=d.dataset.v==='auto'?null:E.bank[d.dataset.v]; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.trSfxVol??30)/100*((c.trVol??100)/100)}); };
   const tov=$('clTrOV'); if (tov){ tov.oninput=()=>{ ensureClips(); E.clips[selClip].trVol=+tov.value; $('clTrOVv').textContent=tov.value+' %'; }; tov.onchange=()=>changed(); }
   const tvv=$('clTrV'); if (tvv){ tvv.oninput=()=>{ E.G.trSfxVol=+tvv.value; $('clTrVv').textContent=tvv.value+' %'; }; tvv.onchange=()=>changed(); }
   const tu=$('clTrUp'); if (tu) tu.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='audio/*,.mp3,.m4a,.wav,.aac'; inp.onchange=async()=>{ const f=inp.files[0]; if (!f) return; try{ ensureClips(); await trSfxSet(E.clips[selClip].tr, f, true); renderPanel(); toast('Zvuk přechodu uložený – zarovnaný na střih'); }catch(e){ toast('Tenhle zvuk neumím přečíst (zkus MP3 nebo WAV)'); } }; inp.click(); };
   const tdl=$('clTrDelS'); if (tdl) tdl.onclick=async()=>{ ensureClips(); const tr=E.clips[selClip].tr; delete E.trCustom[tr]; try{ await dbDo('readwrite',st=>st.delete('trsfx|'+tr),'files'); }catch(e){} renderPanel(); toast('Vlastní zvuk odebraný'); };
-  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, cu=(c.trSnd&&c.trSnd!=='auto'&&c.trSnd!=='none'?E.bank[c.trSnd]:null)||E.trCustom[c.tr]||E.bank[E.BANK_TR[c.tr]], pre=cu?-cu.peak:Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
+  const th=$('clTrHear'); if (th) th.onclick=()=>{ ensureClips(); const c=E.clips[selClip], D=c.trDur||E.TRDEF[c.tr]||0.5, cu=(c.trSnd&&c.trSnd!=='auto'&&c.trSnd!=='none'?E.bank[c.trSnd]:null)||E.trCustom[c.tr], pre=cu?-cu.peak:Math.min(...E.TRSFX(c.tr,D).map(x=>x[0]),0); if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]+pre-0.35); setTimeout(()=>togglePlay(),120); };
   const rd=$('clTrD'); if (rd){ rd.oninput=()=>{ ensureClips(); E.clips[selClip].trDur=+rd.value; $('clTrDv').textContent=(+rd.value).toFixed(2)+' s'; }; rd.onchange=()=>{ changed(); PV.currentTime=Math.max(0,E.clipStarts()[selClip]-0.5); }; }
 };
 
@@ -1758,7 +1762,7 @@ async function addAudioFile(f){
 function openAudPanel(){ selClip=-1; panel='audio'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderTimeline(); }
 function pAudio(){
   const a=(E.audios||[]).find(x=>x.id===selAud);
-  if (!a) return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>Zvuk</b><small>Přidej hudbu nebo zvuk z telefonu. Položí se na místo hlavy.</small></div></div><button class="btn primary" id="auAdd">${I('plus')} Přidat zvuk ze zařízení</button>`;
+  if (!a) return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>Zvuk</b><small>Přidej hudbu nebo zvuk z telefonu. Položí se na místo hlavy.</small></div></div><button class="btn primary" id="auAdd">${I('plus')} Přidat zvuk ze zařízení</button><div class="clabel">Knihovna zvuků</div><div class="note">▶ přehraje, + přidá zvuk na místo hlavy (pak ho na stopě posuneš prstem).</div><div class="sfxlib" id="auLib">${E.SFXLIB.map(([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`).join('')}</div>`;
   const rng=(lb,id,min,max,st,v,u)=>`<label class="ctl"><div class="lb"><span>${lb}</span><span>${v}${u}</span></div><input type="range" id="${id}" min="${min}" max="${max}" step="${st}" value="${v}"></label>`;
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>${esc(a.name||'Zvuk')}</b><small>${fmt(a.s)} – ${fmt(a.e)} · délka ${(a.e-a.s).toFixed(1)} s. Na stopě ho posuneš prstem, konce zkrátíš tažením za okraje.</small></div></div>
   ${rng('Hlasitost','auVol',0,200,1,a.vol??100,' %')}
@@ -1767,10 +1771,14 @@ function pAudio(){
   ${rng('Doznění (fade out)','auFo',0,5,0.1,a.fo||0,' s')}
   <div class="row"><span>Zvuk videa</span><input type="checkbox" class="sw" id="auVm" ${E.flags.mute?'':'checked'}></div>
   <div class="btnrow"><button class="btn" id="auHere">${I('arrow-right')} Začít v místě hlavy</button><button class="btn" id="auDel">${I('trash')} Smazat</button></div>
-  <button class="btn small" id="auAdd">${I('plus')} Přidat další zvuk</button>`;
+  <button class="btn small" id="auAdd">${I('plus')} Přidat další zvuk</button><div class="clabel">Knihovna zvuků</div><div class="note">▶ přehraje, + přidá zvuk na místo hlavy (pak ho na stopě posuneš prstem).</div><div class="sfxlib" id="auLib">${E.SFXLIB.map(([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`).join('')}</div>`;
 }
+async function addLibSound(k){ const it=E.SFXLIB.find(x=>x[0]===k); if (!it) return; try{ const r=await fetch('sfx/lib/'+k+'.m4a'); if (!r.ok) throw new Error(r.status); const b=await r.blob(); await addAudioFile(new File([b], it[1]+'.m4a', {type:'audio/mp4'})); }catch(e){ toast('Zvuk se nepodařilo načíst'); } }
 binders.audio=()=>{
   $('auAdd').onclick=()=>$('audIn').click();
+  const lb=$('auLib'); if (lb) lb.onclick=e=>{ const p=e.target.closest('[data-p]'), a=e.target.closest('[data-a]');
+    if (p){ const b=E.bank['lib:'+p.dataset.p]; if (b) playSfx({type:'custom',buf:b.buf,vol:1}); else { const au=new Audio('sfx/lib/'+p.dataset.p+'.m4a'); au.play().catch(()=>{}); } }
+    if (a) addLibSound(a.dataset.a); };
   const a=(E.audios||[]).find(x=>x.id===selAud); if (!a) return;
   const live=()=>{ if (PB.on){ pbStop(); togglePlay(); } };
   for (const [id,key,u] of [['auVol','vol',' %'],['auFi','fi',' s'],['auFo','fo',' s']]){ const el=$(id);
@@ -1784,7 +1792,7 @@ binders.audio=()=>{
 $('audIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if (f) addAudioFile(f); };
 $('clipIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if (f) insertClipFile(f); };
 $('clipAdd').onclick=()=>$('clipIn').click();
-$('audAdd').onclick=()=>{ if ((E.audios||[]).length){ selAud=selAud||E.audios[E.audios.length-1].id; openAudPanel(); } else $('audIn').click(); };
+$('audAdd').onclick=()=>{ if ((E.audios||[]).length) selAud=selAud||E.audios[E.audios.length-1].id; else selAud=null; openAudPanel(); };   // panel Zvuk: ze zařízení nebo z knihovny
 // ---------- EFEKTY V MÍSTĚ (houpavý shake kamkoli do videa) ----------
 let selFx=null;
 function openFxPanel(){ selClip=-1; panel='fxm'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderVideoTrack(); }
@@ -1795,8 +1803,8 @@ function pFxm(){
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-zap"/></svg><div><b>Houpavý shake</b><small>V čase ${fmt(m.t)}. Značku na stopě videa posuneš tak, že dáš hlavu jinam a „Přesunout sem“.</small></div></div>
   <label class="ctl"><div class="lb"><span>Síla</span><span>${m.amt??100} %</span></div><input type="range" id="fxAmt" min="30" max="160" value="${m.amt??100}"></label>
   <label class="ctl"><div class="lb"><span>Délka (rychlost)</span><span>${(m.dur||1.2).toFixed(2)} s</span></div><input type="range" id="fxDur" min="0.5" max="2.5" step="0.05" value="${m.dur||1.2}"></label>
-  <div class="row"><span>Zvuk</span><input type="checkbox" class="sw" id="fxSfx" ${m.sfx===false?'':'checked'}></div>
-  ${m.sfx===false?'':`<label class="ctl"><div class="lb"><span>Hlasitost zvuku</span><span>${m.vol??100} %</span></div><input type="range" id="fxVol" min="0" max="200" value="${m.vol??100}"></label>`}
+  <div class="row"><span>Zvuk</span><input type="checkbox" class="sw" id="fxSfx" ${m.sfx===true?'checked':''}></div>
+  ${m.sfx!==true?'':`<label class="ctl"><div class="lb"><span>Hlasitost zvuku</span><span>${m.vol??100} %</span></div><input type="range" id="fxVol" min="0" max="200" value="${m.vol??100}"></label>`}
   <div class="btnrow"><button class="btn" id="fxPlay">${I('play')} Přehrát</button><button class="btn" id="fxMove">${I('arrow-right')} Přesunout sem</button></div>
   <div class="btnrow"><button class="btn" id="fxAdd">${I('plus')} Další na místo hlavy</button><button class="btn" id="fxDel">${I('trash')} Smazat</button></div>`;
 }
@@ -1804,7 +1812,7 @@ binders.fxm=()=>{
   $('fxAdd').onclick=()=>addFxMark('shake');
   const m=(E.fxMarks||[]).find(x=>x.id===selFx); if (!m) return;
   for (const [id,key,u,fx] of [['fxAmt','amt',' %',v=>v],['fxDur','dur',' s',v=>v.toFixed(2)],['fxVol','vol',' %',v=>v]]){ const el=$(id); if (!el) continue; el.oninput=()=>{ m[key]=+el.value; el.previousElementSibling.lastElementChild.textContent=fx(+el.value)+u; }; el.onchange=()=>changed(); }
-  $('fxSfx').onchange=e=>{ if (e.target.checked) delete m.sfx; else m.sfx=false; changed(); renderPanel(); };
+  $('fxSfx').onchange=e=>{ if (e.target.checked) m.sfx=true; else delete m.sfx; changed(); renderPanel(); };
   $('fxPlay').onclick=()=>{ if (PB.on) pbStop(); vid.pause(); PV.currentTime=Math.max(0,m.t-0.5); setTimeout(()=>togglePlay(),120); };
   $('fxMove').onclick=()=>{ m.t=PV.currentTime; changed(); renderVideoTrack(); renderPanel(); };
   $('fxDel').onclick=()=>{ E.fxMarks=E.fxMarks.filter(x=>x!==m); selFx=null; changed(); renderVideoTrack(); renderPanel(); };
