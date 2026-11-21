@@ -558,7 +558,9 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   const exitDur = flick ? FLICK_DUR : S.anim==='reel' ? 0.11 : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
-  const st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
+  let st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
+  // slovo řečené těsně před koncem titulku: vyjede o kousek dřív, aby stihlo celé doletět (min. ~0,4 s před odchodem)
+  if (st0 > p.s) st0 = Math.max(p.s, Math.min(st0, p.e - exitDur - 0.4));
   const age=t-st0; let exit=clamp((p.e-t)/exitDur); let exitE = S.fadeOut ? (exit*exit*(3-2*exit)) : exit;
   if (flick){ exit=exitE=flickA(p.e-t); }   // odchod flickerem: titulek párkrát zabliká a zhasne
   const since=age;
