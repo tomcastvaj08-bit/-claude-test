@@ -293,6 +293,8 @@ E.buildPages = () => {
     // konec titulku utnout před začátkem další zóny bez titulků (grafika / logo)
     const z=E.zones.filter(z=>z.s>=W[p.b].e-0.05).sort((a,b)=>a.s-b.s)[0]; if (z) p.e=Math.min(p.e, z.s);
     if (m && m.eo!=null) p.e = nxt ? Math.min(m.eo, nxt.s) : m.eo;
+    // titulek nikdy nepřesáhne konec videa (poslední se utne přesně s koncem)
+    { const D=E.outDur?E.outDur():0; if (D>0 && p.e>D) p.e=D; }
     p.kin=[0,1,2,3].map(j=>({dx:hash(k*4+j)*2-1, dy:hash(k*4+j+100)*2-1, rot:hash(k*4+j+200)*2-1}));
   });
   if (window.RE) RE.pair(pages);   // Real estate styl: titulky po dvojicích
