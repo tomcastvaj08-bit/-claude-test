@@ -1054,5 +1054,12 @@ window.I18N_DICT.en={
 "Glitch dlouhý": "Long glitch",
 "Ozubená kola": "Gears",
 "Nabíjení iPhonu": "iPhone charging",
-"Zvuk se nepodařilo načíst": "The sound could not be loaded"
+"Zvuk se nepodařilo načíst": "The sound could not be loaded",
+"Efekty": "Effects",
+"Mizející výkřik": "Disappearing scream",
+"Trapné ticho": "Awkward pause",
+"Fortnite smrt": "Fortnite death",
+"TikTok zvuk": "TikTok sound",
+"Úhlová bruska": "Angle grinder",
+"Prd": "Fart"
 };

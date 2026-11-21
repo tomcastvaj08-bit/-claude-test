@@ -591,3 +591,4 @@ button,.chip,.sub>div,.seg>div,.scope>div,.look,.tpl,.mkc,.pg,.lay,label.btn{tou
 .sl-row .sl-add{background:linear-gradient(135deg,#2f7bff,#21d07a);color:#fff}
 .sl-row button:active{transform:scale(.92)}
 .sl-row .ic{width:18px;height:18px}
+.sl-cat{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin:10px 2px 2px}
