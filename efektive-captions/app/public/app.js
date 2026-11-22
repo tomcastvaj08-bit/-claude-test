@@ -1222,6 +1222,7 @@ function pStyle(){
     ${S.altOn?`<div class="colors">${color('Barva A','altA')}${color('Barva B','altB')}</div>${slider('Každý … titulek','altEvery',2,6)}`:''}
     ${toggle('Negativ (inverzní písmo)','negativ')}
     ${slider('Záře okolo hlavního slova','glow',0,100)}
+    ${toggle('Záře i na vedlejších řádcích (bílý glow)','glowSec')}
     ${chips('Záře svítí','glowMode',[['always','Pořád'],['entrance','Jen při nástupu (problikne)']])}
     <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">${I('wand','grad')} Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
   } else if (st==='font'){
@@ -1252,7 +1253,7 @@ function pStyle(){
   } else if (st==='transform'){
     h+=`${slider('Mezery mezi písmeny','track',-20,12,0.5)}
     ${S.trackEm!=null?slider('Mezery mezi písmeny – hlavní řádek','trackEm',-24,12,0.5):''}
-    ${slider('Zúžení písma','cond',60,100,1,'%')}
+    ${slider('Šířka písma (zúžit / roztáhnout)','cond',60,130,1,'%')}
     ${slider('Řádkování','gap',30,140,1,'%')}
     <div class="clabel">Řádky zvlášť</div>
     <div class="note">Každý řádek posuneš samostatně – ostatní zůstanou na místě.</div>

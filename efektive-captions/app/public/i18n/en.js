@@ -1152,5 +1152,8 @@ window.I18N_DICT.en={
 "Načítám AI model…": "Loading AI model…",
 "AI maže a dopočítává…": "AI is erasing and filling in…",
 "Skládám…": "Compositing…",
-"Srovnávám svislice…": "Straightening verticals…"
+"Srovnávám svislice…": "Straightening verticals…",
+"Záře i na vedlejších řádcích (bílý glow)": "Glow on secondary lines too (white glow)",
+"Šířka písma (zúžit / roztáhnout)": "Font width (condense / stretch)",
+"Saira Black (široké, hranaté)": "Saira Black (wide, squared)"
 };
