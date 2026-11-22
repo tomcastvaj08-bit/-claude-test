@@ -223,7 +223,7 @@ $('fileIn').onchange=async e=>{
   // nový projekt se zvolenou šablonou
   E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; if (window.HEAD) HEAD.data=null; if (window.PERSON) PERSON.data=null; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
-  const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, t?t.set:E.TEMPLATES.base.set);
+  const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, tplOwn(t?t.set:E.TEMPLATES.base.set));
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ const d={...dflt}; for (const k of ['reMode','faceStab','behind','noSlots','emEach']) delete d[k]; Object.assign(E.G, d); mixDefaults(d); }
   // nové video = vždy obyčejné titulky: Reality, stabilizace a text za postavou se zapínají až ručně
   { const keep=E.G; E.G=Object.assign({},E.G0,keep); const B=E.TEMPLATES.base.set;
@@ -709,6 +709,9 @@ function setVal(key,val,noHist){
   if (REBUILD.has(key)) E.buildPages();
   if (!noHist) changed(); else { scheduleSave(); }
 }
+// volby, které má jen pár šablon (Styl 25) – při přepnutí na jinou šablonu se vrátí na vypnuto, ať se nepřenesou
+const TPL_OWN=['minMainWords','breakComma','balanceEnd','glowSec'];
+function tplOwn(set){ const o={...set}; for (const k of TPL_OWN) if (!(k in o)) o[k]=null; return o; }
 function setMany(obj){ for (const [k,v] of Object.entries(obj)) setVal(k,v,true); changed(); }
 function scopeHTML(){ return `<div class="scope" id="scopeSw"><div data-v="all" class="${scope==='all'?'on':''}">Použít na všechny titulky</div><div data-v="one" class="${scope==='one'?'on':''}">Jen tento titulek</div></div>`; }
 function bindScope(){ const s=$('scopeSw'); if (!s) return; s.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; scope=d.dataset.v; renderPanel(); }; }
@@ -1194,7 +1197,7 @@ binders.templates=()=>{
   $('tplgrid').onclick=e=>{
     const d=e.target.closest('[data-del]'); if (d){ e.stopPropagation(); const c=customTemplates(); delete c[d.dataset.del]; lsSet('efk_custom',c); renderPanel(); return; }
     const c=e.target.closest('.tpl'); if(!c) return; const t=E.TEMPLATES[c.dataset.k]||customTemplates()[c.dataset.k]; if(!t) return;
-    const set={...t.set}; delete set.posY; delete set.posX; // pozici (pod obličej) šablona nepřepisuje
+    const set=tplOwn(t.set); delete set.posY; delete set.posX; // pozici (pod obličej) šablona nepřepisuje
     setMany({...set, style:c.dataset.k}); renderPanel(); toast('Šablona „'+t.name+'“ '+(scope==='all'?'na všechny titulky':'na tento titulek'));
   };
   if ($('quickFx')) $('quickFx').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; const k=c.dataset.k, S=cur();

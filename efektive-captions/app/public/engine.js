@@ -123,7 +123,7 @@ E.FONTS = [
   [ST('Noteworthy','"Caveat", cursive'),700,'Noteworthy Bold'],[ST('Noteworthy','"Caveat", cursive'),300,'Noteworthy Light'],
   [ST('Snell Roundhand','"Pinyon Script", "Dancing Script", cursive'),700,'Snell Roundhand'],['"Pinyon Script"',400,'Pinyon Script (jako Snell, s háčky)'],
   ['"Playfair Display"',700,'Playfair'],['"Playfair Display"',900,'Playfair Black'],['"Playfair Display"',900,'Playfair Black Italic',true],
-  ['"Saira"',900,'Saira Black (široké, hranaté)'],['"Saira"',700,'Saira Bold'],
+  ['"Saira Expanded"',900,'Saira Expanded Black (široké, hranaté)'],['"Saira Expanded"',800,'Saira Expanded (široké, hranaté)'],['"Saira"',900,'Saira Black'],['"Saira"',700,'Saira Bold'],
   ['"Anton"',400,'Anton'],['"Bebas Neue"',400,'Bebas Neue'],['"Oswald"',700,'Oswald'],['"Nunito"',900,'Nunito Black'],
 ];
 
@@ -199,12 +199,12 @@ E.TEMPLATES = {
   T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, layout:'center', enterBy:'line', caseSec:'lower', caseMain:'title', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
     pv:pv('začněte mě','Sledovat',gr('#b8ff0a 40%','#008000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
   // Styl 25 – široké hranaté písmo, bílý řádek nahoře, hlavní slovo VELKÝMI zeleně se silnou září, přilet zleva se stopou
-  T.glow_zelena={cat:'trending', name:'', set:{...common, fontMain:'"Saira"',wMain:900,fontEm:'"Saira"',wEm:900,mainItalic:false,emItalic:false,cond:118,size:92,emScale:104,track:-1,trackEm:-1,gap:150,wordGap:95,
-    layout:'center',maxLines:2,mainLine:'2',wpp:3,singleSec:false,posX:50,posY:63,tilt:0,tiltX:0,tiltAlt:false,kinetic:0,rot:0,
-    cText:'#ffffff',cText2:'#ffffff',textGrad:false,grad:false,c1:'#3dff3a',c2:'#3dff3a',c3:'#3dff3a',c4:'#3dff3a',altOn:false,
-    glow:88,glowMode:'always',glowSec:true,shadowSize:34,shadowA:70,shadowDist:4,cShadow:'#000000',extrude:0,negativ:false,gloss:'off',
-    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',enter:'none',enterBy:'line',fadeOut:true,exitScale:null,exitDur:0.12,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
-    pv:'<span style="font-family:Saira;font-weight:900;font-stretch:118%;color:#fff;text-shadow:0 0 8px rgba(255,255,255,.6)">to říkají</span><br><b style="font-family:Saira;font-weight:900;color:#3dff3a;text-shadow:0 0 10px #3dff3a,0 0 22px #3dff3a">BANKY,</b>'};
+  T.glow_zelena={cat:'trending', name:'', set:{...common, fontMain:'"Saira Expanded"',wMain:900,fontEm:'"Saira Expanded"',wEm:900,mainItalic:false,emItalic:false,cond:97,size:54,emScale:106,track:0,trackEm:0,gap:112,wordGap:85,
+    layout:'center',maxLines:2,mainLine:'2',wpp:4,minMainWords:3,breakComma:true,balanceEnd:true,singleSec:true,posX:50,posY:58,tilt:0,tiltX:0,tiltAlt:false,kinetic:0,rot:0,
+    cText:'#ffffff',cText2:'#ffffff',textGrad:false,grad:true,gradDir:'hc',gA:'#1abb1c',gB:'#b4f2b4',c1:'#1abb1c',c2:'#1abb1c',c3:'#1abb1c',c4:'#1abb1c',altOn:false,
+    glow:75,glowMode:'always',glowSec:true,shadowSize:30,shadowA:95,shadowDist:14,cShadow:'#000000',extrude:0,negativ:false,gloss:'off',punct:true,
+    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
+    pv:'<span style="font-family:\'Saira Expanded\';font-weight:900;color:#fff;text-shadow:0 3px 4px rgba(0,0,0,.7)">to říkají</span><br><b style="font-family:\'Saira Expanded\';font-weight:900;background:linear-gradient(90deg,#1abb1c,#b4f2b4 48%,#1abb1c);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 6px #1aa81c)">BANKY,</b>'};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
@@ -272,6 +272,7 @@ E.buildPages = () => {
     // titulek s řádky napsanými ručně v bublině (Enter = nový řádek): drží slova i řádky přesně tak, jak jsou napsané
     if (c && c.manual && !w.br){ if (w.nl) c.lines.push([i]); else c.lines[c.lines.length-1].push(i); c.b=i; continue; }
     let br = !c || w.br || (prev && w.s-prev.e > 0.6) || (prev && endsSentence(prev)) || (prev && E.inZone(prev));
+    if (!br && c && G.breakComma && prev && /,["“”»)]*$/.test(prev.raw||'') && (i-c.a)>=2) br=true;   // čárka po 2+ slovech = nový titulek (Styl 25)
     if (!br && c){
       if (fill){
         if ((i-c.a) >= G.wpp) br=true;
@@ -286,9 +287,14 @@ E.buildPages = () => {
         const L=c.lines[c.lines.length-1], len=L.reduce((a,j)=>a+W[j].t.length+1,0)+w.t.length;
         if (len>G.maxChars){ if (c.lines.length>=G.maxLines) br=true; else { c.lines.push([i]); c.b=i; continue; } }
         else { L.push(i); c.b=i; continue; }
-      } else if ((i-c.a) >= G.wpp) br=true;
+      } else if ((i-c.a) >= (c.lim||G.wpp)) br=true;
     }
-    if (br){ if(c) pages.push(c); const man=!!(E.meta[w.id] && E.meta[w.id].ml); c={a:i,b:i,lines:(man||G.maxChars>0||fill)?[[i]]:null,fill:fill&&!man,manual:man}; if (man) continue; } else { c.b=i; }
+    if (br){ if(c) pages.push(c); const man=!!(E.meta[w.id] && E.meta[w.id].ml); c={a:i,b:i,lines:(man||G.maxChars>0||fill)?[[i]]:null,fill:fill&&!man,manual:man}; if (man) continue;
+      // Styl 25 (balanceEnd): dlouhá věta se rozdělí rovnoměrně a víc slov dostane její konec („Víte kam“ | „prý nic / NEDOSTANETE?“)
+      if (G.balanceEnd && !fill && !(G.maxChars>0)){ let j=i+1; for (; j<W.length; j++){ const q=W[j], pq=W[j-1];
+          if (q.br || E.inZone(q) || q.s-pq.e>0.6 || endsSentence(pq) || (G.breakComma && /,["“”»)]*$/.test(pq.raw||'') && j-i>=2)) break; }
+        const n=j-i, k2=Math.ceil(n/G.wpp); c.lim = k2>1 ? Math.max(1,Math.floor(n/k2)) : G.wpp; }
+    } else { c.b=i; }
   }
   if (c) pages.push(c);
   pages.forEach(p=>{ const m=E.meta[W[p.a].id]; p.s=(m && m.so!=null)?m.so:W[p.a].s; });
@@ -329,6 +335,7 @@ E.groupsOf = (p,S) => {
   if (manual.length && !p.manual){ const e0=Math.min(...manual), e1=Math.max(...manual);
     return [{ids:range(p.a,e0-1),em:false},{ids:range(e0,e1),em:true},{ids:range(e1+1,p.b),em:false}].filter(g=>g.ids.length); }
   const n=p.b-p.a+1, ids=range(p.a,p.b), ml=String(S.mainLine);
+  if (S.minMainWords && n<S.minMainWords && !p.manual) return [{ids,em:false}];   // krátký titulek = jen bílý řádek (Styl 25)
   if (ml==='word' && !p.manual){ let best=p.a,len=0; for(let i=p.a;i<=p.b;i++){ const L=letters(W[i]); if(L>len){len=L;best=i;} }
     return [{ids:range(p.a,best-1),em:false},{ids:[best],em:true},{ids:range(best+1,p.b),em:false}].filter(g=>g.ids.length); }
   if (ml==='none' && !p.manual) return [{ids,em:false}];
@@ -381,7 +388,7 @@ const easeElastic = x => x===0?0:x===1?1:Math.pow(2,-10*x)*Math.sin((x*10-0.75)*
 E.ease={easeBack,easeBounce,easeElastic};
 // ČEŠTINA VŽDY CELÁ: (1) systémové písmo (iPhone), které nemá všechna česká písmena, se nepoužije – celý text jde
 // náhradním písmem ze stacku (žádné míchání písem v jednom slově); (2) u přibalených písem se hned načte i část s háčky/čárkami.
-const CZ_TEST='ÁáČčĎďÉéĚěÍíŇňÓóŘřŠšŤťÚúŮůÝýŽž', BUNDLED=new Set(['Inter Tight','Inter','Montserrat','Poppins','Roboto','Rubik','Nunito','Playfair Display','Libre Baskerville','Courier Prime','Bodoni Moda','Caveat','Dancing Script','Anton','Bebas Neue','Oswald','Outfit','Open Sans','Pinyon Script','Schibsted Grotesk','Saira']);
+const CZ_TEST='ÁáČčĎďÉéĚěÍíŇňÓóŘřŠšŤťÚúŮůÝýŽž', BUNDLED=new Set(['Inter Tight','Inter','Montserrat','Poppins','Roboto','Rubik','Nunito','Playfair Display','Libre Baskerville','Courier Prime','Bodoni Moda','Caveat','Dancing Script','Anton','Bebas Neue','Oswald','Outfit','Open Sans','Pinyon Script','Schibsted Grotesk','Saira','Saira Expanded']);
 const czCache=new Map(), czLoaded=new Set();
 function famList(st){ return (st.match(/"[^"]+"|'[^']+'|[^,]+/g)||[]).map(x=>x.trim()).filter(Boolean); }
 function czOk(name){ const tc=(czOk.c||(czOk.c=document.createElement('canvas').getContext('2d'))); const w=f=>{ tc.font=`100px ${name}, ${f}`; return CZ_TEST.split('').map(ch=>tc.measureText(ch).width.toFixed(1)).join(); }; return w('monospace')===w('serif'); }
@@ -488,13 +495,13 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
     if (typeof fill!=='string'){
       const p=fd.split('|');
       if (p[0]==='t'){ f=m.createLinearGradient(0,-px*0.36,0,px*0.36); f.addColorStop(0,p[1]); f.addColorStop(1,p[2]); }
-      else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; f=dir==='h'?m.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?m.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):m.createLinearGradient(0,-px*gsp,0,px*gsp); f.addColorStop(0,p[4]); if (hold>0) f.addColorStop(Math.min(0.9,hold),p[4]); f.addColorStop(1,p[5]); }
+      else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; if (dir==='hc'){ f=m.createLinearGradient(-ww/2,0,ww/2,0); f.addColorStop(0,p[4]); f.addColorStop(0.16,p[4]); f.addColorStop(0.48,p[5]); f.addColorStop(0.8,p[4]); f.addColorStop(1,p[4]); } else f=dir==='h'?m.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?m.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):m.createLinearGradient(0,-px*gsp,0,px*gsp); f.addColorStop(0,p[4]); if (hold>0) f.addColorStop(Math.min(0.9,hold),p[4]); f.addColorStop(1,p[5]); }
     }
     if (ex>0){
       // 3D hloubka: písmo „nakopírované za sebe“ ve stejných barvách (kopie se kreslí jen jednou – obrázek je v mezipaměti)
       const t=document.createElement('canvas'); t.width=W; t.height=H; const tc=t.getContext('2d');
       setFont(tc,L.fam,L.wt,L.it,px,tk); tc.textBaseline='middle'; tc.textAlign='center'; tc.translate(cx,cy);
-      let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[4]); if (hold>0) tf.addColorStop(Math.min(0.9,hold),p[4]); tf.addColorStop(1,p[5]); } }
+      let tf=f; if (typeof f!=='string'){ const p=fd.split('|'); if (p[0]==='t'){ tf=tc.createLinearGradient(0,-px*0.36,0,px*0.36); tf.addColorStop(0,p[1]); tf.addColorStop(1,p[2]); } else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; if (dir==='hc'){ tf=tc.createLinearGradient(-ww/2,0,ww/2,0); tf.addColorStop(0,p[4]); tf.addColorStop(0.16,p[4]); tf.addColorStop(0.48,p[5]); tf.addColorStop(0.8,p[4]); tf.addColorStop(1,p[4]); } else tf=dir==='h'?tc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?tc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):tc.createLinearGradient(0,-px*gsp,0,px*gsp); tf.addColorStop(0,p[4]); if (hold>0) tf.addColorStop(Math.min(0.9,hold),p[4]); tf.addColorStop(1,p[5]); } }
       tc.fillStyle=tf;
       const dark = S.extrudeStyle==='dark';
       // světlá: jemné kopie s menším posunem do strany; tmavá (jako v Photoshopu): plné kopie po 1 px šikmo vpravo dolů, výrazně tmavší
@@ -534,7 +541,7 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
       let ff=fill; fc.translate(cx,cy);
       if (typeof fill!=='string'){ const p=fd.split('|');
         if (p[0]==='t'){ ff=fc.createLinearGradient(0,-px*0.36,0,px*0.36); ff.addColorStop(0,p[1]); ff.addColorStop(1,p[2]); }
-        else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; ff=dir==='h'?fc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?fc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):fc.createLinearGradient(0,-px*gsp,0,px*gsp); ff.addColorStop(0,p[4]); if (hold>0) ff.addColorStop(Math.min(0.9,hold),p[4]); ff.addColorStop(1,p[5]); } }
+        else if (p[0]==='g'){ const dir=p[1], gsp=+p[2], hold=+p[3]||0, ww=+p[6]||half*2; if (dir==='hc'){ ff=fc.createLinearGradient(-ww/2,0,ww/2,0); ff.addColorStop(0,p[4]); ff.addColorStop(0.16,p[4]); ff.addColorStop(0.48,p[5]); ff.addColorStop(0.8,p[4]); ff.addColorStop(1,p[4]); } else ff=dir==='h'?fc.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?fc.createLinearGradient(-ww/2,-px*gsp,ww/2,px*gsp):fc.createLinearGradient(0,-px*gsp,0,px*gsp); ff.addColorStop(0,p[4]); if (hold>0) ff.addColorStop(Math.min(0.9,hold),p[4]); ff.addColorStop(1,p[5]); } }
       fc.fillStyle=ff; fillT(fc,s,0,0,px,tk); fc.setTransform(1,0,0,1,0,0);
       const ta=mt.actualBoundingBoxAscent||px*0.36, td=mt.actualBoundingBoxDescent||px*0.36, y0=cy-ta, y1=cy+td;
       const atop=(draw,al,bl)=>{ fc.save(); fc.globalCompositeOperation='source-atop'; fc.globalAlpha=Math.min(1,al); if (bl>0.3) fc.filter=`blur(${bl.toFixed(1)}px)`; draw(fc); fc.restore(); };
@@ -561,11 +568,60 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
 // odchod FLICKER: posledních ~0,33 s titulek bliká (zap / skoro vyp) s čím dál delší tmou a zhasne – po krocích 1/30 s, stejně v náhledu i exportu
 const FLICK_DUR=0.33, FLICK=[1,0.12,1,0.9,0.06,0.75,0,0.5,0,0.22,0];
 function flickA(left){ if (left>=FLICK_DUR) return 1; if (left<=0) return 0; const i=Math.min(FLICK.length-1,Math.floor((FLICK_DUR-left)*30)); return FLICK[i]; }
+// ---- Styl 25: odhalení hlavního řádku po písmenech (zleva, rozmazaně → ostře, celý řádek lehce dojede doprava) ----
+const GLOW_REV=0.38; let REVC=null, REVB=null, REVB2=null;
+function mixHex(a,b,t){ const A=parseInt(a.slice(1),16), B=parseInt(b.slice(1),16), f=(x,y)=>Math.round(x+(y-x)*t); return '#'+[f(A>>16&255,B>>16&255),f(A>>8&255,B>>8&255),f(A&255,B&255)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+function glowReveal(c,w,L,x,wWidth,since,S,k){
+  // Kreslí se přímo hotový obrázek slova (stejný jako po odhalení), jen rozřezaný na písmena → na konci žádný skok barev ani záře.
+  const [mA,mB]=mainColor(S,k), tk=L.track??S.track;
+  // pořadí písmene v celém řádku (víc slov = jedna souvislá vlna)
+  const wi=E.words.indexOf(w), words=L.ids.map(i=>E.txt(E.words[i],S,true)), pos=L.ids.indexOf(wi);
+  let before=0; for (let i=0;i<pos;i++) before+=chars(words[i]).length+1; const total=Math.max(1,words.reduce((a,s2)=>a+chars(s2).length,0)+words.length-1);
+  const s=E.txt(w,S,true), ch=chars(s), W0=Math.min(cv.width,cv.height);
+  const sq=clamp(since/0.3), slide=-Math.pow(1-sq,2)*W0*0.065;   // celý řádek dojede o ~6,5 % šířky doprava (změřeno z předlohy)
+  setFont(c,L.fam,L.wt,L.it,L.px,tk); c.textBaseline='middle'; c.textAlign='center';
+  const full=measureT(c,s,L.px,tk), ww=wWidth/(L.cond||1), gs=S.gradSpan||0.5;
+  const fd = S.grad ? `g|${S.gradDir}|${gs}|${S.gradHold||0}|${mA}|${mB}|${(S.gradDir==='v')?0:Math.round(ww)}` : `c|${mA}`;
+  const sp=wordSprite('main',s,L,tk,fd,S.grad?{}:mA,S,mA), gl=S.glow>0?wordSprite('glow',s,L,tk,fd,S.grad?{}:mA,S,mA):null;
+  c.translate(x+wWidth/2+slide, L.y); c.scale(L.cond||1,1);
+  const base=c.globalAlpha, gA=0.35+S.glow/100*0.5, m=(gl && c!==ctx)?glowMaskCtx():null;
+  if (m){ E._glowColor=mA; E._glowUsed=true; m.save(); m.setTransform(c.getTransform()); m.font=c.font; if('letterSpacing' in m) m.letterSpacing=c.letterSpacing; m.textBaseline='middle'; m.textAlign='center'; m.fillStyle=mA; }
+  const edge=i=>i<=0?-1e5:i>=ch.length?1e5:-full/2+measureT(c,ch.slice(0,i).join(''),L.px,tk);   // hranice mezi písmeny (souřadnice slova)
+  // obrázek slova vynásobený maskou po písmenech (jeden obrázek = žádné švy mezi písmeny); bl>1 = hladké rozostření (zmenšení → zvětšení, i v Safari)
+  const masked=(img,segs,al,bl)=>{ if (!segs.length||al<=0) return; const W=img.cv.width, H=img.cv.height;
+    if (!REVC){ REVC=document.createElement('canvas'); REVB=document.createElement('canvas'); REVB2=document.createElement('canvas'); }
+    if (REVC.width<W) REVC.width=W; if (REVC.height<H) REVC.height=H; const r2=REVC.getContext('2d');
+    r2.globalCompositeOperation='copy'; r2.globalAlpha=1; r2.drawImage(img.cv,0,0); r2.globalCompositeOperation='destination-in';
+    const g=r2.createLinearGradient(0,0,W,0), P=v=>clamp((-img.x+v)/W);
+    // sousední písmena navazují přímo (bez mezikroku přes 0 – jinak by mezi nimi po rozostření byla mezera)
+    const A=v=>`rgba(0,0,0,${v})`; g.addColorStop(P(segs[0].l),A(0)); segs.forEach((sg,n)=>{ const nx=segs[n+1]; g.addColorStop(P(sg.l),A(sg.al)); g.addColorStop(P(sg.r),A(sg.al)); if (!nx || nx.l!==sg.r) g.addColorStop(P(sg.r),A(0)); });
+    r2.fillStyle=g; r2.fillRect(0,0,W,H); r2.globalCompositeOperation='source-over';
+    c.globalAlpha=base*al;
+    if (!(bl>1)){ c.drawImage(REVC,0,0,W,H,img.x,img.y,W,H); return; }
+    const fx=Math.max(1,bl*0.8), fy=Math.max(1,bl*0.35), w1=Math.max(1,Math.ceil(W/fx)), h1=Math.max(1,Math.ceil(H/fy));
+    REVB.width=w1; REVB.height=h1; const b1=REVB.getContext('2d'); b1.imageSmoothingEnabled=true; b1.imageSmoothingQuality='high'; b1.drawImage(REVC,0,0,W,H,0,0,w1,h1);
+    REVB2.width=w1*2; REVB2.height=h1*2; const b2=REVB2.getContext('2d'); b2.imageSmoothingEnabled=true; b2.imageSmoothingQuality='high'; b2.drawImage(REVB,0,0,w1*2,h1*2);
+    const sm=c.imageSmoothingEnabled; c.imageSmoothingEnabled=true; c.drawImage(REVB2,0,0,w1*2,h1*2,img.x,img.y,w1*fx,h1*fy); c.imageSmoothingEnabled=sm; };
+  const segs=[], gseg=[];
+  for (let i=0;i<ch.length;i++){
+    // objevení jede rychle zleva doprava, zaostření je pomalejší a skoro najednou pro celé slovo (jako v předloze)
+    const li=before+i, t0=li/total*0.16, q=clamp((since-t0)/0.08); if (q<=0) continue;
+    const e=q*q*(3-2*q), l=edge(i), r=edge(i+1);
+    if (gl){ if (m){ m.globalAlpha=base*e*e; const pre=l<-1e4?-full/2:l, cw=measureT(c,ch[i],L.px,tk); fillT(m,ch[i],pre+cw/2,0,L.px,tk); }
+             else gseg.push({l,r,al:e*e}); }
+    segs.push({l,r,al:e});
+  }
+  const qb=clamp((since-(before/total)*0.16*0.3-0.02)/0.3), eb=qb*qb*(3-2*qb), bl=(1-eb)*L.px*0.38;
+  if (gl && !m) masked(gl,gseg,gA,0);
+  masked(sp,segs,1,bl);
+  if (m) m.restore();
+  c.globalAlpha=base;
+}
 function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // dvouprůchodové kreslení negativu s 3D náklonem: v každém průchodu jen „jeho“ slova
   if (E._negPass){ const neg=!!(L.em && S.negativ); if ((E._negPass==='skip' && neg) || (E._negPass==='only' && !neg)) return; }
   const flick = S.fadeOut && S.exitFlick;
-  const exitDur = flick ? FLICK_DUR : S.anim==='reel' ? 0.11 : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
+  const exitDur = flick ? FLICK_DUR : S.anim==='glowslide' ? 0.001 : S.anim==='reel' ? 0.11 : S.exitScale!=null ? (S.exitDur||0.1) : (S.fadeOut?0.3:0.1);
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
   let st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
@@ -597,11 +653,10 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     const xo=1-exit; if (xo>0){ const xe=xo*xo, d1=xe*Wm*0.75; dx+=d1; dy+=xe*L.px*0.5; er+=xe*0.14; trail=-d1*0.6; a=Math.max(0,1-xo*0.5); }
   }
   else if (S.anim==='glowslide'){
-    // hlavní (zářící) řádek přiletí ZLEVA se stopou pohybu, vedlejší řádek se jen rychle objeví
+    // Styl 25: bílý řádek se objeví hned (střih), zelený se odhaluje po písmenech zleva (viz glowReveal níž); odchod = střih
     if (since<0) return;
-    const Wm=Math.min(cv.width,cv.height);
-    if (L.em){ const q=clamp(since/0.2), e=1-Math.pow(1-q,3), d0=-(1-e)*Wm*0.42; dx+=d0; trail=d0*0.85; a=clamp(since/0.05)*exA; }
-    else { const q=clamp(since/0.1); a=q*exA; sc=0.97+0.03*q; }
+    a = (t<p.e) ? 1 : 0;
+    if (L.em && since<GLOW_REV){ c.save(); c.globalAlpha=(S.opacity??100)/100; glowReveal(c,w,L,x,wWidth,since,S,k); c.restore(); return; }
   }
   else if (S.anim==='whip'){
     // jako v realitních reels: slovo vystřelí ze strany (řádky střídavě zleva / zprava), prudce dobrzdí, s rozmazáním pohybu
@@ -665,15 +720,16 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   let fill=L.em?mA:S.cText;
   const gs=S.gradSpan||0.5, ww=wWidth/(L.cond||1);
   if (!L.em && S.textGrad && S.cText2 && S.cText2!==S.cText){ const g=c.createLinearGradient(0,-L.px*0.36,0,L.px*0.36); g.addColorStop(0,S.cText); g.addColorStop(1,S.cText2); fill=g; }
-  if (L.em && S.grad){ const dir=S.gradDir, g=dir==='h'?c.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?c.createLinearGradient(-ww/2,-L.px*gs,ww/2,L.px*gs):c.createLinearGradient(0,-L.px*gs,0,L.px*gs); g.addColorStop(0,mA); if (S.gradHold>0) g.addColorStop(Math.min(0.9,S.gradHold),mA); g.addColorStop(1,mB); fill=g; }   // gradHold: světlá barva drží větší část písmene
+  if (L.em && S.grad && S.gradDir==='hc'){ const g=c.createLinearGradient(-ww/2,0,ww/2,0); g.addColorStop(0,mA); g.addColorStop(0.16,mA); g.addColorStop(0.48,mB); g.addColorStop(0.8,mA); g.addColorStop(1,mA); fill=g; }
+  else if (L.em && S.grad){ const dir=S.gradDir, g=dir==='h'?c.createLinearGradient(-ww/2,0,ww/2,0):dir==='d'?c.createLinearGradient(-ww/2,-L.px*gs,ww/2,L.px*gs):c.createLinearGradient(0,-L.px*gs,0,L.px*gs); g.addColorStop(0,mA); if (S.gradHold>0) g.addColorStop(Math.min(0.9,S.gradHold),mA); g.addColorStop(1,mB); fill=g; }   // gradHold: světlá barva drží větší část písmene
   let gMul=1; if (S.glowMode==='entrance') gMul = clamp(1-(since-0.15)/0.6);
   const burn = !(L.em&&S.negativ) && blur<=0.5;
   if (burn){
     // Text i se stínem jako jeden „vypálený“ obrázek: stín se natáčí, zmenšuje a mizí přesně s písmem
-    const fd = L.em ? (S.grad ? `g|${S.gradDir}|${gs}|${S.gradHold||0}|${mA}|${mB}|${S.gradDir==='v'?0:Math.round(ww)}` : `c|${mA}`) : (S.textGrad && S.cText2 && S.cText2!==S.cText ? `t|${S.cText}|${S.cText2}` : `c|${S.cText}`);
+    const fd = L.em ? (S.grad ? `g|${S.gradDir}|${gs}|${S.gradHold||0}|${mA}|${mB}|${(S.gradDir==='v')?0:Math.round(ww)}` : `c|${mA}`) : (S.textGrad && S.cText2 && S.cText2!==S.cText ? `t|${S.cText}|${S.cText2}` : `c|${S.cText}`);
     const gCol = L.em ? mA : S.cText, gSec = !L.em;   // záře i na vedlejších řádcích (glowSec)
     if ((L.em || S.glowSec) && S.glow>0 && gMul>0){
-      E._glowColor=gCol; if (gSec) gMul*=0.55;
+      E._glowColor=gCol; if (gSec) gMul*=0.35;
       if (c===ctx){
         const g=wordSprite('glow',s,L,tk,fd,fill,S,gCol);
         c.save(); c.shadowColor='transparent'; c.globalAlpha*=gMul*(0.35+S.glow/100*0.5); c.drawImage(g.cv,g.x,g.y); c.restore();
