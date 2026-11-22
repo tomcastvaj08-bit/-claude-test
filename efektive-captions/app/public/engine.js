@@ -1303,14 +1303,14 @@ E.applyFacePositions = () => {
 // vygeneruje zvuk do libovolného AudioContextu (živě i do offline exportu)
 E.trCustom = {};   // vlastní zvuky přechodů: typ přechodu → {buf (AudioBuffer), peak (s – nejsilnější místo)}
 E.bank = {};       // zvuková sada appky (public/sfx): jméno → {buf, peak}
-E.BANK_WORD = { mtick:['tick',0.2], mswoosh:['wooshm',0.3] };   // mini zvuky na slova (velmi tiché)
+E.BANK_WORD = {};   // staré mini zvuky na slova vyřazené   // mini zvuky na slova (velmi tiché)
 // výchozí zvuky podle typu zvuku v předlohách (tunel: klesající svist, propad: krátký nádech, průlet: svist, záblesk: cvak)
-E.BANK_TR = { warp:'wooshh', tunnel:'wooshh', flysway:'wooshh', push1:'woosh', pushsway:'woosh', push:'woosh', pushb:'woosh', pushr:'wooshk', swing:'woosh', swingn:'woosh', flashw:'click', flash2:'glitch' };   // pohybové přechody = čistý woosh
+E.BANK_TR = {};   // přechody ve výchozím stavu bez zvuku   // pohybové přechody = čistý woosh
 // zvuky, ze kterých si jde u přechodu vybrat (výchozí = podle typu přechodu)
 // KNIHOVNA ZVUKŮ (public/sfx/lib): uživatel si je přidává sám (Zvuk → Knihovna) nebo vybere k přechodu. Pořadí = pořadí v nabídce (foťák nahoře).
 E.SFXLIB = [["camera_flash", "Camera Flash"], ["camera_shutter", "Camera Shutter"], ["camera_click", "Camera Click"], ["whoosh", "Whoosh"], ["pop", "Pop"], ["click", "Click"], ["mouse_click", "Mouse Click"], ["keyboard_typing", "Keyboard Typing"], ["mac_typing", "Mac Typing"], ["ding", "Ding"], ["ding_2", "Ding 2"], ["chime", "Chime"], ["riser", "Riser"], ["metallic_riser", "Metallic Riser"], ["punch_stop_riser", "Punch Stop Riser"], ["bass_drop", "Bass Drop"], ["cinematic_impact", "Cinematic Impact"], ["glitch", "Glitch"], ["gear", "Gear"], ["iphone_charging", "iPhone Charging"]];
 // MEMES – vtipné zvuky (jen do panelu Zvuk, ne k přechodům)
-E.SFXMEME = [["meme_taco_bell", "Taco Bell"], ["meme_vine_boom", "Vine Boom"], ["meme_yellow_undertale", "Yellow Undertale"], ["meme_awkward", "Awkward"], ["meme_violin_screech", "Violin Screech"], ["meme_correct", "Correct"], ["meme_anime_wow", "Anime Wow"], ["meme_akhh", "Akhh"], ["meme_kaching", "Kaching"], ["meme_roblox", "Roblox"], ["meme_tindeck", "Tindeck"], ["meme_ceeday_huh", "Ceeday Huh"], ["meme_dry_fart", "Dry Fart"], ["meme_metal_bar", "Metal Bar"], ["meme_doge_bonk", "Doge Bonk"], ["meme_goofy_bonk", "Goofy Bonk"], ["meme_flashbang", "Flashbang"], ["meme_disappearing_scream", "Disappearing Scream"], ["meme_get_out", "GET OUT!"], ["meme_plankton_aughh", "Plankton - Aughh"], ["meme_boo_womp", "Boo-Womp (Spongebob)"], ["meme_awkward_pause", "Awkward Pause"], ["meme_alien_annihilation", "The Alien Annihilation"], ["meme_angle_grinder", "Angle Grinder"], ["meme_fortnite_death", "Fortnite Death"], ["meme_tiktok_core", "TikTok Core Sound FX"], ["meme_wah_wah_fail", "Wah Wah Wah Fail"], ["meme_1", "Meme 1"], ["meme_2", "Meme 2"], ["meme_3", "Meme 3"], ["meme_4", "Meme 4"], ["meme_5", "Meme 5"], ["meme_6", "Meme 6"]];
+E.SFXMEME = [["meme_taco_bell", "Taco Bell"], ["meme_vine_boom", "Vine Boom"], ["meme_yellow_undertale", "Yellow Undertale"], ["meme_awkward", "Awkward"], ["meme_violin_screech", "Violin Screech"], ["meme_correct", "Correct"], ["meme_anime_wow", "Anime Wow"], ["meme_akhh", "Akhh"], ["meme_kaching", "Kaching"], ["meme_roblox", "Roblox"], ["meme_tindeck", "Tindeck"], ["meme_ceeday_huh", "Ceeday Huh"], ["meme_dry_fart", "Dry Fart"], ["meme_metal_bar", "Metal Bar"], ["meme_doge_bonk", "Doge Bonk"], ["meme_goofy_bonk", "Goofy Bonk"], ["meme_flashbang", "Flashbang"], ["meme_disappearing_scream", "Disappearing Scream"], ["meme_get_out", "GET OUT!"], ["meme_plankton_aughh", "Plankton - Aughh"], ["meme_boo_womp", "Boo-Womp (Spongebob)"], ["meme_awkward_pause", "Awkward Pause"], ["meme_alien_annihilation", "The Alien Annihilation"], ["meme_angle_grinder", "Angle Grinder"], ["meme_fortnite_death", "Fortnite Death"], ["meme_tiktok_core", "TikTok Core Sound FX"], ["meme_wah_wah_fail", "Wah Wah Wah Fail"], ["meme_1", "Sound Effect Meme 1"], ["meme_2", "Sound Effect Meme 2"], ["meme_3", "Sound Effect Meme 3"], ["meme_4", "Sound Effect Meme 4"], ["meme_5", "Sound Effect Meme 5"], ["meme_6", "Sound Effect Meme 6"]];
 E.TRSND = [['auto','Bez zvuku (výchozí)'],...E.SFXLIB.map(([k,l])=>['lib:'+k,l])];   // jen zvuky z knihovny   // jen swooshe a glitche (cinkavé zvuky pryč)
 E.sfxInto = (ac, dest, t0, type, vol, dur, buf) => {
   if (!type || type==='none') return;
@@ -1400,7 +1400,7 @@ E.sfxEvents = () => {
   const ev=[], G=E.G;
   if (G.sfxAll===false) return ev;   // hlavní vypínač všech zvukových efektů
   // SHINE: zvuk ve chvíli, kdy lesk přejede (běžné titulky, 3D mix, zvýrazněné objekty)
-  const sh=E.bank.shine, sv=(G.shineSfxVol??20)/100;
+  const sh=E.bank['lib:'+(G.shineSnd||'ding_2')], sv=(G.shineSfxVol??20)/100;   // zvuk shine z knihovny (vybírá se v SFX)
   if (sh && G.sfxShineOn!==false && sv>0){
     const at=t=>ev.push({t:t-sh.peak, type:'custom', buf:sh.buf, vol:sv, kind:'shine'});
     if (G.mix3d){ /* 3D mix: shine bez zvuku – na slova hraje jen mini swoosh (níž) */ }
@@ -1411,10 +1411,10 @@ E.sfxEvents = () => {
     for (const o of E.objs||[]){ if (!o.shine || o.shSfx===false) continue; if (window.OBJ && OBJ.shineWin) OBJ.shineWin(o); if (o.shS!=null) at(o.shS+0.05); }
   }
   // 3D mix: jemný mini swoosh při každém slově (slovo se objeví 0,08 s před svým časem – i posuny)
-  const sw=E.bank.wooshm, mv=(G.moveSfxVol??30)/100;
+  const sw=E.bank['lib:whoosh'], mv=(G.moveSfxVol??30)/100;
   if (sw && G.mix3d && E.mixPlan && G.sfxMoveOn!==false && mv>0){ let plan=null; try{ plan=E.mixPlan(); }catch(e){}
     if (plan) for (const L of plan.lines) for (const i of L.ids){ const w=E.words[i]; if (w) ev.push({t:w.s-0.08-sw.peak, type:'custom', buf:sw.buf, vol:mv, kind:'move'}); } }
-  if (G.sfxTrOn!==false) for (const m of E.fxMarks||[]){ if (m.sfx!==true) continue; const b=E.bank[m.snd||'woosh']; if (b) ev.push({t:m.t+0.02-b.peak, type:'custom', buf:b.buf, vol:(G.trSfxVol??30)/100*((m.vol??100)/100), kind:'fxmark'}); }
+  if (G.sfxTrOn!==false) for (const m of E.fxMarks||[]){ if (m.sfx!==true) continue; const b=E.bank[m.snd||'lib:whoosh']; if (b) ev.push({t:m.t+0.02-b.peak, type:'custom', buf:b.buf, vol:(G.trSfxVol??30)/100*((m.vol??100)/100), kind:'fxmark'}); }
   if (G.sfxTrOn!==false && E.clips && E.clips.length>1){ const L=E.clipList(), st=E.clipStarts(), tv=(E.G.trSfxVol??80)/100;
     if (tv>0) for (let k=1;k<L.length;k++){ const c=L[k], tr=c.tr||'none'; if (tr==='none' || c.trSfx===false) continue;
       const pick=c.trSnd&&c.trSnd!=='auto'?c.trSnd:null; if (pick==='none') continue;

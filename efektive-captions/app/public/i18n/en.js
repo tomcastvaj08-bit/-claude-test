@@ -1119,5 +1119,6 @@ window.I18N_DICT.en={
 "AI dotáhne fotku jako profesionál (odstraní lidi a nepořádek, zařídí, soumrak, trávník, obloha). Jemné detaily zůstanou z tvé fotky.": "AI finishes the photo like a pro (removes people and clutter, staging, twilight, lawn, sky). Fine details stay from your photo.",
 "AI úprava se nepovedla:": "AI edit failed:",
 "Hlavní vypínač – vypne / zapne najednou shine, 3D swooshe i zvuky přechodů. Vlastní zvuky přidáš z knihovny níž.": "Master switch – turns shine, 3D swooshes and transition sounds on/off. Add your own sounds from the library below.",
-"Nastavení zvuků v efektech": "Effect sound settings"
+"Nastavení zvuků v efektech": "Effect sound settings",
+"Zvuk shine": "Shine sound"
 };
