@@ -9,6 +9,14 @@ $('modePhoto').onclick=showPhoto;
 $('phBack').onclick=()=>{ if (!$('phRes').hidden){ $('phRes').hidden=true; $('phStart').hidden=false; return; } document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='home')); };
 $('phStyle').onclick=e=>{ const c=e.target.closest('[data-v]'); if (!c) return; style=c.dataset.v; $('phStyle').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); };
 
+// otočení fotky (telefon držený na šířku, když prohlížeč zůstane na výšku)
+async function rotBlob(b, dir){ const bmp=await createImageBitmap(b,{imageOrientation:'from-image'}); if (bmp.width>=bmp.height) return b;   // snímek už je na šířku → nechat const c=document.createElement('canvas'); c.width=bmp.height; c.height=bmp.width; const x=c.getContext('2d');
+  x.translate(c.width/2,c.height/2); x.rotate(dir*Math.PI/2); x.drawImage(bmp,-bmp.width/2,-bmp.height/2); return await new Promise(r=>c.toBlob(r,'image/jpeg',0.95)); }
+function holdDir(){ // +1 = otočit po směru hodin, −1 = proti, 0 = držený na výšku
+  const [gx,gy]=grav; if (Math.abs(gx)<4 || Math.abs(gx)<Math.abs(gy)*1.3) return 0;
+  const portraitScreen=!(screen.orientation&&/landscape/.test(screen.orientation.type)) && Math.abs(window.orientation||0)!==90; if (!portraitScreen) return 0;
+  const ios=/iP(hone|ad|od)/.test(navigator.userAgent); return ((ios?-1:1)*gx>0) ? 1 : -1; }
+function rotImg(im){ const {W,H,f}=im, o=new Float32Array(f.length); for (let y=0;y<H;y++) for (let x=0;x<W;x++){ const nx=H-1-y, ny=x, i=(y*W+x)*3, j=(ny*H+nx)*3; o[j]=f[i]; o[j+1]=f[i+1]; o[j+2]=f[i+2]; } return {W:H,H:W,f:o}; }
 // ---------- zpracování ----------
 async function run(blobs){
   if (phBusy || !blobs || !blobs.length) return; phBusy=true; lastBlobs=blobs;
@@ -35,6 +43,7 @@ function setSplit(k){ k=Math.max(0,Math.min(1,k)); $('phBeforeWrap').style.clipP
   box.addEventListener('pointerdown',e=>{ on=true; box.setPointerCapture(e.pointerId); mv(e); }); box.addEventListener('pointermove',e=>{ if (on) mv(e); }); box.addEventListener('pointerup',()=>on=false); box.addEventListener('pointercancel',()=>on=false); })();
 
 $('phUp').onchange=e=>{ const fs=[...e.target.files].slice(0,7); e.target.value=''; if (fs.length) run(fs); };
+$('phRot').onclick=()=>{ if (!lastRes) return; lastRes.out=rotImg(lastRes.out); lastRes.before=rotImg(lastRes.before); showResult(lastRes); };
 $('phAgain').onclick=()=>{ $('phRes').hidden=true; $('phStart').hidden=false; openCam(); };
 $('phRestyle').onclick=()=>{ style=style==='bright'?'sunrise':'bright'; $('phStyle').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.v===style)); if (lastBlobs) run(lastBlobs); };
 $('phSave').onclick=async()=>{
@@ -45,8 +54,8 @@ $('phSave').onclick=async()=>{
 };
 
 // ---------- kamera ----------
-let still=0, lastAcc=null, levelOK=false, motionOn=false;
-function onMotion(e){ const a=e.accelerationIncludingGravity||e.acceleration; if (!a) return; const v=[a.x||0,a.y||0,a.z||0];
+let still=0, lastAcc=null, levelOK=false, motionOn=false, grav=[0,0,0];
+function onMotion(e){ const a=e.accelerationIncludingGravity||e.acceleration; if (!a) return; const v=[a.x||0,a.y||0,a.z||0]; if (e.accelerationIncludingGravity) grav=grav.map((g,i)=>g*0.8+v[i]*0.2);
   if (lastAcc){ const d=Math.hypot(v[0]-lastAcc[0],v[1]-lastAcc[1],v[2]-lastAcc[2]); still = still*0.85 + d*0.15; } lastAcc=v; updPill(); }
 function onOrient(e){ // na šířku: náklon kolem osy pohledu = beta (nebo gamma podle natočení)
   const ang=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
@@ -71,7 +80,7 @@ $('phShoot').onclick=openCam;
 $('phCamClose').onclick=closeCam;
 $('phShutter').onclick=async()=>{
   if ($('phShutter').disabled) return; $('phShutter').disabled=true; $('phCam').classList.add('shooting');
-  try{ const r=await PH.camera.bracket((k,n)=>dots(k,n)); closeCam(); run(r.shots); }
+  try{ const dir=holdDir(); const r=await PH.camera.bracket((k,n)=>dots(k,n)); closeCam(); let shots=r.shots; if (dir){ shots=[]; for (const b of r.shots) shots.push(await rotBlob(b,dir)); } run(shots); }
   catch(e){ console.warn(e); toastP('Focení se nepovedlo: '+(e.message||e)); }
   finally{ $('phShutter').disabled=false; $('phCam').classList.remove('shooting'); }
 };

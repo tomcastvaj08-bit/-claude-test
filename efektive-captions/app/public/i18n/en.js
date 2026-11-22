@@ -1111,5 +1111,6 @@ window.I18N_DICT.en={
 "Spojuji expozice…": "Merging exposures…",
 "Dotahuji světlo a barvy…": "Finishing light and colours…",
 "Fotka je ve Fotkách": "The photo is in Photos",
-"Kamera nejde spustit – povol přístup ke kameře, nebo nahraj fotky z galerie": "Camera can't start – allow camera access, or upload photos from the gallery"
+"Kamera nejde spustit – povol přístup ke kameře, nebo nahraj fotky z galerie": "Camera can't start – allow camera access, or upload photos from the gallery",
+"Otočit": "Rotate"
 };

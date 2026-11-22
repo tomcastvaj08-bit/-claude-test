@@ -106,16 +106,39 @@ function blurGray(L,W,H,r){ // rychlé rozmazání (2× klouzavý průměr)
     for (let x=0;x<W;x++){ let s=0; for (let y=-r;y<=r;y++) s+=t[clamp(y,0,H-1)*W+x]; for (let y=0;y<H;y++){ o[y*W+x]=s/(2*r+1); s+=t[clamp(y+r+1,0,H-1)*W+x]-t[clamp(y-r,0,H-1)*W+x]; } }
     return o; };
   return pass(pass(L)); }
+function guided(I,W,H,r,eps){ // samonaváděný filtr (He 2010): hladí plochy, drží hrany → bez halo kolem oken
+  const n=I.length, II=new Float32Array(n); for (let i=0;i<n;i++) II[i]=I[i]*I[i];
+  const mI=blurBox(I,W,H,r), mII=blurBox(II,W,H,r), a=new Float32Array(n), b=new Float32Array(n);
+  for (let i=0;i<n;i++){ const v=mII[i]-mI[i]*mI[i]; a[i]=v/(v+eps); b[i]=mI[i]-a[i]*mI[i]; }
+  const ma=blurBox(a,W,H,r), mb=blurBox(b,W,H,r), o=new Float32Array(n); for (let i=0;i<n;i++) o[i]=ma[i]*I[i]+mb[i]; return o; }
+function blurBox(src,W,H,r){ const t=new Float32Array(src.length), o=new Float32Array(src.length), d=2*r+1;
+  for (let y=0;y<H;y++){ let s=0; const row=y*W; for (let x=-r;x<=r;x++) s+=src[row+clamp(x,0,W-1)]; for (let x=0;x<W;x++){ t[row+x]=s/d; s+=src[row+clamp(x+r+1,0,W-1)]-src[row+clamp(x-r,0,W-1)]; } }
+  for (let x=0;x<W;x++){ let s=0; for (let y=-r;y<=r;y++) s+=t[clamp(y,0,H-1)*W+x]; for (let y=0;y<H;y++){ o[y*W+x]=s/d; s+=t[clamp(y+r+1,0,H-1)*W+x]-t[clamp(y-r,0,H-1)*W+x]; } }
+  return o; }
+// mapování tónů (Durand): velké světelné rozdíly (okno vs. stín) se stlačí, drobné detaily zůstanou → stíny se otevřou, okna se stáhnou
+PH.toneMap = (im, stops) => {
+  const {W,H}=im, n=W*H, f=im.f, lg=new Float32Array(n);
+  for (let i=0;i<f.length;i++) if (!(f[i]>0)) f[i]=0;   // spojení může dát drobné záporné hodnoty
+  for (let i=0;i<n;i++) lg[i]=Math.log2(0.2126*f[i*3]+0.7152*f[i*3+1]+0.0722*f[i*3+2]+1e-3);
+  const r=Math.max(4,Math.round(Math.max(W,H)/50)), base=guided(lg,W,H,r,0.25);
+  const smp=[]; for (let i=0;i<n;i+=13) smp.push(base[i]); smp.sort((a,b)=>a-b);
+  const lo=smp[Math.floor(smp.length*0.01)], hi=smp[Math.floor(smp.length*0.995)], R=stops||3.2, k=Math.min(1,R/Math.max(0.1,hi-lo));
+  const o=new Float32Array(f.length);
+  for (let i=0;i<n;i++){ const nl=(base[i]-hi)*k + (lg[i]-base[i])*1.12 - 0.05, sc=Math.pow(2,nl-lg[i]);
+    o[i*3]=f[i*3]*sc; o[i*3+1]=f[i*3+1]*sc; o[i*3+2]=f[i*3+2]*sc; }
+  return {W,H,f:o,k};
+};
 PH.finish = (im, style) => {
-  const {W,H}=im, n=W*H, f=new Float32Array(im.f), st=style||'bright';
+  const st=style||'bright'; im=PH.toneMap(im, im._single?2.6:3.4);
+  const {W,H}=im, n=W*H, f=new Float32Array(im.f);
   // 1) vyvážení bílé: šedý svět z neutrálních světlých ploch (stěny, strop)
   // bílý bod = medián poměrů barev u nejsvětlejších málo barevných ploch (stěny, strop) – robustní, bez přestřelení do modra
-  const cand=[]; for (let i=0;i<n;i+=3){ const r=f[i*3],g=f[i*3+1],b=f[i*3+2], m=(r+g+b)/3, mx=Math.max(r,g,b), mn=Math.min(r,g,b); if (m>0.2 && mx<0.985 && (mx-mn)<0.3*mx) cand.push([m,r,g,b]); }
+  const cand=[]; for (let i=0;i<n;i+=3){ const r=f[i*3],g=f[i*3+1],b=f[i*3+2], m=(r+g+b)/3, mx=Math.max(r,g,b), mn=Math.min(r,g,b); if (m>0.12 && mx<0.985 && (mx-mn)<0.45*mx) cand.push([m,r,g,b]); }
   cand.sort((a,b)=>b[0]-a[0]); const top=cand.slice(0,Math.max(50,Math.floor(cand.length*0.3)));
   const med=a=>{ a.sort((x,y)=>x-y); return a.length?a[a.length>>1]:1; };
   let gr=1,gg=1,gb=1;
   if (top.length>=50){ const rg=med(top.map(t=>t[1]/Math.max(1e-4,t[2]))), bg=med(top.map(t=>t[3]/Math.max(1e-4,t[2])));
-    gr=clamp(Math.pow(1/rg,0.9),0.7,1.4); gb=clamp(Math.pow(1/bg,0.9),0.7,1.4); const nm=(gr+gg+gb)/3; gr/=nm; gg/=nm; gb/=nm; }
+    const ex=st==='sunrise'?0.6:1.0; gr=clamp(Math.pow(1/rg,ex),0.65,1.5); gb=clamp(Math.pow(1/bg,ex),0.65,1.6); const nm=(gr+gg+gb)/3; gr/=nm; gg/=nm; gb/=nm; }
   const warm = st==='sunrise' ? [1.07,1.0,0.88] : [0.99,1.0,1.02];
   for (let i=0;i<n;i++){ f[i*3]*=gr*warm[0]; f[i*3+1]*=gg*warm[1]; f[i*3+2]*=gb*warm[2]; }
   // 2) expozice: 99,5. percentil jasu → 0,97 (nic se nepřepálí, celé je světlé)
@@ -156,7 +179,7 @@ PH.process = async (blobs, opt={}) => {
   const ref=imgs[Math.floor((imgs.length-1)/2)];
   onP(0.08,'Zarovnávám záběry…');
   const shifts=[]; for (let k=0;k<imgs.length;k++){ if (imgs[k]===ref){ shifts.push([0,0]); continue; } const s=PH.alignShift(ref,imgs[k]); shifts.push(s); imgs[k]=shiftImg(imgs[k],s[0],s[1]); await tick(); }   // alignShift vrací posun, který záběr srovná s referencí
-  let fused = imgs.length>1 ? await PH.fuse(imgs,(p)=>onP(0.1+p*0.75,'Spojuji expozice…')) : imgs[0];
+  let fused = imgs.length>1 ? await PH.fuse(imgs,(p)=>onP(0.1+p*0.75,'Spojuji expozice…')) : {...imgs[0], _single:true};
   onP(0.9,'Dotahuji světlo a barvy…'); await tick();
   const out = PH.finish(fused, opt.style);
   onP(1,'Hotovo');
