@@ -1400,7 +1400,7 @@ E.sfxEvents = () => {
   const ev=[], G=E.G;
   if (G.sfxAll===false) return ev;   // hlavní vypínač všech zvukových efektů
   // SHINE: zvuk ve chvíli, kdy lesk přejede (běžné titulky, 3D mix, zvýrazněné objekty)
-  const sh=E.bank['lib:'+(G.shineSnd||'clock_ticking')], sv=(G.shineSfxVol??8)/100;   // zvuk shine z knihovny (vybírá se v SFX)
+  const sh=E.bank['lib:'+(G.shineSnd||'metal_slice')], sv=(G.shineSfxVol??8)/100;   // zvuk shine z knihovny (vybírá se v SFX)
   if (sh && G.sfxShineOn!==false && sv>0){
     const at=t=>ev.push({t:t-sh.peak, type:'custom', buf:sh.buf, vol:sv, kind:'shine'});
     if (G.mix3d){ /* 3D mix: shine bez zvuku – na slova hraje jen mini swoosh (níž) */ }
