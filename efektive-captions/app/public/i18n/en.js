@@ -1120,5 +1120,9 @@ window.I18N_DICT.en={
 "AI úprava se nepovedla:": "AI edit failed:",
 "Hlavní vypínač – vypne / zapne najednou shine, 3D swooshe i zvuky přechodů. Vlastní zvuky přidáš z knihovny níž.": "Master switch – turns shine, 3D swooshes and transition sounds on/off. Add your own sounds from the library below.",
 "Nastavení zvuků v efektech": "Effect sound settings",
-"Zvuk shine": "Shine sound"
+"Zvuk shine": "Shine sound",
+"Bez zvuku": "No sound",
+"Zvuk 3D mixu": "3D mix sound",
+"3D mix – zvuk na každé slovo": "3D mix – sound on every word",
+"Ve výchozím stavu nehraje žádný zvuk. Zvuk k shine, 3D mixu nebo přechodu si vybereš sám (přechod: klepni na značku přechodu na stopě).": "By default no sound plays. Choose a sound for shine, 3D mix or a transition yourself (transition: tap its marker on the track)."
 };

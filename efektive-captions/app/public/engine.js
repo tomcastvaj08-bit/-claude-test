@@ -1400,7 +1400,8 @@ E.sfxEvents = () => {
   const ev=[], G=E.G;
   if (G.sfxAll===false) return ev;   // hlavní vypínač všech zvukových efektů
   // SHINE: zvuk ve chvíli, kdy lesk přejede (běžné titulky, 3D mix, zvýrazněné objekty)
-  const sh=E.bank['lib:'+(G.shineSnd||'metal_slice')], sv=(G.shineSfxVol??8)/100;   // zvuk shine z knihovny (vybírá se v SFX)
+  const sh=G.shineSnd?E.bank['lib:'+G.shineSnd]:null,   // shine bez zvuku, dokud si ho uživatel nevybere
+   sv=(G.shineSfxVol??8)/100;   // zvuk shine z knihovny (vybírá se v SFX)
   if (sh && G.sfxShineOn!==false && sv>0){
     const at=t=>ev.push({t:t-sh.peak, type:'custom', buf:sh.buf, vol:sv, kind:'shine'});
     if (G.mix3d){ /* 3D mix: shine bez zvuku – na slova hraje jen mini swoosh (níž) */ }
@@ -1411,7 +1412,7 @@ E.sfxEvents = () => {
     for (const o of E.objs||[]){ if (!o.shine || o.shSfx===false) continue; if (window.OBJ && OBJ.shineWin) OBJ.shineWin(o); if (o.shS!=null) at(o.shS+0.05); }
   }
   // 3D mix: jemný mini swoosh při každém slově (slovo se objeví 0,08 s před svým časem – i posuny)
-  const sw=E.bank['lib:whoosh'], mv=(G.moveSfxVol??30)/100;
+  const sw=G.moveSnd?E.bank['lib:'+G.moveSnd]:null, mv=(G.moveSfxVol??30)/100;   // 3D swooshe bez zvuku, dokud si ho uživatel nevybere
   if (sw && G.mix3d && E.mixPlan && G.sfxMoveOn!==false && mv>0){ let plan=null; try{ plan=E.mixPlan(); }catch(e){}
     if (plan) for (const L of plan.lines) for (const i of L.ids){ const w=E.words[i]; if (w) ev.push({t:w.s-0.08-sw.peak, type:'custom', buf:sw.buf, vol:mv, kind:'move'}); } }
   if (G.sfxTrOn!==false) for (const m of E.fxMarks||[]){ if (m.sfx!==true) continue; const b=E.bank[m.snd||'lib:whoosh']; if (b) ev.push({t:m.t+0.02-b.peak, type:'custom', buf:b.buf, vol:(G.trSfxVol??30)/100*((m.vol??100)/100), kind:'fxmark'}); }
