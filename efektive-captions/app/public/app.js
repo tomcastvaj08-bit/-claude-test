@@ -462,7 +462,7 @@ async function bankLoad(){ for (const nm of ['shine','tick','swoosh','warp','tun
   const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0; for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
   E.bank[nm]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',nm,e); } }
   // knihovna zvuků (pro přechody a efekty) – načte se na pozadí po základní sadě
-  for (const [k] of E.SFXLIB){ try{ const r=await fetch('sfx/lib/'+k+'.m4a'); if (!r.ok) continue; const ab=await decodeVideoAudio(await r.blob());
+  for (const [k] of [...E.SFXLIB,...E.SFXMEME]){ try{ const r=await fetch('sfx/lib/'+k+'.mp3'); if (!r.ok) continue; const ab=await decodeVideoAudio(await r.blob());
     const d=ab.getChannelData(0), w=Math.max(1,Math.round(ab.sampleRate*0.01)); let best=0, bi=0; for (let i=0;i+w<d.length;i+=w){ let e=0; for (let j=i;j<i+w;j++) e+=d[j]*d[j]; if (e>best){ best=e; bi=i; } }
     E.bank['lib:'+k]={buf:ab, peak:bi/ab.sampleRate}; }catch(e){ console.warn('Zvuk',k,e); } } }
 bankLoad();
@@ -1341,9 +1341,9 @@ const SFX=[['none','Žádný'],['mtick','Tik klávesy (mini)'],['mswoosh','Swoos
 function pSfx(){
   const S=cur();
   const sw=(id,lb,on)=>`<div class="row"><span>${lb}</span><input type="checkbox" class="sw" id="${id}" ${on?'checked':''}></div>`;
-  return `<div class="clabel">Zvukové efekty</div>
+  return `${sfxLibHTML()}<div class="clabel">Nastavení zvuků v efektech</div>
   ${sw('sxAll','<b>Všechny zvukové efekty</b>',E.G.sfxAll!==false)}
-  <div class="note">Hlavní vypínač – vypne / zapne najednou zvuky slov, shine i přechodů. Jednotlivé skupiny níž.</div>
+  <div class="note">Hlavní vypínač – vypne / zapne najednou shine, 3D swooshe i zvuky přechodů. Vlastní zvuky přidáš z knihovny níž.</div>
   ${E.G.sfxAll!==false?`
   ${sw('sxShine','Shine (lesk u titulků a objektů)',E.G.sfxShineOn!==false)}
   ${E.G.sfxShineOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost shine</span><span id="sxShVv">${E.G.shineSfxVol??20} %</span></div><input type="range" id="sxShV" min="0" max="150" value="${E.G.shineSfxVol??20}"></label><button class="btn small" id="sxShPlay">${I('volume')} Poslechnout shine</button>`:''}
@@ -1351,11 +1351,8 @@ function pSfx(){
   ${E.G.sfxMoveOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost swooshů ve 3D mixu</span><span id="sxMvVv">${E.G.moveSfxVol??30} %</span></div><input type="range" id="sxMvV" min="0" max="150" value="${E.G.moveSfxVol??30}"></label>`:''}
   ${sw('sxTr','Přechody mezi záběry a shake',E.G.sfxTrOn!==false)}
   ${E.G.sfxTrOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost přechodů</span><span id="sxTrVv">${E.G.trSfxVol??30} %</span></div><input type="range" id="sxTrV" min="0" max="150" value="${E.G.trSfxVol??30}"></label><div class="note">Každý přechod jde vypnout zvlášť (klepni na značku přechodu na stopě videa).</div>`:''}
-  ${sw('sxWords','Zvuky na slova / titulky',E.G.sfxWordsOn!==false)}`:''}
-  ${E.G.sfxAll!==false && E.G.sfxWordsOn!==false?`<div class="clabel">Zvuk na slova</div>${scopeHTML()}${slider('Hlasitost','sfxVol',0,100,1,'%')}
-  ${toggle('Zvuk na každé slovo (jinak na každý titulek)','sfxWord')}`:''}
-  ${E.G.sfxAll!==false && E.G.sfxWordsOn!==false?`<div class="clabel">Zvuk</div><div class="sfxlist chips" id="sfxList">${SFX.map(([v,l])=>`<div class="chip ${S.sfx===v?'on':''}" data-v="${v}">${l}</div>`).join('')}</div>
-  <div class="note">Klepnutí zvuk přehraje a nastaví. „Tik klávesy“ a „Swoosh“ jsou úplně jemné – na běžná slova. „Jen tento titulek“ = každý titulek může mít jiný zvuk (nebo žádný).</div>`:''}`;
+`:''}
+`;
 }
 binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1,exitFlick:false}); else if (c.dataset.v==='flick') setMany({exitFlick:true}); else setMany({exitScale:null,exitDur:0.3,exitFlick:false}); renderPanel(); }; }; })(binders.motion);
 binders.sfx=()=>{
@@ -1363,8 +1360,7 @@ binders.sfx=()=>{
   bind('sxAll','sfxAll'); bind('sxShine','sfxShineOn'); bind('sxTr','sfxTrOn'); bind('sxWords','sfxWordsOn'); bind('sxMove','sfxMoveOn');
   for (const [id,key,lab] of [['sxShV','shineSfxVol','sxShVv'],['sxTrV','trSfxVol','sxTrVv'],['sxMvV','moveSfxVol','sxMvVv']]){ const el=$(id); if (el){ el.oninput=()=>{ E.G[key]=+el.value; $(lab).textContent=el.value+' %'; }; el.onchange=()=>changed(); } }
   const sp=$('sxShPlay'); if (sp) sp.onclick=()=>{ const b=E.bank.shine; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.shineSfxVol??20)/100}); };
-  if (!$('sfxList')) return;
-  $('sfxList').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; playSfx(c.dataset.v); setVal('sfx',c.dataset.v); $('sfxList').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); }; };
+  bindSfxLib(); };
 
 // ---------- OVERLAY ----------
 const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide doprava'],['slideL','Slide doleva'],['slideU','Slide nahoru'],['slideD','Slide dolů']];
@@ -1760,9 +1756,14 @@ async function addAudioFile(f){
   toast('Zvuk přidaný – hlasitost nastavíš dole');
 }
 function openAudPanel(){ selClip=-1; panel='audio'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.remove('on')); renderPanel(); renderTimeline(); }
+function sfxLibHTML(){ const row=([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span data-notr>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`;
+  return `<div class="clabel">Knihovna zvuků</div><div class="note">▶ přehraje, + přidá zvuk na místo hlavy (pak ho na stopě posuneš prstem).</div><div class="sfxlib auLib"><div class="sl-cat">Efekty</div>${E.SFXLIB.map(row).join('')}<div class="sl-cat">Memes</div>${E.SFXMEME.map(row).join('')}</div>`; }
+function bindSfxLib(){ document.querySelectorAll('.auLib').forEach(lb=>{ lb.onclick=e=>{ const p=e.target.closest('[data-p]'), a=e.target.closest('[data-a]');
+    if (p){ const b=E.bank['lib:'+p.dataset.p]; if (b) playSfx({type:'custom',buf:b.buf,vol:1}); else { const au=new Audio('sfx/lib/'+p.dataset.p+'.mp3'); au.play().catch(()=>{}); } }
+    if (a) addLibSound(a.dataset.a); }; }); }
 function pAudio(){
   const a=(E.audios||[]).find(x=>x.id===selAud);
-  if (!a) return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>Zvuk</b><small>Přidej hudbu nebo zvuk z telefonu. Položí se na místo hlavy.</small></div></div><button class="btn primary" id="auAdd">${I('plus')} Přidat zvuk ze zařízení</button><div class="clabel">Knihovna zvuků</div><div class="note">▶ přehraje, + přidá zvuk na místo hlavy (pak ho na stopě posuneš prstem).</div><div class="sfxlib" id="auLib"><div class="sl-cat">Efekty</div>${E.SFXLIB.map(([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`).join('')}<div class="sl-cat">Memes</div>${E.SFXMEME.map(([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`).join('')}</div>`;
+  if (!a) return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>Zvuk</b><small>Přidej hudbu nebo zvuk z telefonu. Položí se na místo hlavy.</small></div></div><button class="btn primary" id="auAdd">${I('plus')} Přidat zvuk ze zařízení</button>${sfxLibHTML()}`;
   const rng=(lb,id,min,max,st,v,u)=>`<label class="ctl"><div class="lb"><span>${lb}</span><span>${v}${u}</span></div><input type="range" id="${id}" min="${min}" max="${max}" step="${st}" value="${v}"></label>`;
   return `<div class="mixhead"><svg class="ic grad"><use href="#i-music"/></svg><div><b>${esc(a.name||'Zvuk')}</b><small>${fmt(a.s)} – ${fmt(a.e)} · délka ${(a.e-a.s).toFixed(1)} s. Na stopě ho posuneš prstem, konce zkrátíš tažením za okraje.</small></div></div>
   ${rng('Hlasitost','auVol',0,200,1,a.vol??100,' %')}
@@ -1771,14 +1772,12 @@ function pAudio(){
   ${rng('Doznění (fade out)','auFo',0,5,0.1,a.fo||0,' s')}
   <div class="row"><span>Zvuk videa</span><input type="checkbox" class="sw" id="auVm" ${E.flags.mute?'':'checked'}></div>
   <div class="btnrow"><button class="btn" id="auHere">${I('arrow-right')} Začít v místě hlavy</button><button class="btn" id="auDel">${I('trash')} Smazat</button></div>
-  <button class="btn small" id="auAdd">${I('plus')} Přidat další zvuk</button><div class="clabel">Knihovna zvuků</div><div class="note">▶ přehraje, + přidá zvuk na místo hlavy (pak ho na stopě posuneš prstem).</div><div class="sfxlib" id="auLib"><div class="sl-cat">Efekty</div>${E.SFXLIB.map(([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`).join('')}<div class="sl-cat">Memes</div>${E.SFXMEME.map(([k,l])=>`<div class="sl-row"><button class="sl-play" data-p="${k}" aria-label="Přehrát">${I('play')}</button><span>${l}</span><button class="sl-add" data-a="${k}" aria-label="Přidat">${I('plus')}</button></div>`).join('')}</div>`;
+  <button class="btn small" id="auAdd">${I('plus')} Přidat další zvuk</button>${sfxLibHTML()}`;
 }
-async function addLibSound(k){ const it=E.SFXLIB.find(x=>x[0]===k)||E.SFXMEME.find(x=>x[0]===k); if (!it) return; try{ const r=await fetch('sfx/lib/'+k+'.m4a'); if (!r.ok) throw new Error(r.status); const b=await r.blob(); await addAudioFile(new File([b], it[1]+'.m4a', {type:'audio/mp4'})); }catch(e){ toast('Zvuk se nepodařilo načíst'); } }
+async function addLibSound(k){ const it=E.SFXLIB.find(x=>x[0]===k)||E.SFXMEME.find(x=>x[0]===k); if (!it) return; try{ const r=await fetch('sfx/lib/'+k+'.mp3'); if (!r.ok) throw new Error(r.status); const b=await r.blob(); await addAudioFile(new File([b], it[1]+'.m4a', {type:'audio/mp4'})); }catch(e){ toast('Zvuk se nepodařilo načíst'); } }
 binders.audio=()=>{
   $('auAdd').onclick=()=>$('audIn').click();
-  const lb=$('auLib'); if (lb) lb.onclick=e=>{ const p=e.target.closest('[data-p]'), a=e.target.closest('[data-a]');
-    if (p){ const b=E.bank['lib:'+p.dataset.p]; if (b) playSfx({type:'custom',buf:b.buf,vol:1}); else { const au=new Audio('sfx/lib/'+p.dataset.p+'.m4a'); au.play().catch(()=>{}); } }
-    if (a) addLibSound(a.dataset.a); };
+  bindSfxLib();
   const a=(E.audios||[]).find(x=>x.id===selAud); if (!a) return;
   const live=()=>{ if (PB.on){ pbStop(); togglePlay(); } };
   for (const [id,key,u] of [['auVol','vol',' %'],['auFi','fi',' s'],['auFo','fo',' s']]){ const el=$(id);
