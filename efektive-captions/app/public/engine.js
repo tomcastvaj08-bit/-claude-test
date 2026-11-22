@@ -84,7 +84,7 @@ E.G = {
   gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', faceAuto:true, faceDodgeX:false,
-  sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:20, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
+  sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
   exitScale:null, exitDur:0.3, exitFlick:false, wordLead:0.08, wordFade:0.28
@@ -1308,7 +1308,7 @@ E.BANK_WORD = {};   // staré mini zvuky na slova vyřazené   // mini zvuky na 
 E.BANK_TR = {};   // přechody ve výchozím stavu bez zvuku   // pohybové přechody = čistý woosh
 // zvuky, ze kterých si jde u přechodu vybrat (výchozí = podle typu přechodu)
 // KNIHOVNA ZVUKŮ (public/sfx/lib): uživatel si je přidává sám (Zvuk → Knihovna) nebo vybere k přechodu. Pořadí = pořadí v nabídce (foťák nahoře).
-E.SFXLIB = [["camera_flash", "Camera Flash"], ["camera_shutter", "Camera Shutter"], ["camera_click", "Camera Click"], ["whoosh", "Whoosh"], ["pop", "Pop"], ["click", "Click"], ["mouse_click", "Mouse Click"], ["keyboard_typing", "Keyboard Typing"], ["mac_typing", "Mac Typing"], ["ding", "Ding"], ["ding_2", "Ding 2"], ["chime", "Chime"], ["riser", "Riser"], ["metallic_riser", "Metallic Riser"], ["punch_stop_riser", "Punch Stop Riser"], ["bass_drop", "Bass Drop"], ["cinematic_impact", "Cinematic Impact"], ["glitch", "Glitch"], ["gear", "Gear"], ["iphone_charging", "iPhone Charging"]];
+E.SFXLIB = [["camera_flash", "Camera Flash"], ["camera_shutter", "Camera Shutter"], ["camera_click", "Camera Click"], ["whoosh", "Whoosh"], ["pop", "Pop"], ["click", "Click"], ["mouse_click", "Mouse Click"], ["keyboard_typing", "Keyboard Typing"], ["mac_typing", "Mac Typing"], ["ding", "Ding"], ["ding_2", "Ding 2"], ["chime", "Chime"], ["riser", "Riser"], ["metallic_riser", "Metallic Riser"], ["punch_stop_riser", "Punch Stop Riser"], ["bass_drop", "Bass Drop"], ["cinematic_impact", "Cinematic Impact"], ["glitch", "Glitch"], ["gear", "Gear"], ["iphone_charging", "iPhone Charging"], ["camera_click_2", "Camera Click 2"], ["slice_woosh", "Slice Woosh"], ["gear_sfx", "Gear Sfx"], ["heartbeat", "Heartbeat"], ["metal_slice", "Metal Slice"], ["clock_ticking", "Clock Ticking"], ["digital_whoosh", "Digital Whoosh"]];
 // MEMES – vtipné zvuky (jen do panelu Zvuk, ne k přechodům)
 E.SFXMEME = [["meme_taco_bell", "Taco Bell"], ["meme_vine_boom", "Vine Boom"], ["meme_yellow_undertale", "Yellow Undertale"], ["meme_awkward", "Awkward"], ["meme_violin_screech", "Violin Screech"], ["meme_correct", "Correct"], ["meme_anime_wow", "Anime Wow"], ["meme_akhh", "Akhh"], ["meme_kaching", "Kaching"], ["meme_roblox", "Roblox"], ["meme_tindeck", "Tindeck"], ["meme_ceeday_huh", "Ceeday Huh"], ["meme_dry_fart", "Dry Fart"], ["meme_metal_bar", "Metal Bar"], ["meme_doge_bonk", "Doge Bonk"], ["meme_goofy_bonk", "Goofy Bonk"], ["meme_flashbang", "Flashbang"], ["meme_disappearing_scream", "Disappearing Scream"], ["meme_get_out", "GET OUT!"], ["meme_plankton_aughh", "Plankton - Aughh"], ["meme_boo_womp", "Boo-Womp (Spongebob)"], ["meme_awkward_pause", "Awkward Pause"], ["meme_alien_annihilation", "The Alien Annihilation"], ["meme_angle_grinder", "Angle Grinder"], ["meme_fortnite_death", "Fortnite Death"], ["meme_tiktok_core", "TikTok Core Sound FX"], ["meme_wah_wah_fail", "Wah Wah Wah Fail"], ["meme_1", "Sound Effect Meme 1"], ["meme_2", "Sound Effect Meme 2"], ["meme_3", "Sound Effect Meme 3"], ["meme_4", "Sound Effect Meme 4"], ["meme_5", "Sound Effect Meme 5"], ["meme_6", "Sound Effect Meme 6"]];
 E.TRSND = [['auto','Bez zvuku (výchozí)'],...E.SFXLIB.map(([k,l])=>['lib:'+k,l])];   // jen zvuky z knihovny   // jen swooshe a glitche (cinkavé zvuky pryč)
@@ -1400,7 +1400,7 @@ E.sfxEvents = () => {
   const ev=[], G=E.G;
   if (G.sfxAll===false) return ev;   // hlavní vypínač všech zvukových efektů
   // SHINE: zvuk ve chvíli, kdy lesk přejede (běžné titulky, 3D mix, zvýrazněné objekty)
-  const sh=E.bank['lib:'+(G.shineSnd||'ding_2')], sv=(G.shineSfxVol??20)/100;   // zvuk shine z knihovny (vybírá se v SFX)
+  const sh=E.bank['lib:'+(G.shineSnd||'clock_ticking')], sv=(G.shineSfxVol??8)/100;   // zvuk shine z knihovny (vybírá se v SFX)
   if (sh && G.sfxShineOn!==false && sv>0){
     const at=t=>ev.push({t:t-sh.peak, type:'custom', buf:sh.buf, vol:sv, kind:'shine'});
     if (G.mix3d){ /* 3D mix: shine bez zvuku – na slova hraje jen mini swoosh (níž) */ }

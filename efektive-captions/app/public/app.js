@@ -1343,7 +1343,7 @@ function pSfx(){
   <div class="note">Hlavní vypínač – vypne / zapne najednou shine, 3D swooshe i zvuky přechodů. Vlastní zvuky přidáš z knihovny níž.</div>
   ${E.G.sfxAll!==false?`
   ${sw('sxShine','Shine (lesk u titulků a objektů)',E.G.sfxShineOn!==false)}
-  ${E.G.sfxShineOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost shine</span><span id="sxShVv">${E.G.shineSfxVol??20} %</span></div><input type="range" id="sxShV" min="0" max="150" value="${E.G.shineSfxVol??20}"></label><button class="btn small" id="sxShPlay">${I('volume')} Poslechnout shine</button><label class="ctl"><div class="lb"><span>Zvuk shine</span></div><select class="inp" id="sxShSnd">${[...E.SFXLIB,...E.SFXMEME].map(([k,l])=>`<option value="${k}" ${(E.G.shineSnd||'ding_2')===k?'selected':''}>${l}</option>`).join('')}</select></label>`:''}
+  ${E.G.sfxShineOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost shine</span><span id="sxShVv">${E.G.shineSfxVol??8} %</span></div><input type="range" id="sxShV" min="0" max="150" value="${E.G.shineSfxVol??8}"></label><button class="btn small" id="sxShPlay">${I('volume')} Poslechnout shine</button><label class="ctl"><div class="lb"><span>Zvuk shine</span></div><select class="inp" id="sxShSnd">${[...E.SFXLIB,...E.SFXMEME].map(([k,l])=>`<option value="${k}" ${(E.G.shineSnd||'clock_ticking')===k?'selected':''}>${l}</option>`).join('')}</select></label>`:''}
   ${sw('sxMove','3D mix – mini swoosh na každé slovo',E.G.sfxMoveOn!==false)}
   ${E.G.sfxMoveOn!==false?`<label class="ctl"><div class="lb"><span>Hlasitost swooshů ve 3D mixu</span><span id="sxMvVv">${E.G.moveSfxVol??30} %</span></div><input type="range" id="sxMvV" min="0" max="150" value="${E.G.moveSfxVol??30}"></label>`:''}
   ${sw('sxTr','Přechody mezi záběry a shake',E.G.sfxTrOn!==false)}
@@ -1356,8 +1356,8 @@ binders.sfx=()=>{
   const bind=(id,key)=>{ const el=$(id); if (el) el.onchange=e=>{ E.G[key]=e.target.checked; changed(); renderPanel(); }; };
   bind('sxAll','sfxAll'); bind('sxShine','sfxShineOn'); bind('sxTr','sfxTrOn'); bind('sxWords','sfxWordsOn'); bind('sxMove','sfxMoveOn');
   for (const [id,key,lab] of [['sxShV','shineSfxVol','sxShVv'],['sxTrV','trSfxVol','sxTrVv'],['sxMvV','moveSfxVol','sxMvVv']]){ const el=$(id); if (el){ el.oninput=()=>{ E.G[key]=+el.value; $(lab).textContent=el.value+' %'; }; el.onchange=()=>changed(); } }
-  const sp=$('sxShPlay'); if (sp) sp.onclick=()=>{ const b=E.bank['lib:'+(E.G.shineSnd||'ding_2')]; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.shineSfxVol??20)/100}); };
-  const ss=$('sxShSnd'); if (ss) ss.onchange=()=>{ E.G.shineSnd=ss.value; changed(); const b=E.bank['lib:'+ss.value]; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.shineSfxVol??20)/100}); };
+  const sp=$('sxShPlay'); if (sp) sp.onclick=()=>{ const b=E.bank['lib:'+(E.G.shineSnd||'clock_ticking')]; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.shineSfxVol??8)/100}); };
+  const ss=$('sxShSnd'); if (ss) ss.onchange=()=>{ E.G.shineSnd=ss.value; changed(); const b=E.bank['lib:'+ss.value]; if (b) playSfx({type:'custom',buf:b.buf,vol:(E.G.shineSfxVol??8)/100}); };
   bindSfxLib(); };
 
 // ---------- OVERLAY ----------
