@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>EFEKTIVE Captions</title>
+<title>EFEKTIVE</title>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -21,15 +21,18 @@
 <section id="home" class="screen on">
   <div class="orbs" aria-hidden="true"><i class="orb b"></i><i class="orb g"></i></div>
   <header class="top">
-    <div class="logo"><img src="logo.png" alt="" width="30" height="22"><b>EFEKTIVE</b><span>Captions</span></div>
+    <div class="logo"><img src="logo.png" alt="" width="30" height="22"><b>EFEKTIVE</b></div>
     <div class="topr"><button class="langbtn" id="uiLangBtn" aria-label="Jazyk aplikace"><svg class="ic"><use href="#i-globe"/></svg><span id="uiLangCode" data-notr></span></button><button class="pro" id="proBtn">Získat PRO</button></div>
   </header>
   <div class="wrap">
     <div class="hero">
-      <div class="eyebrow"><i></i>Titulky do reels</div>
-      <h1 class="hero-t">Nahraj video.<br><em>Titulky</em> jsou hotové.</h1>
-      <p class="hero-s">AI přepíše řeč, appka z ní udělá titulky ve stylu EFEKTIVE a ty si je doladíš a uložíš.</p>
-      <label class="btn primary big"><span class="plus"><svg class="ic"><use href="#i-plus"/></svg></span> Nové video<input type="file" id="fileIn" accept="video/*" hidden></label>
+      <div class="eyebrow"><i></i>Co dnes vytvoříš?</div>
+      <h1 class="hero-t">Video s <em>titulky</em><br>nebo <em>realitní</em> fotky.</h1>
+      <p class="hero-s">Titulky z řeči za pár vteřin, nebo profesionální fotky nemovitosti z telefonu (5 expozic spojených do jedné).</p>
+      <div class="modes">
+        <label class="mode-card" id="modeVideo"><span class="mode-ic"><svg class="ic"><use href="#i-type"/></svg></span><b>Titulky k videu</b><small>Nahraj video, AI přepíše řeč</small><input type="file" id="fileIn" accept="video/*" hidden></label>
+        <button class="mode-card" id="modePhoto"><span class="mode-ic g"><svg class="ic"><use href="#i-home"/></svg></span><b>Realitní fotky</b><small>5 expozic → jedna dokonalá fotka</small></button>
+      </div>
       <p class="hero-tip">Tip: natoč video v aplikaci Fotoaparát (ideálně 4K) a pak ho tu vyber z Fotek. Volba „Pořídit video“ v nabídce iPhonu ukládá video ve snížené kvalitě.</p>
       <img class="mascot" id="mascot" alt="Maskot EFEKTIVE" hidden>
     </div>
@@ -43,6 +46,45 @@
     <div id="homeTpl" hidden></div>
   </div>
 </section>
+
+<!-- ================= REALITNÍ FOTKY ================= -->
+<section id="photo" class="screen">
+  <header class="top"><button class="ico" id="phBack" aria-label="Zpět"><svg class="ic"><use href="#i-x"/></svg></button><div class="ttl">Realitní fotky</div><div style="width:40px"></div></header>
+  <div class="wrap" id="phStart">
+    <div class="card ph-check">
+      <div class="ph-eyebrow">Než začneš fotit</div>
+      <h3>Tři věci ke kontrole na místě</h3>
+      <div class="ph-li"><span><svg class="ic"><use href="#i-sparkles"/></svg></span><div><b>Otři čočku foťáku</b><small>Otisk prstu změkčí každou fotku a později už to nejde opravit.</small></div></div>
+      <div class="ph-li"><span><svg class="ic"><use href="#i-list"/></svg></span><div><b>Odhrň žaluzie a závěsy</b><small>Denní světlo za oknem dělá z místnosti skutečný, vzdušný prostor.</small></div></div>
+      <div class="ph-li"><span><svg class="ic"><use href="#i-zap"/></svg></span><div><b>Rozsviť všechna světla</b><small>I lampy. Rovnoměrné světlo = čisté, světlé místnosti ve výsledku.</small></div></div>
+    </div>
+    <button class="btn primary big" id="phShoot"><svg class="ic"><use href="#i-crosshair"/></svg> Začít fotit</button>
+    <label class="btn big" id="phUpBtn"><svg class="ic"><use href="#i-image"/></svg> Nahrát expozice z galerie<input type="file" id="phUp" accept="image/*" multiple hidden></label>
+    <p class="note" id="phNote">Nahrát můžeš 1–7 fotek stejného záběru s různou expozicí (tmavá → světlá). Z jedné fotky udělám aspoň vyladění světla a barev.</p>
+    <div class="card"><h3>Styl</h3><div class="chips" id="phStyle"><div class="chip on" data-v="bright">Světlý a bílý</div><div class="chip" data-v="sunrise">Východ slunce</div></div></div>
+  </div>
+  <div class="ph-res" id="phRes" hidden>
+    <div class="ph-cmp" id="phCmp"><canvas id="phAfter"></canvas><div class="ph-before" id="phBeforeWrap"><canvas id="phBefore"></canvas></div><div class="ph-handle" id="phHandle"><i></i></div><span class="ph-lbl l">PŘED</span><span class="ph-lbl r">PO</span></div>
+    <div class="wrap">
+      <div class="ph-info" id="phInfo"></div>
+      <button class="btn primary big" id="phSave"><svg class="ic"><use href="#i-download"/></svg> Uložit fotku</button>
+      <div class="btnrow"><button class="btn" id="phAgain"><svg class="ic"><use href="#i-crosshair"/></svg> Fotit další</button><button class="btn" id="phRestyle"><svg class="ic"><use href="#i-palette"/></svg> Jiný styl</button></div>
+      <div class="card ph-ai"><h3>AI dokončení <span class="pro-tag">BRZY</span></h3><div class="ph-ai-g"><button disabled>Uklidit</button><button disabled>Zařídit</button><button disabled>Soumrak</button><button disabled>Trávník</button></div><small class="muted">Odstranění věcí a lidí, virtuální nábytek, soumrak a zelený trávník – připravujeme.</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- kamera (celá obrazovka, na šířku) -->
+<div class="ph-cam" id="phCam" hidden>
+  <video id="phVideo" playsinline muted></video>
+  <div class="ph-grid"></div>
+  <div class="ph-level" id="phLevel"><i></i><b></b></div>
+  <div class="ph-pill" id="phPill"><i></i><span>Rovně a v klidu, vyfoť</span></div>
+  <div class="ph-dots" id="phDots"></div>
+  <button class="ph-close" id="phCamClose" aria-label="Zavřít"><svg class="ic"><use href="#i-arrow-left"/></svg></button>
+  <button class="ph-shutter" id="phShutter" aria-label="Vyfotit"></button>
+  <div class="ph-mode" id="phMode"></div>
+</div>
 
 <!-- ================= NASTAVENÍ PŘEPISU ================= -->
 <section id="setup" class="screen">
@@ -271,6 +313,8 @@
 <script src="ai.js"></script>
 <script src="export.js"></script>
 <script src="app.js"></script>
+<script src="photo.js"></script>
+<script src="photoui.js"></script>
 <script src="radce.js"></script>
 </body>
 </html>

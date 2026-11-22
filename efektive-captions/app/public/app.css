@@ -592,3 +592,62 @@ button,.chip,.sub>div,.seg>div,.scope>div,.look,.tpl,.mkc,.pg,.lay,label.btn{tou
 .sl-row button:active{transform:scale(.92)}
 .sl-row .ic{width:18px;height:18px}
 .sl-cat{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin:10px 2px 2px}
+
+/* ===== Úvod: volba režimu ===== */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;position:relative;z-index:1}
+.mode-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px 14px;border:1px solid var(--line);background:var(--bg,#fff);color:var(--text);font:inherit;text-align:left;cursor:pointer;box-shadow:3px 3px 0 var(--text);transition:transform .08s}
+.mode-card:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--text)}
+.mode-card b{font-size:16px;letter-spacing:-.02em;margin-top:6px}
+.mode-card small{font-size:12px;color:var(--muted);line-height:1.35}
+.mode-ic{width:38px;height:38px;display:grid;place-items:center;background:linear-gradient(135deg,#1f4dff,#5b82ff);color:#fff}
+.mode-ic.g{background:linear-gradient(135deg,#13b97a,#5bd6a4)}
+.mode-ic .ic{width:20px;height:20px;stroke:#fff}
+
+/* ===== Realitní fotky ===== */
+.ph-check h3{margin:4px 0 10px}
+.ph-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.ph-li{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.ph-li>span{width:36px;height:36px;flex:none;display:grid;place-items:center;background:#eef2ff;color:#1f4dff}
+.ph-li b{display:block;font-size:15px}
+.ph-li small{color:var(--muted);font-size:13px;line-height:1.4}
+#phStart .btn.big{width:100%;margin:8px 0 0;display:flex;justify-content:center;gap:8px}
+.ph-cmp{position:relative;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
+.ph-cmp canvas{display:block;width:100%;height:auto}
+.ph-before{position:absolute;inset:0}
+.ph-handle{position:absolute;top:0;bottom:0;width:2px;background:#fff;transform:translateX(-1px);pointer-events:none}
+.ph-handle i{position:absolute;top:50%;left:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.ph-lbl{position:absolute;top:10px;font-size:11px;font-weight:800;letter-spacing:.1em;color:#fff;background:rgba(0,0,0,.45);padding:4px 8px}
+.ph-lbl.l{left:10px}.ph-lbl.r{right:10px}
+.ph-info{font-size:13px;color:var(--muted);margin:10px 0 4px}
+.ph-ai-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.ph-ai-g button{padding:10px 4px;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);opacity:.55}
+/* kamera */
+body.ph-camon{overflow:hidden}
+.ph-cam{position:fixed;inset:0;z-index:200;background:#000;color:#fff}
+.ph-cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.ph-grid{position:absolute;inset:0;pointer-events:none;background:
+ linear-gradient(to right,transparent calc(33.33% - .5px),rgba(110,230,140,.55) calc(33.33% - .5px),rgba(110,230,140,.55) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(110,230,140,.55) calc(66.66% - .5px),rgba(110,230,140,.55) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+ linear-gradient(to bottom,transparent calc(33.33% - .5px),rgba(110,230,140,.55) calc(33.33% - .5px),rgba(110,230,140,.55) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(110,230,140,.55) calc(66.66% - .5px),rgba(110,230,140,.55) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.ph-level{position:absolute;left:50%;top:50%;width:46%;height:0;transform:translate(-50%,-50%) rotate(var(--roll,0deg));pointer-events:none}
+.ph-level i{position:absolute;left:0;right:0;top:-1px;height:2px;background:#fff;opacity:.85}
+.ph-level b{position:absolute;left:50%;top:-7px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:2px solid #fff}
+.ph-level.ok i{background:#5ee08a}.ph-level.ok b{border-color:#5ee08a;background:#5ee08a}
+.ph-pill{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.6);padding:8px 14px;border-radius:20px;font-size:14px;white-space:nowrap}
+.ph-pill i{width:9px;height:9px;border-radius:50%;background:#ffb800}
+.ph-pill.ok i{background:#5ee08a}
+.ph-dots{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:20px}
+.ph-dots b{font-size:14px;margin-right:4px}
+.ph-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}
+.ph-dots i.on{background:#fff}
+.ph-close{position:absolute;top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
+.ph-close .ic{stroke:#fff}
+.ph-shutter{position:absolute;right:calc(22px + env(safe-area-inset-right));top:50%;transform:translateY(-50%);width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid #5ee08a;box-shadow:0 0 0 3px rgba(0,0,0,.35)}
+.ph-shutter:active{transform:translateY(-50%) scale(.92)}
+.ph-cam.shooting .ph-shutter{background:#5ee08a;animation:phpulse .5s infinite alternate}
+@keyframes phpulse{to{opacity:.5}}
+.ph-mode{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:calc(24px + env(safe-area-inset-bottom));font-size:12px;background:rgba(0,0,0,.55);padding:6px 10px;border-radius:12px;max-width:40%}
+@media (orientation:portrait){ .ph-shutter{top:auto;right:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateX(50%)} .ph-shutter:active{transform:translateX(50%) scale(.92)} .ph-dots{bottom:calc(16px + env(safe-area-inset-bottom))} .ph-mode{bottom:calc(160px + env(safe-area-inset-bottom));max-width:80%} }
+
+.ph-cam .ph-shutter,.ph-cam .ph-close,.ph-level b,.ph-dots i,.ph-pill i,.ph-handle i{border-radius:50%!important}
+.ph-cam .ph-pill,.ph-cam .ph-dots{border-radius:20px!important}
+.ph-cam .ph-mode{border-radius:12px!important}
