@@ -59,15 +59,18 @@
     <button class="btn primary big" id="phShoot"><svg class="ic"><use href="#i-crosshair"/></svg> Začít fotit</button>
     <label class="btn big" id="phUpBtn"><svg class="ic"><use href="#i-image"/></svg> Nahrát expozice z galerie<input type="file" id="phUp" accept="image/*" multiple hidden></label>
     <p class="note" id="phNote">Nahrát můžeš 1–7 fotek stejného záběru s různou expozicí (tmavá → světlá). Z jedné fotky udělám aspoň vyladění světla a barev.</p>
+    <div class="card"><div class="row"><span>Srovnat padající svislice</span><input type="checkbox" class="sw" id="phUpright" checked></div></div>
     <div class="card"><h3>Styl</h3><div class="chips" id="phStyle"><div class="chip on" data-v="bright">Světlý a bílý</div><div class="chip" data-v="sunrise">Východ slunce</div></div></div>
   </div>
   <div class="ph-res" id="phRes" hidden>
-    <div class="ph-cmp" id="phCmp"><canvas id="phAfter"></canvas><div class="ph-before" id="phBeforeWrap"><canvas id="phBefore"></canvas></div><div class="ph-handle" id="phHandle"><i></i></div><span class="ph-lbl l">PŘED</span><span class="ph-lbl r">PO</span></div>
+    <div class="ph-cmp" id="phCmp"><canvas id="phAfter"></canvas><div class="ph-before" id="phBeforeWrap"><canvas id="phBefore"></canvas></div><div class="ph-handle" id="phHandle"><i></i></div><span class="ph-lbl l">PŘED</span><span class="ph-lbl r">PO</span><canvas id="phBrush" class="ph-brush"></canvas></div>
+    <div class="ph-brushbar" id="phBrushBar" hidden><span id="phBrushT"></span><div class="btnrow"><button class="btn" id="phBrushCancel">Zrušit</button><button class="btn" id="phBrushUndo">Smazat tahy</button><button class="btn primary" id="phBrushOk">Použít</button></div></div>
     <div class="wrap">
-      <div class="ph-info" id="phInfo"></div>
+      <div class="ph-info" id="phInfo"></div><div class="ph-warn" id="phWarn" hidden></div>
       <button class="btn primary big" id="phSave"><svg class="ic"><use href="#i-download"/></svg> Uložit fotku</button>
       <div class="btnrow"><button class="btn" id="phRot"><svg class="ic"><use href="#i-refresh"/></svg> Otočit</button><button class="btn" id="phAgain"><svg class="ic"><use href="#i-crosshair"/></svg> Fotit další</button><button class="btn" id="phRestyle"><svg class="ic"><use href="#i-palette"/></svg> Jiný styl</button></div>
-      <div class="card ph-ai"><h3>AI dokončení</h3><div class="ph-ai-g" id="phAi"><button data-t="finish">Dokončit</button><button data-t="declutter">Uklidit</button><button data-t="stage">Zařídit</button><button data-t="twilight">Soumrak</button><button data-t="lawn">Trávník</button><button data-t="sky">Obloha</button></div><small class="muted" id="phAiNote">AI dotáhne fotku jako profesionál (odstraní lidi a nepořádek, zařídí, soumrak, trávník, obloha). Jemné detaily zůstanou z tvé fotky.</small></div>
+      <div class="card ph-ai"><h3>Úpravy zdarma <span class="pro-tag">V TELEFONU</span></h3><div class="ph-ai-g" id="phLocal"><button data-t="declutter">Uklidit</button><button data-t="sky">Obloha</button><button data-t="lawn">Trávník</button><button data-t="undo">Vrátit</button></div><small class="muted" id="phAiNote">Uklidit = přetři prstem, co má zmizet. Obloha = přetři okna. Všechno běží v telefonu, nic se nikam neposílá.</small>
+      <h3 style="margin-top:14px">AI online <span class="pro-tag">BRZY</span></h3><div class="ph-ai-g" id="phAi"><button data-t="finish">Dokončit</button><button data-t="stage">Zařídit</button><button data-t="twilight">Soumrak</button></div><small class="muted">Virtuální nábytek a soumrak potřebují velký AI model na serveru – zapneme, až bude zvolená služba.</small></div>
     </div>
   </div>
 </section>

@@ -139,13 +139,18 @@ public class BracketPlugin extends Plugin {
                                                 s.stopRepeating();
                                                 Long t0 = res.get(CaptureResult.SENSOR_EXPOSURE_TIME);
                                                 Integer iso0 = res.get(CaptureResult.SENSOR_SENSITIVITY);
+                                                Float focus = res.get(CaptureResult.LENS_FOCUS_DISTANCE);   // zámek ostření na změřené vzdálenosti
                                                 List<CaptureRequest> burst = new ArrayList<>();
                                                 for (double ev : evs) {
                                                     CaptureRequest.Builder b = cam.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                                                     b.addTarget(reader.getSurface());
                                                     b.set(CaptureRequest.JPEG_QUALITY, (byte) 95);
                                                     if (orient != null) b.set(CaptureRequest.JPEG_ORIENTATION, orient);
-                                                    b.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                                    // zámek: ostření, vyvážení bílé (snímky se liší jen expozicí) + stabilizace objektivu
+                                                    if (focus != null) { b.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF); b.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus); }
+                                                    else b.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                                    b.set(CaptureRequest.CONTROL_AWB_LOCK, true);
+                                                    b.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CameraMetadata.LENS_OPTICAL_STABILIZATION_MODE_ON);
                                                     if (canManual && t0 != null && iso0 != null) {
                                                         // stejná „světelná hodnota“ × 2^EV; nejdřív čas (max. z ruky), zbytek dorovná ISO
                                                         double target = (double) t0 * iso0 * Math.pow(2, ev);

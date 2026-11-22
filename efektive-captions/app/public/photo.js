@@ -145,7 +145,12 @@ PH.toneMap = (im, stops) => {
   return {W,H,f:o,k};
 };
 PH.finish = (im, style) => {
-  const st=style||'bright'; im=PH.toneMap(PH.denoise(im, im._single?1:0.6), im._single?2.6:3.4);
+  const st=style||'bright';
+  // zrnitost ve stínech (šum) → méně vytahovat stíny a víc odšumit, ať nevznikají barevné fleky
+  let nz=0; { const k=Math.max(1,Math.round(Math.max(im.W,im.H)/800)), Wn=Math.floor(im.W/k), Hn=Math.floor(im.H/k), sm=[]; for (let y=1;y<Hn-1;y++) for (let x=1;x<Wn-1;x++){ const q=(y*k*im.W+x*k)*3, l=0.2126*im.f[q]+0.7152*im.f[q+1]+0.0722*im.f[q+2]; if (l>0.15||l<0.004) continue; const q2=q+k*3, q3=q+k*im.W*3; const r=Math.abs(im.f[q]-im.f[q2])+Math.abs(im.f[q+2]-im.f[q3+2])+Math.abs(im.f[q+1]-im.f[q2+1]); sm.push(r/Math.max(0.02,l)); } sm.sort((a,b)=>a-b); nz=sm.length>200?sm[sm.length>>1]:0; }
+  const noisy=clamp((nz-0.35)/0.6,0,1);   // 0 = čistá fotka, 1 = hodně zrnitá
+  im=PH.toneMap(PH.denoise(im, (im._single?1:0.6)*(1+noisy*1.2)), (im._single?2.6:3.4)+noisy*2.2);
+  im._noisy=noisy;
   const {W,H}=im, n=W*H, f=new Float32Array(im.f);
   // 1) vyvážení bílé: šedý svět z neutrálních světlých ploch (stěny, strop)
   // bílý bod = medián poměrů barev u nejsvětlejších málo barevných ploch (stěny, strop) – robustní, bez přestřelení do modra
@@ -173,7 +178,7 @@ PH.finish = (im, style) => {
     t = t*t*(3-2*t)*0.25 + t*0.75;                                     // jemná S-křivka
     const k = l>1e-4 ? clamp(t,0,1.02)/l : 1;
     let r=f[i*3]*gain*k, g=f[i*3+1]*gain*k, b=f[i*3+2]*gain*k;
-    const m=(r+g+b)/3, satK = st==='sunrise'?1.12:1.06;                 // sytost (barvy čisté, ne křiklavé)
+    const m=(r+g+b)/3, satK = (st==='sunrise'?1.12:1.06)*(1-0.25*(im._noisy||0));                 // sytost (barvy čisté, ne křiklavé)
     r=m+(r-m)*satK; g=m+(g-m)*satK; b=m+(b-m)*satK;
     // světlé neutrální plochy dočistit do bílé (stěny/strop bez nádechu)
     const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
@@ -190,6 +195,8 @@ PH.process = async (blobs, opt={}) => {
   let imgs=[]; for (const b of blobs){ imgs.push(await PH.toImg(b,maxSide)); await tick(); }
   // stejný rozměr (kdyby se lišil)
   const {W,H}=imgs[0]; imgs=imgs.filter(im=>im.W===W && im.H===H);
+  // prázdné / černé / úplně bílé snímky pryč (vadný záběr ze série)
+  if (imgs.length>1){ const ok=imgs.filter(im=>{ const m=meanLum(im); return m>0.004 && m<0.995; }); if (ok.length) imgs=ok; }
   // seřadit od nejtmavší po nejsvětlejší; referencí je prostřední
   imgs=imgs.map(im=>({im,m:meanLum(im)})).sort((a,b)=>a.m-b.m).map(x=>x.im);
   const ref=imgs[Math.floor((imgs.length-1)/2)];
@@ -197,15 +204,24 @@ PH.process = async (blobs, opt={}) => {
   const shifts=[]; for (let k=0;k<imgs.length;k++){ if (imgs[k]===ref){ shifts.push([0,0]); continue; } const s=PH.alignShift(ref,imgs[k]); shifts.push(s); imgs[k]=shiftImg(imgs[k],s[0],s[1]); await tick(); }   // alignShift vrací posun, který záběr srovná s referencí
   imgs.forEach(im=>{ im._fused=false; });
   let fused = imgs.length>1 ? await PH.fuse(imgs,(p)=>onP(0.1+p*0.75,'Spojuji expozice…')) : {...imgs[0], _single:true};
-  const before=ref; imgs=null;   // uvolnit paměť záběrů
+  let before=ref; imgs=null;   // uvolnit paměť záběrů
+  const sharp=PH.sharpness(before), blurry=sharp<1.2e-3;
+  // srovnání padajících svislic (stejně i „před“, ať porovnání sedí)
+  let up=null; if (opt.upright!==false){ onP(0.87,'Srovnávám svislice…'); await tick(); up=PH.uprightParams(fused); if (up){ fused=PH.upright(fused,up); before=PH.upright(before,up); } }
   onP(0.9,'Dotahuji světlo a barvy…'); await tick();
   const out = PH.finish(fused, opt.style);
   onP(1,'Hotovo');
-  return {out, before, shifts, count:blobs.length};
+  return {out, before, shifts, count:blobs.length, used:shifts.length, blurry, sharp, upright:up};
 };
 
 // ---------- kamera: expoziční řada (kde to prohlížeč dovolí) ----------
 PH.EVS = [-6,-4,-2,0,2];
+// žebříček expozic podle počtu snímků, které zařízení zvládne (stejné konstanty jako ProMyPhoto)
+PH.LADDER = {5:[-6,-4,-2,0,2], 4:[-6,-2,0,2], 3:[-3,0,2], 2:[-3,0], 1:[0]};
+PH.ladder = n => PH.LADDER[Math.max(1,Math.min(5,n|0))];
+// když je v náhledu hodně přepálených míst, posune se celá série dolů (clip > 2 % → max −1 EV)
+PH.highlightBias = video => { try{ const w=160, h=Math.max(1,Math.round(w*video.videoHeight/video.videoWidth)), c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(video,0,0,w,h);
+  const d=x.getImageData(0,0,w,h).data; let clip=0; for (let i=0;i<d.length;i+=4) if (d[i]>=250||d[i+1]>=250||d[i+2]>=250) clip++; const fr=clip/(w*h); return fr>0.02 ? Math.max(-1,-fr*10) : 0; }catch(e){ return 0; } };
 PH.camera = {
   stream:null, track:null, caps:{}, video:null,
   async open(video){
@@ -229,22 +245,26 @@ PH.camera = {
   async still(){ // plné rozlišení přes ImageCapture, jinak snímek z videa
     try{ if (global.ImageCapture){ const ic=new ImageCapture(this.track); const b=await ic.takePhoto(); if (b && b.size) return b; } }catch(e){}
     return this.frame(); },
-  async bracket(onShot){
+  async bracket(onShot, opt){
     const t=this.track, c=this.caps, mode=this.mode(), shots=[];
     const settle=()=>new Promise(r=>setTimeout(r,450));
     if (mode==='none'){ shots.push(await this.still()); onShot&&onShot(1,1); return {shots,mode}; }
-    const s0=t.getSettings?t.getSettings():{};
+    const s0=t.getSettings?t.getSettings():{}, bias=opt&&opt.bias||0;
+    // zámek vyvážení bílé a zaostření, ať snímky sedí na sebe a liší se jen expozicí
+    try{ const lk={}; if ((c.whiteBalanceMode||[]).includes('manual')) lk.whiteBalanceMode='manual'; if ((c.focusMode||[]).includes('manual')) lk.focusMode='manual'; if (Object.keys(lk).length) await t.applyConstraints({advanced:[lk]}); }catch(e){}
     if (mode==='time'){
       const t0=s0.exposureTime||((c.exposureTime.min+c.exposureTime.max)/40), iso0=s0.iso||(c.iso?c.iso.min*2:100);
       const tMaxHand=Math.min(c.exposureTime.max, 333);   // max ~1/30 s z ruky (jednotky 100 µs)
-      for (let k=0;k<PH.EVS.length;k++){ const E=t0*iso0*Math.pow(2,PH.EVS[k]);
-        let tt=clamp(t0*Math.pow(2,PH.EVS[k]), c.exposureTime.min, tMaxHand), iso=c.iso?clamp(E/tt,c.iso.min,c.iso.max):undefined;
+      const evs=PH.ladder(5).map(e=>e+bias);
+      for (let k=0;k<evs.length;k++){ const E=t0*iso0*Math.pow(2,evs[k]);
+        let tt=clamp(t0*Math.pow(2,evs[k]), c.exposureTime.min, tMaxHand), iso=c.iso?clamp(E/tt,c.iso.min,c.iso.max):undefined;
         const adv={exposureMode:'manual', exposureTime:tt}; if (iso) adv.iso=iso;
         try{ await t.applyConstraints({advanced:[adv]}); }catch(e){}
-        await settle(); shots.push(await this.frame()); onShot&&onShot(k+1,PH.EVS.length); }
+        await settle(); shots.push(await this.frame()); onShot&&onShot(k+1,evs.length); }
       try{ await t.applyConstraints({advanced:[{exposureMode:'continuous'}]}); }catch(e){}
     } else {
-      const ec=c.exposureCompensation, vals=[-2,-1,0,1,2].map(v=>clamp(v,ec.min,ec.max));
+      // korekce expozice má malý rozsah → žebříček, který se do něj vejde (bez opakování stejných hodnot)
+      const ec=c.exposureCompensation; let vals=[]; for (const n of [5,4,3,2]){ vals=[...new Set(PH.ladder(n).map(v=>clamp(v+bias,ec.min,ec.max)))]; if (vals.length===n) break; }
       for (let k=0;k<vals.length;k++){ try{ await t.applyConstraints({advanced:[{exposureCompensation:vals[k]}]}); }catch(e){} await settle(); shots.push(await this.frame()); onShot&&onShot(k+1,vals.length); }
       try{ await t.applyConstraints({advanced:[{exposureCompensation:0}]}); }catch(e){}
     }
@@ -275,6 +295,108 @@ PH.aiBlend = (base, ai, opt={}) => {
   for (let c=0;c<3;c++){ const A=chan(up,c), bA=blurGray(A,W,H,r);
     for (let i=0;i<n;i++){ const k=clamp(mm[i]*1.6,0,1), det=clamp(Lb[i]-dB[i],-0.06,0.06)*0.9, mixed=bA[i]+det; out[i*3+c]=clamp(k*A[i]+(1-k)*mixed,0,1); } }
   return {out:{W,H,f:out}, blended:true, shift:s};
+};
+// ---------- obloha (zdarma, v telefonu): přepálená okna a bledá obloha → čistá modrá s jemnými mraky ----------
+function hsv(r,g,b){ const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let h=0; if (d>1e-6){ if (mx===r) h=((g-b)/d)%6; else if (mx===g) h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; if (h<0) h+=360; } return [h, mx>0?d/mx:0, mx]; }
+PH.skyMask = im => { const {W,H,f}=im, n=W*H, m=new Float32Array(n);
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){ const i=y*W+x, r=f[i*3],g=f[i*3+1],b=f[i*3+2], [h,sa,v]=hsv(r,g,b);
+    const blown = v>0.93 && sa<0.12, pale = v>0.62 && h>185 && h<250 && sa>0.08 && sa<0.55;   // přepálené okno / bledě modrá obloha
+    m[i] = (blown||pale) ? (y<H*0.85?1:0.4) : 0; }
+  // jen souvislé větší plochy (ne odlesky na stole)
+  const sm=blurGray(m,W,H,Math.max(3,Math.round(Math.max(W,H)/150))); for (let i=0;i<n;i++) m[i]=clamp((sm[i]-0.45)/0.3,0,1);
+  return m; };
+PH.skyWith = (im, m) => { const r=PH.sky(im, m); return r.out; };
+PH.sky = (im, mIn) => { const {W,H,f}=im, n=W*H, m=mIn||PH.skyMask(im), out=new Float32Array(f);
+  let area=0; for (let i=0;i<n;i+=5) area+=m[i]; if (area*5 < n*0.004) return {out:im, changed:false};
+  // obloha: shora sytá modrá, k obzoru světlejší; jemné mraky (hodnotový šum)
+  const rnd=(x,y)=>{ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); };
+  const noise=(x,y)=>{ const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi, u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf); return (rnd(xi,yi)*(1-u)+rnd(xi+1,yi)*u)*(1-v)+(rnd(xi,yi+1)*(1-u)+rnd(xi+1,yi+1)*u)*v; };
+  const sc=6/Math.max(W,H);
+  for (let y=0;y<H;y++){ const t=y/H, top=[0.30,0.55,0.86], hor=[0.74,0.85,0.95];
+    for (let x=0;x<W;x++){ const i=y*W+x, a=m[i]; if (a<=0.001) continue;
+      const k=Math.min(1,t*1.4), cl=clamp((noise(x*sc*3,y*sc*7)*0.65+noise(x*sc*9,y*sc*18)*0.35-0.55)*2.4,0,0.75);
+      for (let c=0;c<3;c++){ const sky=top[c]*(1-k)+hor[c]*k, v=sky*(1-cl)+0.97*cl; out[i*3+c]=f[i*3+c]*(1-a)+v*a; } } }
+  return {out:{W,H,f:out}, changed:true}; };
+// ---------- trávník (zdarma): zelenější, rovnoměrný, svěží ----------
+PH.lawn = im => { const {W,H,f}=im, n=W*H, out=new Float32Array(f); let cnt=0;
+  for (let i=0;i<n;i++){ const r=f[i*3],g=f[i*3+1],b=f[i*3+2], [h,sa,v]=hsv(r,g,b);
+    if (h<45||h>165||sa<0.12||v<0.08||v>0.95) continue;   // žlutozelená až zelená
+    const w=clamp((sa-0.12)/0.15,0,1)*clamp((Math.min(h-45,165-h))/15,0,1); if (w<=0) continue; cnt++;
+    const nh=h+(105-h)*0.55, ns=Math.min(1,sa*1.35+0.05), nv=Math.min(1,v*1.06);   // posun k sytě zelené
+    const C=nv*ns, X=C*(1-Math.abs((nh/60)%2-1)), mm=nv-C; let rr,gg,bb; const hh=nh/60;
+    if (hh<1){rr=C;gg=X;bb=0;} else if (hh<2){rr=X;gg=C;bb=0;} else if (hh<3){rr=0;gg=C;bb=X;} else {rr=0;gg=X;bb=C;}
+    out[i*3]=r*(1-w)+(rr+mm)*w; out[i*3+1]=g*(1-w)+(gg+mm)*w; out[i*3+2]=b*(1-w)+(bb+mm)*w; }
+  return {out:{W,H,f:out}, changed:cnt>n*0.01}; };
+// ---------- srovnání padajících svislic (jako VerticalLeanDetector) ----------
+// najde téměř svislé hrany, změří jejich náklon v závislosti na poloze (sbíhání = kamera nakloněná nahoru/dolů) a obraz srovná
+PH.uprightParams = im => { const k=Math.min(1,600/Math.max(im.W,im.H)), W=Math.round(im.W*k), H=Math.round(im.H*k), L=lumOf(resize(im,W,H)), cy=H/2;
+  // Houghova transformace jen pro téměř svislé přímky x = x0 + t·(y−cy), |t| ≤ 0,36 (±20°); bereme jen DLOUHÉ čáry (rámy oken, rohy zdí)
+  const TN=73, T0=-0.36, TS=0.01, acc=new Float32Array(TN*W);
+  for (let y=1;y<H-1;y++) for (let x=1;x<W-1;x++){ const i=y*W+x;
+    const gx=(L[i-W+1]+2*L[i+1]+L[i+W+1])-(L[i-W-1]+2*L[i-1]+L[i+W-1]), gy=(L[i+W-1]+2*L[i+W]+L[i+W+1])-(L[i-W-1]+2*L[i-W]+L[i-W+1]);
+    if (Math.hypot(gx,gy)<0.2 || Math.abs(gx)<2.7*Math.abs(gy)) continue;
+    const tg=-gy/gx;   // sklon hrany dx/dy podle gradientu
+    for (let ti=0;ti<TN;ti++){ const t=T0+ti*TS; if (Math.abs(t-tg)>0.06) continue; const x0=Math.round(x-t*(y-cy)); if (x0>=0&&x0<W) acc[ti*W+x0]+=1; } }
+  const minLen=H*0.28, lines=[];
+  for (let n=0;n<24;n++){ let best=0,bi=-1; for (let q=0;q<acc.length;q++) if (acc[q]>best){ best=acc[q]; bi=q; } if (best<minLen) break;
+    const ti=Math.floor(bi/W), x0=bi%W; lines.push({t:T0+ti*TS, u:(x0-W/2)/W, v:best});
+    for (let a=Math.max(0,ti-4);a<=Math.min(TN-1,ti+4);a++) for (let b=Math.max(0,x0-8);b<=Math.min(W-1,x0+8);b++) acc[a*W+b]=0; }
+  if (lines.length<2) return null;
+  // náklon nahoru = −t ; regrese lean = r + k·u (k jen když jsou čáry na obou stranách)
+  const ln=lines.map(l=>({u:l.u, lean:-l.t, w:l.v})), left=ln.some(l=>l.u<-0.12), right=ln.some(l=>l.u>0.12);
+  let r=0, kk=0;
+  if (left&&right&&ln.length>=3){ let sw=0,su=0,sl=0,suu=0,sul=0; for (const l of ln){ sw+=l.w; su+=l.w*l.u; sl+=l.w*l.lean; suu+=l.w*l.u*l.u; sul+=l.w*l.u*l.lean; } const den=sw*suu-su*su; if (den>1e-9){ kk=(sw*sul-su*sl)/den; r=(sl-kk*su)/sw; } }
+  else { const s=ln.map(l=>l.lean).sort((a,b)=>a-b); r=s[s.length>>1]; }
+  // kontrola: zbytky po regresi malé (jinak to nejsou opravdové svislice)
+  let res=0; for (const l of ln) res+=Math.abs(l.lean-(r+kk*l.u)); res/=ln.length; if (res>0.03) return null;
+  const MAX=0.14; r=clamp(r,-MAX,MAX); kk=clamp(kk,-2*MAX,2*MAX);
+  if (Math.abs(r)<0.004 && Math.abs(kk)<0.012) return null;
+  return {r, k:kk, n:ln.length}; };
+PH.upright = (im, p) => { if (!p) return im; const {W,H,f}=im, cx=W/2, cy=H/2, o=new Float32Array(f.length);
+  // okraje, kde by po srovnání chyběl obraz → oříznout (+ ~2 %)
+  const mx=(Math.abs(p.r)+Math.abs(p.k)*0.5)*H/2 + W*0.02, my=Math.abs(p.r)*W/2 + H*0.02, sx=(W-2*mx)/W, sy=(H-2*my)/H;
+  for (let y=0;y<H;y++){ const yo=cy+(y-cy)*sy; for (let x=0;x<W;x++){ const xo=cx+(x-cx)*sx;
+    const lean=p.r+p.k*(xo-cx)/W, xs=xo+lean*(cy-yo), ys=yo+p.r*(xo-cx);
+    const ix=Math.floor(xs), iy=Math.floor(ys), ax=xs-ix, ay=ys-iy, x0=clamp(ix,0,W-1), x1=clamp(ix+1,0,W-1), y0=clamp(iy,0,H-1), y1=clamp(iy+1,0,H-1), j=(y*W+x)*3;
+    for (let c=0;c<3;c++) o[j+c]=(f[(y0*W+x0)*3+c]*(1-ax)+f[(y0*W+x1)*3+c]*ax)*(1-ay)+(f[(y1*W+x0)*3+c]*(1-ax)+f[(y1*W+x1)*3+c]*ax)*ay; } }
+  return {W,H,f:o}; };
+// ---------- rozmazání (rozptyl Laplaciánu) ----------
+PH.sharpness = im => { const k=Math.min(1,800/Math.max(im.W,im.H)), W=Math.round(im.W*k), H=Math.round(im.H*k), L=lumOf(resize(im,W,H)); let s=0,s2=0,n=0;
+  for (let y=1;y<H-1;y++) for (let x=1;x<W-1;x++){ const i=y*W+x, v=4*L[i]-L[i-1]-L[i+1]-L[i-W]-L[i+W]; s+=v; s2+=v*v; n++; } const m=s/n; return s2/n-m*m; };
+// ---------- AI úklid v telefonu (zdarma): MI-GAN – vymaže označené místo a dopočítá ho z okolí ----------
+let ortSess=null;
+async function migan(){ if (ortSess) return ortSess;
+  if (!global.ort){ await new Promise((ok,ko)=>{ const s=document.createElement('script'); s.src='vendor/ort/ort.wasm.min.js'; s.onload=ok; s.onerror=()=>ko(new Error('AI knihovna se nenačetla')); document.head.appendChild(s); }); }
+  ort.env.wasm.wasmPaths=new URL('vendor/ort/',location.href).href; ort.env.wasm.numThreads=1;
+  ortSess=await ort.InferenceSession.create(new URL('models/migan.onnx',location.href).href,{executionProviders:['wasm']}); return ortSess; }
+PH.inpaintReady=()=>!!ortSess;
+// mask: Uint8Array W*H (1 = vymazat). Vrací nový obrázek.
+PH.inpaint = async (im, mask, onP) => {
+  const {W,H}=im; let x0=W,y0=H,x1=-1,y1=-1;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) if (mask[y*W+x]){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  if (x1<0) return im;
+  onP&&onP(0.1,'Načítám AI model…'); const s=await migan(); onP&&onP(0.5,'AI maže a dopočítává…');
+  // čtvercový výřez kolem masky (s okolím, aby model věděl, čím díru vyplnit)
+  const bw=x1-x0+1, bh=y1-y0+1, side=Math.min(Math.max(W,H), Math.max(Math.round(Math.max(bw,bh)*2.2), 256));
+  let cx0=Math.round((x0+x1)/2-side/2), cy0=Math.round((y0+y1)/2-side/2); cx0=clamp(cx0,0,Math.max(0,W-side)); cy0=clamp(cy0,0,Math.max(0,H-side));
+  const sw=Math.min(side,W), sh=Math.min(side,H), S=512, N=S*S, t=new Float32Array(4*N), f=im.f;
+  // dilatace masky o pár px (okraje objektu, stíny)
+  const dil=new Uint8Array(W*H), R=Math.max(2,Math.round(Math.max(bw,bh)*0.04));
+  for (let y=Math.max(0,y0-R);y<=Math.min(H-1,y1+R);y++) for (let x=Math.max(0,x0-R);x<=Math.min(W-1,x1+R);x++){ let on=0; for (let dy=-R;dy<=R&&!on;dy+=Math.max(1,R>>1)) for (let dx=-R;dx<=R&&!on;dx+=Math.max(1,R>>1)){ const yy=y+dy, xx=x+dx; if (yy>=0&&yy<H&&xx>=0&&xx<W&&mask[yy*W+xx]) on=1; } dil[y*W+x]=on; }
+  for (let j=0;j<S;j++) for (let i=0;i<S;i++){ const sx=Math.min(W-1,cx0+Math.floor((i+0.5)*sw/S)), sy=Math.min(H-1,cy0+Math.floor((j+0.5)*sh/S)), k=j*S+i, q=sy*W+sx, m=dil[q]?0:1;
+    t[k]=m-0.5; for (let c=0;c<3;c++) t[(1+c)*N+k]=(clamp(f[q*3+c],0,1)*2-1)*m; }
+  const o=(await s.run({input:new ort.Tensor('float32',t,[1,4,S,S])})).output.data;
+  onP&&onP(0.9,'Skládám…');
+  // zpět do fotky: jen v (rozšířené) masce, s měkkým okrajem a srovnáním jasu/barvy na okraji
+  const soft=blurGray(Float32Array.from(dil),W,H,Math.max(2,R)), out=new Float32Array(f);
+  const sample=(c,x,y)=>{ const u=clamp((x-cx0)*S/sw-0.5,0,S-1), v=clamp((y-cy0)*S/sh-0.5,0,S-1), ix=Math.floor(u), iy=Math.floor(v), ax=u-ix, ay=v-iy, i1=Math.min(S-1,ix+1), j1=Math.min(S-1,iy+1), P=c*N;
+    return ((o[P+iy*S+ix]*(1-ax)+o[P+iy*S+i1]*ax)*(1-ay)+(o[P+j1*S+ix]*(1-ax)+o[P+j1*S+i1]*ax)*ay+1)/2; };
+  // barevný posun na okraji (model občas lehce ztmaví)
+  let dr=[0,0,0], dn=0; for (let y=Math.max(cy0,y0-2*R);y<=Math.min(cy0+sh-1,y1+2*R);y+=2) for (let x=Math.max(cx0,x0-2*R);x<=Math.min(cx0+sw-1,x1+2*R);x+=2){ const q=y*W+x; if (soft[q]>0.02 && soft[q]<0.5 && !dil[q]){ for (let c=0;c<3;c++) dr[c]+=f[q*3+c]-sample(c,x,y); dn++; } }
+  if (dn) dr=dr.map(v=>v/dn);
+  for (let y=Math.max(0,cy0);y<Math.min(H,cy0+sh);y++) for (let x=Math.max(0,cx0);x<Math.min(W,cx0+sw);x++){ const q=y*W+x, a=Math.min(1,soft[q]*1.6); if (a<=0.001) continue;
+    for (let c=0;c<3;c++) out[q*3+c]=f[q*3+c]*(1-a)+clamp(sample(c,x,y)+dr[c],0,1)*a; }
+  onP&&onP(1,'Hotovo'); return {W,H,f:out};
 };
 global.PH = PH;
 })(window);
