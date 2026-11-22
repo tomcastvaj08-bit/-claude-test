@@ -1,3 +1,13 @@
 {
-  "functions": { "api/transcribe.js": { "maxDuration": 60 }, "api/pro.js": { "maxDuration": 20 } }
+ "functions": {
+  "api/transcribe.js": {
+   "maxDuration": 60
+  },
+  "api/pro.js": {
+   "maxDuration": 20
+  },
+  "api/enhance.js": {
+   "maxDuration": 60
+  }
+ }
 }

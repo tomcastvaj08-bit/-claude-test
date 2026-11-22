@@ -1112,5 +1112,10 @@ window.I18N_DICT.en={
 "Dotahuji světlo a barvy…": "Finishing light and colours…",
 "Fotka je ve Fotkách": "The photo is in Photos",
 "Kamera nejde spustit – povol přístup ke kameře, nebo nahraj fotky z galerie": "Camera can't start – allow camera access, or upload photos from the gallery",
-"Otočit": "Rotate"
+"Otočit": "Rotate",
+"5 expozic → jedna profesionální fotka nemovitosti": "5 exposures → one professional property photo",
+"Dokončit": "Finish",
+"Obloha": "Sky",
+"AI dotáhne fotku jako profesionál (odstraní lidi a nepořádek, zařídí, soumrak, trávník, obloha). Jemné detaily zůstanou z tvé fotky.": "AI finishes the photo like a pro (removes people and clutter, staging, twilight, lawn, sky). Fine details stay from your photo.",
+"AI úprava se nepovedla:": "AI edit failed:"
 };

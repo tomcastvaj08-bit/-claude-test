@@ -70,6 +70,7 @@ async function openCam(){
     if (!motionOn){ window.addEventListener('devicemotion',onMotion); window.addEventListener('deviceorientation',onOrient); motionOn=true; }
     try{ if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); }catch(e){}
     const mode=await PH.camera.open($('phVideo'));
+    if (window.NATIVE&&NATIVE.plugin&&NATIVE.plugin('Bracket')){ $('phMode').textContent='5 expozic · −6 až +2 EV · plné rozlišení'; dots(0,5); return; }
     $('phMode').textContent = mode==='time' ? '5 expozic · −6 až +2 EV' : mode==='comp' ? '5 expozic · −2 až +2 EV' : 'Tento prohlížeč neumí měnit expozici – vyfotím 1 záběr (5 expozic umí mobilní aplikace)';
     dots(0, mode==='none'?1:5);
   }catch(e){ console.warn(e); closeCam(); toastP('Kamera nejde spustit – povol přístup ke kameře, nebo nahraj fotky z galerie'); }
@@ -80,9 +81,36 @@ $('phShoot').onclick=openCam;
 $('phCamClose').onclick=closeCam;
 $('phShutter').onclick=async()=>{
   if ($('phShutter').disabled) return; $('phShutter').disabled=true; $('phCam').classList.add('shooting');
-  try{ const dir=holdDir(); const r=await PH.camera.bracket((k,n)=>dots(k,n)); closeCam(); let shots=r.shots; if (dir){ shots=[]; for (const b of r.shots) shots.push(await rotBlob(b,dir)); } run(shots); }
+  try{ const dir=holdDir(); const nb=window.NATIVE&&NATIVE.plugin&&NATIVE.plugin('Bracket');
+    if (nb){ // mobilní aplikace: skutečná expoziční řada v plném rozlišení (Camera2)
+      PH.camera.close(); dots(0,5); const r=await nb.capture({evs:PH.EVS, wide:true}); closeCam();
+      const shots=[]; for (const p of r.paths){ const u=window.Capacitor.convertFileSrc(p); shots.push(await (await fetch(u)).blob()); }
+      run(shots); return; }
+    const r=await PH.camera.bracket((k,n)=>dots(k,n)); closeCam(); let shots=r.shots; if (dir){ shots=[]; for (const b of r.shots) shots.push(await rotBlob(b,dir)); } run(shots); }
   catch(e){ console.warn(e); toastP('Focení se nepovedlo: '+(e.message||e)); }
   finally{ $('phShutter').disabled=false; $('phCam').classList.remove('shooting'); }
+};
+// ---------- AI dokončení ----------
+let aiBusy=false;
+$('phAi').onclick=async e=>{ const b=e.target.closest('[data-t]'); if (!b || aiBusy || !lastRes) return; aiBusy=true;
+  const task=b.dataset.t, label=b.textContent; document.querySelectorAll('#phAi button').forEach(x=>x.disabled=true); b.classList.add('busy');
+  $('phAiNote').textContent='AI pracuje na úpravě „'+label+'“… (10–30 s)';
+  try{
+    const base=lastRes.out, k=Math.min(1,2048/Math.max(base.W,base.H)), c=document.createElement('canvas'); c.width=Math.round(base.W*k); c.height=Math.round(base.H*k);
+    c.getContext('2d').drawImage($('phAfter'),0,0,c.width,c.height);
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.9));
+    const hd={'Content-Type':'image/jpeg'}; try{ const q=localStorage.getItem('efk_aiquota'); if (q) hd['X-AiQuota']=JSON.parse(q); }catch(e){} try{ const pp=PRO.get(); if (pp&&pp.token) hd['X-Pro']=pp.token; }catch(e){}
+    const api=(window.NATIVE&&NATIVE.api)?NATIVE.api('/api/enhance?task='+task):'/api/enhance?task='+task;
+    const r=await fetch(api,{method:'POST',headers:hd,body:blob}); const j=await r.json().catch(()=>({error:'Server neodpověděl'}));
+    if (j.quota) try{ localStorage.setItem('efk_aiquota',JSON.stringify(j.quota)); }catch(e){}
+    if (!r.ok || !j.image) throw new Error(j.error||('Chyba '+r.status));
+    const bin=atob(j.image), u=new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    const ai=await PH.toImg(new Blob([u],{type:j.mime||'image/png'}), 4096);
+    const bl=PH.aiBlend(base, ai);
+    lastRes={...lastRes, out:bl.out}; showResult(lastRes);
+    $('phAiNote').textContent=`Hotovo: ${label}`+(bl.blended?' · detaily z tvé fotky':' · '+bl.why)+(j.left!=null?` · zbývá dnes zdarma: ${j.left}`:'');
+  }catch(err){ console.warn(err); $('phAiNote').textContent='AI úprava se nepovedla: '+(err.message||err); }
+  finally{ aiBusy=false; document.querySelectorAll('#phAi button').forEach(x=>{ x.disabled=false; x.classList.remove('busy'); }); }
 };
 window.__ph={run, showPhoto, openCam};
 })();

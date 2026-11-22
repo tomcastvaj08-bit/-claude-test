@@ -619,8 +619,10 @@ button,.chip,.sub>div,.seg>div,.scope>div,.look,.tpl,.mkc,.pg,.lay,label.btn{tou
 .ph-lbl{position:absolute;top:10px;font-size:11px;font-weight:800;letter-spacing:.1em;color:#fff;background:rgba(0,0,0,.45);padding:4px 8px}
 .ph-lbl.l{left:10px}.ph-lbl.r{right:10px}
 .ph-info{font-size:13px;color:var(--muted);margin:10px 0 4px}
-.ph-ai-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
-.ph-ai-g button{padding:10px 4px;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);opacity:.55}
+.ph-ai-g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.ph-ai-g button{padding:11px 4px;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.ph-ai-g button:disabled{opacity:.5}
+.ph-ai-g button.busy{background:linear-gradient(90deg,#1f4dff,#13b97a);color:#fff;opacity:1;animation:phpulse .6s infinite alternate}
 /* kamera */
 body.ph-camon{overflow:hidden}
 .ph-cam{position:fixed;inset:0;z-index:200;background:#000;color:#fff}
@@ -651,3 +653,10 @@ body.ph-camon{overflow:hidden}
 .ph-cam .ph-shutter,.ph-cam .ph-close,.ph-level b,.ph-dots i,.ph-pill i,.ph-handle i{border-radius:50%!important}
 .ph-cam .ph-pill,.ph-cam .ph-dots{border-radius:20px!important}
 .ph-cam .ph-mode{border-radius:12px!important}
+
+.ph-entry{display:flex;align-items:center;gap:12px;width:100%;margin:14px 0 18px;padding:12px 14px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.ph-entry:active{transform:translate(1px,1px)}
+.ph-entry-t{flex:1;display:flex;flex-direction:column;gap:2px}
+.ph-entry-t b{font-size:15px;letter-spacing:-.02em}
+.ph-entry-t small{font-size:12px;color:var(--muted)}
+.ph-entry-a{width:18px;height:18px;opacity:.6}

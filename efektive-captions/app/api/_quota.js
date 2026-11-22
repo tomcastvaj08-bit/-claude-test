@@ -59,18 +59,18 @@ function clientIp(req) {
 const wavSeconds = buf => Math.max(1, Math.ceil(Math.max(0, buf.length - 44) / 32000));
 
 // před přepisem: smí? → {ok, pro, ticket, used, limit, need}
-async function check(req, seconds) {
-  const h = req.headers || {};
-  const limit = FREE();
+async function check(req, seconds, o) {
+  const h = req.headers || {}; o = o || {};
+  const limit = o.limit != null ? o.limit : FREE();
   if (await isPro(h['x-pro'])) return { ok: true, pro: true };
   if (!limit) return { ok: true, pro: false, unlimited: true };
   const d = today();
-  let t = readSigned(h['x-quota'], qSecret());
+  let t = readSigned(h[o.header || 'x-quota'], qSecret() + (o.ns || ''));
   if (!t || t.d !== d) t = { d, u: 0, id: (t && t.id) || crypto.randomBytes(9).toString('base64url') };
-  const ip = clientIp(req), iu = ipUse.get(ip);
+  const ip = (o.ns || '') + clientIp(req), iu = ipUse.get(ip);
   const ipUsed = iu && iu.d === d ? iu.u : 0;
   const ok = t.u + seconds <= limit && ipUsed + seconds <= limit * IP_FACTOR;
-  return { ok, pro: false, ticket: t, ip, used: t.u, limit, need: seconds };
+  return { ok, pro: false, ticket: t, ip, used: t.u, limit, need: seconds, ns: o.ns || '' };
 }
 // po úspěšném přepisu: přičíst a vrátit nový lístek + kolik zbývá
 function commit(q, seconds) {
@@ -79,7 +79,7 @@ function commit(q, seconds) {
   q.ticket.u += seconds;
   const iu = ipUse.get(q.ip); ipUse.set(q.ip, { d, u: (iu && iu.d === d ? iu.u : 0) + seconds });
   if (ipUse.size > 5000) ipUse.clear();
-  return { quota: writeSigned(q.ticket, qSecret()), left: Math.max(0, q.limit - q.ticket.u) };
+  return { quota: writeSigned(q.ticket, qSecret() + (q.ns || '')), left: Math.max(0, q.limit - q.ticket.u) };
 }
 
 module.exports = { check, commit, wavSeconds, FREE, today };

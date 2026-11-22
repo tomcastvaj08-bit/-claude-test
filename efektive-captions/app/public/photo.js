@@ -115,6 +115,22 @@ function blurBox(src,W,H,r){ const t=new Float32Array(src.length), o=new Float32
   for (let y=0;y<H;y++){ let s=0; const row=y*W; for (let x=-r;x<=r;x++) s+=src[row+clamp(x,0,W-1)]; for (let x=0;x<W;x++){ t[row+x]=s/d; s+=src[row+clamp(x+r+1,0,W-1)]-src[row+clamp(x-r,0,W-1)]; } }
   for (let x=0;x<W;x++){ let s=0; for (let y=-r;y<=r;y++) s+=t[clamp(y,0,H-1)*W+x]; for (let y=0;y<H;y++){ o[y*W+x]=s/d; s+=t[clamp(y+r+1,0,H-1)*W+x]-t[clamp(y-r,0,H-1)*W+x]; } }
   return o; }
+// odšumění: barevný šum (tečky) pryč úplně, jasový jen ve stínech (tam ho vytažení stínů zesílí)
+PH.denoise = (im, strength) => {
+  const {W,H,f}=im, n=W*H, st=strength==null?1:strength, Y=new Float32Array(n), cr=new Float32Array(n), cg=new Float32Array(n), cb=new Float32Array(n);
+  for (let i=0;i<n;i++){ const r=Math.max(0,f[i*3]), g=Math.max(0,f[i*3+1]), b=Math.max(0,f[i*3+2]), y=0.2126*r+0.7152*g+0.0722*b; Y[i]=y; cr[i]=r-y; cg[i]=g-y; cb[i]=b-y; }
+  const rc=Math.max(2,Math.round(Math.max(W,H)/350)), Cr=guided2(cr,Y,W,H,rc), Cg=guided2(cg,Y,W,H,rc), Cb=guided2(cb,Y,W,H,rc);
+  const Yg=guided(Y,W,H,Math.max(2,Math.round(Math.max(W,H)/700)),0.0008*st), Ym=blurBox(Y,W,H,6), o=new Float32Array(f.length);
+  for (let i=0;i<n;i++){ const w=clamp((0.3-Ym[i])/0.25,0,1)*0.85*st, y=Y[i]*(1-w)+Yg[i]*w;
+    o[i*3]=y+Cr[i]; o[i*3+1]=y+Cg[i]; o[i*3+2]=y+Cb[i]; }
+  return {...im,f:o};
+};
+// barevný kanál vyhlazený podle jasu (hrany barev drží na hranách předmětů)
+function guided2(p,I,W,H,r){ const eps=0.0025, n=p.length, mI=blurBox(I,W,H,r), mp=blurBox(p,W,H,r), Ip=new Float32Array(n), II=new Float32Array(n);
+  for (let i=0;i<n;i++){ Ip[i]=I[i]*p[i]; II[i]=I[i]*I[i]; }
+  const mIp=blurBox(Ip,W,H,r), mII=blurBox(II,W,H,r), a=new Float32Array(n), b=new Float32Array(n);
+  for (let i=0;i<n;i++){ const v=mII[i]-mI[i]*mI[i]; a[i]=(mIp[i]-mI[i]*mp[i])/(v+eps); b[i]=mp[i]-a[i]*mI[i]; }
+  const ma=blurBox(a,W,H,r), mb=blurBox(b,W,H,r), o=new Float32Array(n); for (let i=0;i<n;i++) o[i]=ma[i]*I[i]+mb[i]; return o; }
 // mapování tónů (Durand): velké světelné rozdíly (okno vs. stín) se stlačí, drobné detaily zůstanou → stíny se otevřou, okna se stáhnou
 PH.toneMap = (im, stops) => {
   const {W,H}=im, n=W*H, f=im.f, lg=new Float32Array(n);
@@ -124,12 +140,12 @@ PH.toneMap = (im, stops) => {
   const smp=[]; for (let i=0;i<n;i+=13) smp.push(base[i]); smp.sort((a,b)=>a-b);
   const lo=smp[Math.floor(smp.length*0.01)], hi=smp[Math.floor(smp.length*0.995)], R=stops||3.2, k=Math.min(1,R/Math.max(0.1,hi-lo));
   const o=new Float32Array(f.length);
-  for (let i=0;i<n;i++){ const nl=(base[i]-hi)*k + (lg[i]-base[i])*1.12 - 0.05, sc=Math.pow(2,nl-lg[i]);
+  for (let i=0;i<n;i++){ const nl=(base[i]-hi)*k + (lg[i]-base[i])*1.05 - 0.05, sc=Math.pow(2,nl-lg[i]);
     o[i*3]=f[i*3]*sc; o[i*3+1]=f[i*3+1]*sc; o[i*3+2]=f[i*3+2]*sc; }
   return {W,H,f:o,k};
 };
 PH.finish = (im, style) => {
-  const st=style||'bright'; im=PH.toneMap(im, im._single?2.6:3.4);
+  const st=style||'bright'; im=PH.toneMap(PH.denoise(im, im._single?1:0.6), im._single?2.6:3.4);
   const {W,H}=im, n=W*H, f=new Float32Array(im.f);
   // 1) vyvážení bílé: šedý svět z neutrálních světlých ploch (stěny, strop)
   // bílý bod = medián poměrů barev u nejsvětlejších málo barevných ploch (stěny, strop) – robustní, bez přestřelení do modra
@@ -153,7 +169,7 @@ PH.finish = (im, style) => {
   for (let i=0;i<n;i++){
     const l=L[i]*gain; let t=Math.pow(clamp((l-blk)/(1-blk),0,1),gam);
     t = t + (l - big[i]*gain)*0.18;                                   // lokální kontrast
-    t = t + (L[i]-det[i])*gain*0.9;                                   // ostření detailů
+    t = t + (L[i]-det[i])*gain*0.35*clamp(l*3,0,1);                  // jemné ostření (ve stínech skoro žádné – nezesilovat šum)
     t = t*t*(3-2*t)*0.25 + t*0.75;                                     // jemná S-křivka
     const k = l>1e-4 ? clamp(t,0,1.02)/l : 1;
     let r=f[i*3]*gain*k, g=f[i*3+1]*gain*k, b=f[i*3+2]*gain*k;
@@ -234,5 +250,29 @@ PH.camera = {
   }
 };
 
+// ---------- spojení AI výsledku s originálem: světlo/barvy/změny z AI, jemné detaily z originálu (bez „AI textury“) ----------
+function resize(im, W2, H2){ const {W,H,f}=im, o=new Float32Array(W2*H2*3), sx=W/W2, sy=H/H2;
+  for (let y=0;y<H2;y++){ const fy=Math.min(H-1,Math.max(0,(y+0.5)*sy-0.5)), y0=Math.floor(fy), y1=Math.min(H-1,y0+1), wy=fy-y0;
+    for (let x=0;x<W2;x++){ const fx=Math.min(W-1,Math.max(0,(x+0.5)*sx-0.5)), x0=Math.floor(fx), x1=Math.min(W-1,x0+1), wx=fx-x0, j=(y*W2+x)*3;
+      for (let c=0;c<3;c++) o[j+c]=(f[(y0*W+x0)*3+c]*(1-wx)+f[(y0*W+x1)*3+c]*wx)*(1-wy)+(f[(y1*W+x0)*3+c]*(1-wx)+f[(y1*W+x1)*3+c]*wx)*wy; } }
+  return {W:W2,H:H2,f:o}; }
+function chan(im,c){ const n=im.W*im.H, o=new Float32Array(n); for (let i=0;i<n;i++) o[i]=im.f[i*3+c]; return o; }
+PH.aiBlend = (base, ai, opt={}) => {
+  const {W,H}=base; if (Math.abs(ai.W/ai.H - W/H) > 0.03) return {out:resize(ai,W,H), blended:false, why:'jiný poměr stran'};
+  let up=resize(ai,W,H);
+  // posun mezi AI a originálem (AI občas obraz o kousek posune) – když je velký, detaily nemíchat
+  const s=PH.alignShift(base,up); if (Math.abs(s[0])>W*0.01 || Math.abs(s[1])>H*0.01) return {out:up, blended:false, why:'AI posunula obraz'};
+  if (s[0]||s[1]) up=shiftImg(up,s[0],s[1]);
+  const r=Math.max(2,Math.round(Math.max(W,H)/(opt.detailDiv||260))), n=W*H, out=new Float32Array(n*3);
+  const Lb=lumOf(base), La=lumOf(up), lb=blurGray(Lb,W,H,r*3), la=blurGray(La,W,H,r*3);
+  const m=new Float32Array(n); for (let i=0;i<n;i++){ const d=Math.abs(Math.log2((la[i]+0.02)/(lb[i]+0.02))); m[i]=clamp((d-0.35)/0.5,0,1); }   // jas se změnil o víc než ~⅓ EV → obsah se změnil
+  const mm=blurGray(m,W,H,r*2);
+  const dB=blurGray(Lb,W,H,r);   // jen jasová kresba originálu (žádné barevné tečky), omezená
+  { const d1=blurGray(Lb,W,H,1), smp=[]; for (let i=0;i<n;i+=17) smp.push(Math.abs(Lb[i]-d1[i])); smp.sort((a,b)=>a-b);
+    const noise=smp[smp.length>>1]; if (noise>(opt.noiseMax||0.006)) return {out:up, blended:false, why:'fotka je zrnitá – čistý AI výsledek', noise}; }
+  for (let c=0;c<3;c++){ const A=chan(up,c), bA=blurGray(A,W,H,r);
+    for (let i=0;i<n;i++){ const k=clamp(mm[i]*1.6,0,1), det=clamp(Lb[i]-dB[i],-0.06,0.06)*0.9, mixed=bA[i]+det; out[i*3+c]=clamp(k*A[i]+(1-k)*mixed,0,1); } }
+  return {out:{W,H,f:out}, blended:true, shift:s};
+};
 global.PH = PH;
 })(window);

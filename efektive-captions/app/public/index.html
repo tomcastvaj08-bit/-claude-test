@@ -26,13 +26,10 @@
   </header>
   <div class="wrap">
     <div class="hero">
-      <div class="eyebrow"><i></i>Co dnes vytvoříš?</div>
-      <h1 class="hero-t">Video s <em>titulky</em><br>nebo <em>realitní</em> fotky.</h1>
-      <p class="hero-s">Titulky z řeči za pár vteřin, nebo profesionální fotky nemovitosti z telefonu (5 expozic spojených do jedné).</p>
-      <div class="modes">
-        <label class="mode-card" id="modeVideo"><span class="mode-ic"><svg class="ic"><use href="#i-type"/></svg></span><b>Titulky k videu</b><small>Nahraj video, AI přepíše řeč</small><input type="file" id="fileIn" accept="video/*" hidden></label>
-        <button class="mode-card" id="modePhoto"><span class="mode-ic g"><svg class="ic"><use href="#i-home"/></svg></span><b>Realitní fotky</b><small>5 expozic → jedna dokonalá fotka</small></button>
-      </div>
+      <div class="eyebrow"><i></i>Titulky do reels</div>
+      <h1 class="hero-t">Nahraj video.<br><em>Titulky</em> jsou hotové.</h1>
+      <p class="hero-s">AI přepíše řeč, appka z ní udělá titulky ve stylu EFEKTIVE a ty si je doladíš a uložíš.</p>
+      <label class="btn primary big" id="modeVideo"><span class="plus"><svg class="ic"><use href="#i-plus"/></svg></span> Nové video<input type="file" id="fileIn" accept="video/*" hidden></label>
       <p class="hero-tip">Tip: natoč video v aplikaci Fotoaparát (ideálně 4K) a pak ho tu vyber z Fotek. Volba „Pořídit video“ v nabídce iPhonu ukládá video ve snížené kvalitě.</p>
       <img class="mascot" id="mascot" alt="Maskot EFEKTIVE" hidden>
     </div>
@@ -41,6 +38,7 @@
       <li><span class="dot g"></span><b>Přepis</b><small>AI zapíše řeč</small></li>
       <li><span class="dot y"></span><b>Ulož</b><small>hotové video</small></li>
     </ol>
+    <button class="ph-entry" id="modePhoto"><span class="mode-ic g"><svg class="ic"><use href="#i-home"/></svg></span><span class="ph-entry-t"><b>Realitní fotky</b><small>5 expozic → jedna profesionální fotka nemovitosti</small></span><svg class="ic ph-entry-a"><use href="#i-arrow-right"/></svg></button>
     <div class="sec-h">Nedávné projekty</div>
     <div id="projects" class="projects"><div class="muted">Zatím žádné projekty.</div></div>
     <div id="homeTpl" hidden></div>
@@ -69,7 +67,7 @@
       <div class="ph-info" id="phInfo"></div>
       <button class="btn primary big" id="phSave"><svg class="ic"><use href="#i-download"/></svg> Uložit fotku</button>
       <div class="btnrow"><button class="btn" id="phRot"><svg class="ic"><use href="#i-refresh"/></svg> Otočit</button><button class="btn" id="phAgain"><svg class="ic"><use href="#i-crosshair"/></svg> Fotit další</button><button class="btn" id="phRestyle"><svg class="ic"><use href="#i-palette"/></svg> Jiný styl</button></div>
-      <div class="card ph-ai"><h3>AI dokončení <span class="pro-tag">BRZY</span></h3><div class="ph-ai-g"><button disabled>Uklidit</button><button disabled>Zařídit</button><button disabled>Soumrak</button><button disabled>Trávník</button></div><small class="muted">Odstranění věcí a lidí, virtuální nábytek, soumrak a zelený trávník – připravujeme.</small></div>
+      <div class="card ph-ai"><h3>AI dokončení</h3><div class="ph-ai-g" id="phAi"><button data-t="finish">Dokončit</button><button data-t="declutter">Uklidit</button><button data-t="stage">Zařídit</button><button data-t="twilight">Soumrak</button><button data-t="lawn">Trávník</button><button data-t="sky">Obloha</button></div><small class="muted" id="phAiNote">AI dotáhne fotku jako profesionál (odstraní lidi a nepořádek, zařídí, soumrak, trávník, obloha). Jemné detaily zůstanou z tvé fotky.</small></div>
     </div>
   </div>
 </section>
