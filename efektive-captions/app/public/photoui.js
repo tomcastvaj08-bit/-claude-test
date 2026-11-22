@@ -17,6 +17,8 @@ function holdDir(){ // +1 = otočit po směru hodin, −1 = proti, 0 = držený 
   const portraitScreen=!(screen.orientation&&/landscape/.test(screen.orientation.type)) && Math.abs(window.orientation||0)!==90; if (!portraitScreen) return 0;
   const ios=/iP(hone|ad|od)/.test(navigator.userAgent); return ((ios?-1:1)*gx>0) ? 1 : -1; }
 function rotImg(im){ const {W,H,f}=im, o=new Float32Array(f.length); for (let y=0;y<H;y++) for (let x=0;x<W;x++){ const nx=H-1-y, ny=x, i=(y*W+x)*3, j=(ny*H+nx)*3; o[j]=f[i]; o[j+1]=f[i+1]; o[j+2]=f[i+2]; } return {W:H,H:W,f:o}; }
+// telefony (hlavně iPhone v Safari) mají na stránku málo paměti → menší pracovní rozlišení, ať appka nespadne
+const lowMem=()=>/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.deviceMemory && navigator.deviceMemory<=4);
 // ---------- zpracování ----------
 async function run(blobs){
   if (phBusy || !blobs || !blobs.length) return; phBusy=true; lastBlobs=blobs;
@@ -24,7 +26,7 @@ async function run(blobs){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='busy'));
   try{
     const big = Math.max(screen.width,screen.height)*(window.devicePixelRatio||1);
-    const res = await PH.process(blobs,{style, maxSide: blobs.length>1 ? 2400 : 3200, onP:(p,m)=>busyOn('Realitní fotka',m||'',p)});
+    const res = await PH.process(blobs,{style, maxSide: blobs.length>1 ? (lowMem()?1500:2000) : (lowMem()?1900:2400), onP:(p,m)=>busyOn('Realitní fotka',m||'',p)});
     lastRes=res; showResult(res);
   }catch(e){ console.error(e); showPhoto(); toastP('Fotku se nepodařilo zpracovat: '+(e.message||e)); }
   finally{ phBusy=false; }

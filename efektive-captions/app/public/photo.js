@@ -195,11 +195,13 @@ PH.process = async (blobs, opt={}) => {
   const ref=imgs[Math.floor((imgs.length-1)/2)];
   onP(0.08,'Zarovnávám záběry…');
   const shifts=[]; for (let k=0;k<imgs.length;k++){ if (imgs[k]===ref){ shifts.push([0,0]); continue; } const s=PH.alignShift(ref,imgs[k]); shifts.push(s); imgs[k]=shiftImg(imgs[k],s[0],s[1]); await tick(); }   // alignShift vrací posun, který záběr srovná s referencí
+  imgs.forEach(im=>{ im._fused=false; });
   let fused = imgs.length>1 ? await PH.fuse(imgs,(p)=>onP(0.1+p*0.75,'Spojuji expozice…')) : {...imgs[0], _single:true};
+  const before=ref; imgs=null;   // uvolnit paměť záběrů
   onP(0.9,'Dotahuji světlo a barvy…'); await tick();
   const out = PH.finish(fused, opt.style);
   onP(1,'Hotovo');
-  return {out, before:ref, shifts, count:imgs.length};
+  return {out, before, shifts, count:blobs.length};
 };
 
 // ---------- kamera: expoziční řada (kde to prohlížeč dovolí) ----------
@@ -207,7 +209,7 @@ PH.EVS = [-6,-4,-2,0,2];
 PH.camera = {
   stream:null, track:null, caps:{}, video:null,
   async open(video){
-    const want={facingMode:{ideal:'environment'}, width:{ideal:4032}, height:{ideal:3024}, frameRate:{ideal:30}};
+    const want={facingMode:{ideal:'environment'}, width:{ideal:2560}, height:{ideal:1920}, frameRate:{ideal:30}};
     let s=null;
     try{ // širokoúhlý objektiv (0,5×), když ho telefon v prohlížeči nabídne
       const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');

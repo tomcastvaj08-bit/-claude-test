@@ -561,8 +561,13 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // jak titulky přijíždějí: po jednom slově (když ho řekne) / celý řádek najednou / celý titulek najednou
   const by = S.enterBy || (S.wordByWord ? 'word' : 'page');
   let st0 = by==='line' ? E.words[L.ids[0]].s : by==='page' ? p.s : w.s;
-  // slovo řečené těsně před koncem titulku: vyjede o kousek dřív, aby stihlo celé doletět (min. ~0,4 s před odchodem)
-  if (st0 > p.s) st0 = Math.max(p.s, Math.min(st0, p.e - exitDur - 0.4));
+  // poslední řádek/slovo řečené těsně před koncem titulku: všechny příjezdy se úměrně zhustí (pořadí i rozestupy zůstanou),
+  // aby i poslední stihl celý doletět (min. ~0,4 s před odchodem)
+  if (st0 > p.s && by!=='page'){
+    let last=p._lastSt; if (last==null || p._lastBy!==by){ last=E.words[p.b].s; if (by==='line'){ try{ const g=E.groupsOf(p,S); last=E.words[g[g.length-1].ids[0]].s; }catch(e){} } p._lastSt=last; p._lastBy=by; }
+    const latest=p.e-exitDur-0.4;
+    if (last>latest && last>p.s) st0 = p.s + (st0-p.s)*Math.max(0,(latest-p.s))/(last-p.s);
+  }
   const age=t-st0; let exit=clamp((p.e-t)/exitDur); let exitE = S.fadeOut ? (exit*exit*(3-2*exit)) : exit;
   if (flick){ exit=exitE=flickA(p.e-t); }   // odchod flickerem: titulek párkrát zabliká a zhasne
   const since=age;
