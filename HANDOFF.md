@@ -220,6 +220,15 @@ Změny proměnných ve Vercelu se projeví až po novém nasazení (Redeploy).
 - iOS build a TestFlight po založení Apple účtu;
 - další úpravy stylů a Reality podle předloh. Postup: změřit předlohu snímek po snímku, ukázat srovnání obrázkem, teprve pak nasadit.
 
+**Rozpracované – jazyky rozhraní (viz `efektive-captions/JAZYKY.md`):**
+- Hotová je čeština (zdroj) a angličtina (`app/public/i18n/en.js`, asi 820 textů).
+- Dalších 20 jazyků je v nabídce jako „Brzy“ (`UI_LANGS` v `app/public/i18n.js`): sk, pl, de, fr, es, it, pt, nl, hu, ro, uk, ru, tr, ar, hi, zh, ja, ko, id, vi.
+- Postup u každého jazyka:
+  1. přeložit slovník `i18n/<kód>.js` (pevné texty, bez AI za běhu);
+  2. přeložit 85 návodů rádce v `radce.js` (dnes jen CZ+EN);
+  3. zapnout jazyk v `i18n.js` a načíst ho v `index.html`.
+- Arabština potřebuje rozvržení zprava doleva.
+
 **Technické dluhy / nápady:**
 - Denní limit bez databáze jde obejít (smazání dat + změna sítě). Pro přísný limit přidat malou databázi (např. Upstash).
 - Přepis závisí na bezplatném limitu Groq (zhruba 8 h zvuku denně pro všechny uživatele dohromady). Při růstu zapnout placený Groq.
