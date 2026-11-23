@@ -3,7 +3,7 @@
 name: EFEKTIVE Captions – Android
 on:
   push:
-    branches: [claude/lucid-maxwell-4k9eaj]
+    branches: [claude/lucid-maxwell-4k9eaj, claude/efektive-app]
     paths: ['efektive-captions/app/public/**', 'efektive-captions/mobile/**', '.github/workflows/efektive-android.yml']
   workflow_dispatch:
 jobs:

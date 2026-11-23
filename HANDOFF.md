@@ -2,7 +2,7 @@
 
 Stav k 23. 11. 2026. EFEKTIVE je aplikace na automatické titulky do videí (reels) a na realitní fotky. Běží jako webová appka a připravuje se jako mobilní appka pro Android a iOS.
 
-- **Kód:** složka `efektive-captions/` v tomto repu, pracovní větev `claude/lucid-maxwell-4k9eaj`. Větev `main` se zatím nepoužívá ani nemění.
+- **Kód:** složka `efektive-captions/` v tomto repu. **Pracovní větev od 23. 11. večer: `claude/efektive-app`** (vychází z `claude/lucid-maxwell-4k9eaj`, commit 56e796e; ta stará větev se už nemění). Větev `main` se zatím nepoužívá ani nemění.
 - **Další dokumenty v repu:**
   - `efektive-captions/JAK_FUNGUJE_PREPIS.md` – přepis řeči, ceny, denní limit
   - `efektive-captions/NAVOD_BASE.md`, `NAVOD_TITULKY.md` – styl Base a titulky
@@ -156,7 +156,7 @@ efektive-captions/
 Změny proměnných ve Vercelu se projeví až po novém nasazení (Redeploy).
 
 **Mobilní appky (GitHub Actions)**
-- Spouští se samy při pushi do `claude/lucid-maxwell-4k9eaj`, pokud se změní `app/public`, `mobile` nebo workflow. Ručně jde spustit přes „Run workflow“.
+- Spouští se samy při pushi do `claude/efektive-app` (a staré `claude/lucid-maxwell-4k9eaj`), pokud se změní `app/public`, `mobile` nebo workflow. Ručně jde spustit přes „Run workflow“.
 - **Android:** APK k vyzkoušení se sestaví vždy (artefakt `efektive-captions-apk`). Podepsaný AAB pro Google Play (artefakt `efektive-captions-aab`) jen s klíči z kap. 6. Číslo verze = číslo běhu workflow.
 - **iOS:** sestavení a TestFlight jen s klíči Apple. Bez nich se Mac vůbec nespouští.
 
@@ -235,3 +235,16 @@ Změny proměnných ve Vercelu se projeví až po novém nasazení (Redeploy).
   - regrese všech 25 stylů;
   - tok zapnutí a vypnutí Reality.
 - Reality potřebuje rozbor obličeje a postavy (MediaPipe). V prohlížeči bez grafiky trvá několik minut, proto je dobré výsledek uložit a v dalších testech jen načíst (`HEAD.load`, `PERSON.load`).
+
+## 9. Deník převzetí
+
+**23. 11. 2026 večer – převzetí do nového chatu (větev `claude/efektive-app`)**
+- Starý chat „Video titulky“ je zamčený jen pro důvěryhodná zařízení, práce pokračuje tady.
+- Ověřeno:
+  - produkce na Vercelu `READY` (nasazeno 23. 11. 19:47 UTC), verze `20261123194732`;
+  - nasazené soubory (app.js, engine.js, reality.js, export.js, native.js, photo.js) jsou shodné s kódem v repu;
+  - domény captions.efektive.cz a efektive-titulky.vercel.app ověřené ve Vercelu, záložní adresa vrací 200;
+  - GitHub Actions pro commit 56e796e: Android i iOS úspěšně;
+  - syntaxe všech JS souborů v pořádku, lokální server startuje.
+- Pozor: cloudové prostředí Clauda nemá v síťových pravidlech povolené `captions.efektive.cz`, takže se odsud kontroluje přes `efektive-titulky.vercel.app` (stejné nasazení).
+- Workflow pro Android a iOS se nově spouštějí i z větve `claude/efektive-app`.
