@@ -83,7 +83,7 @@ E.G = {
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
   gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
-  behind:'off', emBlend:null, emBlendMix:0.5, faceAuto:true, faceDodgeX:false,
+  behind:'off', emBlend:null, emBlendMix:0.5, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
@@ -652,8 +652,12 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     // odchod: celý titulek švihne DOPRAVA s lehkým natočením a stopou za ~3 snímky (0,1 s)
     if (since<0) return;
     const Wm=Math.min(cv.width,cv.height);
-    const q=clamp(since/0.14), e=1-Math.pow(1-q,3), d0=-(1-e)*Wm*0.5; dx+=d0; trail=d0*0.7; a=clamp(since/0.04)*exA;
-    const xo=1-exit; if (xo>0){ const xe=xo*xo, d1=xe*Wm*0.75; dx+=d1; dy+=xe*L.px*0.5; er+=xe*0.14; trail=-d1*0.6; a=Math.max(0,1-xo*0.5); }
+    // Reality hook: velké slovo se občas místo příletu „rozbliká“ na místě (flicker), nebo flickerem zmizí místo švihnutí
+    const fIn=L.em&&S.flickIn, fOut=L.em&&S.flickOut;
+    if (fIn){ a = since<FLICK_DUR ? FLICK[FLICK.length-1-Math.min(FLICK.length-1,Math.floor(since*30))] : 1; }
+    else { const q=clamp(since/0.14), e=1-Math.pow(1-q,3), d0=-(1-e)*Wm*0.5; dx+=d0; trail=d0*0.7; a=clamp(since/0.04)*exA; }
+    if (fOut){ a*=flickA(p.e-t); if (t>=p.e) return; }
+    else { const xo=1-exit; if (xo>0){ const xe=xo*xo, d1=xe*Wm*0.75; dx+=d1; dy+=xe*L.px*0.5; er+=xe*0.14; trail=-d1*0.6; a=Math.max(0,1-xo*0.5); } }
   }
   else if (S.anim==='glowslide'){
     // Styl 25: bílý řádek se objeví hned (střih), zelený se odhaluje po písmenech zleva (viz glowReveal níž); odchod = střih

@@ -153,7 +153,7 @@ function build(W, H) {
     if (!(p.layer | 0)) ti++; const k = Math.max(0, ti) * 2 + (p.layer | 0);   // titulky na hrudi patří k hornímu titulku (stejné místo, barva, zarovnání)
     const S0 = E.styleOf(p); let emK = 1;
     // hlavní (barevné) slovo musí být čitelné i za hlavou: krátké slovo se zvětší, až bude zhruba na půl šířky obrazu
-    { const L0 = E.layoutPage(p, { ...S0, posX: 50, posY: 50 }), ew = Math.max(0, ...L0.filter(l => l.em).map(l => l.total)); if (ew > 0) emK = Math.max(1, Math.min(1.9, W * 0.5 / ew)); }
+    { const L0 = E.layoutPage(p, { ...S0, posX: 50, posY: 50 }), ew = Math.max(0, ...L0.filter(l => l.em).map(l => l.total)); if (ew > 0) emK = Math.max(1, Math.min(2.3, W * 0.6 / ew)); }   // velké slovo ~60 % šířky (prémiový, čitelný vzhled)
     const S = emK > 1 ? { ...S0, emScale: S0.emScale * emK } : S0, M = measure(p, S); if (!M) return;
     let role = (p.layer | 0) ? 'chest' : 'top';   // vždy střídání: za hlavou / na hrudi
     const hd = headFor(p, W, H);
@@ -252,6 +252,11 @@ RE.apply = (p, S, t) => {
     if (r === 1 || r === 3) v[em] = { it: true, wt: 900 }; else if (r === 2) v[em] = { wt: 900 };
     if (sm.length) { const j = sm[(o.pi + (E.G.reSeed || 0)) % sm.length]; if (r === 2 || r === 3) v[j] = { wt: 600 }; else if (r === 4) v[j] = { it: true }; else if (r === 0) v[j] = { it: true, wt: 600 }; }
     S.lineVary = v; }
+  // HOOK: efekty jen sem tam na velkém slově (po horních titulcích = větách): 1. shine, 2. flicker, 3. nic, 4. flicker, 5.–6. nic, pak dál občas
+  if (E.G.reFx !== false) { const i = o.pi | 0, sd = E.G.reSeed || 0;
+    const fx = i < 6 ? ['shine', 'flick', '', 'flick', '', ''][i] : ['shine', '', '', 'flick', '', ''][(i - 6 + sd) % 6];
+    S.fxShine = fx === 'shine' && o.role === 'top'; S._ownShine = S.fxShine; S.shineEvery = '1';
+    const fl = fx === 'flick' && o.role === 'top'; S.flickIn = fl && (i + sd) % 4 === 1; S.flickOut = fl && !S.flickIn; S.fxFlicker = false; }
   if (o.col) { S.grad = true; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }
   return S;
 };
