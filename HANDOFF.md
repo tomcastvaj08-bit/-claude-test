@@ -11,6 +11,8 @@ Stav k 23. 11. 2026. EFEKTIVE je aplikace na automatické titulky do videí (ree
 
 ---
 
+> **Pravidla spolupráce s majitelem** (screenshoty předem, krátce v bodech, vše jde vrátit zpět) jsou v `CLAUDE.md` v kořeni repa.
+
 ## 1. Kde aplikace běží
 
 | Co | Kde | Stav |
