@@ -83,7 +83,7 @@ E.G = {
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
   gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
-  behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
+  behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, emNeg:false, emNegLift:0.3, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
@@ -753,7 +753,14 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     if (L.em && S.emAlpha!=null && S.emAlpha<1) c.globalAlpha*=S.emAlpha;   // Reality: velké slovo lehce průhledné (pozadí prosvítá), pořád jedna barva
     if (L.em && S.emBlend) c.globalCompositeOperation=S.emBlend;   // Reality: velké slovo „negativ“ v barvě (difference – prosvítá převrácené pozadí, jako chromový Styl 4)
     if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc), N=Math.max(5,Math.min(18,Math.round(Math.abs(tx)/(L.px*0.06)))); for (let i=N;i>=1;i--){ c.globalAlpha=a0*Math.min(0.35,2.2/N)*(N+1-i)/N; c.drawImage(sp.cv,sp.x+tx*i/N,sp.y); } c.globalAlpha=a0*0.85; }   // stopa pohybu (rozmazání jako v předloze)
-    c.drawImage(sp.cv,sp.x,sp.y); c.globalCompositeOperation='source-over';
+    if (L.em && S.emNeg){
+      // Reality: BAREVNÝ NEGATIV – jako chromový Styl 4 (písmo převrátí pozadí, je vidět, co je za ním), ale obarvené JEDNOU barvou
+      c.globalCompositeOperation='source-over'; c.shadowColor='transparent';
+      c.globalCompositeOperation='difference'; c.fillStyle='#ffffff'; fillT(c,s,0,0,L.px,tk);
+      c.globalCompositeOperation='color'; c.fillStyle=mA; fillT(c,s,0,0,L.px,tk);
+      const a0=c.globalAlpha; c.globalCompositeOperation='screen'; c.globalAlpha=a0*(S.emNegLift??0.3); c.fillStyle=mA; fillT(c,s,0,0,L.px,tk); c.globalAlpha=a0;   // tmavá místa lehce do barvy (čitelné všude)
+    } else c.drawImage(sp.cv,sp.x,sp.y);
+    c.globalCompositeOperation='source-over';
     if (L.em && S.emBlend){ const a0=c.globalAlpha; c.globalAlpha=a0*(S.emBlendMix??0.5); c.drawImage(sp.cv,sp.x,sp.y); c.globalAlpha=a0; }   // + polovičně krytá barva: čitelné i na světlém pozadí
     if (postGlow) postGlow();
   } else if (E._glowPass==='only'){ c.restore(); return; } else {

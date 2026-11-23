@@ -19,7 +19,7 @@ RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? 
 // jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
 RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 400, wEm: 700, mainItalic: false, emItalic: false, size: 104, emScale: 160, track: -3, trackEm: -5, gap: 70, wordGap: 115,
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
-  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', glossOn: 'main', glossAmt: 70, emBlend: null, emAlpha: 0.8, extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', glossOn: 'main', glossAmt: 70, emBlend: null, emAlpha: null, emNeg: true, emNegLift: 0.3, extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
 RE.on = () => !!(E.G.reMode);
 // všechny řezy, které Reality střídá (tučné, kurzíva), načíst dopředu – jinak se šířka změří náhradním písmem a slovo přeteče
 RE.preload = () => { if (!document.fonts || !document.fonts.load) return Promise.resolve(); const f = (E.G.fontEm || '"Poppins"'); const fam = f.includes(',') ? f.split(',')[0] : f;
