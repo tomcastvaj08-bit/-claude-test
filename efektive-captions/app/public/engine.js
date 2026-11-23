@@ -83,7 +83,7 @@ E.G = {
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
   gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
-  behind:'off', faceAuto:true, faceDodgeX:false,
+  behind:'off', emBlend:null, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
@@ -745,8 +745,9 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     if (E._glowPass==='only'){ c.restore(); return; }
     const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
     c.shadowColor='transparent';
+    if (L.em && S.emBlend) c.globalCompositeOperation=S.emBlend;   // Reality: velké slovo „prosvítá“ (screen – světlé pozadí ho zesvětlí)
     if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc), N=Math.max(5,Math.min(18,Math.round(Math.abs(tx)/(L.px*0.06)))); for (let i=N;i>=1;i--){ c.globalAlpha=a0*Math.min(0.35,2.2/N)*(N+1-i)/N; c.drawImage(sp.cv,sp.x+tx*i/N,sp.y); } c.globalAlpha=a0*0.85; }   // stopa pohybu (rozmazání jako v předloze)
-    c.drawImage(sp.cv,sp.x,sp.y);
+    c.drawImage(sp.cv,sp.x,sp.y); c.globalCompositeOperation='source-over';
     if (postGlow) postGlow();
   } else if (E._glowPass==='only'){ c.restore(); return; } else {
   if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa
