@@ -123,7 +123,7 @@ E.FONTS = [
   [ST('Noteworthy','"Caveat", cursive'),700,'Noteworthy Bold'],[ST('Noteworthy','"Caveat", cursive'),300,'Noteworthy Light'],
   [ST('Snell Roundhand','"Pinyon Script", "Dancing Script", cursive'),700,'Snell Roundhand'],['"Pinyon Script"',400,'Pinyon Script (jako Snell, s háčky)'],
   ['"Playfair Display"',700,'Playfair'],['"Playfair Display"',900,'Playfair Black'],['"Playfair Display"',900,'Playfair Black Italic',true],
-  ['"Archivo Expanded"',900,'Archivo Expanded Black (široké, tučné)'],['"Archivo SemiExpanded"',900,'Archivo SemiExpanded Black'],['"Saira Expanded"',900,'Saira Expanded Black (široké, hranaté)'],['"Saira Expanded"',800,'Saira Expanded (široké, hranaté)'],['"Saira"',900,'Saira Black'],['"Saira"',700,'Saira Bold'],
+  ['"Russo One"',400,'Russo One (hranaté, oblé rohy)'],['"Archivo Expanded"',900,'Archivo Expanded Black (široké, tučné)'],['"Archivo SemiExpanded"',900,'Archivo SemiExpanded Black'],['"Saira Expanded"',900,'Saira Expanded Black (široké, hranaté)'],['"Saira Expanded"',800,'Saira Expanded (široké, hranaté)'],['"Saira"',900,'Saira Black'],['"Saira"',700,'Saira Bold'],
   ['"Anton"',400,'Anton'],['"Bebas Neue"',400,'Bebas Neue'],['"Oswald"',700,'Oswald'],['"Nunito"',900,'Nunito Black'],
 ];
 
@@ -199,12 +199,12 @@ E.TEMPLATES = {
   T.zelena_lesk={cat:'trending', d3:true, name:'', set:{...B, ...col('#b8ff0a','#008000','#5ae010'), gradHold:0.42, ...tilt3d, posY:74, layout:'center', enterBy:'line', caseSec:'lower', caseMain:'title', gloss:'gloss',glossAmt:70,glossOn:'main', negativ:false,extrude:0,extrudeStyle:'light'},
     pv:pv('začněte mě','Sledovat',gr('#b8ff0a 40%','#008000')+';text-shadow:0 1px 0 rgba(255,255,255,.5),0 3px 3px rgba(0,0,0,.6)')};
   // Styl 25 – široké hranaté písmo, bílý řádek nahoře, hlavní slovo VELKÝMI zeleně se silnou září, přilet zleva se stopou
-  T.glow_zelena={cat:'trending', name:'', set:{...common, fontMain:'"Archivo Expanded"',wMain:900,fontEm:'"Archivo SemiExpanded"',wEm:900,mainItalic:false,emItalic:false,cond:100,size:45.5,emScale:125.5,track:0,trackEm:0,gap:106,wordGap:85,
+  T.glow_zelena={cat:'trending', name:'', set:{...common, fontMain:'"Russo One"',wMain:400,fontEm:'"Russo One"',wEm:400,mainItalic:false,emItalic:false,cond:120,size:47,emScale:108,track:0,trackEm:0,gap:117,wordGap:85,
     layout:'center',maxLines:2,mainLine:'2',wpp:4,minMainWords:3,breakComma:true,balanceEnd:true,singleSec:true,posX:50,posY:58,tilt:0,tiltX:0,tiltAlt:false,kinetic:0,rot:0,
     cText:'#ffffff',cText2:'#ffffff',textGrad:false,grad:true,gradDir:'hc',gA:'#13d613',gB:'#bdf5bc',c1:'#13d613',c2:'#13d613',c3:'#13d613',c4:'#13d613',altOn:false,
     glow:95,glowMode:'always',glowSec:true,glowSecMul:0.85,bloom:100,shadowSize:32,shadowA:122,shadowDist:28,cShadow:'#000000',extrude:0,negativ:false,gloss:'off',punct:true,
     caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
-    pv:'<span style="font-family:\'Archivo Expanded\';font-weight:900;color:#fff;text-shadow:0 3px 4px rgba(0,0,0,.7)">to říkají</span><br><b style="font-family:\'Archivo SemiExpanded\';font-weight:900;background:linear-gradient(90deg,#1abb1c,#b4f2b4 48%,#1abb1c);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 6px #1aa81c)">BANKY,</b>'};
+    pv:'<span style="font-family:\'Russo One\';font-weight:400;color:#fff;text-shadow:0 3px 4px rgba(0,0,0,.7)">to říkají</span><br><b style="font-family:\'Russo One\';font-weight:400;background:linear-gradient(90deg,#1abb1c,#b4f2b4 48%,#1abb1c);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 6px #1aa81c)">BANKY,</b>'};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
   let n=0; for (const t of Object.values(E.TEMPLATES)) t.name='Styl '+(++n);
@@ -388,7 +388,7 @@ const easeElastic = x => x===0?0:x===1?1:Math.pow(2,-10*x)*Math.sin((x*10-0.75)*
 E.ease={easeBack,easeBounce,easeElastic};
 // ČEŠTINA VŽDY CELÁ: (1) systémové písmo (iPhone), které nemá všechna česká písmena, se nepoužije – celý text jde
 // náhradním písmem ze stacku (žádné míchání písem v jednom slově); (2) u přibalených písem se hned načte i část s háčky/čárkami.
-const CZ_TEST='ÁáČčĎďÉéĚěÍíŇňÓóŘřŠšŤťÚúŮůÝýŽž', BUNDLED=new Set(['Archivo Expanded','Archivo SemiExpanded','Inter Tight','Inter','Montserrat','Poppins','Roboto','Rubik','Nunito','Playfair Display','Libre Baskerville','Courier Prime','Bodoni Moda','Caveat','Dancing Script','Anton','Bebas Neue','Oswald','Outfit','Open Sans','Pinyon Script','Schibsted Grotesk','Saira','Saira Expanded']);
+const CZ_TEST='ÁáČčĎďÉéĚěÍíŇňÓóŘřŠšŤťÚúŮůÝýŽž', BUNDLED=new Set(['Russo One','Archivo Expanded','Archivo SemiExpanded','Inter Tight','Inter','Montserrat','Poppins','Roboto','Rubik','Nunito','Playfair Display','Libre Baskerville','Courier Prime','Bodoni Moda','Caveat','Dancing Script','Anton','Bebas Neue','Oswald','Outfit','Open Sans','Pinyon Script','Schibsted Grotesk','Saira','Saira Expanded']);
 const czCache=new Map(), czLoaded=new Set();
 function famList(st){ return (st.match(/"[^"]+"|'[^']+'|[^,]+/g)||[]).map(x=>x.trim()).filter(Boolean); }
 function czOk(name){ const tc=(czOk.c||(czOk.c=document.createElement('canvas').getContext('2d'))); const w=f=>{ tc.font=`100px ${name}, ${f}`; return CZ_TEST.split('').map(ch=>tc.measureText(ch).width.toFixed(1)).join(); }; return w('monospace')===w('serif'); }
