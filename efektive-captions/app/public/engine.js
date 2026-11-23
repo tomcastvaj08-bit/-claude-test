@@ -414,8 +414,9 @@ function layoutRaw(p,S,scaleMul){
   const base = Math.min(W,H)*0.105*(S.size/100)*scaleMul;
   const groups = E.groupsOf(p,S);
   const maxW=W*0.88, lines=[];
-  const mk=(ids,isEm)=>{
-    const fam=isEm?S.fontEm:S.fontMain, wt=isEm?S.wEm:S.wMain, it=isEm?S.emItalic:S.mainItalic;
+  const mk=(ids,isEm,li)=>{
+    let fam=isEm?S.fontEm:S.fontMain, wt=isEm?S.wEm:S.wMain, it=isEm?S.emItalic:S.mainItalic;
+    const lv=S.lineVary&&S.lineVary[li]; if (lv){ if (lv.wt!=null) wt=lv.wt; if (lv.it!=null) it=lv.it; }   // Reality: řádky střídavě kurzívou / tučněji
     let px=base*(isEm?S.emScale/100:1);
     const track=isEm?(S.trackEm??S.track):S.track, cond=(S.cond||100)/100;
     setFont(ctx,fam,wt,it,px,0);
@@ -423,7 +424,7 @@ function layoutRaw(p,S,scaleMul){
     let total=ws.reduce((a,b)=>a+b,0)+sp*(ids.length-1);
     return {ids,fam,wt,it,px,em:isEm,ws,sp,total,track,cond};
   };
-  for (const g of groups){ const L=mk(g.ids,g.em); L.slot=g.slot; lines.push(L); }
+  for (const g of groups){ const L=mk(g.ids,g.em,lines.length); L.slot=g.slot; lines.push(L); }
   let y=0; const ys=[];
   if (lines.length && lines.every(L=>L.slot!=null) && !S.noSlots){
     // Base: pevné sloty (horní / hlavní / spodní) – horní řádek je na stejném místě i u kratšího titulku
@@ -745,7 +746,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     if (E._glowPass==='only'){ c.restore(); return; }
     const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
     c.shadowColor='transparent';
-    if (L.em && S.emBlend) c.globalCompositeOperation=S.emBlend;   // Reality: velké slovo „prosvítá“ (screen – světlé pozadí ho zesvětlí)
+    if (L.em && S.emBlend) c.globalCompositeOperation=S.emBlend;   // Reality: velké slovo „negativ“ v barvě (difference – prosvítá převrácené pozadí, jako chromový Styl 4)
     if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc), N=Math.max(5,Math.min(18,Math.round(Math.abs(tx)/(L.px*0.06)))); for (let i=N;i>=1;i--){ c.globalAlpha=a0*Math.min(0.35,2.2/N)*(N+1-i)/N; c.drawImage(sp.cv,sp.x+tx*i/N,sp.y); } c.globalAlpha=a0*0.85; }   // stopa pohybu (rozmazání jako v předloze)
     c.drawImage(sp.cv,sp.x,sp.y); c.globalCompositeOperation='source-over';
     if (L.em && S.emBlend){ const a0=c.globalAlpha; c.globalAlpha=a0*(S.emBlendMix??0.5); c.drawImage(sp.cv,sp.x,sp.y); c.globalAlpha=a0; }   // + polovičně krytá barva: čitelné i na světlém pozadí
