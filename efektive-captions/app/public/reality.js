@@ -10,17 +10,20 @@
 (function (g) {
 const RE = g.RE = {};
 // barvy (velké slovo) – jako v předloze; názvy odpovídají nabídce v appce
-RE.COLORS = { 'Citrón': ['#fff200', '#e8cc00'], 'Červená': ['#ff5040', '#e01c1c'], 'Limetková': ['#e2fb3a', '#a3c800'], 'Šedobílá': ['#eeeeee', '#b9b9b9'], 'Bílá': ['#ffffff', '#e2e2e2'],
-  'Žlutá': ['#ffe14a', '#ffb000'], 'Modrá': ['#5cc4ff', '#2a62ff'], 'Růžová': ['#f27ee2', '#b84ee6'], 'Zelená': ['#7dff6a', '#00b84a'], 'Zlatá': ['#fff1b8', '#c98a00'] };
-RE.DEFAULT_MIX = ['Růžová', 'Červená', 'Žlutá', 'Modrá'];   // jako v předloze: barvy se střídají, velká slova „prosvítají“ (screen)
+RE.COLORS = { 'Citrón': ['#fff200', '#e8cc00'], 'Červená': ['#ff4a4a', '#ff4a4a'], 'Limetková': ['#e2fb3a', '#a3c800'], 'Šedobílá': ['#eeeeee', '#b9b9b9'], 'Bílá': ['#ffffff', '#e2e2e2'],
+  'Žlutá': ['#ffd83a', '#ffd83a'], 'Modrá': ['#4aa8ff', '#4aa8ff'], 'Růžová': ['#ee78e2', '#ee78e2'], 'Zelená': ['#7dff6a', '#00b84a'], 'Zlatá': ['#fff1b8', '#c98a00'] };
+RE.DEFAULT_MIX = ['Růžová', 'Žlutá', 'Modrá', 'Červená'];   // jako v předloze: barvy se střídají; každé slovo JEDNA barva, lehce průhledná
 RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? m : RE.DEFAULT_MIX).filter(n => RE.COLORS[n]); return L.length ? L : RE.DEFAULT_MIX; };
 // vzhled, který Real estate styl zapne (a co při vypnutí vrátí ze Stylu 1)
 // jako v předloze: geometrické písmo (Poppins) – malá slova tenká bílá, velká tlustá barevná (~2× větší), těsně přes sebe,
 // jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
 RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 400, wEm: 700, mainItalic: false, emItalic: false, size: 104, emScale: 160, track: -3, trackEm: -5, gap: 70, wordGap: 115,
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
-  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', glossOn: 'main', glossAmt: 70, emBlend: 'difference', emBlendMix: 0.2, extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', glossOn: 'main', glossAmt: 70, emBlend: null, emAlpha: 0.8, extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
 RE.on = () => !!(E.G.reMode);
+// všechny řezy, které Reality střídá (tučné, kurzíva), načíst dopředu – jinak se šířka změří náhradním písmem a slovo přeteče
+RE.preload = () => { if (!document.fonts || !document.fonts.load) return Promise.resolve(); const f = (E.G.fontEm || '"Poppins"'); const fam = f.includes(',') ? f.split(',')[0] : f;
+  return Promise.all(['300', '400', '600', '700', '900', 'italic 300', 'italic 600', 'italic 900'].map(w => document.fonts.load(w + ' 60px ' + fam, 'AaČčŘřŽž').catch(() => {}))).then(() => RE.invalidate()); };
 // stabilizace na obličej: samostatně (E.G.faceStab) nebo jako součást starého Reality módu
 RE.stabOn = () => !!(E.G.faceStab || (E.G.reMode && E.G.reStab !== false));
 
@@ -146,12 +149,20 @@ function key(W, H) {
 }
 RE.invalidate = () => { plan = null; segCache = null; };
 RE._plan = () => plan;
+function varyFor(p, pi) {
+  if (E.G.reVary === false || (p.layer | 0)) return null;
+  const em = p.reEm >= 0 ? p.reEm : (p.reLines ? p.reLines.length - 1 : 0), n = p.reLines ? p.reLines.length : 1, sm = [...Array(n).keys()].filter(i => i !== em);
+  const r = (pi * 7 + (E.G.reSeed || 0) * 3) % 5, v = [];
+  if (r === 1 || r === 3) v[em] = { it: true, wt: 900 }; else if (r === 2) v[em] = { wt: 900 };
+  if (sm.length) { const j = sm[(pi + (E.G.reSeed || 0)) % sm.length]; if (r === 2 || r === 3) v[j] = { wt: 600 }; else if (r === 4) v[j] = { it: true }; else if (r === 0) v[j] = { it: true, wt: 600 }; }
+  return v;
+}
 function build(W, H) {
   const out = new Map(), pl = E.G.rePlace || 'alt', mix = RE.mix(), seed = E.G.reSeed || 0;
   let lastTop = null, ti = -1;
   E.pages.forEach((p, k0) => {
     if (!(p.layer | 0)) ti++; const k = Math.max(0, ti) * 2 + (p.layer | 0);   // titulky na hrudi patří k hornímu titulku (stejné místo, barva, zarovnání)
-    const S0 = E.styleOf(p); let emK = 1;
+    const vary = varyFor(p, Math.floor((Math.max(0, ti) * 2 + (p.layer | 0)) / 2)), S0 = vary ? { ...E.styleOf(p), lineVary: vary } : E.styleOf(p); let emK = 1;
     // hlavní (barevné) slovo musí být čitelné i za hlavou: krátké slovo se zvětší, až bude zhruba na půl šířky obrazu
     { const L0 = E.layoutPage(p, { ...S0, posX: 50, posY: 50 }), ew = Math.max(0, ...L0.filter(l => l.em).map(l => l.total)); if (ew > 0) emK = Math.max(1, Math.min(2.3, W * 0.6 / ew)); }   // velké slovo ~60 % šířky (prémiový, čitelný vzhled)
     const S = emK > 1 ? { ...S0, emScale: S0.emScale * emK } : S0, M = measure(p, S); if (!M) return;
@@ -192,7 +203,7 @@ function build(W, H) {
     const half = M.w * kk / 2;
     const x = Math.max(half + W * 0.03, Math.min(W * 0.97 - half, (hd ? hd.rx : W / 2) + jig));
     const col = RE.COLORS[mix[(k + seed) % mix.length]];
-    out.set(E.keyOf(p) + '|' + (p.layer | 0), { pi: Math.floor(k / 2), x: x / W * 100, y: y / H * 100, k: kk, emK, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align, role });
+    out.set(E.keyOf(p) + '|' + (p.layer | 0), { pi: Math.floor(k / 2), vary, x: x / W * 100, y: y / H * 100, k: kk, emK, col, hd, tb: M.tb * kk, bb: M.bb * kk, half, align, role });
   });
   return out;
 }
@@ -247,17 +258,13 @@ RE.apply = (p, S, t) => {
   S.behind = behind && g.PERSON && PERSON.data ? 'on' : 'off';
   S.size *= o.k; if (o.emK > 1) S.emScale *= o.emK;
   // řádky horního titulku náhodně (ale u titulku vždy stejně): jednou kurzíva, jednou tučnější… jako v předloze
-  if (o.role === 'top' && E.G.reVary !== false) { const em = p.reEm >= 0 ? p.reEm : (p.reLines ? p.reLines.length - 1 : 0), n = p.reLines ? p.reLines.length : 1, sm = [...Array(n).keys()].filter(i => i !== em);
-    const r = (o.pi * 7 + (E.G.reSeed || 0) * 3) % 5, v = [];
-    if (r === 1 || r === 3) v[em] = { it: true, wt: 900 }; else if (r === 2) v[em] = { wt: 900 };
-    if (sm.length) { const j = sm[(o.pi + (E.G.reSeed || 0)) % sm.length]; if (r === 2 || r === 3) v[j] = { wt: 600 }; else if (r === 4) v[j] = { it: true }; else if (r === 0) v[j] = { it: true, wt: 600 }; }
-    S.lineVary = v; }
+  if (o.vary) S.lineVary = o.vary;
   // HOOK: efekty jen sem tam na velkém slově (po horních titulcích = větách): 1. shine, 2. flicker, 3. nic, 4. flicker, 5.–6. nic, pak dál občas
   if (E.G.reFx !== false) { const i = o.pi | 0, sd = E.G.reSeed || 0;
     const fx = i < 6 ? ['shine', 'flick', '', 'flick', '', ''][i] : ['shine', '', '', 'flick', '', ''][(i - 6 + sd) % 6];
     S.fxShine = fx === 'shine' && o.role === 'top'; S._ownShine = S.fxShine; S.shineEvery = '1';
     const fl = fx === 'flick' && o.role === 'top'; S.flickIn = fl && (i + sd) % 4 === 1; S.flickOut = fl && !S.flickIn; S.fxFlicker = false; }
-  if (o.col) { S.grad = true; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }
+  if (o.col) { S.grad = o.col[0] !== o.col[1]; S.gA = o.col[0]; S.gB = o.col[1]; S.gradDir = 'v'; S.c1 = S.c2 = S.c3 = S.c4 = o.col[0]; }   // jedna barva = bez přechodu
   return S;
 };
 // dvojice titulků (volá E.buildPages): druhý jde do spodní vrstvy, oba zmizí spolu, když začne další dvojice

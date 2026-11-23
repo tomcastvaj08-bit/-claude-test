@@ -886,7 +886,7 @@ async function rlToggle(btn){
   if (!(HEAD.data && PERSON.data)) return;
   E.G.faceStab=true; E.G.stabMode='lock';   // obličej zamčený přesně na střed
   for (const k in E.meta){ const o=E.meta[k]&&E.meta[k].own; if (o) for (const x of ['posX','posY','_manualPos','size','reMoved','reDx','reDy']) delete o[x]; }
-  Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel();
+  Object.assign(E.G, RE.LOOK, {reMode:true, style:'base'}); E.buildPages(); RE.invalidate(); changed(); renderPanel(); if (RE.preload) RE.preload().then(()=>changed());
   toast('Hotovo – titulky se střídají za hlavou a na hrudi');
 }
 binders.reality=()=>{

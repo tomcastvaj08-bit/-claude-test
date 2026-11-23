@@ -83,7 +83,7 @@ E.G = {
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
   gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
-  behind:'off', emBlend:null, emBlendMix:0.5, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
+  behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
   // rozšíření (šablona Base): plnění řádků podle šířky, zúžení písma, přeliv vedlejších řádků, odchod celého bloku
   split:'words', rowMax:61, cond:100, trackEm:null, textGrad:false, cText2:'#d4d4d4', gradSpan:0.5, singleSec:false,
@@ -473,7 +473,7 @@ E.mainColor=mainColor;
 // ---------- „vypálené“ slovo: písmo + stín (+ hloubka) v jednom obrázku, s mezipamětí ----------
 const SPR=new Map();
 // dočtené písmo (např. část s háčky) → předkreslená slova zahodit, ať se překreslí správným písmem
-if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>SPR.clear());
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>{ SPR.clear(); if (window.RE && RE.invalidate) RE.invalidate(); });   // Reality: rozmístění změřit znovu správným písmem
 function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,S.extrude||0,S.extrudeStyle||'light',S.gloss||'off',S.glossAmt??70,S.glossOn||'main',L.em?1:0,kind==='glow'?S.glow+'|'+glowCol:'b'+(S.bloom||0)+'|'+(L.em?glowCol:S.cText)].join('~');
   let sp=SPR.get(key); if (sp){ SPR.delete(key); SPR.set(key,sp); return sp; }
@@ -750,6 +750,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     if (E._glowPass==='only'){ c.restore(); return; }
     const sp=wordSprite('main',s,L,tk,fd,fill,S,mA);
     c.shadowColor='transparent';
+    if (L.em && S.emAlpha!=null && S.emAlpha<1) c.globalAlpha*=S.emAlpha;   // Reality: velké slovo lehce průhledné (pozadí prosvítá), pořád jedna barva
     if (L.em && S.emBlend) c.globalCompositeOperation=S.emBlend;   // Reality: velké slovo „negativ“ v barvě (difference – prosvítá převrácené pozadí, jako chromový Styl 4)
     if (Math.abs(trail)>1){ const a0=c.globalAlpha, tx=trail/Math.max(0.01,sc), N=Math.max(5,Math.min(18,Math.round(Math.abs(tx)/(L.px*0.06)))); for (let i=N;i>=1;i--){ c.globalAlpha=a0*Math.min(0.35,2.2/N)*(N+1-i)/N; c.drawImage(sp.cv,sp.x+tx*i/N,sp.y); } c.globalAlpha=a0*0.85; }   // stopa pohybu (rozmazání jako v předloze)
     c.drawImage(sp.cv,sp.x,sp.y); c.globalCompositeOperation='source-over';
