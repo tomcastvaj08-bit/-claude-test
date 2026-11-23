@@ -19,7 +19,7 @@ RE.mix = () => { const m = E.G.reMix; const L = (Array.isArray(m) && m.length ? 
 // jemný tmavý stín, slova po jednom (prolnutí + zvětšení / přílet z boku s rozmazáním), odchod švihnutím do strany
 RE.LOOK = { fontMain: '"Poppins", sans-serif', fontEm: '"Poppins", sans-serif', wMain: 400, wEm: 700, mainItalic: false, emItalic: false, size: 104, emScale: 160, track: -3, trackEm: -5, gap: 70, wordGap: 115,
   layout: 'center', noSlots: true, emEach: true, kinetic: 0, rowDy1: 0, rowDy3: 0, altOn: false, anim: 'reel', enter: 'none', enterBy: 'word', exitScale: null, fadeOut: false,
-  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', glossOn: 'main', glossAmt: 70, emBlend: 'screen', extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
+  shadowSize: 30, shadowA: 55, shadowDist: 8, cShadow: '#000000', cText: '#ffffff', gloss: 'off', glossOn: 'main', glossAmt: 70, emBlend: 'screen', emBlendMix: 0.5, extrude: 0, tilt: 0, tiltX: 0, negativ: false, fxShine: false, caseMain: 'none', caseSec: 'none', behind: 'on', reStab: false };   // 3D lesk na velkých slovech; horní titulek za postavou (maska celé postavy), dolní na hrudi před ní
 RE.on = () => !!(E.G.reMode);
 // stabilizace na obličej: samostatně (E.G.faceStab) nebo jako součást starého Reality módu
 RE.stabOn = () => !!(E.G.faceStab || (E.G.reMode && E.G.reStab !== false));
