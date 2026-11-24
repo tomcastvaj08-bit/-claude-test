@@ -42,6 +42,8 @@ button,select,input,textarea{font:inherit;color:inherit}
 .tplgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tplgrid .tpl{width:auto;height:110px}
 .projects{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.home-sup{margin:26px 0 8px;text-align:center;font-size:13px;color:var(--muted,#6b7280)}
+.home-sup a{color:inherit;font-weight:700;text-decoration:underline}
 .projects .muted{grid-column:1/-1}
 .proj{position:relative;border-radius:14px;overflow:hidden;background:var(--card);aspect-ratio:9/14;cursor:pointer;border:1px solid var(--line)}
 .proj img{width:100%;height:100%;object-fit:cover;display:block}

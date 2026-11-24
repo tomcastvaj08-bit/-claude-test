@@ -288,17 +288,25 @@ const KB=[
 
 const CAT={ start:['Začátek','Getting started'], cap:['Titulky','Captions'], style:['Vzhled','Look'], motion:['Pohyb','Motion'], video:['Video a střih','Video & editing'], sound:['Zvuk','Sound'], fx:['Maska, tracking, Reality','Mask, tracking, Reality'], export:['Export a PRO','Export & PRO'] };
 const TOP=['new','edit','tpl','trans','cut','music','export','reality','maskai','track'];
-const L=(window.I18N && I18N.lang==='cs') ? 'cs' : 'en', LI=L==='cs'?0:1;
+const UL=(window.I18N && I18N.lang) || 'cs';
+const L=UL==='cs' ? 'cs' : 'en', LI=L==='cs'?0:1;
 const T={ title:['Rádce','Helper'], ph:['Napiš, co chceš udělat…','Type what you want to do…'], top:['Nejčastější otázky','Most asked'], here:['Tipy k této nabídce','Tips for this menu'],
   none:['Tohle jsem nenašel. Zkus to napsat jinými slovy, nebo projdi témata níž.','I couldn’t find that. Try other words, or browse the topics below.'],
   show:['Ukázat mi','Show me'], cats:['Témata','Topics'], back:['Zpět','Back'], close:['Zavřít','Close'],
   openVid:['Nejdřív otevři video: klepni na „Nové video“, nebo na projekt dole.','First open a video: tap “New video” or a project below.'],
   closeEd:['Tohle je na úvodní obrazovce. Klepni na křížek vlevo nahoře – projekt se uloží.','This is on the start screen. Tap the cross at the top left – the project is saved.'],
-  noSel:['Tohle se objeví, až to bude na timeline. Nejdřív udělej první krok.','This appears once it is on the timeline. Do the first step first.'] };
+  noSel:['Tohle se objeví, až to bude na timeline. Nejdřív udělej první krok.','This appears once it is on the timeline. Do the first step first.'],
+  sup:['Nenašel jsi odpověď? Napiš nám:','Didn’t find an answer? Email us:'] };
+// další jazyky (sk, pl, de…): návody z i18n/radce-<kód>.js se vloží místo angličtiny, chybějící zůstanou anglicky
+const RD=UL!=='cs' && UL!=='en' && window.RADCE_DICT && window.RADCE_DICT[UL];
+if (RD){ KB.forEach(k=>{ const v=RD.kb&&RD.kb[k.id]; if (v) k.en=v; });
+  Object.keys(CAT).forEach(c=>{ if (RD.cat&&RD.cat[c]) CAT[c][1]=RD.cat[c]; });
+  Object.keys(T).forEach(t=>{ if (RD.t&&RD.t[t]) T[t][1]=RD.t[t]; }); }
+const SUP='my@efektive.cz';
 const $=id=>document.getElementById(id);
 
 // ---------- hledání (bez diakritiky, s tvary slov a synonymy) ----------
-const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const norm=s=>String(s).toLowerCase().replace(/ł/g,'l').replace(/ß/g,'ss').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 const STOP=new Set(norm('jak jako se si na do v ve z ze a i k ke o u to ten ta tu mi me mě chci chtěl potřebuju můžu muzu jde dá dát dat udělat udelat kde je jsou co aby pro po při od s the how to a an do i can where is my of in on for with make it this that want need please').split(' '));
 // skupiny slov se stejným významem (kmeny bez diakritiky)
 const SYN=[['smaz','odstran','vymaz','delet','remov','kos','trash','pryc','zbav'],['titul','caption','subtit','napis','popis'],['barv','color','colour','odstin'],['pism','font','typeface'],['prechod','transit'],['zvuk','sound','audio','hudb','music','muzik','sfx','pisnick','song'],['zvets','priblíz','pribliz','zoom','vets','bigger','enlarg'],['posun','presun','move','drag'],['stin','shadow'],['lesk','shine','glos','zar','glow','svit','odlesk'],['zpomal','slow','rychl','speed','zrychl'],['export','uloz','stahn','save','download','render'],['jazyk','languag','anglic','englis','cestin','czech'],['vodoznak','watermark','logo'],['predplat','pro','zaplat','subscri','pay','cena','price','koup','buy'],['mask','objekt','object','vyber','select','oznac'],['sled','track','follow'],['stabil','klep','tres','shak'],['oblic','face','tvar','hlav','head'],['postav','person','clovek','behind'],['3d','trojrozm'],['animac','pohyb','motion','animat','prijezd','nastup','entranc','appear'],['odchod','exit','zmiz','disappear'],['vrstv','layer'],['rozdel','rozstrih','split','cut','strih','nuzk'],['vrat','zpet','undo'],['klip','clip','usek','segment','video'],['vloz','prid','add','insert','nahr','upload'],['tich','silenc','pauz','nemluv'],['velik','size','mensi','smaller'],['zvyrazn','highlight','hlavni','main','emph'],['oprav','uprav','edit','fix','zmen','chang','preps'],['skryt','hide','schov'],['projekt','project','rozdelan']];
@@ -357,6 +365,8 @@ const css=`
 .rd-hl{position:relative;animation:rdPulse 1.1s ease-in-out 4;outline:3px solid #10b981 !important;outline-offset:2px;border-radius:10px;z-index:5}
 @keyframes rdPulse{0%,100%{outline-color:#10b981;box-shadow:0 0 0 0 rgba(16,185,129,.55)}50%{outline-color:#2563eb;box-shadow:0 0 0 10px rgba(37,99,235,0)}}
 .rd-bub{position:fixed;left:10px;right:10px;top:calc(56px + env(safe-area-inset-top));z-index:70;display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:600px;margin:0 auto;animation:rdIn .16s ease-out}
+.rd-sup{margin:14px 0 4px;font-size:13px;opacity:.75;text-align:center}
+.rd-sup a{color:inherit;font-weight:700}
 .rd-bub img{width:34px;height:34px;object-fit:contain;flex:none}
 .rd-bt{flex:1;min-width:0}
 .rd-bub ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.4;flex:1}
@@ -387,6 +397,7 @@ function render(){
   else { const pn=window.__app&&__app.panel?__app.panel():null, here=pn?KB.filter(k=>k.g.p===pn):[];
     if (here.length) h+=`<div class="rd-sec">${T.here[LI]}</div>`+here.slice(0,5).map(k=>item(k)).join('');
     h+=`<div class="rd-sec">${T.top[LI]}</div>`+TOP.filter(id=>!here.some(k=>k.id===id)).map(id=>item(byId(id))).join('')+cats(); }
+  h+=`<div class="rd-sup">${esc(T.sup[LI])} <a href="mailto:${SUP}">${SUP}</a></div>`;
   L2.innerHTML=h;
 }
 function cats(){ return `<div class="rd-sec">${T.cats[LI]}</div><div class="rd-cats">${Object.keys(CAT).map(c=>`<div class="chip" data-cat="${c}">${CAT[c][LI]}</div>`).join('')}</div>`; }
