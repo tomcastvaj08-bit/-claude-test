@@ -579,7 +579,8 @@ function glowReveal(c,w,L,x,wWidth,since,S,k){
   const [mA,mB]=mainColor(S,k), tk=L.track??S.track;
   // pořadí písmene v celém řádku (víc slov = jedna souvislá vlna)
   const wi=E.words.indexOf(w), words=L.ids.map(i=>E.txt(E.words[i],S,true)), pos=L.ids.indexOf(wi);
-  let before=0; for (let i=0;i<pos;i++) before+=chars(words[i]).length+1; const total=Math.max(1,words.reduce((a,s2)=>a+chars(s2).length,0)+words.length-1);
+  let before=0; for (let i=0;i<pos;i++) before+=chars(words[i]).length+1; let total=Math.max(1,words.reduce((a,s2)=>a+chars(s2).length,0)+words.length-1);
+  if ((S.enterBy||'')==='word'){ before=0; total=Math.max(1,chars(E.txt(w,S,true)).length); }   // po slovech: každé slovo se odhalí samo od svého začátku
   const s=E.txt(w,S,true), ch=chars(s), W0=Math.min(cv.width,cv.height);
   const sq=clamp(since/0.3), slide=-Math.pow(1-sq,2)*W0*0.065;   // celý řádek dojede o ~6,5 % šířky doprava (změřeno z předlohy)
   setFont(c,L.fam,L.wt,L.it,L.px,tk); c.textBaseline='middle'; c.textAlign='center';
@@ -662,8 +663,9 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   else if (S.anim==='glowslide'){
     // Styl 25: bílý řádek se objeví hned (střih), zelený se odhaluje po písmenech zleva (viz glowReveal níž); odchod = střih
     if (since<0) return;
-    a = (t<p.e) ? 1 : 0;
-    if (L.em && since<GLOW_REV){ c.save(); c.globalAlpha=(S.opacity??100)/100; glowReveal(c,w,L,x,wWidth,since,S,k); c.restore(); return; }
+    a = (t<p.e) ? (flick ? exA : 1) : 0;   // odchod flickerem (když je zapnutý), jinak střih
+    if (L.em && S.flickIn){ a *= since<FLICK_DUR ? FLICK[FLICK.length-1-Math.min(FLICK.length-1,Math.floor(since*30))] : 1; }   // příchod flickerem místo odhalení
+    else if (L.em && since<GLOW_REV){ c.save(); c.globalAlpha=(S.opacity??100)/100; glowReveal(c,w,L,x,wWidth,since,S,k); c.restore(); return; }
   }
   else if (S.anim==='whip'){
     // jako v realitních reels: slovo vystřelí ze strany (řádky střídavě zleva / zprava), prudce dobrzdí, s rozmazáním pohybu
