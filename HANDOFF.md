@@ -266,4 +266,6 @@ Změny proměnných ve Vercelu se projeví až po novém nasazení (Redeploy).
 - Jazyky rozhraní sk, pl, de (slovníky i rádce); načítá se jen slovník zvoleného jazyka.
 - Majitel nechce zálohy projektů ani Sentry (chyby budou klienti hlásit e-mailem).
 - Navrženo zjednodušení (čeká na rozhodnutí): méně nastavení před přepisem, 6 záložek editoru místo 12, české názvy místo SFX/Tracking/Overlay/Shake, kratší tip na úvodní obrazovce.
-- Zatím **nenasazeno**: změny z 24. 11. jsou jen ve větvi `claude/efektive-app`.
+- **Nasazeno 24. 11. 17:46 (Praha)**: build `20261124174644`, nasazení `dpl_C98Dgen1bkZijsNtdCEfWiaKP5bo`, ověřeno na živém webu (cs/sk/pl/de).
+- Návrat na předchozí verzi: nasazení `dpl_2dUaYpX9HVDAAUJ2gfHC7mWrGmJi` (build 20261123194732) → ve Vercelu „Promote to Production“.
+- Nasazení z cloudu: `npx vercel@latest deploy --prod --yes --token <libovolný text bez pomlček>` ze složky s `.vercel/project.json` (orgId `team_7BV5XcK9zl4gAYcN9ln272tj`, projectId `prj_dYwIMfXR1lwDlBramidw7GXXBlMx`); skutečný token doplní proxy prostředí.
