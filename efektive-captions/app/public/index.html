@@ -295,7 +295,7 @@
 <input type="file" id="clipIn" accept="video/*" hidden>
 <input type="file" id="audIn" accept="audio/*,.mp3,.m4a,.wav,.aac" hidden>
 
-<script src="i18n/en.js"></script>
+<script>/* slovník jen pro zvolený jazyk (stejné pravidlo jako v i18n.js) */(function(){var R=['cs','en','sk','pl','de'],s=null;try{s=localStorage.getItem('efk_ui')}catch(e){}var d=((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase().slice(0,2);var l=R.indexOf(s)>=0?s:(R.indexOf(d)>=0?d:'en');if(l!=='cs')document.write('<script src="i18n/'+l+'.js"><\/script>');if(l!=='cs'&&l!=='en')document.write('<script src="i18n/radce-'+l+'.js"><\/script>')})()</script>
 <script src="i18n.js"></script>
 <script src="native.js"></script>
 <script src="vendor/mp4-muxer.js"></script>

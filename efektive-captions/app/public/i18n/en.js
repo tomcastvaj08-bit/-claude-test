@@ -1155,5 +1155,6 @@ window.I18N_DICT.en={
 "Srovnávám svislice…": "Straightening verticals…",
 "Záře i na vedlejších řádcích (bílý glow)": "Glow on secondary lines too (white glow)",
 "Šířka písma (zúžit / roztáhnout)": "Font width (condense / stretch)",
-"Saira Black (široké, hranaté)": "Saira Black (wide, squared)"
+"Saira Black (široké, hranaté)": "Saira Black (wide, squared)",
+"Podpora:": "Support:"
 };

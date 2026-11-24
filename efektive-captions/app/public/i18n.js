@@ -7,7 +7,7 @@
   // [kód, název v daném jazyce, vlajka (soubor flags/<kód>.svg), je hotový]
   const UI_LANGS = [
     ['en','English','gb',true], ['cs','Čeština','cz',true],
-    ['sk','Slovenčina','sk'], ['pl','Polski','pl'], ['de','Deutsch','de'], ['fr','Français','fr'],
+    ['sk','Slovenčina','sk',true], ['pl','Polski','pl',true], ['de','Deutsch','de',true], ['fr','Français','fr'],
     ['es','Español','es'], ['it','Italiano','it'], ['pt','Português','pt'], ['nl','Nederlands','nl'],
     ['hu','Magyar','hu'], ['ro','Română','ro'], ['uk','Українська','ua'], ['ru','Русский','ru'],
     ['tr','Türkçe','tr'], ['ar','العربية','sa'], ['hi','हिन्दी','in'], ['zh','中文','cn'],
@@ -15,9 +15,9 @@
   ];
   const READY = new Set(UI_LANGS.filter(l=>l[3]).map(l=>l[0]));
   let saved=null; try{ saved=localStorage.getItem('efk_ui'); }catch(e){}
-  // první spuštění: podle jazyka zařízení (čeština / slovenština → čeština, jinak angličtina)
-  const dev=((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase();
-  const auto = /^(cs|sk)/.test(dev) ? 'cs' : 'en';
+  // první spuštění: podle jazyka zařízení (hotový jazyk → ten, jinak angličtina)
+  const dev=((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase().slice(0,2);
+  const auto = READY.has(dev) ? dev : 'en';
   const LANG = READY.has(saved) ? saved : auto;
   const D = (window.I18N_DICT && window.I18N_DICT[LANG]) || null;
   const ON = LANG!=='cs' && !!D;

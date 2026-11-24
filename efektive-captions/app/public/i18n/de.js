@@ -1154,5 +1154,6 @@ window.I18N_DICT.de={
 "Srovnávám svislice…": "Begradige Linien…",
 "Záře i na vedlejších řádcích (bílý glow)": "Glow auch auf Nebenzeilen (weißer Glow)",
 "Šířka písma (zúžit / roztáhnout)": "Schriftbreite (schmaler / breiter)",
-"Saira Black (široké, hranaté)": "Saira Black (breit, kantig)"
+"Saira Black (široké, hranaté)": "Saira Black (breit, kantig)",
+"Podpora:": "Support:"
 };

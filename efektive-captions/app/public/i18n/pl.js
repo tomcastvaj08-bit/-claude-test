@@ -1154,5 +1154,6 @@ window.I18N_DICT.pl={
 "Srovnávám svislice…": "Prostuję piony…",
 "Záře i na vedlejších řádcích (bílý glow)": "Poświata też na wierszach pobocznych (biały glow)",
 "Šířka písma (zúžit / roztáhnout)": "Szerokość fontu (zwęź / rozciągnij)",
-"Saira Black (široké, hranaté)": "Saira Black (szeroki, kanciasty)"
+"Saira Black (široké, hranaté)": "Saira Black (szeroki, kanciasty)",
+"Podpora:": "Pomoc:"
 };

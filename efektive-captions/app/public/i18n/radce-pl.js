@@ -36,7 +36,7 @@ window.RADCE_DICT.pl={
  "font":["Zmień font","Otwórz Styl → Font.|Dotknij fontu. Główny i pozostałe wiersze mogą mieć inny.","font czcionka zmień czcionkę krój pisma inny font"],
  "size":["Rozmiar fontu","Styl → Tekst → „Rozmiar głównego wiersza”.|Cały napis powiększysz dwoma palcami na wideo lub w Styl → 3D i kształt → Rozmiar.","rozmiar fontu większy mniejszy powiększ zmniejsz litery duże"],
  "case":["WIELKIE lub małe litery","Styl → Tekst.|Wybierz Żadna / Każde Słowo Wielką / WIELKIE / małe.","wielkie litery małe litery kapitaliki caps wersaliki"],
- "weight":["Grubość fontu","Styl → Tekst → „Grubość fontu”."," grubość fontu pogrubienie cienkie bold grube"],
+ "weight":["Grubość fontu","Styl → Tekst → „Grubość fontu”.","grubość fontu pogrubienie cienkie bold grube"],
  "opac":["Przezroczystość tekstu","Styl → Tekst → „Przezroczystość tekstu” (10–100 %).","przezroczystość przezroczysty tekst półprzezroczysty opacity"],
  "spacing":["Odstępy między literami i interlinia","Styl → 3D i kształt.|„Odstępy między literami” i „Interlinia” (odległość wierszy).","odstępy między literami interlinia rozstaw wiersze bliżej dalej tracking"],
  "wordgap":["Odstęp między słowami","Styl → Tekst → „Odstęp między słowami”.","odstęp między słowami rozstaw słów"],
@@ -82,7 +82,7 @@ window.RADCE_DICT.pl={
  "reality":["Tryb Nieruchomości (napisy za głową i na klatce)","Otwórz Nieruchomości → „Włącz Nieruchomości”.|Poczekaj, aż aplikacja przejdzie wideo (okno z procentami).|Kolory i rozmieszczenie mieszasz potem w tym samym menu.","nieruchomości real estate reality tryb tekst za głową głowa na klatce styl nieruchomości"],
  "rlmove":["Przesuń napis w Nieruchomościach (dalej jedzie z głową)","Włącz Nieruchomości.|Chwyć napis palcem na wideo i przesuń, gdzie chcesz.|Napis trzyma nowe miejsce i dalej jedzie z głową. „Przywróć napisy na automatyczne miejsca” wszystko wyrówna.","przesuń napis nieruchomości przenieś na głowę jedzie z głową miejsce napisu"],
  "rllayer":["Napisy za głową lub przed ciałem","Otwórz Nieruchomości → Maska postaci.|Górne napisy: Za postacią (głowa i ramiona na tekście) albo Przed postacią.|Dolne napisy: Przed postacią albo Za postacią.","za głową przed ciałem warstwa maska postaci górne dolne napisy zasłania ramiona"],
- "feather":["Włosy migają na tekście (miękka krawędź maski)","Nieruchomości → Maska postaci → „Krawędź maski (włosy)”.|Dokładna = tuż przy głowie, Delikatna = płynne wąskie przejście (zalecane), Miękka = szersze przejście, Wokół głowy = głowa całkiem zakrywa tekst, dookoła trochu miejsca.|Ten sam wybór jest też w menu AI przy „Za całą postacią”.|W starszych projektach dotknij „Przelicz maskę (dokładniejsze włosy)”.","włosy migają ucięte włosy tekst w głowie tekst wchodzi we włosy glitch krawędź maski miękka feather rozmyj krawędź poszarpana przelicz maskę"],
+ "feather":["Włosy migają na tekście (miękka krawędź maski)","Nieruchomości → Maska postaci → „Krawędź maski (włosy)”.|Dokładna = tuż przy głowie, Delikatna = płynne wąskie przejście (zalecane), Miękka = szersze przejście, Wokół głowy = głowa całkiem zakrywa tekst, dookoła trochę miejsca.|Ten sam wybór jest też w menu AI przy „Za całą postacią”.|W starszych projektach dotknij „Przelicz maskę (dokładniejsze włosy)”.","włosy migają ucięte włosy tekst w głowie tekst wchodzi we włosy glitch krawędź maski miękka feather rozmyj krawędź poszarpana przelicz maskę"],
  "mix":["3D mix napisy","Otwórz 3D mix → „Włącz 3D mix”.|„Wymieszaj ponownie” da inny układ i fonty.","3d mix napisy mix fontów losowy układ wymieszaj"],
  "overlay":["Dodaj obraz lub wideo na wideo (nakładka)","Nakładka → „Dodaj obraz / wideo”.|Palcem przesuń i powiększ.|Ustaw animację, wiggle, dźwięk i prędkość.","nakładka overlay obraz na wideo wstaw zdjęcie logo naklejka wideo na wideo"],
  "ovtrack":["Nakładka śledzi obiekt","Zaznacz nakładkę na osi czasu.|Dotknij Tracking i wybierz, co ma śledzić.","nakładka overlay śledzi tracking obraz jedzie z obiektem"],
@@ -99,5 +99,6 @@ window.RADCE_DICT.pl={
   show:"Pokaż mi", cats:"Tematy", back:"Wstecz", close:"Zamknij",
   openVid:"Najpierw otwórz wideo: dotknij „Nowe wideo” albo projektu na dole.",
   closeEd:"To jest na ekranie startowym. Dotknij krzyżyka w lewym górnym rogu – projekt się zapisze.",
-  noSel:"To pojawi się, gdy będzie na osi czasu. Najpierw zrób pierwszy krok." }
+  noSel:"To pojawi się, gdy będzie na osi czasu. Najpierw zrób pierwszy krok.",
+  sup:"Nie znalazłeś odpowiedzi? Napisz do nas:" }
 };

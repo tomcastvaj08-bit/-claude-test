@@ -1154,5 +1154,6 @@ window.I18N_DICT.sk={
 "Srovnávám svislice…": "Vyrovnávam zvislice…",
 "Záře i na vedlejších řádcích (bílý glow)": "Žiara aj na vedľajších riadkoch (biely glow)",
 "Šířka písma (zúžit / roztáhnout)": "Šírka písma (zúžiť / roztiahnuť)",
-"Saira Black (široké, hranaté)": "Saira Black (široké, hranaté)"
+"Saira Black (široké, hranaté)": "Saira Black (široké, hranaté)",
+"Podpora:": "Podpora:"
 };

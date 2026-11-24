@@ -223,8 +223,8 @@ Změny proměnných ve Vercelu se projeví až po novém nasazení (Redeploy).
 - další úpravy stylů a Reality podle předloh. Postup: změřit předlohu snímek po snímku, ukázat srovnání obrázkem, teprve pak nasadit.
 
 **Rozpracované – jazyky rozhraní (viz `efektive-captions/JAZYKY.md`):**
-- Hotová je čeština (zdroj) a angličtina (`app/public/i18n/en.js`, asi 820 textů).
-- Dalších 20 jazyků je v nabídce jako „Brzy“ (`UI_LANGS` v `app/public/i18n.js`): sk, pl, de, fr, es, it, pt, nl, hu, ro, uk, ru, tr, ar, hi, zh, ja, ko, id, vi.
+- Hotová je čeština (zdroj), angličtina, slovenština, polština a němčina (24. 11., včetně rádce).
+- Dalších 17 jazyků je v nabídce jako „Brzy“ (`UI_LANGS` v `app/public/i18n.js`): fr, es, it, pt, nl, hu, ro, uk, ru, tr, ar, hi, zh, ja, ko, id, vi.
 - Postup u každého jazyka:
   1. přeložit slovník `i18n/<kód>.js` (pevné texty, bez AI za běhu);
   2. přeložit 85 návodů rádce v `radce.js` (dnes jen CZ+EN);
@@ -259,3 +259,11 @@ Změny proměnných ve Vercelu se projeví až po novém nasazení (Redeploy).
   - syntaxe všech JS souborů v pořádku, lokální server startuje.
 - Pozor: cloudové prostředí Clauda nemá v síťových pravidlech povolené `captions.efektive.cz`, takže se odsud kontroluje přes `efektive-titulky.vercel.app` (stejné nasazení).
 - Workflow pro Android a iOS se nově spouštějí i z větve `claude/efektive-app`.
+
+**24. 11. 2026**
+- Pravidla spolupráce s majitelem uložena do `CLAUDE.md`.
+- Podpora: e-mail my@efektive.cz na úvodní obrazovce a v rádci; kontakt v podmínkách a soukromí změněn na my@efektive.cz.
+- Jazyky rozhraní sk, pl, de (slovníky i rádce); načítá se jen slovník zvoleného jazyka.
+- Majitel nechce zálohy projektů ani Sentry (chyby budou klienti hlásit e-mailem).
+- Navrženo zjednodušení (čeká na rozhodnutí): méně nastavení před přepisem, 6 záložek editoru místo 12, české názvy místo SFX/Tracking/Overlay/Shake, kratší tip na úvodní obrazovce.
+- Zatím **nenasazeno**: změny z 24. 11. jsou jen ve větvi `claude/efektive-app`.
