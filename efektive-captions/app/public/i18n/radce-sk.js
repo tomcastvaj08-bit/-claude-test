@@ -99,5 +99,6 @@ window.RADCE_DICT.sk={
   show:"Ukáž mi", cats:"Témy", back:"Späť", close:"Zavrieť",
   openVid:"Najprv otvor video: ťukni na „Nové video“ alebo na projekt dole.",
   closeEd:"Toto je na úvodnej obrazovke. Ťukni na krížik vľavo hore – projekt sa uloží.",
-  noSel:"Toto sa objaví, až to bude na timeline. Najprv urob prvý krok." }
+  noSel:"Toto sa objaví, až to bude na timeline. Najprv urob prvý krok.",
+  sup:"Nenašiel si odpoveď? Napíš nám:" }
 };
