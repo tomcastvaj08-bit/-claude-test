@@ -731,7 +731,7 @@ function bindControls(){
     if (type==='range'){ el.oninput=()=>{ $(id+'v').textContent=el.value+el.dataset.unit; setVal(key,+el.value,true); }; el.onchange=()=>changed(); }
     else if (type==='tog') el.onchange=()=>setVal(key,el.checked?a:b);
     else if (type==='color'){ el.oninput=()=>{ if (key==='gA'||key==='gB') stopAlt(); setVal(key,el.value,true); }; el.onchange=()=>changed(); }
-    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout'||key==='gloss'||key==='softOn') renderPanel(); };
+    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout'||key==='gloss') renderPanel(); };
   }
   C.length=0;
 }
@@ -1102,7 +1102,7 @@ binders.captions=()=>{
   $('pglist').onclick=e=>{
     const ed=e.target.closest('[data-ed]'); if (ed){ selectPage(+ed.dataset.ed); openInline(+ed.dataset.ed); return; }
     const w=e.target.closest('.w'); if (w){ const W=E.words[+w.dataset.i];
-      if (tapMode==='sg'){ W.sg=!W.sg; if (!W.sg) delete W.sg; w.classList.toggle('sg',!!W.sg); if (W.sg && (!E.G.softOn||E.G.softOn==='off')){ E.G.softOn='words'; if (!(E.G.softGlow>0)) E.G.softGlow=30; toast('Jemná záře zapnutá na vybraných slovech'); } changed(); }
+      if (tapMode==='sg'){ W.sg=!W.sg; if (!W.sg) delete W.sg; w.classList.toggle('sg',!!W.sg); changed(); }
       else { W.em=!W.em; w.classList.toggle('em',W.em); changed(); } }
     const pg=e.target.closest('.pg'); if (pg) selectPage(+pg.dataset.k);
   };
@@ -1233,10 +1233,10 @@ function pStyle(){
     ${slider('Záře okolo hlavního slova','glow',0,100)}
     ${toggle('Záře i na vedlejších řádcích (bílý glow)','glowSec')}
     ${chips('Záře svítí','glowMode',[['always','Pořád'],['entrance','Jen při nástupu (problikne)']])}
-    <div class="clabel">Jemná záře (soft glow, jako v DaVinci)</div>
-    ${chips('','softOn',[['off','Vypnuto'],['main','Hlavní řádek'],['sec','Vedlejší řádky'],['both','Oba'],['words','Jen vybraná slova']])}
-    ${S.softOn&&S.softOn!=='off'?slider('Síla jemné záře','softGlow',5,200,1,'%'):''}
-    ${S.softOn==='words'?'<div class="note">Slova vybereš v Titulcích: přepni „Klepnutí na slovo“ na Soft glow a klepni na slova.</div>':''}
+    <div class="clabel">Soft glow (jemná záře jako v DaVinci) – 0 = vypnuto</div>
+    ${slider('Soft glow – hlavní (velký) řádek','softMain',0,100,1,'')}
+    ${slider('Soft glow – vedlejší (malé) řádky','softSec',0,100,1,'')}
+    <div class="note">Jen na některá slova: v Titulcích přepni „Klepnutí na slovo“ na Soft glow a klepni na slova.</div>
     <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">${I('wand','grad')} Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
   } else if (st==='font'){
     const fam=fontTarget==='em'?S.fontEm:S.fontMain, w=fontTarget==='em'?S.wEm:S.wMain, it=fontTarget==='em'?S.emItalic:S.mainItalic;

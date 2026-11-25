@@ -81,7 +81,7 @@ E.G = {
   track:-4, gap:66, emScale:160, wordGap:160,
   tilt:18, tiltX:4, persp:60, tiltAlt:true, tiltRand:false, tiltSeed:1, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
-  gloss:'off', glossAmt:70, glossOn:'main', softOn:'off', softGlow:30, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, shineW:100, shineHalo:100, shineDelay:0, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
+  gloss:'off', glossAmt:70, glossOn:'main', softMain:0, softSec:0, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, shineW:100, shineHalo:100, shineDelay:0, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, emNeg:false, emNegLift:0.3, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
@@ -483,6 +483,16 @@ E.mainColor=mainColor;
 const SPR=new Map();
 // dočtené písmo (např. část s háčky) → předkreslená slova zahodit, ať se překreslí správným písmem
 if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>{ SPR.clear(); if (window.RE && RE.invalidate) RE.invalidate(); });   // Reality: rozmístění změřit znovu správným písmem
+// rozmazání po krocích (zmenšit / zvětšit vždy 2×) – hladké, bez ctx.filter (funguje i v Safari / iPhone)
+function blurDown(src,W,H,levels){ let cur=src, w=W, h=H; const st=[];
+  for (let i=0;i<levels;i++){ const nw=Math.max(1,Math.ceil(w/2)), nh=Math.max(1,Math.ceil(h/2)), t=document.createElement('canvas'); t.width=nw; t.height=nh; const tc=t.getContext('2d'); tc.imageSmoothingEnabled=true; tc.imageSmoothingQuality='high'; tc.drawImage(cur,0,0,w,h,0,0,nw,nh); st.push([w,h]); cur=t; w=nw; h=nh; }
+  for (let i=levels-1;i>=0;i--){ const [tw,th]=st[i], t=document.createElement('canvas'); t.width=tw; t.height=th; const tc=t.getContext('2d'); tc.imageSmoothingEnabled=true; tc.imageSmoothingQuality='high'; tc.drawImage(cur,0,0,w,h,0,0,tw,th); cur=t; w=tw; h=th; }
+  return cur; }
+const SOFT=new WeakMap();
+function softOf(sp,px){ let g=SOFT.get(sp); if (g) return g;
+  const P=Math.ceil(px*0.9), W=sp.cv.width+P*2, H=sp.cv.height+P*2, base=document.createElement('canvas'); base.width=W; base.height=H; base.getContext('2d').drawImage(sp.cv,P,P);
+  const lv=n=>Math.max(1,Math.min(7,Math.round(Math.log2(Math.max(2,px*n)))));
+  g={near:blurDown(base,W,H,lv(0.09)), wide:blurDown(base,W,H,lv(0.35)), x:sp.x-P, y:sp.y-P, w:W, h:H}; SOFT.set(sp,g); return g; }
 function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   const key=[kind,s,L.fam,L.wt,L.it?1:0,L.px.toFixed(2),tk,fd,S.shadowSize,S.shadowA,S.shadowDist,S.cShadow,S.extrude||0,S.extrudeStyle||'light',S.gloss||'off',S.glossAmt??70,S.glossOn||'main',L.em?1:0,kind==='glow'?S.glow+'|'+glowCol:'b'+(S.bloom||0)+'|'+(L.em?glowCol:S.cText)].join('~');
   let sp=SPR.get(key); if (sp){ SPR.delete(key); SPR.set(key,sp); return sp; }
@@ -786,14 +796,12 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     c.globalCompositeOperation='source-over';
     if (L.em && S.emBlend){ const a0=c.globalAlpha; c.globalAlpha=a0*(S.emBlendMix??0.5); c.drawImage(sp.cv,sp.x,sp.y); c.globalAlpha=a0; }   // + polovičně krytá barva: čitelné i na světlém pozadí
     if (postGlow) postGlow();
-    // SOFT GLOW: jemná záře přes písmo (zapnout na hlavní / vedlejší / oba řádky nebo jen na vybraná slova)
-    const so=S.softOn||'off';
-    if ((S.softGlow||0)>0 && (w.sg || so==='both' || (so==='main'&&L.em) || (so==='sec'&&!L.em))){
-      const sg=wordSprite('soft',s,L,tk,fd,fill,S,L.em?(mB||mA):S.cText);
-      const sa=S.softGlow/100, a0=c.globalAlpha; c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='screen';
-      c.globalAlpha=a0*Math.min(1,sa*0.9); c.drawImage(sg.cv,sg.x,sg.y);
-      if (sa>1.1){ c.globalAlpha=a0*Math.min(1,(sa-1.1)*0.9); c.drawImage(sg.cv,sg.x,sg.y); }   // nad 110 % se záře zesiluje dál (druhá vrstva)
-      c.restore(); }
+    // SOFT GLOW (jako v DaVinci): rozmazaná kopie HOTOVÉHO písma (i s 3D leskem) se přičte zpátky jako světlo.
+    // Zvlášť síla pro hlavní a vedlejší řádky (0 = vypnuto). Klepnutá slova (w.sg) svítí, i když je řádek na 0.
+    const sv=L.em?(S.softMain||0):(S.softSec||0), sAmt=sv>0?sv:(w.sg?60:0);
+    if (sAmt>0){ const g=softOf(sp,L.px); c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='screen';
+      const a0=c.globalAlpha; c.globalAlpha=a0*Math.min(1,sAmt/100); c.drawImage(g.near,g.x,g.y,g.w,g.h);
+      c.globalAlpha=a0*Math.min(1,sAmt/100*0.85); c.drawImage(g.wide,g.x,g.y,g.w,g.h); c.restore(); }
   } else if (E._glowPass==='only'){ c.restore(); return; } else {
   if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
