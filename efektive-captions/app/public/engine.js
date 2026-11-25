@@ -81,7 +81,7 @@ E.G = {
   track:-4, gap:66, emScale:160, wordGap:160,
   tilt:18, tiltX:4, persp:60, tiltAlt:true, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
-  gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
+  gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, emNeg:false, emNegLift:0.3, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
@@ -203,7 +203,7 @@ E.TEMPLATES = {
     layout:'center',maxLines:2,mainLine:'2',wpp:4,minMainWords:3,breakComma:true,balanceEnd:true,singleSec:true,posX:50,posY:58,tilt:0,tiltX:0,tiltAlt:false,kinetic:0,rot:0,
     cText:'#ffffff',cText2:'#ffffff',textGrad:false,grad:true,gradDir:'hc',gA:'#13d613',gB:'#bdf5bc',c1:'#13d613',c2:'#13d613',c3:'#13d613',c4:'#13d613',altOn:false,
     glow:95,glowMode:'always',glowSec:true,glowSecMul:0.85,bloom:100,shadowSize:32,shadowA:122,shadowDist:28,cShadow:'#000000',extrude:0,negativ:false,gloss:'off',punct:true,
-    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',slideIn:true,enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
+    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',slideIn:true,shineAmt:60,enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
     pv:'<span style="font-family:\'Russo One\';font-weight:400;color:#fff;text-shadow:0 3px 4px rgba(0,0,0,.7)">to říkají</span><br><b style="font-family:\'Russo One\';font-weight:400;background:linear-gradient(90deg,#1abb1c,#b4f2b4 48%,#1abb1c);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 6px #1aa81c)">BANKY,</b>'};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
@@ -782,7 +782,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // a kolem písmen vznikne jemná záře. Záře se dělá rozmazáním zmenšením (žádný stín) na plátně s velkou rezervou → nic se neořízne.
   const shineOk = S._ownShine || (S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0));
   if (S.fxShine && shineOk && L.em && !S.negativ){
-    const dur = 2.4 - S.shineSpeed/100*1.3, st = -0.3, q = (since-st)/dur;   // lesk vyjede hned s příletem slova
+    const dur = 1.3 - S.shineSpeed/100*0.5, st = -0.2, q = (since-st)/dur;   // lesk přejíždí už během příletu slova (vrchol ~0,3 s po začátku)
     if (q>0 && q<1){
       const ph = q*q*(3-2*q), env=Math.sin(Math.PI*q);
       const m = shineCtx();
@@ -822,10 +822,10 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       // záře hlavně do výšky (svisle víc než vodorovně) → svítí jen kolem proužku, ne celé slovo
       const wide=blurAt(lv+1,lv,'w'), near=blurAt(Math.max(1,lv-1),Math.max(1,lv-1),'n');   // do stran i do výšky, víc do stran
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
-      const A=a*((S.opacity??100)/100)*env;
-      c.globalAlpha=Math.min(1,A*0.75); c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře kolem slova
-      c.globalAlpha=A*0.45; c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
-      c.globalAlpha=A*0.55; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
+      const A=a*((S.opacity??100)/100)*env*((S.shineAmt??100)/100);
+      c.globalAlpha=Math.min(1,A*0.5); c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře kolem slova
+      c.globalAlpha=A*0.3; c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
+      c.globalAlpha=A*0.42; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
   }
