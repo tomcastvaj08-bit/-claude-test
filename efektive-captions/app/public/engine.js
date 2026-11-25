@@ -203,7 +203,7 @@ E.TEMPLATES = {
     layout:'center',maxLines:2,mainLine:'2',wpp:4,minMainWords:3,breakComma:true,balanceEnd:true,singleSec:true,posX:50,posY:58,tilt:0,tiltX:0,tiltAlt:false,kinetic:0,rot:0,
     cText:'#ffffff',cText2:'#ffffff',textGrad:false,grad:true,gradDir:'hc',gA:'#13d613',gB:'#bdf5bc',c1:'#13d613',c2:'#13d613',c3:'#13d613',c4:'#13d613',altOn:false,
     glow:95,glowMode:'always',glowSec:true,glowSecMul:0.85,bloom:100,shadowSize:32,shadowA:122,shadowDist:28,cShadow:'#000000',extrude:0,negativ:false,gloss:'off',punct:true,
-    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',slideIn:true,shineAmt:60,enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
+    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',slideIn:true,shineAmt:60,fitW:0.9,enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
     pv:'<span style="font-family:\'Russo One\';font-weight:400;color:#fff;text-shadow:0 3px 4px rgba(0,0,0,.7)">to říkají</span><br><b style="font-family:\'Russo One\';font-weight:400;background:linear-gradient(90deg,#1abb1c,#b4f2b4 48%,#1abb1c);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 6px #1aa81c)">BANKY,</b>'};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
@@ -426,6 +426,8 @@ function layoutRaw(p,S,scaleMul){
     return {ids,fam,wt,it,px,em:isEm,ws,sp,total,track,cond};
   };
   for (const g of groups){ const L=mk(g.ids,g.em,lines.length); L.slot=g.slot; lines.push(L); }
+  // fitW: řádek širší než daná část videa se zmenší, aby nepřečuhoval přes okraje (např. „STOPROCENTNĚ FOKUSOVAT“)
+  if (S.fitW>0) for (const L of lines){ const lim=W*S.fitW; if (L.total>lim){ const k=lim/L.total; L.px*=k; L.ws=L.ws.map(x=>x*k); L.sp*=k; L.total=lim; } }
   let y=0; const ys=[];
   if (lines.length && lines.every(L=>L.slot!=null) && !S.noSlots){
     // Base: pevné sloty (horní / hlavní / spodní) – horní řádek je na stejném místě i u kratšího titulku
