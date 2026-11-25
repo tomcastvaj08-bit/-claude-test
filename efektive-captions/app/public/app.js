@@ -730,7 +730,7 @@ function bindControls(){
     if (type==='range'){ el.oninput=()=>{ $(id+'v').textContent=el.value+el.dataset.unit; setVal(key,+el.value,true); }; el.onchange=()=>changed(); }
     else if (type==='tog') el.onchange=()=>setVal(key,el.checked?a:b);
     else if (type==='color'){ el.oninput=()=>{ if (key==='gA'||key==='gB') stopAlt(); setVal(key,el.value,true); }; el.onchange=()=>changed(); }
-    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout'||key==='gloss') renderPanel(); };
+    else if (type==='chips') el.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; el.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); const v=c.dataset.v; setVal(key, v==='true'?true:v==='false'?false:(v!==''&&!isNaN(+v)&&!/^0\d/.test(v)?+v:v)); if (key==='mainLine'||key==='layout'||key==='gloss'||key==='softOn') renderPanel(); };
   }
   C.length=0;
 }
@@ -1064,14 +1064,16 @@ binders.mix=()=>{
 };
 
 // ---------- TITULKY ----------
+let tapMode='em';   // klepnutí na slovo v Titulcích: zvýraznit / soft glow
 function pCaptions(){
-  const pg=E.pages.map((p,k)=>{ const ws=[]; for(let i=p.a;i<=p.b;i++){ const w=E.words[i]; ws.push(`<span class="w ${w.em?'em':''}" data-i="${i}">${esc(w.t)}</span>`); }
+  const pg=E.pages.map((p,k)=>{ const ws=[]; for(let i=p.a;i<=p.b;i++){ const w=E.words[i]; ws.push(`<span class="w ${w.em?'em':''} ${w.sg?'sg':''}" data-i="${i}">${esc(w.t)}</span>`); }
     const m=E.meta[E.keyOf(p)]; return `<div class="pg ${k===curPage?'cur':''}" data-k="${k}"><div class="t">${fmt(p.s)}</div><div class="ws">${ws.join('')}</div><button class="ed" data-ed="${k}">${I('pencil')}</button></div>`; }).join('');
   return `<div class="btnrow"><button class="btn primary" id="reTrClip">${I('wand')} Znovu přepsat klip</button><button class="btn" id="reTrAll">${I('refresh')} Znovu přepsat vše</button></div>
   ${trkSection(E.pages[curPage]?(E.meta[E.keyOf(E.pages[curPage])]||{}).trk:null,'page')}
   <div class="btnrow"><button class="btn" id="editTxt">${I('pencil')} Upravit text</button><button class="btn" id="batchBtn">${I('list')} Hromadná úprava</button></div>
   <div class="btnrow"><button class="btn" id="capDel">${I('trash')} Smazat vybraný titulek</button></div>
-  <div class="note">Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo). Tužka u titulku = upravit text.</div>
+  <div class="clabel">Klepnutí na slovo</div><div class="chips" id="tapMode"><div class="chip ${tapMode==='em'?'on':''}" data-v="em">Zvýraznit jako hlavní</div><div class="chip ${tapMode==='sg'?'on':''}" data-v="sg">Soft glow na slovo</div></div>
+  <div class="note">${tapMode==='sg'?'Klepni na slovo = zapnout / vypnout na něm jemnou záři (soft glow).':'Klepni na slovo = zvýraznit ho jako hlavní (libovolné slovo).'} Tužka u titulku = upravit text.</div>
   ${chips('Hlavní řádek','mainLine',[['mid','Auto (střed)'],['1','1.'],['2','2.'],['3','3.'],['4','4.'],['word','Nejdelší slovo'],['none','Žádný']])}
   ${toggle('Plnit řádky podle šířky (3 / 2 / 2 slova)','split','fill','words')}
   ${E.G.split==='fill'?slider('Šířka řádku (kolik se vejde)','rowMax',35,85,1,'%'):''}
@@ -1095,9 +1097,12 @@ binders.captions=()=>{
   $('resetOne').onclick=()=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); delete m.own; changed(); renderPanel(); toast('Titulek má zase společný styl'); } };
   $('layerBtn').onclick=()=>{ const p=E.pages[curPage]; if (p) setLayer(curPage, p.layer?0:1); };
   trkBind(()=>{ const p=E.pages[curPage]; return p&&(E.meta[E.keyOf(p)]||{}).trk; }, id=>{ const p=E.pages[curPage]; if (p){ const m=pageMeta(p); if (id) m.trk=id; else delete m.trk; } }, 'page');
+  if ($('tapMode')) $('tapMode').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; tapMode=d.dataset.v; renderPanel(); };
   $('pglist').onclick=e=>{
     const ed=e.target.closest('[data-ed]'); if (ed){ selectPage(+ed.dataset.ed); openInline(+ed.dataset.ed); return; }
-    const w=e.target.closest('.w'); if (w){ const W=E.words[+w.dataset.i]; W.em=!W.em; w.classList.toggle('em',W.em); changed(); }
+    const w=e.target.closest('.w'); if (w){ const W=E.words[+w.dataset.i];
+      if (tapMode==='sg'){ W.sg=!W.sg; if (!W.sg) delete W.sg; w.classList.toggle('sg',!!W.sg); if (W.sg && (!E.G.softOn||E.G.softOn==='off')){ E.G.softOn='words'; if (!(E.G.softGlow>0)) E.G.softGlow=30; toast('Jemná záře zapnutá na vybraných slovech'); } changed(); }
+      else { W.em=!W.em; w.classList.toggle('em',W.em); changed(); } }
     const pg=e.target.closest('.pg'); if (pg) selectPage(+pg.dataset.k);
   };
 };
@@ -1227,6 +1232,10 @@ function pStyle(){
     ${slider('Záře okolo hlavního slova','glow',0,100)}
     ${toggle('Záře i na vedlejších řádcích (bílý glow)','glowSec')}
     ${chips('Záře svítí','glowMode',[['always','Pořád'],['entrance','Jen při nástupu (problikne)']])}
+    <div class="clabel">Jemná záře (soft glow, jako v DaVinci)</div>
+    ${chips('','softOn',[['off','Vypnuto'],['main','Hlavní řádek'],['sec','Vedlejší řádky'],['both','Oba'],['words','Jen vybraná slova']])}
+    ${S.softOn&&S.softOn!=='off'?slider('Síla jemné záře','softGlow',5,100,1,'%'):''}
+    ${S.softOn==='words'?'<div class="note">Slova vybereš v Titulcích: přepni „Klepnutí na slovo“ na Soft glow a klepni na slova.</div>':''}
     <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">${I('wand','grad')} Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
   } else if (st==='font'){
     const fam=fontTarget==='em'?S.fontEm:S.fontMain, w=fontTarget==='em'?S.wEm:S.wMain, it=fontTarget==='em'?S.emItalic:S.mainItalic;
@@ -1268,7 +1277,9 @@ function pStyle(){
     ${chips('Spodní řádek jede','kinDir',[['opposite','Doprava'],['same','Doleva']])}
     ${chips('Rozložení','layout',[['diagonal','Šikmo'],['cascade','Kaskáda'],['center','Na střed'],['left','Vlevo'],['right','Vpravo']])}
     ${slider('3D náklon do strany','tilt',-45,45,1,'°')}
-    ${toggle('Střídat náklon vlevo / vpravo','tiltAlt')}
+    <div class="clabel">Střídání náklonu</div>
+    <div class="chips" id="tiltMode"><div class="chip ${!S.tiltAlt&&!S.tiltRand?'on':''}" data-v="same">Stejně</div><div class="chip ${S.tiltAlt&&!S.tiltRand?'on':''}" data-v="alt">Vlevo / vpravo</div><div class="chip ${S.tiltRand?'on':''}" data-v="rand">Random (vlevo, vpravo i rovně)</div></div>
+    ${S.tiltRand?`<button class="btn small" id="tiltShuffle">${I('refresh')} Zamíchat jinak</button>`:''}
     ${slider('3D náklon dopředu / dozadu','tiltX',-35,35,1,'°')}
     ${slider('Síla perspektivy','persp',0,100)}
     ${slider('Rotace','rot',-30,30,1,'°')}
@@ -1282,6 +1293,11 @@ function pStyle(){
 }
 binders.style=()=>{
   if ($('rowReset')) $('rowReset').onclick=()=>{ setMany({rowDy1:0,rowDy2:0,rowDy3:0,rowDx1:0,rowDx2:0,rowDx3:0}); renderPanel(); };
+  if ($('tiltMode')) $('tiltMode').onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; const v=d.dataset.v, S=cur();
+    const t=S.tilt||-25;   // když je náklon 0, zapnutí střídání ho nastaví, ať je vidět
+    if (v==='same') setMany({tiltAlt:false,tiltRand:false}); else if (v==='alt') setMany({tiltAlt:true,tiltRand:false,tilt:t}); else setMany({tiltAlt:false,tiltRand:true,tilt:t});
+    renderPanel(); };
+  if ($('tiltShuffle')) $('tiltShuffle').onclick=()=>{ setVal('tiltSeed',Math.floor(Math.random()*9000)+2); renderPanel(); };
   $('saveTpl').onclick=()=>{
     const name=prompt('Název vlastní šablony:','Moje šablona '+(Object.keys(customTemplates()).length+1)); if(!name) return;
     const S=cur(), set={}; for (const k of Object.keys(E.G)) if (!E.GLOBAL_ONLY.has(k) && !['posX','posY','style','behind'].includes(k)) set[k]=S[k];

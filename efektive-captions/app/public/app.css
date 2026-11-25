@@ -669,3 +669,5 @@ body.ph-camon{overflow:hidden}
 .ph-warn{font-size:13px;font-weight:600;color:#0a7d4f;margin:2px 0 6px}
 .ph-warn.bad{color:#b3261e}
 .ph-shutter.locked{opacity:.45;border-color:#ffb800}
+
+.w.sg{box-shadow:0 0 0 1px rgba(255,255,255,.55),0 0 10px rgba(255,255,255,.55)}

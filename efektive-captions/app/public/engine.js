@@ -79,9 +79,9 @@ E.G = {
   negativ:false, shadowSize:25, shadowA:45, shadowDist:10, extrude:0, glow:30, glowMode:'always',
   fontMain:SF, wMain:500, mainItalic:false, fontEm:SF, wEm:900, emItalic:false,
   track:-4, gap:66, emScale:160, wordGap:160,
-  tilt:18, tiltX:4, persp:60, tiltAlt:true, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
+  tilt:18, tiltX:4, persp:60, tiltAlt:true, tiltRand:false, tiltSeed:1, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
-  gloss:'off', glossAmt:70, glossOn:'main', fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
+  gloss:'off', glossAmt:70, glossOn:'main', softOn:'off', softGlow:30, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, emNeg:false, emNegLift:0.3, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
@@ -214,7 +214,13 @@ Object.assign(E.G, E.TEMPLATES.base.set);
 // ================= STYL TITULKU =================
 E.keyOf = p => p ? E.words[p.a].id : 0;
 E.styleOf = p => { const own = p && E.meta[E.keyOf(p)] && E.meta[E.keyOf(p)].own; const S = Object.assign({}, E.G, own||{}); S._k = p ? E.pages.indexOf(p) : 0; S._ownShine = !!(own && own.fxShine===true && !('shineEvery' in own)); return S; };   // shine zapnutý jen u tohoto titulku → svítí vždy (nezávisle na „každý N-tý“)
-E.tiltOf = S => (S.tiltAlt && (S._k%2)) ? -S.tilt : S.tilt;
+// náklon: stejný / střídat vlevo-vpravo / RANDOM (vpravo, vlevo i rovně namíchané – nikdy 3× stejně za sebou, rovně nikdy 2× za sebou)
+const TILT_SEQ={};
+function tiltSign(k,seed){ let q=TILT_SEQ[seed]; if(!q) q=TILT_SEQ[seed]=[];
+  for (let i=q.length;i<=k;i++){ let v, n=0; do { const r=hash(i*7.13+seed*31.7+n*3.1); v = r<0.36?1 : r<0.72?-1 : 0; if (i>=4 && q[i-1]&&q[i-2]&&q[i-3]&&q[i-4]) v=0; n++; }   // rovně aspoň každý 5. titulek
+      while (n<8 && ((i>=2 && q[i-1]===v && q[i-2]===v) || (v===0 && q[i-1]===0) || (i===0 && v===0))); q.push(v); }
+  return q[k]; }
+E.tiltOf = S => S.tiltRand ? S.tilt*tiltSign(Math.max(0,S._k|0), S.tiltSeed||1) : (S.tiltAlt && (S._k%2)) ? -S.tilt : S.tilt;
 
 // ================= SLOVA, ZÓNY, OPRAVY =================
 const stripPunct=s=>s.replace(/[.,!?;:…"“”„]+$/u,'').replace(/^[„"“]+/u,'');
@@ -486,13 +492,18 @@ function wordSprite(kind,s,L,tk,fd,fill,S,glowCol){
   const half=Math.max(measureT(m,s,px,tk)/2, mt.actualBoundingBoxLeft||0, mt.actualBoundingBoxRight||0)+px*0.08;
   const sb=S.shadowSize>0?px*S.shadowSize/100*1.15:0, sx=px*S.shadowDist/100*0.12, sy=px*S.shadowDist/100*0.9;
   const glOn=S.glossOn||'main', gl=(S.gloss&&S.gloss!=='off'&&kind!=='glow'&&(glOn==='both'||(glOn==='main')===!!L.em))?S.gloss:null, gA=(S.glossAmt??70)/100;
-  const ex=(S.extrude>0)?px*(S.extrudeStyle==='dark'?0.16:0.12)*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):0;
+  const ex=(S.extrude>0)?px*(S.extrudeStyle==='dark'?0.16:0.12)*S.extrude/100:0, gb=kind==='glow'?px*(0.3+S.glow/100*0.9):kind==='soft'?px*0.42:0;
   const pad=Math.ceil(Math.max(sb*1.6+Math.max(Math.abs(sx),Math.abs(sy))+ex*1.05, gb*1.6, ex*1.2, gl?px*0.12:0)+px*0.12);
   const W=Math.ceil(half*2+pad*2), H=Math.ceil(asc+desc+pad*2), cx=W/2, cy=pad+asc;
   cvs.width=W; cvs.height=H;
   setFont(m,L.fam,L.wt,L.it,px,tk); m.textBaseline='middle'; m.textAlign='center'; m.translate(cx,cy);
   if (kind==='glow'){
     m.shadowColor=hexA(glowCol,0.9); m.shadowBlur=gb; m.fillStyle=glowCol; fillT(m,s,0,0,px,tk);
+  } else if (kind==='soft'){
+    // SOFT GLOW (jako v DaVinci): jen rozmazaná světla písma, bez písma samotného – úzká + široká vrstva
+    const off=W*4; m.fillStyle='#000';
+    m.shadowOffsetX=off; m.shadowColor=hexA(glowCol,0.85); m.shadowBlur=px*0.12; fillT(m,s,-off,0,px,tk);
+    m.shadowColor=hexA(glowCol,0.6); m.shadowBlur=px*0.38; fillT(m,s,-off,0,px,tk);
   } else {
     // stejná výplň jako dřív (přechod v souřadnicích slova)
     let f=fill;
@@ -775,6 +786,11 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     c.globalCompositeOperation='source-over';
     if (L.em && S.emBlend){ const a0=c.globalAlpha; c.globalAlpha=a0*(S.emBlendMix??0.5); c.drawImage(sp.cv,sp.x,sp.y); c.globalAlpha=a0; }   // + polovičně krytá barva: čitelné i na světlém pozadí
     if (postGlow) postGlow();
+    // SOFT GLOW: jemná záře přes písmo (zapnout na hlavní / vedlejší / oba řádky nebo jen na vybraná slova)
+    const so=S.softOn||'off';
+    if ((S.softGlow||0)>0 && (w.sg || so==='both' || (so==='main'&&L.em) || (so==='sec'&&!L.em))){
+      const sg=wordSprite('soft',s,L,tk,fd,fill,S,L.em?(mB||mA):S.cText);
+      c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='screen'; c.globalAlpha*=Math.min(1,S.softGlow/100*0.9); c.drawImage(sg.cv,sg.x,sg.y); c.restore(); }
   } else if (E._glowPass==='only'){ c.restore(); return; } else {
   if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
