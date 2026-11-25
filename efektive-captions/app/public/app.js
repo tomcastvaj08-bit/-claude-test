@@ -711,7 +711,8 @@ function setVal(key,val,noHist){
 }
 // volby, které má jen pár šablon (Styl 25) – při přepnutí na jinou šablonu se vrátí na vypnuto, ať se nepřenesou
 const TPL_OWN=['minMainWords','breakComma','balanceEnd','glowSec','slideIn','shineAmt','fitW'];
-function tplOwn(set){ const o={...set}; for (const k of TPL_OWN) if (!(k in o)) o[k]=null; return o; }
+const TPL_DEF={shineAmt:100};   // výchozí hodnota, když ji šablona nemá (místo prázdné)
+function tplOwn(set){ const o={...set}; for (const k of TPL_OWN) if (!(k in o)) o[k]=(k in TPL_DEF)?TPL_DEF[k]:null; return o; }
 function setMany(obj){ for (const [k,v] of Object.entries(obj)) setVal(k,v,true); changed(); }
 function scopeHTML(){ return `<div class="scope" id="scopeSw"><div data-v="all" class="${scope==='all'?'on':''}">Použít na všechny titulky</div><div data-v="one" class="${scope==='one'?'on':''}">Jen tento titulek</div></div>`; }
 function bindScope(){ const s=$('scopeSw'); if (!s) return; s.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; scope=d.dataset.v; renderPanel(); }; }
@@ -1234,7 +1235,7 @@ function pStyle(){
     ${chips('Záře svítí','glowMode',[['always','Pořád'],['entrance','Jen při nástupu (problikne)']])}
     <div class="clabel">Jemná záře (soft glow, jako v DaVinci)</div>
     ${chips('','softOn',[['off','Vypnuto'],['main','Hlavní řádek'],['sec','Vedlejší řádky'],['both','Oba'],['words','Jen vybraná slova']])}
-    ${S.softOn&&S.softOn!=='off'?slider('Síla jemné záře','softGlow',5,100,1,'%'):''}
+    ${S.softOn&&S.softOn!=='off'?slider('Síla jemné záře','softGlow',5,200,1,'%'):''}
     ${S.softOn==='words'?'<div class="note">Slova vybereš v Titulcích: přepni „Klepnutí na slovo“ na Soft glow a klepni na slova.</div>':''}
     <div class="clabel">Barva z videa</div><button class="btn small" id="suggestCol">${I('wand','grad')} Navrhnout barvu podle videa</button><div class="sugg" id="suggBox"></div>`;
   } else if (st==='font'){
@@ -1344,7 +1345,7 @@ function pMotion(){
     ${S.fadeOut?`<div class="clabel">Jak titulek zmizí</div><div class="chips" id="exitSt"><div class="chip ${!S.exitFlick&&S.exitScale!=null?'on':''}" data-v="fast">Rychlé zmenšení</div><div class="chip ${!S.exitFlick&&S.exitScale==null?'on':''}" data-v="soft">Jemné zhasnutí</div><div class="chip ${S.exitFlick?'on':''}" data-v="flick">Flicker (zabliká a zmizí)</div></div>`:'<div class="note">Titulek zmizí okamžitě.</div>'}`;
   } else {
     h+=`${toggle('Shine – světlo přejede přes hlavní slovo','fxShine')}
-    ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100):''}
+    ${S.fxShine?chips('Lesk u','shineEvery',[['1','Každého'],['2','Každého 2.'],['3','Každého 3.'],['4','Každého 4.'],['rand','Náhodně']])+slider('Rychlost lesku','shineSpeed',0,100)+slider('Síla lesku','shineAmt',10,200,1,'%')+slider('Záře kolem slova při lesku','shineHalo',0,200,1,'%')+slider('Šířka světelného proužku','shineW',40,250,1,'%')+slider('Kdy lesk přejede (0 = hned při příjezdu)','shineDelay',0,100,1,'')+'<button class="btn small" id="shineReset">'+I('reset')+' Lesk zpátky na výchozí</button>':''}
     ${toggle('Flicker – problikne při nástupu','fxFlicker')}
     ${toggle('Shake – zatřese při nástupu','fxShake')}
     ${toggle('Wiggle – jemné vlnění','fxWiggle')}
@@ -1371,7 +1372,7 @@ function pSfx(){
 `:''}
 `;
 }
-binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1,exitFlick:false}); else if (c.dataset.v==='flick') setMany({exitFlick:true}); else setMany({exitScale:null,exitDur:0.3,exitFlick:false}); renderPanel(); }; }; })(binders.motion);
+binders.motion=(function(prev){ return ()=>{ prev&&prev(); const eb=$('enterBy'); if (eb) eb.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; setVal('enterBy',d.dataset.v); renderPanel(); }; const sr=$('shineReset'); if (sr) sr.onclick=()=>{ setMany({shineSpeed:50,shineAmt:(E.TEMPLATES[cur().style]&&E.TEMPLATES[cur().style].set.shineAmt)||100,shineHalo:100,shineW:100,shineDelay:0}); renderPanel(); toast('Lesk je zase výchozí'); }; const x=$('exitSt'); if (x) x.onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; if (c.dataset.v==='fast') setMany({exitScale:0.6,exitDur:0.1,exitFlick:false}); else if (c.dataset.v==='flick') setMany({exitFlick:true}); else setMany({exitScale:null,exitDur:0.3,exitFlick:false}); renderPanel(); }; }; })(binders.motion);
 binders.sfx=()=>{
   const bind=(id,key)=>{ const el=$(id); if (el) el.onchange=e=>{ E.G[key]=e.target.checked; changed(); renderPanel(); }; };
   bind('sxAll','sfxAll'); bind('sxShine','sfxShineOn'); bind('sxTr','sfxTrOn'); bind('sxWords','sfxWordsOn'); bind('sxMove','sfxMoveOn');

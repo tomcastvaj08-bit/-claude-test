@@ -81,7 +81,7 @@ E.G = {
   track:-4, gap:66, emScale:160, wordGap:160,
   tilt:18, tiltX:4, persp:60, tiltAlt:true, tiltRand:false, tiltSeed:1, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
-  gloss:'off', glossAmt:70, glossOn:'main', softOn:'off', softGlow:30, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
+  gloss:'off', glossAmt:70, glossOn:'main', softOn:'off', softGlow:30, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, shineW:100, shineHalo:100, shineDelay:0, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, emNeg:false, emNegLift:0.3, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
@@ -790,7 +790,10 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     const so=S.softOn||'off';
     if ((S.softGlow||0)>0 && (w.sg || so==='both' || (so==='main'&&L.em) || (so==='sec'&&!L.em))){
       const sg=wordSprite('soft',s,L,tk,fd,fill,S,L.em?(mB||mA):S.cText);
-      c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='screen'; c.globalAlpha*=Math.min(1,S.softGlow/100*0.9); c.drawImage(sg.cv,sg.x,sg.y); c.restore(); }
+      const sa=S.softGlow/100, a0=c.globalAlpha; c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='screen';
+      c.globalAlpha=a0*Math.min(1,sa*0.9); c.drawImage(sg.cv,sg.x,sg.y);
+      if (sa>1.1){ c.globalAlpha=a0*Math.min(1,(sa-1.1)*0.9); c.drawImage(sg.cv,sg.x,sg.y); }   // nad 110 % se záře zesiluje dál (druhá vrstva)
+      c.restore(); }
   } else if (E._glowPass==='only'){ c.restore(); return; } else {
   if (L.em && S.negativ){ if (E._negPass!=='only') c.globalCompositeOperation='difference'; fill='#ffffff'; }   // ve 3D průchodu bílé písmo, negativ se udělá až při vložení do videa
   else if (S.shadowSize>0){ c.shadowColor=hexA(S.cShadow,S.shadowA/100*0.8); c.shadowBlur=L.px*S.shadowSize/100*1.15; c.shadowOffsetX=L.px*S.shadowDist/100*0.12; c.shadowOffsetY=L.px*S.shadowDist/100*0.9; }
@@ -800,7 +803,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
   // a kolem písmen vznikne jemná záře. Záře se dělá rozmazáním zmenšením (žádný stín) na plátně s velkou rezervou → nic se neořízne.
   const shineOk = S._ownShine || (S.shineEvery==='rand' ? hash(k*7+3)<0.45 : (k % (+S.shineEvery||1) === 0));
   if (S.fxShine && shineOk && L.em && !S.negativ){
-    const dur = 1.3 - S.shineSpeed/100*0.5, st = -0.2, q = (since-st)/dur;   // lesk přejíždí už během příletu slova (vrchol ~0,3 s po začátku)
+    const dur = 1.3 - S.shineSpeed/100*0.5, st = -0.2 + (S.shineDelay||0)/100, q = (since-st)/dur;   // shineDelay: o kolik později lesk přejede (0–1 s)   // lesk přejíždí už během příletu slova (vrchol ~0,3 s po začátku)
     if (q>0 && q<1){
       const ph = q*q*(3-2*q), env=Math.sin(Math.PI*q);
       const m = shineCtx();
@@ -815,7 +818,7 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       fillT(m, s, Wc/2, cy, L.px, tk);
       // 2) měkké šikmé světlo jen do písmen
       m.globalCompositeOperation='source-in';
-      const bw=Math.max(L.px*0.9, tw*0.26), sk=Hc*0.3, x=-bw-sk + ph*(Wc+2*bw+2*sk);
+      const bw=Math.max(L.px*0.9, tw*0.26)*(S.shineW??100)/100, sk=Hc*0.3, x=-bw-sk + ph*(Wc+2*bw+2*sk);
       const g=m.createLinearGradient(x-bw/2,0,x+bw/2,0);
       g.addColorStop(0,'rgba(255,248,225,0)'); g.addColorStop(0.3,'rgba(255,248,225,.35)'); g.addColorStop(0.5,'rgba(255,255,255,1)'); g.addColorStop(0.7,'rgba(255,248,225,.35)'); g.addColorStop(1,'rgba(255,248,225,0)');
       m.setTransform(1,0,-sk/Hc,1,sk/2,0); m.fillStyle=g; m.fillRect(-sk,0,Wc+sk*2,Hc);
@@ -841,9 +844,10 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
       const wide=blurAt(lv+1,lv,'w'), near=blurAt(Math.max(1,lv-1),Math.max(1,lv-1),'n');   // do stran i do výšky, víc do stran
       c.save(); c.shadowColor='transparent'; c.globalCompositeOperation='lighter'; c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
       const A=a*((S.opacity??100)/100)*env*((S.shineAmt??100)/100);
-      c.globalAlpha=Math.min(1,A*0.5); c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře kolem slova
-      c.globalAlpha=A*0.3; c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
-      c.globalAlpha=A*0.42; c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
+      const HA=(S.shineHalo??100)/100;   // záře kolem slova (0 = jen světlo v písmenech)
+      c.globalAlpha=Math.min(1,A*0.5*HA); c.drawImage(wide.cv,0,0,wide.w,wide.h,-Wc/2,-cy,Wc,Hc);   // jemná záře kolem slova
+      c.globalAlpha=Math.min(1,A*0.3*HA); c.drawImage(near.cv,0,0,near.w,near.h,-Wc/2,-cy,Wc,Hc);              // bližší záře
+      c.globalAlpha=Math.min(1,A*0.42); c.drawImage(shine,0,0,Wc,Hc,-Wc/2,-cy,Wc,Hc);       // světlo v písmenech
       c.restore();
     }
   }
