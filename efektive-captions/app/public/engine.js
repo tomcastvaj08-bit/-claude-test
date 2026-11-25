@@ -302,7 +302,7 @@ E.buildPages = () => {
   pages.forEach((p,k)=>{
     const m=E.meta[W[p.a].id];
     let nxt=null; for (let q=k+1;q<pages.length;q++) if (pages[q].layer===p.layer){ nxt=pages[q]; break; }
-    const end=W[p.b].e+1.2;
+    const end=W[p.b].e+(G.endTail??1.2);   // jak dlouho titulek zůstane po posledním slově (pak zmizí, když nikdo nemluví)
     p.e = nxt ? Math.min(end,nxt.s) : W[p.b].e+0.5;
     if (G.holdNext){ const D=E.outDur?E.outDur():0; p.e = nxt ? nxt.s : (D>0 ? D : W[p.b].e+1.5); }   // titulek drží až do dalšího (žádné mezery)
     // konec titulku utnout před začátkem další zóny bez titulků (grafika / logo)
