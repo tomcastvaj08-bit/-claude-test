@@ -203,7 +203,7 @@ E.TEMPLATES = {
     layout:'center',maxLines:2,mainLine:'2',wpp:4,minMainWords:3,breakComma:true,balanceEnd:true,singleSec:true,posX:50,posY:58,tilt:0,tiltX:0,tiltAlt:false,kinetic:0,rot:0,
     cText:'#ffffff',cText2:'#ffffff',textGrad:false,grad:true,gradDir:'hc',gA:'#13d613',gB:'#bdf5bc',c1:'#13d613',c2:'#13d613',c3:'#13d613',c4:'#13d613',altOn:false,
     glow:95,glowMode:'always',glowSec:true,glowSecMul:0.85,bloom:100,shadowSize:32,shadowA:122,shadowDist:28,cShadow:'#000000',extrude:0,negativ:false,gloss:'off',punct:true,
-    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
+    caseMain:'upper',caseSec:'none',capMain3:false,anim:'glowslide',slideIn:true,enter:'none',enterBy:'line',fadeOut:false,exitScale:null,exitDur:0.001,fxShine:false,fxFlicker:false,fxWiggle:false,wiggle:0},
     pv:'<span style="font-family:\'Russo One\';font-weight:400;color:#fff;text-shadow:0 3px 4px rgba(0,0,0,.7)">to říkají</span><br><b style="font-family:\'Russo One\';font-weight:400;background:linear-gradient(90deg,#1abb1c,#b4f2b4 48%,#1abb1c);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 0 6px #1aa81c)">BANKY,</b>'};
   E.TEMPLATES=T;
   // názvy podle pořadí v nabídce: Styl 1, Styl 2, … (bez jmen klientů)
@@ -304,6 +304,7 @@ E.buildPages = () => {
     let nxt=null; for (let q=k+1;q<pages.length;q++) if (pages[q].layer===p.layer){ nxt=pages[q]; break; }
     const end=W[p.b].e+1.2;
     p.e = nxt ? Math.min(end,nxt.s) : W[p.b].e+0.5;
+    if (G.holdNext){ const D=E.outDur?E.outDur():0; p.e = nxt ? nxt.s : (D>0 ? D : W[p.b].e+1.5); }   // titulek drží až do dalšího (žádné mezery)
     // konec titulku utnout před začátkem další zóny bez titulků (grafika / logo)
     const z=E.zones.filter(z=>z.s>=W[p.b].e-0.05).sort((a,b)=>a.s-b.s)[0]; if (z) p.e=Math.min(p.e, z.s);
     if (m && m.eo!=null) p.e = nxt ? Math.min(m.eo, nxt.s) : m.eo;
@@ -665,6 +666,13 @@ function drawWord(c, w, L, x, wWidth, t, p, S, k, j){
     if (since<0) return;
     a = (t<p.e) ? (flick ? exA : 1) : 0;   // odchod flickerem (když je zapnutý), jinak střih
     if (L.em && S.flickIn){ a *= since<FLICK_DUR ? FLICK[FLICK.length-1-Math.min(FLICK.length-1,Math.floor(since*30))] : 1; }   // příchod flickerem místo odhalení
+    else if (S.slideIn){
+      // plynulý příjezd: první bílé slovo zleva, další bílá se zařadí zprava, zelené vyjede zespodu
+      const Wm=Math.min(cv.width,cv.height), dur=L.em?0.55:0.5, q=clamp(since/dur), e=1-Math.pow(1-q,4), r=1-e;
+      const first = by==='word' ? (w===E.words[p.a]) : (L.ids[0]===p.a);
+      if (L.em) dy+=r*L.px*1.5; else if (first) dx-=r*Wm*0.32; else dx+=r*Wm*0.22;
+      const qa=clamp(since/0.22); a*=qa*qa*(3-2*qa);
+    }
     else if (L.em && since<GLOW_REV){ c.save(); c.globalAlpha=(S.opacity??100)/100; glowReveal(c,w,L,x,wWidth,since,S,k); c.restore(); return; }
   }
   else if (S.anim==='whip'){

@@ -710,7 +710,7 @@ function setVal(key,val,noHist){
   if (!noHist) changed(); else { scheduleSave(); }
 }
 // volby, které má jen pár šablon (Styl 25) – při přepnutí na jinou šablonu se vrátí na vypnuto, ať se nepřenesou
-const TPL_OWN=['minMainWords','breakComma','balanceEnd','glowSec'];
+const TPL_OWN=['minMainWords','breakComma','balanceEnd','glowSec','slideIn'];
 function tplOwn(set){ const o={...set}; for (const k of TPL_OWN) if (!(k in o)) o[k]=null; return o; }
 function setMany(obj){ for (const [k,v] of Object.entries(obj)) setVal(k,v,true); changed(); }
 function scopeHTML(){ return `<div class="scope" id="scopeSw"><div data-v="all" class="${scope==='all'?'on':''}">Použít na všechny titulky</div><div data-v="one" class="${scope==='one'?'on':''}">Jen tento titulek</div></div>`; }
