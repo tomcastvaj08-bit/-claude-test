@@ -45,7 +45,7 @@ E.txtPrep = T => {
     rows.forEach((r,ri)=>{ const ids=[]; r.forEach(tok=>{ const open=/^\*/.test(tok), close=/\*$/.test(tok); if (open) inside=true; if (inside||open) emRow=emRow<0?ri:emRow; const clean=tok.replace(/^\*+|\*+$/g,'')||tok; if (close) inside=false; ids.push(words.length); words.push(clean); }); lines.push(ids); });
     if (emRow<0) emRow=rows.length-1;
     const dur=Math.max(0.3,Math.min(0.9,(T.e-T.s)*0.4)), ws=E.spread(words,T.s,T.s+dur);
-    ws.forEach((w,i)=>{ w.id=T.id+'_'+i; });
+    ws.forEach((w,i)=>{ w.id=T.id+'_'+i; w.man=true; });
     T._w=ws; T._key=key;
     T._p={a:0,b:ws.length-1,s:T.s,e:T.e,layer:0,reLines:lines,reEm:T.noEm?-1:emRow,txt:true,
       kin:[0,1,2,3].map(j=>({dx:hash(j+7)*2-1, dy:hash(j+107)*2-1, rot:hash(j+207)*2-1}))};
@@ -103,7 +103,7 @@ E.G = {
   track:-4, gap:66, emScale:160, wordGap:160,
   tilt:18, tiltX:4, persp:60, tiltAlt:true, tiltRand:false, tiltSeed:1, kinetic:45, kinDir:'opposite', opacity:100, rot:0, layout:'cascade', layerOrder:'natural',
   anim:'block', enter:'none', ease:'smooth', enterDur:35, fadeOut:true, wordByWord:true,
-  gloss:'off', glossAmt:70, glossOn:'main', softMain:0, softSec:0, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, shineW:100, shineHalo:100, shineDelay:0, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
+  gloss:'off', glossAmt:70, glossOn:'main', softMain:0, softSec:0, censor:true, fxShine:true, shineEvery:'3', shineSpeed:50, shineAmt:100, shineW:100, shineHalo:100, shineDelay:0, fxFlicker:false, fxShake:false, fxWiggle:false, wiggle:0,
   caseMain:'none', caseSec:'none', capMain3:true, punct:false, mainLine:'mid',
   behind:'off', emBlend:null, emBlendMix:0.5, emAlpha:null, emNeg:false, emNegLift:0.3, flickIn:false, flickOut:false, faceAuto:true, faceDodgeX:false,
   sfx:'none', sfxVol:70, trSfxVol:30, shineSfxVol:8, moveSfxVol:30, sfxAll:true, sfxWordsOn:true, sfxShineOn:true, sfxMoveOn:true, sfxTrOn:true, sfxWord:false, style:'base',
@@ -397,8 +397,14 @@ E.groupsOf = (p,S) => {
   return lines.map((l,i)=>({ids:l,em:mains.includes(i),slot:(p.fill&&!manual.length)||p.manual?Math.min(i,2):undefined}));
 };
 function applyCase(s,mode){ if (mode==='upper') return s.toLocaleUpperCase(); if (mode==='lower') return (/\p{Ll}\p{Lu}/u.test(s) || /^\p{Lu}{2,}$/u.test(s)) ? s : s.toLocaleLowerCase(); /* značky (MyceLove) a zkratky zůstanou, jak jsou */ if (mode==='title') return s.charAt(0).toLocaleUpperCase()+s.slice(1); return s; }
+// sprostá slova: zobrazí se jen začátek + tři tečky (píčo → PI...)
+const CENSOR=/^(p[ií][čc]|kurv|kokot|zmrd|[čc]ur[aá]k|jeb|vyjeb|zajeb|ojeb|ujeb|pojeb|rozjeb|dojeb|najeb|přejeb|odjeb|zjeb|mrd)/iu;
+E.isSwear = w => CENSOR.test(String(w.t||w.raw||'').normalize('NFC'));
 E.txt = (w,S,isEm) => {
-  let s = S.punct ? (w.raw||w.t) : w.t;
+  // interpunkce vypnutá: zmizí jen tečky, čárky, středníky a uvozovky – otazník, vykřičník a tři tečky zůstanou;
+  // ručně napsané slovo (úprava textu, vlastní text) zůstane přesně, jak ho uživatel napsal
+  let s = (S.punct || w.man) ? (w.raw||w.t) : (String(w.raw||w.t).replace(/[,;:"“”„]+$/u,'').replace(/^[„"“]+/u,'').replace(/([^.])\.$/u,'$1') || w.t);
+  if (S.censor!==false && E.isSwear(w)){ const core=String(w.t||s); s=core.slice(0,2)+'...'; }
   s = applyCase(s, isEm ? (S.caseMain||S.case||'none') : (S.caseSec||S.case||'none'));
   // velké první písmeno v hlavním řádku – jen slova od 3 písmen („to na“ zůstane malé)
   if (isEm && S.capMain3 && (S.caseMain||'none')==='none' && letters(w)>=3) s=s.charAt(0).toLocaleUpperCase()+s.slice(1);

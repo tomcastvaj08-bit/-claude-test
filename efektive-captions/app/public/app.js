@@ -1087,7 +1087,8 @@ function pCaptions(){
   ${slider('Max řádků na titulek','maxLines',1,4)}
   ${slider('Max znaků na řádek (0 = auto)','maxChars',0,40)}
   ${slider('Slov na titulek (auto)','wpp',1,8)}
-  ${toggle('Interpunkce','punct')}
+  ${toggle('Interpunkce (tečky a čárky) – ?, ! a … zůstávají vždy','punct')}
+  ${toggle('Cenzura sprostých slov (píčo → PI...)','censor')}
   ${toggle('Velké písmeno v hlavním řádku (slova od 3 písmen)','capMain3')}
   <div class="btnrow"><button class="btn" id="dictBtn">${I('book')} Slovník oprav</button><button class="btn" id="resetOne">${I('reset')} Zrušit vlastní styl</button></div>
   <div class="btnrow"><button class="btn" id="layerBtn">${E.pages[curPage]&&E.pages[curPage].layer?I('arrow-up')+' Vybraný titulek do hlavní vrstvy':I('arrow-down')+' Vybraný titulek do vrstvy pod'}</button></div>
@@ -1139,8 +1140,8 @@ function setPageText(k,text){
   if (!list.length){ E.words.splice(p.a,p.b-p.a+1); return; }
   const key=old[0].id, meta=E.meta[key];
   let neu;
-  if (list.length===old.length) neu=old.map((w,i)=>({...w,raw:list[i],t:E.stripPunct(list[i])||list[i]}));
-  else { neu=E.spread(list,old[0].s,old[old.length-1].e); neu[0].id=key; }   // stejné id → titulek si nechá svůj styl a časy
+  if (list.length===old.length) neu=old.map((w,i)=>({...w,raw:list[i],t:E.stripPunct(list[i])||list[i], man:w.man||list[i]!==(w.raw||w.t)}));
+  else { neu=E.spread(list,old[0].s,old[old.length-1].e); neu[0].id=key; neu.forEach(w=>{ w.man=true; }); }   // ručně napsané = zůstane přesně (i ?, !, …)   // stejné id → titulek si nechá svůj styl a časy
   neu.forEach((w,i)=>{ w.nl=starts.has(i); });
   neu[0].br=true;
   E.words.splice(p.a,p.b-p.a+1,...neu);
