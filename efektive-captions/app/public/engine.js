@@ -34,6 +34,28 @@ E.pages=[];      // {a,b,s,e,kin,lines?,own,key}
 E.meta={};       // pageMeta podle id prvního slova: {own, so, eo}
 E.zones=[];      // úseky bez titulků [{s,e,label}]
 E.overlays=[];   // nálepky / obrázky přes video
+E.texts=[];      // vlastní textové vrstvy (nápis navíc): {id,text,s,e,own:{…styl…}} – kreslí se stejným enginem jako titulky
+// textová vrstva = „mini titulek“: na chvíli se podvrhnou slova / stránka / styl a použije se běžné kreslení titulků
+E.txtPrep = T => {
+  const key=T.text+'|'+T.s+'|'+T.e;
+  if (!T._w || T._key!==key){
+    // řádky = Enter; *slova v hvězdičkách* = hlavní (velký) řádek; bez hvězdiček je hlavní poslední řádek
+    let rows=String(T.text||'').split(/\n/).map(r=>r.split(/\s+/).filter(Boolean)).filter(r=>r.length); if (!rows.length) rows=[['TEXT']];
+    const words=[], lines=[]; let emRow=-1, inside=false;
+    rows.forEach((r,ri)=>{ const ids=[]; r.forEach(tok=>{ const open=/^\*/.test(tok), close=/\*$/.test(tok); if (open) inside=true; if (inside||open) emRow=emRow<0?ri:emRow; const clean=tok.replace(/^\*+|\*+$/g,'')||tok; if (close) inside=false; ids.push(words.length); words.push(clean); }); lines.push(ids); });
+    if (emRow<0) emRow=rows.length-1;
+    const dur=Math.max(0.3,Math.min(0.9,(T.e-T.s)*0.4)), ws=E.spread(words,T.s,T.s+dur);
+    ws.forEach((w,i)=>{ w.id=T.id+'_'+i; });
+    T._w=ws; T._key=key;
+    T._p={a:0,b:ws.length-1,s:T.s,e:T.e,layer:0,reLines:lines,reEm:T.noEm?-1:emRow,txt:true,
+      kin:[0,1,2,3].map(j=>({dx:hash(j+7)*2-1, dy:hash(j+107)*2-1, rot:hash(j+207)*2-1}))};
+  }
+  T._p.s=T.s; T._p.e=T.e; return T;
+};
+E.withText = (T,fn) => { E.txtPrep(T); const w=E.words, pg=E.pages, m=E.meta;
+  E.words=T._w; E.pages=[T._p]; E.meta={[T._w[0].id]:{own:T.own||{}}};
+  try{ return fn(T._p); } finally{ E.words=w; E.pages=pg; E.meta=m; } };
+E.textsAt = t => (E.texts||[]).filter(T=>t>=T.s && t<=T.e && String(T.text||'').trim());
 E.face=null;     // stopa obličeje [{t, box:[x0,y0,x1,y1]}|null] po 0.1 s
 E.flags={hidden:false, transparent:false, exporting:false, mute:false, pro:false};
 // vodoznak pro verzi bez předplatného
@@ -1312,12 +1334,14 @@ E.render = (t, opts={}) => {
   if (E.G.mix3d && !F.hidden && E.drawMix){ E.lastBox=null; E.lastLines=null; E.drawMix(ctx,t); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.shadowColor='transparent'; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   const ks=F.hidden?[]:E.pagesAt(t);
   const k=E.pageAt(t);
-  if (!ks.length){ E.lastBox=null; E.lastLines=null; E.lastAll=[]; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
+  const tx=F.hidden?[]:E.textsAt(t); E.lastTexts=[];
+  if (!ks.length && !tx.length){ E.lastBox=null; E.lastLines=null; E.lastAll=[]; for (const o of E.ovOrder()) if (E.ovAbove(o)) E.drawOverlay(ctx,o,t); E.drawWatermark(ctx,cv.width,cv.height); return; }
   let mainLines=null, mainS=null, behind=false;
   // text za hlavou (chytře): snímek bez titulků si zapamatovat, po titulcích přes ně znovu nakreslit hlavu
-  const headOn = !F.transparent && window.HEAD && HEAD.data && ks.some(kk=>E.styleOf(E.pages[kk]).behind==='head') && HEAD.has(E.out2src?E.out2src(t):t);
+  const tS=T=>E.withText(T,p=>E.styleAt(p,t));
+  const headOn = !F.transparent && window.HEAD && HEAD.data && (ks.some(kk=>E.styleOf(E.pages[kk]).behind==='head') || tx.some(T=>tS(T).behind==='head')) && HEAD.has(E.out2src?E.out2src(t):t);
   // text za postavou (v2): podklad pod postavou si zapamatovat, po titulcích přes ně znovu nakreslit postavu
-  const bOn=kk=>E.styleAt(E.pages[kk],t).behind==='on', kBack=ks.filter(bOn), kFront=ks.filter(kk=>!bOn(kk));   // titulky za postavou se kreslí první, pak postava, pak ostatní
+  const bOn=kk=>(typeof kk==='object'?tS(kk):E.styleAt(E.pages[kk],t)).behind==='on', all=[...ks,...tx], kBack=all.filter(bOn), kFront=all.filter(kk=>!bOn(kk));   // vlastní texty se kreslí po titulcích (nad nimi)   // titulky za postavou se kreslí první, pak postava, pak ostatní
   const pXf=E.vxfAt(t), pR=(!F.transparent && window.PERSON && PERSON.data && kBack.length) ? PERSON.rect(t,cv.width,cv.height,pXf) : null;
   if (pR){ if (!pbase||pbase.width!==cv.width||pbase.height!==cv.height){ pbase=document.createElement('canvas'); pbase.width=cv.width; pbase.height=cv.height; }
     const x=pbase.getContext('2d'); x.clearRect(pR.x,pR.y,pR.w,pR.h); x.drawImage(cv,pR.x,pR.y,pR.w,pR.h,pR.x,pR.y,pR.w,pR.h); }
@@ -1326,7 +1350,9 @@ E.render = (t, opts={}) => {
   const wbox=[];
   const kMain = ks.includes(E.focusPage) ? E.focusPage : k;   // vybraný titulek (v Reality jsou na obrazovce dva naráz)
   E.lastAll=[];
-  const drawK=kk=>{ const r=drawPage(kk,t);
+  const drawK=kk=>{ if (typeof kk==='object'){ const r=E.withText(kk,()=>drawPage(0,t)); if (r.lines && r.lines.length) E.lastTexts.push({T:kk, lines:r.lines, S:r.S});
+      if (r.S.behind==='on') behind=true; if (headOn && r.lines && r.S.behind==='head') wbox.push(...E.withText(kk,()=>wordBoxes(r.lines,r.S))); return; }
+    const r=drawPage(kk,t);
     if (r.lines && r.lines.length) E.lastAll.push({k:kk, lines:r.lines, S:r.S});
     if (kk===kMain){ mainLines=r.lines; mainS=r.S; }
     if (r.S.behind==='on') behind=true;
@@ -1334,9 +1360,10 @@ E.render = (t, opts={}) => {
   if (pR){ kBack.forEach(drawK);
     // oblast titulků za postavou (jen tam se dopočítá přesný okraj vlasů)
     let clip=null; const flat=E.lastAll.every(a=>!kBack.includes(a.k) || (!a.S.tilt && !a.S.tiltX && !a.S.rot));   // u nakloněného textu celá postava (oblast by neseděla)
-    if (flat) for (const a of E.lastAll) if (kBack.includes(a.k)) for (const L of a.lines){ const pad=L.px*0.6, b=[L.x0-pad, L.y-L.px*0.75-pad, L.x0+L.total+pad, L.y+L.px*0.75+pad]; clip=clip?[Math.min(clip[0],b[0]),Math.min(clip[1],b[1]),Math.max(clip[2],b[2]),Math.max(clip[3],b[3])]:b; }
+    const backT=E.lastTexts.filter(a=>kBack.includes(a.T)); const flat2=flat && backT.every(a=>!a.S.tilt && !a.S.tiltX && !a.S.rot);
+    if (flat2) for (const a of [...E.lastAll.filter(a=>kBack.includes(a.k)),...backT]) for (const L of a.lines){ const pad=L.px*0.6, b=[L.x0-pad, L.y-L.px*0.75-pad, L.x0+L.total+pad, L.y+L.px*0.75+pad]; clip=clip?[Math.min(clip[0],b[0]),Math.min(clip[1],b[1]),Math.max(clip[2],b[2]),Math.max(clip[3],b[3])]:b; }
     PERSON.compose(ctx,cv.width,cv.height,t,pbase,pXf,{clip}); kFront.forEach(drawK); }
-  else ks.forEach(drawK);
+  else all.forEach(drawK);
   if (headOn && hR){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); const x=hcap.getContext('2d'); x.clearRect(0,0,cv.width,cv.height); if (!E.G.reMode) x.drawImage(cv,0,0); ctx.restore(); HEAD.compose(ctx,cv.width,cv.height,t,hbase,hcap,E.vxfAt(t),{words:wbox}); }
   E.lastLines=mainLines;
   // text za postavou: přes titulky se znovu nakreslí jen postava z videa

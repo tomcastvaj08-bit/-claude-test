@@ -98,7 +98,7 @@ $('projects').onclick=async e=>{
   const p=e.target.closest('.proj'); if (p && !opening) openProject(p.dataset.id);
 };
 function snapshot(){
-  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), mute:E.flags.mute, clips:E.clips, audios:E.audios||[], fxMarks:E.fxMarks||[], kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, capZ:E.capZ, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
+  return JSON.stringify({G:E.G, words:E.words, meta:E.meta, zones:E.zones, overlays:E.overlays.map(o=>({...o,src:undefined,_card:undefined})), texts:(E.texts||[]).map(T=>({id:T.id,text:T.text,s:T.s,e:T.e,own:T.own})), mute:E.flags.mute, clips:E.clips, audios:E.audios||[], fxMarks:E.fxMarks||[], kf:E.kf, kfVer:3, tracks:Object.values(E.tracks).map(trkSave), stab:E.stab, capZ:E.capZ, objs:E.objs.map(objSave), face:E.face?E.face.map(f=>f?f.map(v=>Math.round(v*1000)/1000):null):null});   // poloha obličeje se ukládá s projektem
 }
 // pojistka: zdvojená slova (stejný text i čas) nikdy nenechat – zůstane jedno, s víc úpravami
 function dedupeWords(){
@@ -131,6 +131,7 @@ function restore(json){
   E.objs=(s.objs||[]).map(o=>({...o, _mk:Math.random()}));
   E.capZ=+s.capZ||0;
   E.overlays=(s.overlays||[]).map(o=>({...o, src: o.asset&&ovAssets[o.asset]?ovAssets[o.asset].el:null}));
+  E.texts=(s.texts||[]).map(T=>({...T,own:T.own||{}})); selTxt=null;
   E.buildPages(); curPage=clamp(curPage,0,Math.max(0,E.pages.length-1));
   setTimeout(()=>{ for (const c of E.clips||[]) if (c.a) makeExtThumb(c.a); },300);
 }
@@ -221,7 +222,7 @@ $('fileIn').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return; homeMsg('');
   genRun++; $('genBtn').disabled=false;   // případný běžící přepis jiného videa se zahodí
   // nový projekt se zvolenou šablonou
-  E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.face=null; E.personMask=null; AI.masks=[]; if (window.HEAD) HEAD.data=null; if (window.PERSON) PERSON.data=null; analysed={face:false,person:false}; E.flags.mute=false;
+  E.clips=null; E.audios=[]; E.fxMarks=[]; E.kf=[]; E.tracks={}; E.stab=null; E.objs=[]; E.capZ=0; E.words=[]; E.pages=[]; E.meta={}; E.zones=[]; E.overlays=[]; E.texts=[]; selTxt=null; E.face=null; E.personMask=null; AI.masks=[]; if (window.HEAD) HEAD.data=null; if (window.PERSON) PERSON.data=null; analysed={face:false,person:false}; E.flags.mute=false;
   for (const k in ovAssets) delete ovAssets[k];
   const t=E.TEMPLATES[homeTpl]||customTemplates()[homeTpl]; Object.assign(E.G, tplOwn(t?t.set:E.TEMPLATES.base.set));
   const dflt=lsGet('efk_default',null); if (dflt && homeTpl==='base'){ const d={...dflt}; for (const k of ['reMode','faceStab','behind','noSlots','emEach']) delete d[k]; Object.assign(E.G, d); mixDefaults(d); }
@@ -682,6 +683,7 @@ function loop(now){
     if (objEdit){ drawObjEdit(); E.lastBox=null; }
     else if (trkPick){ drawTrkPick(); E.lastBox=null; }
     else if (panel==='obj' && vid.paused && !PB.on && drawObjHandles(t)){ E.lastBox=null; }
+    else if (vid.paused && !inlineOpen && !E.flags.hidden && txtSel() && (E.lastTexts||[]).some(a=>a.T.id===selTxt) && !videoMode()){ const a=E.lastTexts.find(q=>q.T.id===selTxt); E.drawBox(a.lines,a.S,guides); }
     else if (vid.paused && !inlineOpen && !E.flags.hidden && E.lastLines && !videoMode()){ const a=(E.lastAll||[]).find(q=>q.k===curPage), kk=a?curPage:E.pageAt(t), p=E.pages[kk]; if (p) E.drawBox(a?a.lines:E.lastLines,E.styleAt(p,t),guides); }
     else E.lastBox=null;
     if (selOv && vid.paused) drawOvSel();
@@ -694,12 +696,15 @@ function loop(now){
 requestAnimationFrame(loop);
 
 // ================= STYL: rozsah a zápis =================
-const cur=()=>E.styleOf(E.pages[curPage]);
+let selTxt=null;   // vybraná textová vrstva (vlastní nápis) – styl, pohyb a efekty se pak nastavují jí, ne titulkům
+const txtSel=()=>selTxt&&(E.texts||[]).find(T=>T.id===selTxt);
+const cur=()=>{ const T=txtSel(); return T ? E.withText(T,p=>E.styleOf(p)) : E.styleOf(E.pages[curPage]); };
 function pageMeta(p){ const k=E.keyOf(p); return E.meta[k]=E.meta[k]||{}; }
 const REBUILD=new Set(['wpp','maxLines','maxChars','split','rowMax']);
 // Base dělí řádky podle šířky slov → po změně písma / velikosti se titulky přepočítají
 const REFLOW=new Set(['size','emScale','track','trackEm','cond','wordGap','fontMain','wMain','fontEm','wEm','emItalic','mainItalic','caseMain','caseSec','punct']);
 function setVal(key,val,noHist){
+  const T=txtSel(); if (T && !E.GLOBAL_ONLY.has(key)){ T.own=T.own||{}; T.own[key]=val; if (!noHist) changed(); else scheduleSave(); return; }
   const p=E.pages[curPage];
   if (scope==='all' || E.GLOBAL_ONLY.has(key) || !p){
     E.G[key]=val; for (const k in E.meta){ const o=E.meta[k].own; if (o && key in o) delete o[key]; }
@@ -714,8 +719,9 @@ const TPL_OWN=['minMainWords','breakComma','balanceEnd','glowSec','slideIn','shi
 const TPL_DEF={shineAmt:100};   // výchozí hodnota, když ji šablona nemá (místo prázdné)
 function tplOwn(set){ const o={...set}; for (const k of TPL_OWN) if (!(k in o)) o[k]=(k in TPL_DEF)?TPL_DEF[k]:null; return o; }
 function setMany(obj){ for (const [k,v] of Object.entries(obj)) setVal(k,v,true); changed(); }
-function scopeHTML(){ return `<div class="scope" id="scopeSw"><div data-v="all" class="${scope==='all'?'on':''}">Použít na všechny titulky</div><div data-v="one" class="${scope==='one'?'on':''}">Jen tento titulek</div></div>`; }
-function bindScope(){ const s=$('scopeSw'); if (!s) return; s.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; scope=d.dataset.v; renderPanel(); }; }
+function scopeHTML(){ const T=txtSel(); if (T) return `<div class="txtban">${I('type')} Upravuješ textovou vrstvu „${esc(String(T.text).slice(0,24))}“<button class="btn small" id="txtBack">${I('x')} Zpět na titulky</button></div>`;
+  return `<div class="scope" id="scopeSw"><div data-v="all" class="${scope==='all'?'on':''}">Použít na všechny titulky</div><div data-v="one" class="${scope==='one'?'on':''}">Jen tento titulek</div></div>`; }
+function bindScope(){ const tb=$('txtBack'); if (tb) tb.onclick=()=>{ selTxt=null; renderPanel(); renderTimeline(); }; const s=$('scopeSw'); if (!s) return; s.onclick=e=>{ const d=e.target.closest('[data-v]'); if(!d) return; scope=d.dataset.v; renderPanel(); }; }
 
 // ---------- generátory ovládacích prvků ----------
 const C=[]; // registrace handlerů
@@ -1107,7 +1113,7 @@ binders.captions=()=>{
     const pg=e.target.closest('.pg'); if (pg) selectPage(+pg.dataset.k);
   };
 };
-function selectPage(k,seek=true){ curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); PV.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions') renderPanel(); }
+function selectPage(k,seek=true){ if (selTxt){ selTxt=null; renderTimeline(); } curPage=k; const p=E.pages[k]; if (p && seek){ vid.pause(); PV.currentTime=Math.min(p.e-0.02,p.s+0.45); } markCur(); if (panel!=='captions') renderPanel(); }
 // panely se stylem ukazují nastavení VYBRANÉHO titulku → když se titulek změní (posun hlavy), panel se překreslí
 const STYLE_PANELS=new Set(['templates','style','motion','mix','ai']);
 let panelPage=-1, panelSyncT=null;
@@ -1384,9 +1390,55 @@ binders.sfx=()=>{
 
 // ---------- OVERLAY ----------
 const OVANIM=[['standard','Standard'],['3d','3D'],['carousel3d','3D Carousel'],['circle','Circle Carousel'],['cards','Cards'],['pop','Pop In'],['slideR','Slide doprava'],['slideL','Slide doleva'],['slideU','Slide nahoru'],['slideD','Slide dolů']];
+function pTexts(){
+  const T=txtSel(), L=E.texts||[];
+  let h=`<div class="clabel">${I('type')} Vlastní text (nápis navíc)</div>
+  <div class="btnrow"><button class="btn primary" id="txAdd">${I('plus')} Přidat text</button></div>
+  ${L.length?`<div class="chips" id="txList">${L.map(x=>`<div class="chip ${T&&x.id===T.id?'on':''}" data-t="${x.id}">${esc(String(x.text).replace(/\n/g,' ').replace(/\*/g,'').slice(0,18)||'…')} <small>${fmt(x.s)}</small></div>`).join('')}</div>`:''}`;
+  if (T){ const S=cur();
+    h+=`<label class="ctl"><div class="lb"><span>Text (nový řádek = Enter, *slovo* = hlavní zvýrazněné slovo)</span></div><textarea class="inp" id="txText" rows="2">${esc(T.text)}</textarea></label>
+    <div class="row"><span>Začátek ${fmt(T.s)} · konec ${fmt(T.e)}</span></div>
+    <div class="btnrow"><button class="btn small" id="txS">${I('pin')} Začátek sem</button><button class="btn small" id="txE">${I('pin')} Konec sem</button><button class="btn small" id="txAll">${I('arrows-h')} Celé video</button></div>
+    <label class="ctl"><div class="lb"><span>Délka</span><span id="txDv">${(T.e-T.s).toFixed(1)} s</span></div><input type="range" id="txD" min="0.3" max="${Math.max(5,Math.ceil(PV.duration||30))}" step="0.1" value="${(T.e-T.s).toFixed(1)}"></label>
+    <div class="clabel">Maska</div>
+    <div class="chips" id="txBeh"><div class="chip ${S.behind!=='on'?'on':''}" data-v="off">Před vším</div><div class="chip ${S.behind==='on'?'on':''}" data-v="on">Za postavou (i za hlavou)</div></div>
+    <div class="note">Za postavou: text dej třeba za hlavu – postava (vlasy, ramena) ho přirozeně zakryje. Maska se vyrobí sama, poprvé to chvíli trvá. Text posuneš prstem přímo na videu, úchytem zvětšíš.</div>
+    <div class="btnrow"><button class="btn" id="txTpl">${I('grid')} Šablona</button><button class="btn" id="txSty">${I('palette')} Styl a soft glow</button><button class="btn" id="txMot">${I('sparkles')} Pohyb a efekty</button></div>
+    <div class="btnrow"><button class="btn" id="txDup">${I('copy')} Duplikovat</button><button class="btn" id="txDel">${I('trash')} Smazat text</button><button class="btn" id="txDone">${I('check')} Hotovo</button></div>`; }
+  else if (L.length) h+=`<div class="note">Klepni na text v seznamu, na časové ose nebo přímo na videu.</div>`;
+  return h+'<div class="sepline"></div>';
+}
+async function ensurePerson(){ if (window.PERSON && PERSON.data) return; vid.pause(); if (PB.on) pbStop(); const W8=waitOn('Vyrábím masku postavy – vyčkej'); W8.set('Načítám AI…',0);
+  try{ const v=await auxVideo(); try{ await PERSON.analyze({video:v, file:videoFile, onP:p=>W8.set('Odděluji postavu a vlasy v každém snímku',p)}); personSave(); analysed.person=true; } finally{ freeVideo(v); } toast('Maska je hotová – text je za postavou'); }
+  catch(e){ console.warn(e); toast('Masku se nepodařilo vyrobit: '+(e.message||e)); } finally{ waitOff(); changed(); } }
+function txtGo(p,sub2){ panel=p; if (sub2) sub[p]=sub2; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.p===p)); renderPanel(); }
+function bindTexts(){
+  const T=txtSel();
+  $('txAdd').onclick=()=>{ vid.pause(); const t=PV.currentTime, D=PV.duration||t+3, base=styleSet();
+    const own={...base, posX:50, posY:30, enterBy:'page', mainLine:'none', behind:'off'};
+    const nT={id:'t'+Date.now().toString(36), text:'TEXT', s:+t.toFixed(2), e:+Math.min(D,t+3).toFixed(2), own};
+    E.texts=E.texts||[]; E.texts.push(nT); selTxt=nT.id; selOv=null; changed(); renderPanel(); renderTimeline();
+    setTimeout(()=>{ const ta=$('txText'); if (ta){ ta.focus(); ta.select(); } },50); toast('Text přidaný – napiš ho a posuň prstem na videu'); };
+  const tl=$('txList'); if (tl) tl.onclick=e=>{ const c=e.target.closest('[data-t]'); if (!c) return; selTxt=c.dataset.t; selOv=null; const X=txtSel(); if (X){ vid.pause(); PV.currentTime=Math.min(X.e-0.02,X.s+0.6); } renderPanel(); renderTimeline(); };
+  if (!T) return;
+  $('txText').oninput=e=>{ T.text=e.target.value; scheduleSave(); };
+  $('txText').onchange=()=>{ changed(); renderTimeline(); const c=document.querySelector(`#txList [data-t="${T.id}"]`); if (c) c.firstChild.textContent=String(T.text).replace(/\n/g,' ').replace(/\*/g,'').slice(0,18)+' '; };
+  const D=()=>PV.duration||T.e;
+  $('txS').onclick=()=>{ const t=PV.currentTime; const len=T.e-T.s; T.s=+t.toFixed(2); if (T.e<=T.s+0.2) T.e=+Math.min(D(),T.s+Math.max(1,len)).toFixed(2); changed(); renderPanel(); renderTimeline(); };
+  $('txE').onclick=()=>{ const t=PV.currentTime; if (t>T.s+0.2){ T.e=+t.toFixed(2); changed(); renderPanel(); renderTimeline(); } else toast('Konec musí být za začátkem'); };
+  $('txAll').onclick=()=>{ T.s=0; T.e=+D().toFixed(2); changed(); renderPanel(); renderTimeline(); };
+  $('txD').oninput=e=>{ T.e=+Math.min(D(),T.s+(+e.target.value)).toFixed(2); $('txDv').textContent=(T.e-T.s).toFixed(1)+' s'; };
+  $('txD').onchange=()=>{ changed(); renderTimeline(); };
+  $('txBeh').onclick=async e=>{ const d=e.target.closest('[data-v]'); if (!d) return; const v=d.dataset.v; setVal('behind',v); renderPanel();
+    if (v==='on') ensurePerson(); };
+  $('txTpl').onclick=()=>txtGo('templates'); $('txSty').onclick=()=>txtGo('style','color'); $('txMot').onclick=()=>txtGo('motion','in');
+  $('txDup').onclick=()=>{ const n={...T, id:'t'+Date.now().toString(36), own:{...T.own, posY:Math.min(90,(T.own.posY??30)+8)}}; delete n._w; delete n._p; delete n._key; E.texts.push(n); selTxt=n.id; changed(); renderPanel(); renderTimeline(); };
+  $('txDel').onclick=()=>{ E.texts=E.texts.filter(x=>x!==T); selTxt=null; changed(); renderPanel(); renderTimeline(); };
+  $('txDone').onclick=()=>{ selTxt=null; renderPanel(); renderTimeline(); };
+}
 function pOverlay(){
   const o=E.overlays.find(x=>x.id===selOv);
-  let h=`<div class="btnrow"><button class="btn" id="ovImg">${I('image')} Přidat obrázek / video</button></div>
+  let h=pTexts()+`<div class="btnrow"><button class="btn" id="ovImg">${I('image')} Přidat obrázek / video</button></div>
   <div class="btnrow"><button class="btn" id="ovFull">${I('layers','grad')} Překrýt video novou verzí</button></div>
   <div class="note">Když klient chce něco ve videu změnit: nahraj upravenou verzi záběru a ona se položí přes původní video od místa hlavy – titulky zůstanou, jak jsou.</div>
   <div class="row"><span>Wiggle na všechny overlaye</span><input type="checkbox" class="sw" id="ovWigAll" ${E.overlays.length&&E.overlays.every(x=>x.wiggle)?'checked':''}></div>`;
@@ -1423,6 +1475,7 @@ function pOverlay(){
   return h;
 }
 binders.overlay=()=>{
+  bindTexts();
   $('ovImg').onclick=()=>$('ovIn').click();
   $('ovWigAll').onchange=e=>{ E.overlays.forEach(o=>{ if (!o.full) o.wiggle=e.target.checked; }); changed(); renderPanel(); };
   $('ovFull').onclick=()=>$('ovFullIn').click();
@@ -1583,7 +1636,7 @@ function renderTimeline(){
     return `<div class="cb ${k===curPage?'cur':''} ${m&&m.own&&Object.keys(m.own).some(x=>x!=='posY'&&x!=='posX'&&x!=='_manualPos')?'own':''}" data-k="${k}" style="left:${X(p.s)}px;width:${Math.max(6,(p.e-p.s)*pps-2)}px"><span class="hl"></span>${esc(txt.join(' '))}<span class="hr"></span></div>`; }).join('');
   $('trC').innerHTML=cbHtml(0); $('trC2').innerHTML=cbHtml(1);
   $('trZ').innerHTML=E.zones.map((z,i)=>`<div class="zb" data-z="${i}" style="left:${X(z.s)}px;width:${Math.max(6,(z.e-z.s)*pps)}px"><span class="hl"></span>${I('ban')} ${esc(z.label||'Bez titulků')}<span class="zx" data-zx="${i}">${I('x')}</span><span class="hr"></span></div>`).join('');
-  $('trO').innerHTML=E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
+  $('trO').innerHTML=(E.texts||[]).map(T=>`<div class="ob tx ${T.id===selTxt?'cur':''}" data-t="${T.id}" style="left:${X(T.s)}px;width:${Math.max(6,(T.e-T.s)*pps)}px"><span class="hl"></span>${I('type')} ${esc(String(T.text).replace(/\n/g,' ').replace(/\*/g,'').slice(0,20))}<span class="hr"></span></div>`).join('')+E.overlays.map(o=>`<div class="ob ${o.id===selOv?'cur':''}" data-o="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('image')} ${OVANIM.find(a=>a[0]===o.anim)?.[1]||''}<span class="hr"></span></div>`).join('');
   // zvýrazněné objekty (tyrkysově) a jejich shine (zlatě) – oba jdou posunout a zkrátit / prodloužit
   $('trX').innerHTML=(E.objs||[]).map((o,i)=>{ if (window.OBJ) OBJ.shineWin(o);
     return `<div class="xb ${o.shine?'sh':''} ${o.id===selObj?'cur':''}" data-x="${o.id}" style="left:${X(o.s)}px;width:${Math.max(6,(o.e-o.s)*pps)}px"><span class="hl"></span>${I('target')} Maska ${i+1}${o.shine?' · shine':''}<span class="hr"></span></div>`; }).join('');
@@ -1701,6 +1754,7 @@ function removeOut(a,b){
   for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null) m.so=sh(m.so); if (m.eo!=null) m.eo=sh(m.eo); }
   E.zones=E.zones.map(z=>({...z,s:sh(z.s),e:sh(z.e)})).filter(z=>z.e-z.s>0.05);
   E.overlays=E.overlays.filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); return o.e-o.s>0.05; });
+  E.texts=(E.texts||[]).filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); return o.e-o.s>0.05; });
   E.objs=(E.objs||[]).filter(o=>{ o.s=sh(o.s); o.e=sh(o.e); if (o.shS!=null){ o.shS=sh(o.shS); o.shE=sh(o.shE); } return o.e-o.s>0.05; });
   E.kf=E.kf.filter(k=>!(k.t>a+0.01&&k.t<b-0.01)).map(k=>({...k,t:sh(k.t)}));
   E.audios=(E.audios||[]).filter(x=>{ if (x.s>a && x.s<b) x.off=(x.off||0)+(b-x.s); x.s=sh(x.s); x.e=sh(x.e); return x.e-x.s>0.05; });
@@ -1712,6 +1766,7 @@ function insertOut(at,len){
   for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null&&m.so>=at) m.so+=len; if (m.eo!=null&&m.eo>=at) m.eo+=len; }
   for (const z of E.zones) if (z.s>=at){ z.s+=len; z.e+=len; }
   for (const o of E.overlays) if (o.s>=at){ o.s+=len; o.e+=len; }
+  for (const o of (E.texts||[])) if (o.s>=at){ o.s+=len; o.e+=len; }
   for (const o of (E.objs||[])) if (o.s>=at){ o.s+=len; o.e+=len; if (o.shS!=null){ o.shS+=len; o.shE+=len; } }
   for (const k of E.kf) if (k.t>=at) k.t+=len;
   for (const x of E.audios||[]) if (x.s>=at){ x.s+=len; x.e+=len; }
@@ -1725,6 +1780,7 @@ function remapOut(a,b,D1){
   for (const k in E.meta){ const m=E.meta[k]; if (m.so!=null) m.so=mp(m.so); if (m.eo!=null) m.eo=mp(m.eo); }
   for (const z of E.zones){ z.s=mp(z.s); z.e=mp(z.e); }
   for (const o of E.overlays){ o.s=mp(o.s); o.e=mp(o.e); }
+  for (const o of (E.texts||[])){ o.s=mp(o.s); o.e=mp(o.e); }
   for (const o of (E.objs||[])){ o.s=mp(o.s); o.e=mp(o.e); if (o.shS!=null){ o.shS=mp(o.shS); o.shE=mp(o.shE); } }
   for (const k of E.kf) k.t=mp(k.t);
   for (const x of E.audios||[]) if (x.s>=b-1e-6){ x.s+=dl; x.e+=dl; }   // hudba se nenatahuje, jen posune
@@ -1994,6 +2050,13 @@ $('tlIn').addEventListener('pointerup',e=>{
       else a.e=clamp(a.e+dt,a.s+0.2,Math.min(D,a.s+full-(a.off||0)));
     } else PV.currentTime=a.s+0.05;
     openAudPanel(); changed();
+  } else if (blk.dataset.t!==undefined){
+    const o=(E.texts||[]).find(x=>x.id===blk.dataset.t); if (!o) return;
+    selTxt=o.id; selOv=null;
+    if (moved){ if (mode==='m'){ const d=clamp(dt,-o.s,PV.duration-o.e); o.s+=d; o.e+=d; } else if (mode==='l') o.s=clamp(o.s+dt,0,o.e-0.2); else o.e=clamp(o.e+dt,o.s+0.2,PV.duration); }
+    else PV.currentTime=Math.min(o.e-0.02,o.s+0.6);
+    if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.p==='overlay')); }
+    changed(); renderPanel(); renderTimeline();
   } else if (blk.dataset.o!==undefined){
     const o=E.overlays.find(x=>x.id===+blk.dataset.o); if (!o) return;
     selOv=o.id;
@@ -2095,6 +2158,14 @@ stg.addEventListener('pointerdown',e=>{
   // titulek nad overlayem má při klepnutí přednost před overlayem pod ním
   const inCap=(()=>{ const B=E.lastBox; if (!B||!B.P) return false; const xs=B.P.map(p=>p[0]), ys=B.P.map(p=>p[1]); return x>Math.min(...xs)-hr && x<Math.max(...xs)+hr && y>Math.min(...ys)-hr && y<Math.max(...ys)+hr; })();
   for (const o of [...E.overlays].reverse()){ if (t<o.s||t>o.e||o.full) continue; if (!o.above && inCap) continue; const b=E.overlayBox(o); if (Math.abs(x-b.cx)<b.w/2 && Math.abs(y-b.cy)<b.h/2){ selOv=o.id; gest={type:'ov',o,x0:x,y0:y,ox:o.x,oy:o.y,moved:false}; vid.pause(); if (panel!=='overlay'){ panel='overlay'; $('bnav').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.p==='overlay')); } renderPanel(); renderTimeline(); return; } }
+  // vlastní text (nad titulky) – klepnutí ho vybere a rovnou jde posunout
+  { const hitT=[...(E.lastTexts||[])].reverse().find(a=>{ const L=a.lines; return x>Math.min(...L.map(q=>q.x0))-hr&&x<Math.max(...L.map(q=>q.x0+q.total))+hr&&y>Math.min(...L.map(q=>q.y-q.px*0.55))-hr&&y<Math.max(...L.map(q=>q.y+q.px*0.55))+hr; });
+    const B0=E.lastBox, selOn=txtSel()&&hitT&&hitT.T.id===selTxt;
+    if (selOn && B0 && Math.hypot(x-B0.pe[0],y-B0.pe[1])<hr*1.4){ vid.pause(); txtGo('overlay'); setTimeout(()=>{ const ta=$('txText'); if (ta){ ta.focus(); ta.select(); } },50); ptrs.clear(); return; }
+    if (selOn && B0 && Math.hypot(x-B0.h[0],y-B0.h[1])<hr*1.4){ gest={type:'resize',cx:B0.cx,cy:B0.cy,d0:Math.hypot(x-B0.cx,y-B0.cy),size0:cur().size}; guides=true; return; }
+    if (hitT){ vid.pause(); const ch=hitT.T.id!==selTxt; selTxt=hitT.T.id; selOv=null; if (ch){ if (panel!=='overlay'&&panel!=='style'&&panel!=='motion'&&panel!=='templates') txtGo('overlay'); else renderPanel(); renderTimeline(); }
+      const S=cur(); gest={type:'move',x0:x,y0:y,px:S.posX,py:S.posY,dx0:0,dy0:0,moved:false,txt:true}; return; }
+    if (selTxt){ selTxt=null; renderTimeline(); if (STYLE_PANELS.has(panel)||panel==='overlay') renderPanel(); } }
   // klepnutí na jiný titulek, který je zrovna vidět (v Reality horní za hlavou + spodní na hrudi) → vybrat ho a rovnou ho jde posunout
   { const hitK=(E.lastAll||[]).map(a=>{ const L=a.lines; return {k:a.k, x0:Math.min(...L.map(q=>q.x0)), x1:Math.max(...L.map(q=>q.x0+q.total)), y0:Math.min(...L.map(q=>q.y-q.px*0.55)), y1:Math.max(...L.map(q=>q.y+q.px*0.55))}; })
       .filter(b=>x>b.x0-hr&&x<b.x1+hr&&y>b.y0-hr&&y<b.y1+hr).map(b=>b.k);
@@ -2130,7 +2201,7 @@ stg.addEventListener('pointermove',e=>{
   if (gest.type==='ov'){ gest.moved=true; gest.o.x=clamp(gest.ox+(x-gest.x0)/cv.width*100,0,100); gest.o.y=clamp(gest.oy+(y-gest.y0)/cv.height*100,0,100); }
   else if (gest.type==='move'){ if (Math.hypot(x-gest.x0,y-gest.y0)>6){ gest.moved=true; guides=true; } if (!gest.moved) return;
     let nx=gest.px+(x-gest.x0)/cv.width*100, ny=gest.py+(y-gest.y0)/cv.height*100; if (Math.abs(nx-50)<1.5) nx=50;
-    if (E.G.reMode){ const m=pageMeta(E.pages[curPage]); m.own=m.own||{}; delete m.own.posX; delete m.own.posY; m.own.reMoved=true; m.own.reDx=+(gest.dx0+(x-gest.x0)/cv.width*100).toFixed(2); m.own.reDy=+(gest.dy0+(y-gest.y0)/cv.height*100).toFixed(2); }   // Reality: posunutý titulek si drží odsazení a dál jede s hlavou
+    if (E.G.reMode && !gest.txt){ const m=pageMeta(E.pages[curPage]); m.own=m.own||{}; delete m.own.posX; delete m.own.posY; m.own.reMoved=true; m.own.reDx=+(gest.dx0+(x-gest.x0)/cv.width*100).toFixed(2); m.own.reDy=+(gest.dy0+(y-gest.y0)/cv.height*100).toFixed(2); }   // Reality: posunutý titulek si drží odsazení a dál jede s hlavou
     else { setVal('posX',+nx.toFixed(1),true); setVal('posY',+clamp(ny,3,97).toFixed(1),true); } }
   else if (gest.type==='resize'){ const d=Math.hypot(x-gest.cx,y-gest.cy); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }
   else if (gest.type==='pinch' && ptrs.size>=2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); setVal('size',Math.round(clamp(gest.size0*d/gest.d0,30,220)),true); }

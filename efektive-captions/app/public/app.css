@@ -671,3 +671,8 @@ body.ph-camon{overflow:hidden}
 .ph-shutter.locked{opacity:.45;border-color:#ffb800}
 
 .w.sg{box-shadow:0 0 0 1px rgba(255,255,255,.55),0 0 10px rgba(255,255,255,.55)}
+
+.txtban{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:0 0 8px;border-radius:10px;background:rgba(47,123,255,.12);font-weight:600;font-size:13px}
+.txtban .btn{margin-left:auto}
+.ob.tx{background:linear-gradient(90deg,#ffb020,#ff7a1a);color:#1a0d00}
+.sepline{height:1px;background:rgba(127,127,127,.25);margin:12px 0}
